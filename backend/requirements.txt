@@ -1,0 +1,6 @@
+# Pinned to the versions used in the SWPP 2026 labs.
+django==5.2.*
+langchain-google-genai==4.4.0
+pydantic==2.*
+python-dotenv==1.*
+requests==2.*

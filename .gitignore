@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Secrets and local data
+.env
+backend/db.sqlite3
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Android local/build output
+client/.gradle/
+client/.kotlin/
+client/local.properties
+client/**/build/
