@@ -50,7 +50,7 @@ class MenuItem(models.Model):
     raw_name = models.CharField(max_length=500)
     food = models.ForeignKey(
         Food, null=True, blank=True, on_delete=models.SET_NULL, related_name="menu_items"
-    )  # null when the row is a header or notice, not a dish
+    )  # headers and notices are never stored, so this is null only if the Food was deleted
     price = models.IntegerField(null=True, blank=True)
     no_meat = models.BooleanField(default=False)
 
