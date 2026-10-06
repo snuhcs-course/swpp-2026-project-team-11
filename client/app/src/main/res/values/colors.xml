@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared color tokens. Keep component colors centralized here. -->
+<resources>
+    <!-- brand -->
+    <color name="primary">#D9480F</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_soft">#FFF1E8</color>
+
+    <!-- surface -->
+    <color name="canvas">#FBF8F4</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="hairline">#E7E0D8</color>
+    <color name="hairline_strong">#CFC6BB</color>
+
+    <!-- text -->
+    <color name="ink">#1F1A17</color>
+    <color name="body">#4A423C</color>
+    <color name="muted">#857A70</color>
+
+    <!-- semantic -->
+    <color name="error_surface">#FDECEC</color>
+    <color name="error_ink">#9B1C1C</color>
+</resources>

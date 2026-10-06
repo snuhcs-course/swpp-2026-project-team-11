@@ -1,0 +1,56 @@
+<resources>
+    <string name="app_name">Metchu</string>
+
+    <!-- start -->
+    <string name="start_title">Not sure what to eat?</string>
+    <string name="start_body">Answer a few quick questions and Metchu will pick a dish from the SNU cafeterias.</string>
+    <string name="start_meal_label">Which meal?</string>
+    <string name="start_button">Start</string>
+
+    <string name="meal_breakfast">Breakfast</string>
+    <string name="meal_lunch">Lunch</string>
+    <string name="meal_dinner">Dinner</string>
+    <string name="meal_any">All day</string>
+
+    <!-- session header: date · meal · number of dishes -->
+    <string name="session_context">%1$s · %2$s · %3$s</string>
+    <plurals name="dishes">
+        <item quantity="one">%d dish</item>
+        <item quantity="other">%d dishes</item>
+    </plurals>
+    <string name="start_over">Start over</string>
+
+    <!-- question -->
+    <string name="question_progress">Question %1$d</string>
+    <string name="question_progress_capped">Question %1$d of up to %2$d</string>
+    <string name="undo">Back</string>
+    <string name="recommend_now">Just recommend something</string>
+
+    <!-- guess -->
+    <string name="guess_kind_food">Dish</string>
+    <string name="guess_kind_group">Kind of dish</string>
+    <string name="guess_example_label">For example</string>
+    <string name="guess_members">Also on the menu: %1$s</string>
+    <string name="guess_members_more">Also on the menu: %1$s and %2$d more</string>
+    <string name="accept_food">Yes, I\'ll have this</string>
+    <string name="accept_group">Yes, I\'ll have this one</string>
+    <string name="reject">No, something else</string>
+
+    <!-- recommendation -->
+    <string name="result_where">Where to get it</string>
+    <string name="offer_line">%1$s · %2$s · %3$s</string>
+    <string name="offer_none">No cafeteria listed</string>
+    <string name="price_won">%1$s won</string>
+    <string name="price_unknown">price not listed</string>
+
+    <!-- unavailable -->
+    <string name="unavailable_title">Nothing to recommend</string>
+    <string name="unavailable_no_menu">There is no menu for %1$s (%2$s). Try another meal.</string>
+    <string name="unavailable_exhausted">You have turned down every dish on today\'s menu. Start over to see them again.</string>
+
+    <!-- errors -->
+    <string name="retry">Try again</string>
+    <string name="error_no_server">Could not reach the server. Check that it is running and that this device can reach it.</string>
+    <string name="error_server">The server could not handle that request.</string>
+    <string name="error_session_lost">Your session ended on the server. Please start again.</string>
+</resources>
