@@ -4,3 +4,4 @@ langchain-google-genai==4.4.0
 pydantic==2.*
 python-dotenv==1.*
 requests==2.*
+numpy>=2.2,<3
