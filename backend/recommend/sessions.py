@@ -54,7 +54,7 @@ class RecommendSession:
         step = self.engine.next_step()
         if step["type"] != "question" or step["question_id"] != question_id:
             raise StaleStep("That question is no longer the current step.")
-        if answer_id not in {option["id"] for option in step["options"]}:
+        if answer_id not in [option["id"] for option in step["options"]]:
             raise ValueError(f"Unknown answer_id: {answer_id!r}")
         self.engine.answer(question_id, answer_id)
 
