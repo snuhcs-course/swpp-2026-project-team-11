@@ -1,6 +1,7 @@
 package com.example.metchu.ui.main
 
 import android.os.Bundle
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import androidx.activity.viewModels
@@ -29,6 +30,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+    /** The button whose request is running, if any. */
+    private var tapped: View? = null
+
     private val viewModel: RecommendViewModel by viewModels {
         RecommendViewModelFactory(AppContainer.repository)
     }
@@ -39,21 +43,23 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.root.padForSystemBars()
 
-        binding.btnStart.setOnClickListener { viewModel.start(selectedMeal()) }
-        binding.btnAccept.setOnClickListener { viewModel.feedback(accepted = true) }
-        binding.btnReject.setOnClickListener { viewModel.feedback(accepted = false) }
-        binding.btnUndo.setOnClickListener { viewModel.undo() }
-        binding.btnRecommendNow.setOnClickListener { viewModel.recommendNow() }
-        binding.btnStartOver.setOnClickListener { viewModel.startOver() }
-        binding.btnQuit.setOnClickListener { viewModel.startOver() }
-        binding.btnRetry.setOnClickListener { viewModel.retry() }
+        binding.btnStart.onTap { viewModel.start(selectedMeal()) }
+        binding.btnAccept.onTap { viewModel.feedback(accepted = true) }
+        binding.btnReject.onTap { viewModel.feedback(accepted = false) }
+        binding.btnUndo.onTap { viewModel.undo() }
+        binding.btnRecommendNow.onTap { viewModel.recommendNow() }
+        binding.btnStartOver.onTap { viewModel.startOver() }
+        binding.btnQuit.onTap { viewModel.startOver() }
+        binding.btnRetry.onTap { viewModel.retry() }
 
         viewModel.session.observe(this) { render(it) }
 
         viewModel.loading.observe(this) { loading ->
             binding.progressLoading.visibility = if (loading) View.VISIBLE else View.INVISIBLE
-            // Dimmed and untappable while a request is in flight.
-            binding.content.alpha = if (loading) 0.5f else 1f
+            // The tapped button stays highlighted and pressed in for as long as its
+            // request runs; everything else is disabled and fades.
+            tapped?.isSelected = loading
+            if (!loading) tapped = null
             setEnabledRecursively(binding.content, !loading)
             setEnabledRecursively(binding.bottomBar, !loading)
             if (!loading) viewModel.session.value?.let { binding.btnUndo.isEnabled = it.canUndo }
@@ -68,6 +74,13 @@ class MainActivity : AppCompatActivity() {
                 binding.btnRetry.isVisible = error.canRetry
             }
         }
+    }
+
+    /** A click that also gives a light haptic tick and remembers which button it was. */
+    private fun View.onTap(action: () -> Unit) = setOnClickListener { view ->
+        tapped = view
+        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+        action()
     }
 
     private fun selectedMeal(): String? = when (binding.mealToggle.checkedButtonId) {
@@ -132,7 +145,7 @@ class MainActivity : AppCompatActivity() {
         step.options.orEmpty().forEach { option ->
             val button = ItemAnswerBinding.inflate(inflater, binding.answers, true).root
             button.text = option.label
-            button.setOnClickListener { viewModel.answer(option.id) }
+            button.onTap { viewModel.answer(option.id) }
         }
     }
 

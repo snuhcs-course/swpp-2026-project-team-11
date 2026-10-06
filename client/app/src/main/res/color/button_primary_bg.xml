@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Selected comes first: the tapped button keeps its color while a request disables the screen. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/primary" android:state_selected="true" />
+    <item android:color="@color/hairline" android:state_enabled="false" />
+    <item android:color="@color/primary" />
+</selector>

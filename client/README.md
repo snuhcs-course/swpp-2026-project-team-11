@@ -42,7 +42,8 @@ metchu.baseUrl=http://192.168.0.3:8000/
 | `recommendation` | The accepted dish and where to get it | Start over |
 | `unavailable` | Why nothing can be recommended | Start over |
 
-A request in flight dims the screen and ignores taps. A failed request shows a
+A tapped button gives a light haptic tick, sinks slightly and stays highlighted
+while its request runs; the other buttons fade and ignore taps. A failed request shows a
 banner that stays until the next request, with Try again.
 
 Question text, answer labels and guess text are shown as the server sends them.
