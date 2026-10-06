@@ -126,7 +126,9 @@ class DecisionTreeEngine:
         if kind == "guess":
             result["guess_id"] = node_id
         if node.kind == "family":
-            result["group"] = {"group_id": node_id, "display_name": node.label, "food_ids": member_ids}
+            eligible_members = [member_id for member_id in member_ids
+                                if int(self.model.alias_ids[self.model.node_index[f"food:{member_id}"]]) not in self._rejected]
+            result["group"] = {"group_id": node_id, "display_name": node.label, "food_ids": eligible_members}
         return result
 
     def _set_pending(self, descriptor):

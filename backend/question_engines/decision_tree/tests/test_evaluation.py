@@ -30,4 +30,3 @@ class EvaluationTests(unittest.TestCase):
         for trials in (0, 201, True):
             with self.assertRaises(ValueError):
                 compare_policies([], [{"key": "soupy"}], trials=trials)
-

@@ -169,3 +169,13 @@ class EngineTests(unittest.TestCase):
         for invalid in ([], snapshot | {"events": "bad"}, snapshot | {"pending": None}):
             with self.assertRaises(ValueError):
                 DecisionTreeEngine.from_snapshot(small_catalog(), None, invalid)
+
+    def test_group_metadata_excludes_a_previously_rejected_member(self):
+        e = engine()
+        first = e.recommend_now()
+        self.assertEqual(first["food"]["food_id"], 1)
+        e.feedback(first["guess_id"], False)
+        group = next(key for key, node in e.catalog.food_tree.nodes.items() if node.kind == "family")
+        step = e._set_pending({"kind": "guess", "id": group, "food_id": 2})
+        self.assertEqual(step["group"]["food_ids"], [2])
+        self.assertEqual(step["food"]["food_id"], 2)

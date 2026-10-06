@@ -129,7 +129,7 @@ Other step types:
 
 - `guess`: `guess_id`, `target_kind` (`food` or `group`), `food` (a representative
   real candidate), and optionally `group` with `group_id`, source display name
-  and member `food_ids`. Display the group heading for a group guess; the
+  and currently eligible member `food_ids`. Display the group heading for a group guess; the
   representative is one available concrete option, not a claim that its variant
   has already been identified.
 - `recommendation`: the accepted concrete `food` and original offers. Accepting
