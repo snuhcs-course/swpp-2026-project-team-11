@@ -12,6 +12,7 @@ import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.isEnabled
 import androidx.test.espresso.matcher.ViewMatchers.isNotEnabled
+import androidx.test.espresso.matcher.ViewMatchers.isSelected
 import androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
@@ -351,6 +352,58 @@ class MainActivityTest {
         onView(withId(R.id.progressLoading)).check(matches(withEffectiveVisibility(Visibility.INVISIBLE)))
         // Back was only disabled for the request, but this reply says there is nothing to undo.
         onView(withId(R.id.btnUndo)).check(matches(isNotEnabled()))
+    }
+
+    @Test
+    fun theTappedAnswerStaysHighlightedUntilItsRequestEnds() {
+        startWith(question)
+        onView(withText("Probably yes")).check(matches(not(isSelected())))
+        val gate = api.hold()
+        onView(withText("Probably yes")).perform(click())
+        onView(withText("Probably yes")).check(matches(isSelected()))
+        for (other in listOf("Yes, sounds good", "Doesn't matter", "Probably not", "No", "Not sure")) {
+            onView(withText(other)).check(matches(allOf(not(isSelected()), isNotEnabled())))
+        }
+        onView(withId(R.id.btnRecommendNow)).check(matches(not(isSelected())))
+
+        // The same question comes back: nothing may stay highlighted.
+        gate.complete(question)
+        onView(withText("Probably yes")).check(matches(allOf(not(isSelected()), isEnabled())))
+    }
+
+    @Test
+    fun theTappedGuessButtonIsHighlightedAndReleasedOnFailure() {
+        startWith(guess)
+        val gate = api.hold()
+        onView(withId(R.id.btnReject)).perform(scrollTo(), click())
+        onView(withId(R.id.btnReject)).check(matches(isSelected()))
+        onView(withId(R.id.btnAccept)).check(matches(allOf(not(isSelected()), isNotEnabled())))
+
+        gate.completeExceptionally(IOException("timeout"))
+        onView(withId(R.id.btnReject)).check(matches(allOf(not(isSelected()), isEnabled())))
+        onView(withId(R.id.btnAccept)).check(matches(isEnabled()))
+        assertShown(R.id.errorBanner)
+
+        // Try again is highlighted in turn, and the first button is not.
+        val retry = api.hold()
+        onView(withId(R.id.btnRetry)).perform(click())
+        onView(withId(R.id.btnRetry)).check(matches(isSelected()))
+        onView(withId(R.id.btnReject)).check(matches(not(isSelected())))
+        retry.complete(question)
+        assertOnlyPanel(R.id.panelQuestion)
+    }
+
+    @Test
+    fun aTapThatSendsNothingLeavesNoHighlightBehind() {
+        startWith(question)
+        onView(withId(R.id.btnQuit)).perform(click())
+        val gate = api.hold()
+        onView(withId(R.id.btnStart)).perform(click())
+        onView(withId(R.id.btnStart)).check(matches(isSelected()))
+        onView(withId(R.id.btnQuit)).check(matches(not(isSelected())))
+        gate.complete(question)
+        onView(withId(R.id.btnQuit)).perform(click())
+        onView(withId(R.id.btnStart)).check(matches(allOf(not(isSelected()), isEnabled())))
     }
 
     @Test
