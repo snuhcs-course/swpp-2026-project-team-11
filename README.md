@@ -1,9 +1,9 @@
 # Metchu! — SNU SWPP 2026 Team 11
 
 Metchu helps users discover what they feel like eating through adaptive
-questions. The current backend contains the cafeteria-menu DB and the P10
-feature-based question engine. The LLM conversation engine, shared P17
-interface/REST layer, and Android integration are separate iteration tasks.
+questions. The backend contains the cafeteria-menu DB, the P10 feature-based
+question engine and a REST API that runs it for the Android client in
+`client/`. The LLM conversation engine is a separate iteration task.
 
 ## Run the current engine demo
 
@@ -29,7 +29,23 @@ python backend/manage.py test menus question_engines.decision_tree
 python backend/manage.py benchmark_decision_tree --date 2026-09-29 --meal LU --trials 24 --output /tmp/benchmark.json
 ```
 
+## Run the Android MVP
+
+The app talks to the Django server over HTTP. Start the server with the fixture
+date, then run the `client/` project from Android Studio on an emulator:
+
+```bash
+python backend/manage.py migrate
+python backend/manage.py loaddata menus_2026-09-29
+METCHU_MENU_DATE=2026-09-29 python backend/manage.py runserver 0.0.0.0:8000
+```
+
+See the [Android client guide](client/README.md) for the screens, the REST
+contract and how to run on a physical phone.
+
 ## Component guides
+
+- [Android client and recommendation REST API](client/README.md)
 
 - [Cafeteria DB setup and feature extraction](backend/README.md)
 - [P10 engine API, output shapes, snapshots, and P17/P19/P20 handoff](backend/question_engines/decision_tree/README.md)
