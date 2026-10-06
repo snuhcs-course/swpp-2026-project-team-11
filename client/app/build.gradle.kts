@@ -50,6 +50,23 @@ android {
         buildConfig = true
         viewBinding = true
     }
+    // Fixtures and fakes used by both the JVM unit tests and the on-device UI tests.
+    sourceSets {
+        getByName("test") {
+            java.srcDir("src/sharedTest/java")
+            resources.srcDir("src/sharedTest/resources")
+        }
+        getByName("androidTest") {
+            java.srcDir("src/sharedTest/java")
+            // Java resources are not packaged into a test APK; assets are.
+            assets.srcDir("src/sharedTest/resources")
+        }
+    }
+    testOptions {
+        // android.util.Log is a stub in JVM unit tests; let it return defaults.
+        unitTests.isReturnDefaultValues = true
+        animationsDisabled = true
+    }
 }
 
 dependencies {
@@ -62,6 +79,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.11.0")
 
     // AndroidX Lifecycle
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")

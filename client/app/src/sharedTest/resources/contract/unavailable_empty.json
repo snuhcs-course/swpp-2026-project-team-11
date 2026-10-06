@@ -1,0 +1,15 @@
+{
+  "session_id": "22f86f7b2e364a83903917c3fed84209",
+  "engine": "decision_tree",
+  "date": "2026-01-01",
+  "meal": null,
+  "candidate_count": 0,
+  "max_questions": 10,
+  "can_undo": false,
+  "step": {
+    "type": "unavailable",
+    "question_count": 0,
+    "reason": "empty_candidates",
+    "text": "No available meal matches this session. Try starting again."
+  }
+}

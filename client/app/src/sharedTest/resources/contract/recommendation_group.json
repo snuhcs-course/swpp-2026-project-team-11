@@ -1,0 +1,66 @@
+{
+  "session_id": "b5582dcb0b8d4a94a0635e2f75c61b40",
+  "engine": "decision_tree",
+  "date": "2026-09-29",
+  "meal": "LU",
+  "candidate_count": 193,
+  "max_questions": 10,
+  "can_undo": true,
+  "step": {
+    "type": "recommendation",
+    "question_count": 10,
+    "food": {
+      "food_id": 1,
+      "name": "냉모밀",
+      "display_name": "냉모밀",
+      "food_group": "국수",
+      "offers": [
+        {
+          "restaurant": "220동식당",
+          "meal": "LU",
+          "price": 5900
+        }
+      ]
+    },
+    "target_kind": "group",
+    "text": "Enjoy your meal.",
+    "group": {
+      "group_id": "group:93cbc370cae0859b",
+      "display_name": "국수",
+      "members": [
+        {
+          "food_id": 1,
+          "display_name": "냉모밀"
+        },
+        {
+          "food_id": 39,
+          "display_name": "들기름 막국수"
+        },
+        {
+          "food_id": 188,
+          "display_name": "돈까스 비빔면"
+        },
+        {
+          "food_id": 189,
+          "display_name": "탄탄비빔면"
+        },
+        {
+          "food_id": 204,
+          "display_name": "마제소바"
+        },
+        {
+          "food_id": 215,
+          "display_name": "초계국수"
+        },
+        {
+          "food_id": 218,
+          "display_name": "베테랑칼국수"
+        },
+        {
+          "food_id": 228,
+          "display_name": "닭칼국수"
+        }
+      ]
+    }
+  }
+}

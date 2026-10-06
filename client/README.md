@@ -107,4 +107,18 @@ Server behavior to know about:
 - `recommend-now` on a guess, or after the session has ended, changes nothing
   and returns the current state.
 
-Tests: `python backend/manage.py test recommend`.
+## Tests
+
+| What | Command | Needs |
+| --- | --- | --- |
+| REST API (`backend/recommend/tests`) | `python backend/manage.py test recommend` | Python only |
+| JSON contract, repository and ViewModel (`app/src/test`) | `./gradlew testDebugUnitTest` | JDK only |
+| The screen against a fake server (`app/src/androidTest`) | `./gradlew connectedDebugAndroidTest` | a running emulator or phone |
+
+`app/src/sharedTest` holds what the two client suites share: a fake `ApiService`
+and `resources/contract/*.json`, replies captured from the real server on the
+2026-09-29 fixture. The client tests decode those files, so they are the client's
+side of the REST contract. Recapture them when the server's JSON changes.
+
+The server tests include seeded random sessions on the fixture. A failure prints
+its seed; rerun that seed to reproduce it.
