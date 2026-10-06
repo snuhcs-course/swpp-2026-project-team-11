@@ -3,6 +3,11 @@
 Django 5.2 + SQLite server. For now it holds the MVP's candidate set: **the SNU cafeteria
 dishes of a given day**, each tagged by an LLM with the features the question engines use.
 
+The P10 question engine now consumes this candidate set. See the
+[engine integration guide](question_engines/decision_tree/README.md) for its
+Python API, interactive demo, snapshots, and paired benchmark. Its demo requires
+no model API key when using the shared fixture.
+
 - The local DB is **one file, `backend/db.sqlite3`**. It is gitignored, so everyone builds their own.
 - Two ways to fill it:
   - **A. Load the shared snapshot**: no API key. Enough for engine development.
