@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import datetime
 import os
 from pathlib import Path
 
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'menus',
+    'recommend',
 ]
 
 MIDDLEWARE = [
@@ -127,3 +129,17 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Recommendation sessions (recommend/sessions.py)
+
+# The engine has no question limit of its own and can ask its whole bank. After
+# this many answers it must guess. Set METCHU_MAX_QUESTIONS=0 to remove the cap.
+RECOMMEND_MAX_QUESTIONS = int(os.environ.get('METCHU_MAX_QUESTIONS', '10')) or None
+
+# Menu date used when the client sends none. Unset means today in Seoul; the
+# shared fixture only has 2026-09-29, so set METCHU_MENU_DATE to demo with it.
+RECOMMEND_DEFAULT_DATE = (
+    datetime.date.fromisoformat(os.environ['METCHU_MENU_DATE'])
+    if os.environ.get('METCHU_MENU_DATE') else None
+)
