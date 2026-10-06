@@ -10,7 +10,7 @@ import com.example.metchu.R
 import com.example.metchu.data.model.Food
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
-import com.example.metchu.data.repository.RecommendRepository
+import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.databinding.ActivityMainBinding
 import com.example.metchu.databinding.ItemAnswerBinding
 import com.example.metchu.util.padForSystemBars
@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     private val viewModel: RecommendViewModel by viewModels {
-        RecommendViewModelFactory(RecommendRepository())
+        RecommendViewModelFactory(AppContainer.repository)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

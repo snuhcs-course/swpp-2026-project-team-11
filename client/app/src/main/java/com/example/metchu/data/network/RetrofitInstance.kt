@@ -28,12 +28,14 @@ object RetrofitInstance {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    val api: ApiService by lazy {
+    val api: ApiService by lazy { create(BuildConfig.BASE_URL) }
+
+    /** [baseUrl] must end with a slash. Tests point this at a local fake server. */
+    fun create(baseUrl: String): ApiService =
         Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL)
+            .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(ApiService::class.java)
-    }
 }

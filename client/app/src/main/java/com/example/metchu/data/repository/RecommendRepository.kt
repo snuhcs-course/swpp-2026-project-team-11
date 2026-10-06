@@ -4,6 +4,7 @@ import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.AnswerRequest
 import com.example.metchu.data.network.ApiErrorResponse
+import com.example.metchu.data.network.ApiService
 import com.example.metchu.data.network.CreateSessionRequest
 import com.example.metchu.data.network.FeedbackRequest
 import com.example.metchu.data.network.RetrofitInstance
@@ -13,9 +14,7 @@ import retrofit2.HttpException
  * The only class that knows Retrofit exists. Activities never call the network;
  * the ViewModel calls this repository.
  */
-class RecommendRepository {
-
-    private val api = RetrofitInstance.api
+class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
 
     suspend fun createSession(meal: String?): SessionState =
         api.createSession(CreateSessionRequest(meal)).checked()
