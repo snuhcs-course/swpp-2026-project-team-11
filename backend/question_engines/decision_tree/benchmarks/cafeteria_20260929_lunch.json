@@ -1,0 +1,6499 @@
+{
+  "engine_version": "decision-tree.1.0",
+  "catalog_fingerprint": "a76d87e79ab2c4f6786a93472948275eed6346cba0f45f2b952cc5cc8290566e",
+  "context": {
+    "date": "2026-09-29",
+    "meal": "LU"
+  },
+  "candidate_count": 193,
+  "feature_count": 23,
+  "trials": 24,
+  "seed": 20261006,
+  "planner_config": {
+    "depth": 2,
+    "beam": 4,
+    "child_beam": 1,
+    "guess_beam": 1,
+    "particles": 96,
+    "outcome_samples": 2,
+    "rollout_samples": 8,
+    "rollout_steps": 16,
+    "node_budget": 640,
+    "time_budget_ms": 180.0,
+    "question_cost": 1.0,
+    "guess_cost": 1.0,
+    "miss_cost": 3.0,
+    "first_miss_cost": 12.0,
+    "guess_confidence_z": 1.645,
+    "failure_cost": 30.0,
+    "general_intent_mass": 0.35
+  },
+  "environment": {
+    "python": "3.11.15",
+    "numpy": "2.4.6",
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit"
+  },
+  "assumptions": [
+    "One fixed cafeteria target per trial; answers independent of policy and question order",
+    "Oracle importance is fixed per question family, not taken from engine state",
+    "Group membership or identical display name counts as a synthetic menu match",
+    "Exact representative food-ID matching and group size are reported separately",
+    "LLM-derived features and synthetic matches are not real-user acceptance",
+    "Timing includes model construction on first step; excludes interpreter imports, HTTP and Android"
+  ],
+  "summary": {
+    "greedy": {
+      "first_guess_menu_match_rate": 0.4583333333333333,
+      "eventual_menu_match_rate": 1,
+      "exact_food_id_match_rate": 0.375,
+      "mean_questions": 20.875,
+      "mean_guesses": 2,
+      "mean_interactions": 22.875,
+      "mean_proposal_size": 13.166666666666666,
+      "latency_ms": {
+        "median": 0.34662499092519283,
+        "p95": 1.936791988555342,
+        "max": 66.63283403031528
+      }
+    },
+    "lookahead": {
+      "first_guess_menu_match_rate": 0.4583333333333333,
+      "eventual_menu_match_rate": 1,
+      "exact_food_id_match_rate": 0.4166666666666667,
+      "mean_questions": 20.208333333333332,
+      "mean_guesses": 2,
+      "mean_interactions": 22.208333333333332,
+      "mean_proposal_size": 13.166666666666666,
+      "latency_ms": {
+        "median": 52.18487494857982,
+        "p95": 138.7465000152588,
+        "max": 184.27679099841043
+      }
+    }
+  },
+  "records": {
+    "greedy": [
+      {
+        "trial": 0,
+        "target_food_id": 141,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 4,
+        "interactions": 27,
+        "proposal_size": 13,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.397042031399906,
+        "decision_ms": [
+          10.853126004803926,
+          0.41937496280297637,
+          0.38537499494850636,
+          0.42058399412781,
+          0.3961669863201678,
+          0.36654097493737936,
+          0.3441660082899034,
+          0.342792016454041,
+          0.33825001446530223,
+          0.3497920115478337,
+          0.36158302100375295,
+          0.331917020957917,
+          0.33250002888962626,
+          0.32583402935415506,
+          0.326791952829808,
+          0.3274169866926968,
+          0.3340409602969885,
+          0.3274159971624613,
+          0.33129198709502816,
+          0.333750038407743,
+          0.34891703398898244,
+          0.33124996116384864,
+          0.33658300526440144,
+          0.42625004425644875,
+          0.4555840278044343,
+          0.8314159931614995,
+          0.4739590222015977
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "unknown"
+          },
+          {
+            "guess_id": "group:ab54be0a69403de0",
+            "representative_food_id": 40,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:86d1bb68825cbd5b",
+            "representative_food_id": 143,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:574c26d169130a08",
+            "representative_food_id": 159,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ead62efaa6db1e0b",
+            "representative_food_id": 142,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 1,
+        "target_food_id": 139,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 3,
+        "interactions": 26,
+        "proposal_size": 11,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.428624984342605,
+        "decision_ms": [
+          10.784665937535465,
+          0.35037501947954297,
+          0.3380000125616789,
+          0.3415840328671038,
+          0.3315419889986515,
+          0.3452079836279154,
+          0.33595901913940907,
+          0.3363339928910136,
+          0.34199998481199145,
+          0.33075001556426287,
+          0.3309160238131881,
+          0.3473340184427798,
+          0.3382079885341227,
+          0.34145801328122616,
+          0.34845899790525436,
+          0.3393749939277768,
+          0.358375022187829,
+          0.34595897886902094,
+          0.3409580094739795,
+          0.3427499905228615,
+          0.33479201374575496,
+          0.3945000353269279,
+          0.3594590234570205,
+          0.4312500241212547,
+          0.4747499478980899,
+          0.4775839624926448
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_yes"
+          },
+          {
+            "guess_id": "group:de6aff3b00497aab",
+            "representative_food_id": 30,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:574c26d169130a08",
+            "representative_food_id": 55,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:579d6f77d8352c48",
+            "representative_food_id": 146,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 2,
+        "target_food_id": 113,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 3,
+        "interactions": 26,
+        "proposal_size": 1,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.944000048562884,
+        "decision_ms": [
+          10.264334036037326,
+          0.3483330365270376,
+          0.3486250061541796,
+          0.3882080200128257,
+          0.32900000223889947,
+          0.33537502167746425,
+          0.33775001065805554,
+          0.33725000685080886,
+          0.32695895060896873,
+          0.33591699320822954,
+          0.32699998700991273,
+          0.36399997770786285,
+          0.34087500534951687,
+          0.3368339966982603,
+          0.34279096871614456,
+          0.34083303762599826,
+          0.3458749852143228,
+          0.35508302971720695,
+          0.33774995245039463,
+          0.33775001065805554,
+          0.33720897044986486,
+          0.3382079885341227,
+          0.3375409869477153,
+          0.4041250213049352,
+          0.4485000390559435,
+          0.44891698053106666
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "food:224",
+            "representative_food_id": 224,
+            "target_kind": "food",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:f785886a59432e76",
+            "representative_food_id": 144,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "food:113",
+            "representative_food_id": 113,
+            "target_kind": "food",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 3,
+        "target_food_id": 12,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 1,
+        "interactions": 24,
+        "proposal_size": 20,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.157249984331429,
+        "decision_ms": [
+          10.545875004027039,
+          0.3560410114005208,
+          0.33825001446530223,
+          0.34083297941833735,
+          0.3442080342210829,
+          0.3434590180404484,
+          0.3452079836279154,
+          0.3392920480109751,
+          0.37212501047179103,
+          0.3613749868236482,
+          0.3492090036161244,
+          0.3405000315979123,
+          0.3309579915367067,
+          0.33545895712450147,
+          0.3310000174678862,
+          0.33129099756479263,
+          0.33783301478251815,
+          0.3297919756732881,
+          0.33129198709502816,
+          0.3297910443507135,
+          0.33120799344033003,
+          0.35499996738508344,
+          0.3504169872030616,
+          0.4098750068806112
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:f785886a59432e76",
+            "representative_food_id": 12,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 4,
+        "target_food_id": 183,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 9,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.185000021010637,
+        "decision_ms": [
+          10.500458010938019,
+          0.3463340108282864,
+          0.33587502548471093,
+          0.330875045619905,
+          0.32720796298235655,
+          0.32716698478907347,
+          0.3249170258641243,
+          0.32758404267951846,
+          0.32879196805879474,
+          0.3322080010548234,
+          0.3305409918539226,
+          0.3242089878767729,
+          0.32724998891353607,
+          0.3259159857407212,
+          0.32608298351988196,
+          0.3273750189691782,
+          0.32774999272078276,
+          0.3361250273883343,
+          0.3350419574417174,
+          0.342374958563596,
+          0.3397500258870423,
+          0.34199998481199145,
+          0.33587502548471093,
+          0.4409169778227806,
+          0.5823330138809979
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:6454befbdb61c843",
+            "representative_food_id": 220,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:841ae0a1e6959fbf",
+            "representative_food_id": 186,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 5,
+        "target_food_id": 103,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 9,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.272582992911339,
+        "decision_ms": [
+          10.5970409931615,
+          0.34087500534951687,
+          0.34233403857797384,
+          0.3388330223970115,
+          0.33241696655750275,
+          0.3333340282551944,
+          0.348250032402575,
+          0.3440419677644968,
+          0.33329095458611846,
+          0.34145801328122616,
+          0.34145801328122616,
+          0.33299997448921204,
+          0.337999954354018,
+          0.3274579648859799,
+          0.3257080097682774,
+          0.3268750151619315,
+          0.3310409956611693,
+          0.33441599225625396,
+          0.33145799534395337,
+          0.3269169828854501,
+          0.339917023666203,
+          0.38899999344721437,
+          0.39783300599083304,
+          0.44133298797532916,
+          0.4682919825427234
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 85,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ec590826d1f0c79e",
+            "representative_food_id": 103,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 6,
+        "target_food_id": 14,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 4,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.000083013437688,
+        "decision_ms": [
+          10.313123988453299,
+          0.34991599386557937,
+          0.3485839697532356,
+          0.3331669722683728,
+          0.3369170008227229,
+          0.33062498550862074,
+          0.3354590153321624,
+          0.33012498170137405,
+          0.3273750189691782,
+          0.3253340255469084,
+          0.3262909594923258,
+          0.4150409949943423,
+          0.3792499774135649,
+          0.34845899790525436,
+          0.3433749661780894,
+          0.3904170007444918,
+          0.3957079607062042,
+          0.3661660011857748,
+          0.35095802741125226,
+          0.3465830232016742,
+          0.34550001146271825,
+          0.3440000000409782,
+          0.3367500030435622,
+          0.3457919810898602,
+          0.4146249848417938
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:574c26d169130a08",
+            "representative_food_id": 51,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:0bd080fa0243c648",
+            "representative_food_id": 15,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 7,
+        "target_food_id": 94,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 22,
+        "guesses": 1,
+        "interactions": 23,
+        "proposal_size": 28,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.365999944042414,
+        "decision_ms": [
+          10.700833983719349,
+          0.3655000473372638,
+          0.3435830003581941,
+          0.3400410059839487,
+          0.3406249452382326,
+          0.36287499824538827,
+          0.348208996001631,
+          0.3546249936334789,
+          0.3369160112924874,
+          0.34775002859532833,
+          0.3613330191001296,
+          0.3446249756962061,
+          0.5095410160720348,
+          0.35329099046066403,
+          0.3432920202612877,
+          0.34899997990578413,
+          0.362665974535048,
+          0.37445902125909925,
+          0.3398749977350235,
+          0.34320802660658956,
+          0.3444169997237623,
+          0.3392910002730787,
+          0.4461660282686353
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 72,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 8,
+        "target_food_id": 149,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 1,
+        "interactions": 24,
+        "proposal_size": 4,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.055624996311963,
+        "decision_ms": [
+          10.381833009887487,
+          0.3553749993443489,
+          0.34379097633063793,
+          0.3376660170033574,
+          0.35383296199142933,
+          0.3364169970154762,
+          0.34541700733825564,
+          0.34362502628937364,
+          0.34666695864871144,
+          0.3375000087544322,
+          0.3470419906079769,
+          0.3470000228844583,
+          0.33591699320822954,
+          0.33979100408032537,
+          0.3359579714015126,
+          0.3563750069588423,
+          0.34183397656306624,
+          0.35266700433567166,
+          0.3422499867156148,
+          0.3440409782342613,
+          0.34133298322558403,
+          0.34199998481199145,
+          0.33725000685080886,
+          0.4096659831702709
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:716167feef470e16",
+            "representative_food_id": 147,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 9,
+        "target_food_id": 224,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 5,
+        "interactions": 28,
+        "proposal_size": 10,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.055209044367075,
+        "decision_ms": [
+          10.381292027886957,
+          0.3658750210888684,
+          0.35149999894201756,
+          0.338790996465832,
+          0.34866604255512357,
+          0.3510419628582895,
+          0.3362499992363155,
+          0.34720898838713765,
+          0.3452500095590949,
+          0.3414170350879431,
+          0.34541700733825564,
+          0.3464579931460321,
+          0.3349170438013971,
+          0.33854099456220865,
+          0.3451250377111137,
+          0.3451670054346323,
+          0.33775001065805554,
+          0.36345794796943665,
+          0.34929101821035147,
+          0.3618340124376118,
+          0.3415000392124057,
+          0.3380000125616789,
+          0.3540840116329491,
+          0.4504169919528067,
+          0.47979201190173626,
+          0.4737080307677388,
+          0.47870801063254476,
+          0.4687919863499701
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:579d6f77d8352c48",
+            "representative_food_id": 56,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:f785886a59432e76",
+            "representative_food_id": 20,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ead62efaa6db1e0b",
+            "representative_food_id": 206,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:574c26d169130a08",
+            "representative_food_id": 55,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:8823f1c30d14dfdc",
+            "representative_food_id": 224,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 10,
+        "target_food_id": 145,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 1,
+        "interactions": 24,
+        "proposal_size": 11,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.847334051504731,
+        "decision_ms": [
+          11.192750069312751,
+          0.4235419910401106,
+          0.370624999050051,
+          0.4124160041101277,
+          0.5040830001235008,
+          0.35158300306648016,
+          0.3437920240685344,
+          0.35491696326062083,
+          0.34324999433010817,
+          0.34137500915676355,
+          0.3553749993443489,
+          0.3821250284090638,
+          0.39145798655226827,
+          0.35504199331626296,
+          0.3344169817864895,
+          0.33733301097527146,
+          0.3363749710842967,
+          0.33141602762043476,
+          0.34270802279934287,
+          0.3406250034458935,
+          0.34658401273190975,
+          0.3408339689485729,
+          0.3742080298252404,
+          0.4437500028871
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:579d6f77d8352c48",
+            "representative_food_id": 128,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 11,
+        "target_food_id": 161,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 4,
+        "interactions": 27,
+        "proposal_size": 14,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.991833987645805,
+        "decision_ms": [
+          11.341249977704138,
+          0.38520898669958115,
+          0.39108400233089924,
+          0.4024580121040344,
+          0.44762500328943133,
+          0.36866700975224376,
+          0.3661660011857748,
+          0.34199998481199145,
+          0.3427499905228615,
+          0.3504999913275242,
+          0.3459160216152668,
+          0.3367089666426182,
+          0.3842090372927487,
+          0.36875001387670636,
+          0.3691249876283109,
+          0.3512499970383942,
+          0.34662499092519283,
+          0.34316699020564556,
+          0.35504100378602743,
+          0.355415977537632,
+          0.3601660137064755,
+          0.3421250148676336,
+          0.34195795888081193,
+          0.44233299558982253,
+          0.4608340095728636,
+          0.47137500951066613,
+          0.4927080008201301
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:ab54be0a69403de0",
+            "representative_food_id": 42,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:86d1bb68825cbd5b",
+            "representative_food_id": 143,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:6454befbdb61c843",
+            "representative_food_id": 220,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:574c26d169130a08",
+            "representative_food_id": 159,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 12,
+        "target_food_id": 37,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 9,
+        "guesses": 1,
+        "interactions": 10,
+        "proposal_size": 10,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.952207969035953,
+        "decision_ms": [
+          10.299998975824565,
+          0.3614160232245922,
+          0.3458749852143228,
+          0.3543330240063369,
+          0.3691249876283109,
+          0.3506250213831663,
+          0.3473340184427798,
+          0.35099999513477087,
+          0.3515420248731971,
+          0.41512498864904046
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:de6aff3b00497aab",
+            "representative_food_id": 32,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 13,
+        "target_food_id": 189,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 1,
+        "interactions": 24,
+        "proposal_size": 1,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.227042017504573,
+        "decision_ms": [
+          10.566500015556812,
+          0.35320903407409787,
+          0.35733304684981704,
+          0.3534589777700603,
+          0.35320798633620143,
+          0.3427500487305224,
+          0.34683302510529757,
+          0.3381249844096601,
+          0.3527089720591903,
+          0.36270898999646306,
+          0.36162498872727156,
+          0.3547499654814601,
+          0.3427499905228615,
+          0.3352909698151052,
+          0.3409170312806964,
+          0.3357499954290688,
+          0.3454160178080201,
+          0.35262497840449214,
+          0.3379170084372163,
+          0.34024997148662806,
+          0.34137500915676355,
+          0.3428339841775596,
+          0.33858296228572726,
+          0.4070419818162918
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "food:189",
+            "representative_food_id": 189,
+            "target_kind": "food",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 14,
+        "target_food_id": 79,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 21,
+        "guesses": 1,
+        "interactions": 22,
+        "proposal_size": 28,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.753041948191822,
+        "decision_ms": [
+          11.094416957348585,
+          0.36045804154127836,
+          0.37987501127645373,
+          0.343875028192997,
+          0.3564580110833049,
+          0.38054201286286116,
+          1.7947080195881426,
+          0.4687499604187906,
+          0.36500004353001714,
+          0.42679201578721404,
+          0.350333983078599,
+          0.37987501127645373,
+          0.3637500340119004,
+          0.4606249858625233,
+          0.3947909572161734,
+          0.3776670200750232,
+          0.38341700565069914,
+          0.3773749922402203,
+          0.36154198460280895,
+          0.3802080173045397,
+          0.4920000210404396,
+          0.457499991171062
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "probably_no"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 68,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 15,
+        "target_food_id": 88,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 7,
+        "guesses": 1,
+        "interactions": 8,
+        "proposal_size": 28,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.143874969799072,
+        "decision_ms": [
+          10.475415969267488,
+          0.35545899299904704,
+          0.3618330229073763,
+          0.3523330087773502,
+          0.3392079961486161,
+          0.3423330490477383,
+          0.35445799585431814,
+          0.433333043474704
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 88,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 16,
+        "target_food_id": 187,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 1,
+        "interactions": 24,
+        "proposal_size": 9,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.06054098252207,
+        "decision_ms": [
+          10.396832949481905,
+          0.35066704731434584,
+          0.34016603603959084,
+          0.3392079961486161,
+          0.3402919974178076,
+          0.34670799504965544,
+          0.3462919848971069,
+          0.34429202787578106,
+          0.3387079923413694,
+          0.3412080113776028,
+          0.3469579969532788,
+          0.34425000194460154,
+          0.33979100408032537,
+          0.33845804864540696,
+          0.3442909801378846,
+          0.34316699020564556,
+          0.34558301558718085,
+          0.3386249882169068,
+          0.3335829824209213,
+          0.34016696736216545,
+          0.3457919810898602,
+          0.33904198789969087,
+          0.34662499092519283,
+          0.4324999754317105
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "probably_yes"
+          },
+          {
+            "guess_id": "group:841ae0a1e6959fbf",
+            "representative_food_id": 194,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 17,
+        "target_food_id": 206,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 4,
+        "interactions": 27,
+        "proposal_size": 13,
+        "terminal_type": "recommendation",
+        "construction_ms": 65.13241701759398,
+        "decision_ms": [
+          66.63283403031528,
+          0.9337919764220715,
+          7.245707965921611,
+          1.936791988555342,
+          2.250750025268644,
+          2.628082991577685,
+          1.1081249685958028,
+          0.91104197781533,
+          0.6244999822229147,
+          3.0160839669406414,
+          0.9855410316959023,
+          1.8235419993288815,
+          1.1500830296427011,
+          0.5893330089747906,
+          0.7780829910188913,
+          1.827457977924496,
+          0.8332909783348441,
+          0.7908340194262564,
+          0.8038340019993484,
+          1.109417004045099,
+          0.5708749522455037,
+          0.47783396439626813,
+          0.46745798317715526,
+          0.683707999996841,
+          0.9482089662924409,
+          1.3941669603809714,
+          0.8727090316824615
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "unknown"
+          },
+          {
+            "guess_id": "group:8823f1c30d14dfdc",
+            "representative_food_id": 113,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "food:228",
+            "representative_food_id": 228,
+            "target_kind": "food",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:841ae0a1e6959fbf",
+            "representative_food_id": 191,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ead62efaa6db1e0b",
+            "representative_food_id": 141,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 18,
+        "target_food_id": 99,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 9,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.14979201136157,
+        "decision_ms": [
+          10.519834060687572,
+          0.3518749726936221,
+          0.34333299845457077,
+          0.34116703318431973,
+          0.33720798091962934,
+          0.3427919582463801,
+          0.377874996047467,
+          0.3499160520732403,
+          0.33716700272634625,
+          0.3379589761607349,
+          0.33837498631328344,
+          0.42991602094843984,
+          0.38545799907296896,
+          0.3462500171735883,
+          0.34983298974111676,
+          0.3433749661780894,
+          0.345290987752378,
+          0.34383300226181746,
+          0.34549995325505733,
+          0.344207976013422,
+          0.3477499703876674,
+          0.34429196966812015,
+          0.35012501757591963,
+          0.34554098965600133,
+          0.4277090192772448
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 73,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:ec590826d1f0c79e",
+            "representative_food_id": 99,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 19,
+        "target_food_id": 160,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 15,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.271334031131119,
+        "decision_ms": [
+          10.626668052282184,
+          0.35616604145616293,
+          0.34612498711794615,
+          0.33604202326387167,
+          0.34374999813735485,
+          0.3418749547563493,
+          0.33479201374575496,
+          0.349957961589098,
+          0.33941701985895634,
+          0.3343750140629709,
+          0.3326250007376075,
+          0.3486250061541796,
+          0.3427499905228615,
+          0.33666699891909957,
+          0.3370000049471855,
+          0.3367500030435622,
+          0.33720798091962934,
+          0.34058402525261045,
+          0.3392920480109751,
+          0.3422499867156148,
+          0.3441249718889594,
+          0.3826250322163105,
+          0.37637504283338785,
+          0.4236249951645732,
+          0.4669999470934272
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:aeffed2f20cb13b1",
+            "representative_food_id": 120,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ab54be0a69403de0",
+            "representative_food_id": 160,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 20,
+        "target_food_id": 19,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 1,
+        "interactions": 24,
+        "proposal_size": 20,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.984000003896654,
+        "decision_ms": [
+          10.352041979786009,
+          0.3511249669827521,
+          0.35395799204707146,
+          0.3446670016273856,
+          0.33845799043774605,
+          0.3536249860189855,
+          0.3356669913046062,
+          0.33495796378701925,
+          0.3350830520503223,
+          0.3344999859109521,
+          0.3356250235810876,
+          0.3344169817864895,
+          0.33595896093174815,
+          0.33970799995586276,
+          0.3410410135984421,
+          0.33558299764990807,
+          0.3357499954290688,
+          0.33825001446530223,
+          0.3428750205785036,
+          0.34075003350153565,
+          0.33829198218882084,
+          0.3582499921321869,
+          0.37883303593844175,
+          0.4371670074760914
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:f785886a59432e76",
+            "representative_food_id": 222,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 21,
+        "target_food_id": 92,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 5,
+        "guesses": 1,
+        "interactions": 6,
+        "proposal_size": 28,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.443583014421165,
+        "decision_ms": [
+          10.79654204659164,
+          0.38658297853544354,
+          0.3436249680817127,
+          0.4396250005811453,
+          0.38879195926710963,
+          0.48337498446926475
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 69,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 22,
+        "target_food_id": 180,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 6,
+        "terminal_type": "recommendation",
+        "construction_ms": 11.400708986911923,
+        "decision_ms": [
+          11.75908395089209,
+          0.37508399691432714,
+          0.3469999646767974,
+          0.3412080113776028,
+          0.3535409923642874,
+          0.42925000889226794,
+          0.42287498945370317,
+          0.3747920272871852,
+          0.3517920267768204,
+          0.3518330049701035,
+          0.3427499905228615,
+          0.3428750205785036,
+          0.33729104325175285,
+          0.36979198921471834,
+          0.345708045642823,
+          0.4232499632053077,
+          0.6694999756291509,
+          0.39366696728393435,
+          0.3832090296782553,
+          0.4348340444266796,
+          0.3589169937185943,
+          0.34604204120114446,
+          0.35499996738508344,
+          0.4338329890742898,
+          0.47154200728982687
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "food:218",
+            "representative_food_id": 218,
+            "target_kind": "food",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:6454befbdb61c843",
+            "representative_food_id": 180,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 23,
+        "target_food_id": 41,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 15,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.370416974183172,
+        "decision_ms": [
+          10.747791966423392,
+          0.3690000157803297,
+          0.3497920115478337,
+          0.3462920431047678,
+          0.36408298183232546,
+          0.37587503902614117,
+          0.3777089877985418,
+          0.35025004763156176,
+          0.3599170013330877,
+          0.3629589919000864,
+          0.3523749765008688,
+          0.34195900661870837,
+          0.3401659778319299,
+          0.34679198870435357,
+          0.33541698940098286,
+          0.33604196505621076,
+          0.34675002098083496,
+          0.34133298322558403,
+          0.34499994944781065,
+          0.34487503580749035,
+          0.3381670103408396,
+          0.34562498331069946,
+          0.3620409988798201,
+          0.4538340144790709,
+          0.48454198986291885
+        ],
+        "trace": [
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:86d1bb68825cbd5b",
+            "representative_food_id": 203,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ab54be0a69403de0",
+            "representative_food_id": 44,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      }
+    ],
+    "lookahead": [
+      {
+        "trial": 0,
+        "target_food_id": 141,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 4,
+        "interactions": 27,
+        "proposal_size": 13,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.188833985012025,
+        "decision_ms": [
+          65.11295901145786,
+          51.1315839830786,
+          55.623624997679144,
+          50.689499999862164,
+          46.408291964326054,
+          45.217915961984545,
+          42.88566700415686,
+          42.43462497834116,
+          37.75308298645541,
+          38.837332976982,
+          146.49329200619832,
+          129.30283299647272,
+          123.71633300790563,
+          114.99537498457357,
+          106.14637500839308,
+          99.90404202835634,
+          102.5239999871701,
+          72.44554202770814,
+          60.74941699625924,
+          70.01720799598843,
+          30.628291016910225,
+          23.74670800054446,
+          8.06000002194196,
+          12.441124999895692,
+          2.3848749697208405,
+          4.3182080262340605,
+          3.8975829957053065
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:ab54be0a69403de0",
+            "representative_food_id": 40,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "unknown"
+          },
+          {
+            "guess_id": "group:86d1bb68825cbd5b",
+            "representative_food_id": 143,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "food:159",
+            "representative_food_id": 159,
+            "target_kind": "food",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ead62efaa6db1e0b",
+            "representative_food_id": 142,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 1,
+        "target_food_id": 139,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 3,
+        "interactions": 26,
+        "proposal_size": 11,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.857124998234212,
+        "decision_ms": [
+          62.914000009186566,
+          51.40550003852695,
+          49.04020804679021,
+          42.707832995802164,
+          49.89875003229827,
+          47.30720800580457,
+          42.571500001940876,
+          45.032333000563085,
+          42.35062497900799,
+          40.4404160217382,
+          36.39629198005423,
+          124.26441605202854,
+          105.74016702594236,
+          110.08066701469943,
+          83.61108403187245,
+          91.16099996026605,
+          84.21191695379093,
+          66.4138330030255,
+          60.67958299536258,
+          59.934374992735684,
+          28.508624993264675,
+          18.227582972031087,
+          8.11908399919048,
+          2.006458002142608,
+          3.3627080265432596,
+          4.503333009779453
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:de6aff3b00497aab",
+            "representative_food_id": 30,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:574c26d169130a08",
+            "representative_food_id": 55,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:579d6f77d8352c48",
+            "representative_food_id": 146,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 2,
+        "target_food_id": 113,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 3,
+        "interactions": 26,
+        "proposal_size": 1,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.35050000064075,
+        "decision_ms": [
+          63.34533297922462,
+          49.51879201689735,
+          45.705083990469575,
+          46.10008298186585,
+          39.82279100455344,
+          44.27591699641198,
+          140.9782079863362,
+          37.01770800398663,
+          36.55783296562731,
+          137.29845796478912,
+          119.26129198400304,
+          123.64025000715628,
+          115.3222499997355,
+          109.0065420139581,
+          101.14345798501745,
+          99.15958397323266,
+          82.98883296083659,
+          79.55679198494181,
+          82.87008298793808,
+          79.5600829878822,
+          65.94995799241588,
+          48.23908302932978,
+          24.590167042333633,
+          10.814209003001451,
+          17.063874984160066,
+          2.9062500107102096
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "food:224",
+            "representative_food_id": 224,
+            "target_kind": "food",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:f785886a59432e76",
+            "representative_food_id": 144,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "probably_no"
+          },
+          {
+            "guess_id": "food:113",
+            "representative_food_id": 113,
+            "target_kind": "food",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 3,
+        "target_food_id": 12,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 1,
+        "interactions": 24,
+        "proposal_size": 20,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.934375004377216,
+        "decision_ms": [
+          63.29337501665577,
+          54.635082953609526,
+          51.59862502478063,
+          49.479749985039234,
+          47.00704198330641,
+          45.756082981824875,
+          47.415750043001026,
+          45.75895797461271,
+          39.481625019107014,
+          148.32799998112023,
+          36.89616697374731,
+          146.12145896535367,
+          127.81133397947997,
+          126.22120801825076,
+          116.54229200212285,
+          112.58466698927805,
+          101.36558301746845,
+          88.19941699039191,
+          78.64920899737626,
+          73.37362499674782,
+          39.78258301503956,
+          35.58566700667143,
+          13.086833991110325,
+          2.9882919625379145
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:f785886a59432e76",
+            "representative_food_id": 12,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 4,
+        "target_food_id": 183,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 9,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.911291999742389,
+        "decision_ms": [
+          62.757084029726684,
+          52.29354201583192,
+          54.4957920210436,
+          54.15195901878178,
+          48.2759170117788,
+          39.370000013150275,
+          41.345334029756486,
+          139.94629197986796,
+          116.97716702474281,
+          37.15520800324157,
+          37.063541007228196,
+          130.36666699917987,
+          124.07220900058746,
+          120.29824999626726,
+          106.49516695411876,
+          93.23912498075515,
+          106.71991697745398,
+          100.05604103207588,
+          73.73041700338945,
+          81.21254103025422,
+          42.597000021487474,
+          24.734625010751188,
+          12.11499999044463,
+          2.959374978672713,
+          3.3839999814517796
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:6454befbdb61c843",
+            "representative_food_id": 220,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:841ae0a1e6959fbf",
+            "representative_food_id": 186,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 5,
+        "target_food_id": 103,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 22,
+        "guesses": 2,
+        "interactions": 24,
+        "proposal_size": 9,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.05704200360924,
+        "decision_ms": [
+          63.250542036257684,
+          39.78383302455768,
+          39.90658302791417,
+          142.9119169479236,
+          40.232667000964284,
+          38.93316601170227,
+          44.563167029991746,
+          42.091541981790215,
+          128.02262499462813,
+          135.7272089808248,
+          135.0348750129342,
+          118.28408297151327,
+          91.84350003488362,
+          70.74316695798188,
+          88.7575420201756,
+          72.96708301873878,
+          60.958834015764296,
+          57.640083017759025,
+          47.03791596693918,
+          30.996125016827136,
+          3.1140000210143626,
+          1.460875035263598,
+          15.583583037368953,
+          5.530291004106402
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 85,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:ec590826d1f0c79e",
+            "representative_food_id": 103,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 6,
+        "target_food_id": 14,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 4,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.118875012267381,
+        "decision_ms": [
+          63.292750041000545,
+          51.936083007603884,
+          55.654667026828974,
+          51.42508394783363,
+          46.37975001242012,
+          47.64708399306983,
+          44.14733301382512,
+          44.54170900862664,
+          37.099250010214746,
+          40.36720801377669,
+          133.95308301551268,
+          126.15770800039172,
+          124.07150003127754,
+          110.11741601396352,
+          94.42949999356642,
+          90.63295903615654,
+          78.0453750048764,
+          66.75079098204151,
+          66.14279100904241,
+          54.322041978593916,
+          36.85379197122529,
+          27.43820898467675,
+          8.59666703036055,
+          2.2205410059541464,
+          3.1307090539485216
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:574c26d169130a08",
+            "representative_food_id": 50,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:0bd080fa0243c648",
+            "representative_food_id": 15,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 7,
+        "target_food_id": 94,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 17,
+        "guesses": 1,
+        "interactions": 18,
+        "proposal_size": 28,
+        "terminal_type": "recommendation",
+        "construction_ms": 11.000624974258244,
+        "decision_ms": [
+          67.65949999680743,
+          51.09612498199567,
+          45.25583400391042,
+          47.63058299431577,
+          40.18562496639788,
+          41.04266699869186,
+          38.76587498234585,
+          146.2794590042904,
+          138.76612501917407,
+          149.55425000516698,
+          39.46504200575873,
+          132.2622500010766,
+          111.56579101225361,
+          90.62466700561345,
+          94.11424997961149,
+          67.97500001266599,
+          44.39662501681596,
+          44.33658404741436
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 94,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 8,
+        "target_food_id": 149,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 1,
+        "interactions": 24,
+        "proposal_size": 4,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.75720799760893,
+        "decision_ms": [
+          70.54262497695163,
+          162.94516599737108,
+          60.60870800865814,
+          52.29275004239753,
+          50.289582984987646,
+          58.51191596593708,
+          49.601375008933246,
+          47.12012503296137,
+          44.202165969181806,
+          41.33870801888406,
+          36.70345799764618,
+          133.8758339988999,
+          39.470124989748,
+          133.269417041447,
+          110.54129200056195,
+          107.87954099941999,
+          90.24808404501528,
+          91.45320800598711,
+          102.60504198959097,
+          65.93108299421147,
+          52.438040962442756,
+          24.15524999378249,
+          9.040707955136895,
+          2.974500006530434
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:716167feef470e16",
+            "representative_food_id": 147,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 9,
+        "target_food_id": 224,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 5,
+        "interactions": 28,
+        "proposal_size": 10,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.927499981131405,
+        "decision_ms": [
+          73.09579098364338,
+          50.12970796087757,
+          49.465500051155686,
+          52.256082999520004,
+          53.979832970071584,
+          51.841207954566926,
+          58.85124998167157,
+          51.91570898750797,
+          39.710915996693075,
+          39.747417031321675,
+          38.6204170063138,
+          132.7760000131093,
+          124.34400001075119,
+          138.7465000152588,
+          127.12395802373067,
+          105.42912496021017,
+          94.48541601886973,
+          80.21299995016307,
+          66.2399169523269,
+          75.20745799411088,
+          61.38216599356383,
+          48.94670797511935,
+          17.40979205351323,
+          11.395292007364333,
+          2.205000026151538,
+          3.096958971582353,
+          3.1115830061025918,
+          3.6278340267017484
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:f785886a59432e76",
+            "representative_food_id": 20,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:579d6f77d8352c48",
+            "representative_food_id": 56,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ead62efaa6db1e0b",
+            "representative_food_id": 206,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:574c26d169130a08",
+            "representative_food_id": 55,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:8823f1c30d14dfdc",
+            "representative_food_id": 224,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 10,
+        "target_food_id": 145,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 22,
+        "guesses": 1,
+        "interactions": 23,
+        "proposal_size": 11,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.189541964791715,
+        "decision_ms": [
+          64.3298759823665,
+          52.18487494857982,
+          52.65333398710936,
+          48.863250005524606,
+          48.40233299182728,
+          49.61441602790728,
+          46.38704104581848,
+          49.296958022750914,
+          49.33291702764109,
+          44.133624993264675,
+          39.57091603660956,
+          131.0987500473857,
+          37.20162500394508,
+          119.72562497248873,
+          123.32483398495242,
+          98.83337502833456,
+          68.5025830171071,
+          84.00608401279896,
+          84.317791974172,
+          42.360082967206836,
+          55.78637501457706,
+          9.356249996926636,
+          2.910582988988608
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:579d6f77d8352c48",
+            "representative_food_id": 128,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 11,
+        "target_food_id": 161,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 22,
+        "guesses": 4,
+        "interactions": 26,
+        "proposal_size": 14,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.473000002093613,
+        "decision_ms": [
+          65.90516597498208,
+          50.826833001337945,
+          51.574166980572045,
+          51.04837496764958,
+          48.63637499511242,
+          43.80483296699822,
+          48.426583991385996,
+          41.045374993700534,
+          40.78995797317475,
+          143.14379199640825,
+          36.44583298591897,
+          131.1262910021469,
+          122.74449999677017,
+          109.63295900728554,
+          78.63316696602851,
+          103.45083300489932,
+          90.38312500342727,
+          33.7872090167366,
+          66.52975000906736,
+          66.39920797897503,
+          40.28662503696978,
+          42.484415986109525,
+          15.653915994334966,
+          6.000791036058217,
+          11.88695797463879,
+          9.448459022678435
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:ab54be0a69403de0",
+            "representative_food_id": 42,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:86d1bb68825cbd5b",
+            "representative_food_id": 143,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:6454befbdb61c843",
+            "representative_food_id": 220,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:574c26d169130a08",
+            "representative_food_id": 159,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 12,
+        "target_food_id": 37,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 20,
+        "guesses": 1,
+        "interactions": 21,
+        "proposal_size": 10,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.879167017061263,
+        "decision_ms": [
+          62.88383400533348,
+          51.790583005640656,
+          46.84995801653713,
+          40.71720800129697,
+          42.29779198067263,
+          42.994874995201826,
+          144.78520897682756,
+          139.84979200176895,
+          130.85329200839624,
+          134.53079195460305,
+          122.60758399497718,
+          114.89816603716463,
+          96.54474997660145,
+          101.4746250002645,
+          107.65766602708027,
+          58.88637498719618,
+          47.64308297308162,
+          48.46291698049754,
+          48.66425000363961,
+          45.57491705054417,
+          43.367416015826166
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:de6aff3b00497aab",
+            "representative_food_id": 32,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 13,
+        "target_food_id": 189,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 18,
+        "guesses": 1,
+        "interactions": 19,
+        "proposal_size": 1,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.85029200091958,
+        "decision_ms": [
+          65.323875984177,
+          50.52012501982972,
+          45.93595798360184,
+          45.90870899846777,
+          44.13925000699237,
+          41.898875031620264,
+          40.558624954428524,
+          115.53487501805648,
+          38.90066599706188,
+          139.09562502522022,
+          132.2161250282079,
+          100.48683302011341,
+          118.43537498498335,
+          105.49529199488461,
+          98.99425000185147,
+          91.80016705067828,
+          84.39779200125486,
+          87.85299997543916,
+          73.85133299976587
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "food:189",
+            "representative_food_id": 189,
+            "target_kind": "food",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 14,
+        "target_food_id": 79,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 14,
+        "guesses": 1,
+        "interactions": 15,
+        "proposal_size": 28,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.406958987005055,
+        "decision_ms": [
+          66.89399998867884,
+          54.835417016875,
+          48.393125005532056,
+          43.09416702017188,
+          42.825166950933635,
+          45.824000029824674,
+          153.7440000101924,
+          37.466167006641626,
+          145.48533299239352,
+          39.11545901792124,
+          132.21962499665096,
+          145.31662495573983,
+          41.47662501782179,
+          113.10566600877792,
+          128.57175001408905
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 76,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 15,
+        "target_food_id": 88,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 11,
+        "guesses": 1,
+        "interactions": 12,
+        "proposal_size": 28,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.937875031027943,
+        "decision_ms": [
+          63.751792011316866,
+          40.123832994140685,
+          40.07704195100814,
+          41.07500001555309,
+          38.676499971188605,
+          43.713417020626366,
+          37.92520903516561,
+          113.4639160009101,
+          94.62504100520164,
+          98.31437503453344,
+          90.00991599168628,
+          87.69575000042096
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 88,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 16,
+        "target_food_id": 187,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 22,
+        "guesses": 1,
+        "interactions": 23,
+        "proposal_size": 9,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.863332961685956,
+        "decision_ms": [
+          62.522790976800025,
+          51.87204200774431,
+          64.81070804875344,
+          56.39804102247581,
+          48.317666980437934,
+          45.77999998582527,
+          45.08804203942418,
+          39.69899995718151,
+          38.289999996777624,
+          38.20287500275299,
+          36.81487496942282,
+          142.99125003162771,
+          127.88595899473876,
+          107.4580000131391,
+          109.76383299566805,
+          85.31708299415186,
+          99.21195800416172,
+          77.20491598593071,
+          73.5368340392597,
+          64.95745800202712,
+          54.894750006496906,
+          27.53270900575444,
+          14.986791997216642
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "unknown"
+          },
+          {
+            "guess_id": "group:841ae0a1e6959fbf",
+            "representative_food_id": 194,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 17,
+        "target_food_id": 206,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 23,
+        "guesses": 4,
+        "interactions": 27,
+        "proposal_size": 13,
+        "terminal_type": "recommendation",
+        "construction_ms": 20.216957957018167,
+        "decision_ms": [
+          94.96912494068965,
+          73.75079102348536,
+          69.77991701569408,
+          57.307374954689294,
+          51.088832959067076,
+          45.450542005710304,
+          47.780249966308475,
+          46.218167000915855,
+          42.17779100872576,
+          40.11841694591567,
+          38.87979197315872,
+          50.90579099487513,
+          119.28495799656957,
+          65.87891699746251,
+          57.12616600794718,
+          58.13929199939594,
+          53.614208009094,
+          101.73820797353983,
+          84.12062498973683,
+          70.022959029302,
+          45.44579202774912,
+          27.579791960306466,
+          14.965208014473319,
+          4.110500041861087,
+          3.2689999788999557,
+          3.2965830178000033,
+          4.417124961037189
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "unknown"
+          },
+          {
+            "guess_id": "group:8823f1c30d14dfdc",
+            "representative_food_id": 113,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "food:228",
+            "representative_food_id": 228,
+            "target_kind": "food",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:841ae0a1e6959fbf",
+            "representative_food_id": 191,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ead62efaa6db1e0b",
+            "representative_food_id": 141,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 18,
+        "target_food_id": 99,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 9,
+        "terminal_type": "recommendation",
+        "construction_ms": 9.792625030968338,
+        "decision_ms": [
+          62.78249999741092,
+          39.60579202976078,
+          39.94150005746633,
+          149.82629200676456,
+          43.732292018830776,
+          153.81254203384742,
+          138.7284580268897,
+          128.52445902535692,
+          123.99041600292549,
+          128.9222079794854,
+          120.0357080087997,
+          108.39333402691409,
+          97.12287498405203,
+          71.76158402580768,
+          69.31962503585964,
+          53.3034999971278,
+          51.15654203109443,
+          40.041750005912036,
+          37.27012500166893,
+          31.55079099815339,
+          26.290208043064922,
+          12.777916039340198,
+          4.6131249982863665,
+          1.3294999953359365,
+          2.418167016003281
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 75,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:ec590826d1f0c79e",
+            "representative_food_id": 99,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 19,
+        "target_food_id": 160,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 15,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.168749955482781,
+        "decision_ms": [
+          63.65354196168482,
+          52.4810419883579,
+          54.064333031419665,
+          49.984749988652766,
+          48.847709025722,
+          49.58749999059364,
+          49.03962498065084,
+          47.71187499864027,
+          45.42345798108727,
+          41.87912499764934,
+          40.92887497972697,
+          39.134500024374574,
+          36.75445797853172,
+          38.24537497712299,
+          129.53062501037493,
+          125.42054196819663,
+          111.87633400550112,
+          93.2560830260627,
+          81.87495800666511,
+          79.42608301527798,
+          67.02129100449383,
+          43.73037500772625,
+          14.68533300794661,
+          15.854917000979185,
+          4.093334020581096
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:aeffed2f20cb13b1",
+            "representative_food_id": 174,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_no"
+          },
+          {
+            "guess_id": "group:ab54be0a69403de0",
+            "representative_food_id": 160,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 20,
+        "target_food_id": 19,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 17,
+        "guesses": 1,
+        "interactions": 18,
+        "proposal_size": 20,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.18358301371336,
+        "decision_ms": [
+          62.86349898437038,
+          48.392999975476414,
+          49.322167003992945,
+          46.959166997112334,
+          44.59441697690636,
+          44.025583018083125,
+          59.274999948684126,
+          42.858833039645106,
+          41.26187495421618,
+          143.88799999142066,
+          145.05937497597188,
+          139.38662502914667,
+          142.65287498710677,
+          109.52879197429866,
+          93.0992909707129,
+          83.2368329865858,
+          97.4994589923881,
+          73.2631660066545
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "unknown"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "guess_id": "group:f785886a59432e76",
+            "representative_food_id": 222,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 21,
+        "target_food_id": 92,
+        "first_guess_menu_match": true,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 3,
+        "guesses": 1,
+        "interactions": 4,
+        "proposal_size": 28,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.702041967306286,
+        "decision_ms": [
+          69.8296669870615,
+          56.27145798644051,
+          51.78395804250613,
+          48.5366249922663
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "yes"
+          },
+          {
+            "guess_id": "group:b89e894bb21f89bd",
+            "representative_food_id": 69,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 22,
+        "target_food_id": 180,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": true,
+        "questions": 23,
+        "guesses": 2,
+        "interactions": 25,
+        "proposal_size": 6,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.682583961170167,
+        "decision_ms": [
+          69.59220895078033,
+          43.918500014115125,
+          42.431125009898096,
+          44.448375003412366,
+          40.16516701085493,
+          141.36937499279156,
+          43.80062501877546,
+          41.89254197990522,
+          38.94154098816216,
+          141.5713339811191,
+          130.97595900762826,
+          136.60658401204273,
+          123.73225000919774,
+          117.58612497942522,
+          103.42699999455363,
+          97.18766703736037,
+          90.94520896906033,
+          86.3477080129087,
+          70.73533302173018,
+          70.52195799769834,
+          44.48416701052338,
+          29.81054101837799,
+          8.575042011216283,
+          2.6793750002980232,
+          2.380915975663811
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:western_asian",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:chinese",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "food:218",
+            "representative_food_id": 218,
+            "target_kind": "food",
+            "synthetic_match": false
+          },
+          {
+            "guess_id": "group:6454befbdb61c843",
+            "representative_food_id": 180,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      },
+      {
+        "trial": 23,
+        "target_food_id": 41,
+        "first_guess_menu_match": false,
+        "eventual_menu_match": true,
+        "exact_food_id_match": false,
+        "questions": 21,
+        "guesses": 2,
+        "interactions": 23,
+        "proposal_size": 15,
+        "terminal_type": "recommendation",
+        "construction_ms": 10.263375006616116,
+        "decision_ms": [
+          65.354207996279,
+          50.88712502038106,
+          53.408834035508335,
+          50.97549996571615,
+          50.04637502133846,
+          46.63562495261431,
+          46.16645904025063,
+          44.156083022244275,
+          39.86820799764246,
+          129.5348340063356,
+          123.14199999673292,
+          184.27679099841043,
+          90.91020899359137,
+          83.15312501508743,
+          59.82374999439344,
+          75.39170904783532,
+          48.358416999690235,
+          59.0481249964796,
+          65.87420799769461,
+          51.6807499807328,
+          12.425541994161904,
+          27.719167002942413,
+          1.596874964889139
+        ],
+        "trace": [
+          {
+            "question_id": "q:rice",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:korean",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:soupy",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:noodle",
+            "answer_id": "probably_no"
+          },
+          {
+            "question_id": "q:chicken",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:pork",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:hot",
+            "answer_id": "probably_yes"
+          },
+          {
+            "question_id": "q:beef",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:sweet",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:grilled",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:spicy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:seafood",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:bread_flour",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:meatless",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:light_healthy",
+            "answer_id": "yes"
+          },
+          {
+            "question_id": "q:fried",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:sour_fresh",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:greasy",
+            "answer_id": "probably_no"
+          },
+          {
+            "guess_id": "group:86d1bb68825cbd5b",
+            "representative_food_id": 203,
+            "target_kind": "group",
+            "synthetic_match": false
+          },
+          {
+            "question_id": "q:cold",
+            "answer_id": "no"
+          },
+          {
+            "question_id": "q:heavy",
+            "answer_id": "any"
+          },
+          {
+            "question_id": "q:japanese",
+            "answer_id": "no"
+          },
+          {
+            "guess_id": "group:ab54be0a69403de0",
+            "representative_food_id": 44,
+            "target_kind": "group",
+            "synthetic_match": true
+          }
+        ]
+      }
+    ]
+  }
+}
