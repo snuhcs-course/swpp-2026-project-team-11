@@ -14,7 +14,7 @@ from .planning import IntentModel, Planner, PlannerConfig, POLICY_VERSION
 
 @dataclass(frozen=True)
 class EngineConfig:
-    policy: str = "lookahead"
+    policy: str = "greedy"
     max_questions: int | None = None
     greedy_acceptance_threshold: float = .65
     greedy_information_floor: float = .001
@@ -249,7 +249,9 @@ class DecisionTreeEngine:
         probabilities = list(self.probabilities.values())
         entropy = -math.fsum(p * math.log2(p) for p in probabilities if p > 0)
         return {"engine_version": POLICY_VERSION, "policy": self.config.policy,
-                "question_count": self.question_count, "guess_count": sum(e["type"] == "feedback" for e in self._events),
+                "question_count": self.question_count,
+                "guess_count": sum(e["before"]["kind"] == "guess" for e in self._events) + int((self._descriptor or {}).get("kind") == "guess"),
+                "feedback_count": sum(e["type"] == "feedback" for e in self._events),
                 "entropy_bits": entropy, "posterior": self.probabilities,
                 "salience": {name: float(row[0] / row[:2].sum()) for name, row in zip(self.model.group_names, self.salience)} if self.model else {},
                 "planning": copy.deepcopy((self._descriptor or {}).get("planning")),
@@ -263,8 +265,12 @@ class DecisionTreeEngine:
 
     @classmethod
     def from_snapshot(cls, candidates, feature_schema, snapshot, *, priors=None, context=None):
-        if snapshot.get("version") != 1 or snapshot.get("engine_version") != POLICY_VERSION:
+        if not isinstance(snapshot, dict) or snapshot.get("version") != 1 or snapshot.get("engine_version") != POLICY_VERSION:
             raise ValueError("Unsupported snapshot version")
+        if (not isinstance(snapshot.get("events"), list) or not isinstance(snapshot.get("pending"), dict)
+                or not isinstance(snapshot.get("config"), dict) or not isinstance(snapshot.get("planner_config"), dict)
+                or any(not isinstance(event, dict) for event in snapshot["events"])):
+            raise ValueError("Malformed snapshot structure")
         engine = cls(candidates, feature_schema, priors=priors, context=context,
                      config=snapshot["config"], planner_config=snapshot["planner_config"])
         if snapshot.get("fingerprint") != engine.fingerprint:

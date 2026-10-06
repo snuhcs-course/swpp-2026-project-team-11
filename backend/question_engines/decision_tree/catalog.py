@@ -72,6 +72,8 @@ class MenuTree:
 class CandidateCatalog:
     def __init__(self, candidates, feature_schema, *, priors=None, context=None):
         schema = list(feature_schema)
+        if any(not isinstance(row, dict) for row in schema):
+            raise ValueError("Feature schema rows must be dictionaries")
         keys = [row.get("key") for row in schema]
         if not keys or any(not isinstance(key, str) or not key.strip() for key in keys) or len(set(keys)) != len(keys):
             raise ValueError("Feature schema requires distinct nonempty keys")
@@ -87,6 +89,8 @@ class CandidateCatalog:
             self.questions.append({"id": f"q:{key}", "attribute": key, "text": text, "family": family, "kind": "attribute"})
         rows = []
         for raw in candidates:
+            if not isinstance(raw, dict):
+                raise ValueError("Candidate rows must be dictionaries")
             food_id = raw.get("food_id")
             if type(food_id) is not int or food_id <= 0:
                 raise ValueError("Each candidate needs a positive integer food_id")
@@ -107,7 +111,7 @@ class CandidateCatalog:
             if not isinstance(offers, list):
                 raise ValueError("Candidate offers must be a list")
             for offer in offers:
-                if not isinstance(offer, dict) or not isinstance(offer.get("restaurant"), str) or offer.get("meal") not in {"BR", "LU", "DN"}:
+                if not isinstance(offer, dict) or not isinstance(offer.get("restaurant"), str) or not offer["restaurant"].strip() or offer.get("meal") not in {"BR", "LU", "DN"}:
                     raise ValueError("Invalid cafeteria offer")
                 price = offer.get("price")
                 if price is not None and (type(price) is not int or price < 0):
@@ -129,14 +133,20 @@ class CandidateCatalog:
             probabilities = {key: float(value / total) for key, value in priors.items()}
         else:
             probabilities = {key: 1 / len(ids) for key in ids} if ids else {}
+        if context is not None and not isinstance(context, dict):
+            raise ValueError("Context must be a JSON-compatible dictionary")
         self.context = copy.deepcopy(context or {})
         self.food_tree = MenuTree(self.candidates)
         self.foods = [{"id": f"food:{c.food_id}", "display_name": c.display_name,
                        "attributes": dict(c.features), "prior_probability": probabilities[c.food_id]}
                       for c in self.candidates]
         canonical = {"candidates": [c.summary() | {"features": dict(c.features), "prior": probabilities[c.food_id]} for c in self.candidates],
-                     "questions": self.questions, "context": self.context}
-        self.fingerprint = hashlib.sha256(json.dumps(canonical, ensure_ascii=False, sort_keys=True, allow_nan=False).encode()).hexdigest()
+                     "questions": self.questions, "source_schema": copy.deepcopy(schema), "context": self.context}
+        try:
+            encoded = json.dumps(canonical, ensure_ascii=False, sort_keys=True, allow_nan=False).encode()
+        except (TypeError, ValueError) as error:
+            raise ValueError("Catalog metadata and context must be finite JSON-compatible values") from error
+        self.fingerprint = hashlib.sha256(encoded).hexdigest()
 
     def candidate_for_node(self, node_id):
         if not node_id.startswith("food:"):

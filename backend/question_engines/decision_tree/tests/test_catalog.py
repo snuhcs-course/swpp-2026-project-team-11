@@ -51,3 +51,19 @@ class CatalogTests(unittest.TestCase):
         c = CandidateCatalog([], [{"key": "custom", "question_en": "Do you like this?"}])
         self.assertFalse(c.candidates)
         self.assertEqual(c.questions[0]["text"], "Do you like this?")
+
+    def test_source_schema_semantics_change_fingerprint(self):
+        a = CandidateCatalog(sample(), [{"key": "soupy", "question": "Want broth?"}])
+        b = CandidateCatalog(sample(), [{"key": "soupy", "question": "Want thick broth?"}])
+        self.assertNotEqual(a.fingerprint, b.fingerprint)
+
+    def test_malformed_rows_context_and_offers_are_rejected(self):
+        for rows, schema, context in (([None], [{"key": "soupy"}], None),
+                                      (sample(), [None], None),
+                                      (sample(), [{"key": "soupy"}], [])):
+            with self.subTest(rows=rows), self.assertRaises(ValueError):
+                CandidateCatalog(rows, schema, context=context)
+        raw = sample()
+        raw[0]["offers"][0]["restaurant"] = " "
+        with self.assertRaises(ValueError):
+            CandidateCatalog(raw, [{"key": "soupy"}])

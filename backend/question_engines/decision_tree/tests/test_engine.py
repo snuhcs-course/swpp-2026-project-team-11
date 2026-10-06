@@ -73,7 +73,7 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(e.undo(), next_step)
 
     def test_duplicate_display_name_is_not_recommended_again(self):
-        rows = [candidate(1, "Same dish", "", .9, .9), candidate(2, "Same dish", "", .1, .9), candidate(3, "Other meal", "", .1, .1)]
+        rows = [candidate(1, "Same dish", "", .9, .9), candidate(2, "same  DISH", "", .1, .9), candidate(3, "Other meal", "", .1, .1)]
         e = DecisionTreeEngine(rows, [{"key": "beef"}, {"key": "soupy"}], config={"policy": "greedy"})
         first = e.recommend_now()
         self.assertEqual(first["food"]["display_name"], "Same dish")
@@ -149,7 +149,7 @@ class EngineTests(unittest.TestCase):
             empty.recommend_now()
 
     def test_lookahead_step_and_diagnostics_are_json_serializable(self):
-        e = DecisionTreeEngine(small_catalog(), planner_config=PlannerConfig(time_budget_ms=50))
+        e = DecisionTreeEngine(small_catalog(), config={"policy": "lookahead"}, planner_config=PlannerConfig(time_budget_ms=50))
         step = e.start()
         self.assertIn(step["type"], {"question", "guess"})
         json.dumps(step, allow_nan=False)
@@ -163,3 +163,9 @@ class EngineTests(unittest.TestCase):
         snapshot["config"]["policy"] = "changed"
         self.assertEqual(e.snapshot()["config"]["policy"], "greedy")
 
+    def test_malformed_snapshots_are_rejected(self):
+        e = engine()
+        snapshot = e.snapshot()
+        for invalid in ([], snapshot | {"events": "bad"}, snapshot | {"pending": None}):
+            with self.assertRaises(ValueError):
+                DecisionTreeEngine.from_snapshot(small_catalog(), None, invalid)
