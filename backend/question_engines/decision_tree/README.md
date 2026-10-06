@@ -5,6 +5,8 @@ the existing `menus.services` candidate dictionaries and feature schema. It has
 no Django, HTTP, Android, or Gemini dependency at runtime; Django is only used
 by the demo commands and integration tests. NumPy supports bounded planning.
 
+For review status and task owners, see the [P11 integration handoff](HANDOFF.md).
+
 **Default:** greedy expected-information-gain selection with early menu guesses.
 **Optional:** `lookahead`, ported from the personal prototype, which compares
 questions and guesses under a bounded interaction-cost model.
