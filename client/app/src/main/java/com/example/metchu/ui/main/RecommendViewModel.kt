@@ -13,6 +13,7 @@ import com.example.metchu.data.repository.RecommendRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import java.io.IOException
 
 /** What the error banner shows. [canRetry] offers to repeat the failed request. */
 data class UiError(@StringRes val message: Int, val canRetry: Boolean)
@@ -69,6 +70,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         if (_loading.value == true) return
         _session.value = null
         _error.value = null
+        lastRequest = null
     }
 
     fun retry() {
@@ -88,9 +90,13 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
             } catch (e: HttpException) {
                 Log.e(TAG, "request rejected: ${e.code()}", e)
                 handleHttpError(e)
-            } catch (e: Exception) {
+            } catch (e: IOException) {
                 Log.e(TAG, "request failed", e)
                 _error.value = UiError(R.string.error_no_server, canRetry = true)
+            } catch (e: Exception) {
+                // For example a reply that is not the JSON this app expects.
+                Log.e(TAG, "unusable reply", e)
+                _error.value = UiError(R.string.error_server, canRetry = true)
             } finally {
                 _loading.value = false
             }
@@ -105,6 +111,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
             e.code() == 409 && body?.state != null -> _session.value = body.state
             // The server restarted and forgot the session.
             e.code() == 404 -> {
+                lastRequest = null
                 _session.value = null
                 _error.value = UiError(R.string.error_session_lost, canRetry = false)
             }
