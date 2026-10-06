@@ -36,7 +36,7 @@ class CatalogTests(unittest.TestCase):
         for change in (lambda x: x[0].update(food_id=True), lambda x: x[1].update(food_id=10),
                        lambda x: x[0]["features"].update(soupy=math.nan),
                        lambda x: x[0]["features"].update(soupy=True),
-                       lambda x: x[0].update(features={})): 
+                       lambda x: x[0].update(features={})):
             raw = sample()
             change(raw)
             with self.assertRaises(ValueError):
