@@ -1,241 +1,315 @@
 <title>Metchu MVP1 Wireframe</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: a board of phone frames in session order, each with the taps that leave it; one transition table below. */
+/* Layout: one board of low-fidelity frames joined by numbered transition lines; the table and lists below spell the lines out. */
 :root {
-  --bg: #f3f2ef; --panel: #ffffff; --ink: #1d1b19; --soft: #5f5a54; --line: #c9c4bc; --fill: #e6e3dd;
-  --accent: #c8420d; --on-accent: #ffffff; --warn-bg: #fbe6e4; --warn-ink: #8f1d1d;
-  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --bg: #f4f4f2; --panel: #ffffff; --ink: #1c1c1c; --soft: #5c5c5c; --line: #cfcfcb;
+  --go: #c62828; --on-go: #ffffff; --alt: #3f3f3f;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #171614; --panel: #22201d; --ink: #f0ede8; --soft: #a8a199; --line: #4a4640; --fill: #33302c;
-  --accent: #ff8a55; --on-accent: #1d1b19; --warn-bg: #452220; --warn-ink: #ffb4ab; color-scheme: dark } }
+  --bg: #161616; --panel: #212121; --ink: #efefef; --soft: #a9a9a9; --line: #454545; --go: #ff7b72; --on-go: #1c1c1c; --alt: #d0d0d0; color-scheme: dark } }
 :root[data-theme="dark"] {
-  --bg: #171614; --panel: #22201d; --ink: #f0ede8; --soft: #a8a199; --line: #4a4640; --fill: #33302c;
-  --accent: #ff8a55; --on-accent: #1d1b19; --warn-bg: #452220; --warn-ink: #ffb4ab; color-scheme: dark }
-
+  --bg: #161616; --panel: #212121; --ink: #efefef; --soft: #a9a9a9; --line: #454545; --go: #ff7b72; --on-go: #1c1c1c; --alt: #d0d0d0; color-scheme: dark }
 body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; }
-.page { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 56px; display: flex; flex-direction: column; gap: 36px; }
-h1 { font-size: 28px; line-height: 1.2; margin: 0; text-wrap: balance; }
+.page { max-width: 1520px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 56px; display: flex; flex-direction: column; gap: 32px; }
+header { display: flex; flex-direction: column; gap: 8px; }
+h1 { font-size: 26px; line-height: 1.2; margin: 0; }
 h2 { font-size: 18px; margin: 0; }
-p { margin: 0; max-width: 68ch; color: var(--soft); }
-header { display: flex; flex-direction: column; gap: 10px; }
-code, .mono { font-family: var(--mono); font-size: 12.5px; }
-
-.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 32px 24px; align-items: start; }
-.screen { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.screen h3 { margin: 0; font-size: 15px; display: flex; gap: 8px; align-items: baseline; }
-.screen h3 .step { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--soft); }
-
-/* phone */
-.phone { background: var(--panel); border: 1.5px solid var(--ink); border-radius: 22px; padding: 14px 14px 10px; min-height: 430px;
-  display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; line-height: 1.35; }
-.bar { display: flex; justify-content: space-between; align-items: baseline; }
-.brand { font-weight: 700; color: var(--accent); font-size: 13px; }
-.quiet { color: var(--soft); }
-.cap { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: var(--soft); }
-.cap.on { color: var(--accent); }
-.big { font-size: 17px; font-weight: 700; line-height: 1.2; }
-.mid { font-size: 13.5px; font-weight: 600; }
-.btn { border: 1.2px solid var(--line); border-radius: 9px; padding: 8px; text-align: center; font-weight: 500; }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
-.stack { display: flex; flex-direction: column; gap: 5px; }
-.seg { display: grid; grid-template-columns: repeat(4, 1fr); border: 1.2px solid var(--line); border-radius: 999px; overflow: hidden; font-size: 10.5px; text-align: center; }
-.seg span { padding: 6px 2px; border-right: 1.2px solid var(--line); }
-.seg span:last-child { border-right: 0; }
-.seg .sel { background: var(--fill); font-weight: 600; }
-.track { height: 4px; border-radius: 2px; background: var(--fill); }
-.track i { display: block; height: 100%; width: 30%; border-radius: 2px; background: var(--accent); }
-.card { border: 1.2px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 5px; }
-.grow { flex: 1; }
-.foot { display: flex; justify-content: space-between; color: var(--accent); font-weight: 500; }
-.foot .off { color: var(--line); }
-.banner { background: var(--warn-bg); color: var(--warn-ink); border-radius: 9px; padding: 8px 10px; display: flex; gap: 8px; justify-content: space-between; align-items: center; }
-.banner b { white-space: nowrap; }
-
-/* notes under each phone */
-.notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
-.notes li { display: grid; grid-template-columns: 1fr; gap: 1px; padding-left: 10px; border-left: 2px solid var(--line); }
-.notes .to { color: var(--soft); }
-
-.tablewrap { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 13.5px; }
-th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); font-weight: 600; }
+h3 { font-size: 14px; margin: 0; }
+p { margin: 0; max-width: 70ch; color: var(--soft); }
 section { display: flex; flex-direction: column; gap: 14px; }
-.rules { margin: 0; padding-left: 18px; color: var(--soft); max-width: 72ch; display: flex; flex-direction: column; gap: 4px; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+/* The board keeps one fixed greyscale look in both themes, as a wireframe sheet. */
+.board { display: block; width: 1460px; height: 1140px; background: #c9c9c9; }
+.board text { font-family: var(--sans); fill: #2b2b2b; }
+.board .phone { fill: #ffffff; stroke: #4a4a4a; stroke-width: 1.5; }
+.board .phone.dash { stroke-dasharray: 6 4; }
+.board .rule { stroke: #d0d0d0; stroke-width: 1; }
+.board .bar { fill: #d6d6d6; }
+.board .barfill { fill: #7a7a7a; }
+.board .btn { fill: #ffffff; stroke: #8a8a8a; stroke-width: 1; }
+.board .btnp { fill: #555555; stroke: #555555; }
+.board .seg { fill: #ffffff; stroke: #8a8a8a; stroke-width: 1; }
+.board .seg.sel { fill: #d6d6d6; }
+.board .card { fill: #f3f3f3; stroke: #b5b5b5; stroke-width: 1; }
+.board .warn { fill: #e4e4e4; stroke: #7a7a7a; stroke-width: 1; }
+.board .ghost { fill: #f3f3f3; stroke: #c4c4c4; stroke-width: 1; stroke-dasharray: 4 4; }
+.board .key { fill: #dedede; stroke: none; }
+.board .t { font-size: 10px; }
+.board .ts { font-size: 9px; fill: #6a6a6a; }
+.board .tb { font-size: 10px; fill: #ffffff; font-weight: 600; }
+.board .h { font-size: 13px; font-weight: 700; }
+.board .hs { font-size: 11px; font-weight: 700; }
+.board .cap { font-size: 8px; letter-spacing: .08em; fill: #6a6a6a; font-weight: 600; }
+.board .brand { font-size: 12px; font-weight: 700; }
+.board .lnk { font-size: 9.5px; text-decoration: underline; }
+.board .lnkb { font-size: 10px; font-weight: 700; text-decoration: underline; }
+.board .ttl { font-size: 13px; font-weight: 600; }
+.board .arw { fill: none; stroke: #c62828; stroke-width: 1.6; }
+.board .arw.dsh { stroke-dasharray: 5 4; }
+.board .jn { fill: #c62828; }
+.board .bdg { fill: #c62828; stroke: #c9c9c9; stroke-width: 2; }
+.board .bt { font-size: 10px; font-weight: 700; fill: #ffffff; }
+.board .bdg2 { fill: #ffffff; stroke: #3f3f3f; stroke-width: 1.4; }
+.board .bt2 { font-size: 10px; font-weight: 700; fill: #3f3f3f; }
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 14px; }
+th, td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); font-weight: 600; }
+td.n { width: 44px; }
+.pill { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 11px; background: var(--go); color: var(--on-go); font-size: 12px; font-weight: 700; }
+.pill.alt { background: transparent; color: var(--alt); border: 1.5px solid var(--alt); }
+.hier { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px 28px; }
+.hier .h { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hier ol { margin: 0; padding-left: 20px; color: var(--soft); font-size: 14px; display: flex; flex-direction: column; gap: 3px; }
 </style>
 
 <div class="page">
   <header>
     <h1>Metchu MVP1 wireframe</h1>
-    <p>One Android screen that redraws from the question engine's current step. Each frame below is one state of that screen, in the order a session reaches them. Under each frame: what a tap sends to the server and where it leads.</p>
+    <p>Seven frames for the Android client and every tap that moves between them. Scroll the board sideways on a narrow screen.</p>
   </header>
 
-  <div class="board">
-
-    <div class="screen">
-      <h3>1. Start <span class="step">no session</span></h3>
-      <div class="phone">
-        <div class="bar"><span class="brand">Metchu</span></div>
-        <div style="height:18px"></div>
-        <div class="big">Not sure what to eat?</div>
-        <div class="quiet">Answer a few quick questions and Metchu will pick a dish from the SNU cafeterias.</div>
-        <div style="height:10px"></div>
-        <div class="cap">Which meal?</div>
-        <div class="seg"><span>Breakfast</span><span class="sel">Lunch</span><span>Dinner</span><span>All day</span></div>
-        <div style="height:6px"></div>
-        <div class="btn primary">Start</div>
-      </div>
-      <ul class="notes">
-        <li><b>Start</b><span class="mono">POST /api/sessions/ {meal}</span><span class="to">to 2, or to 6 when the day has no menu</span></li>
-      </ul>
-    </div>
-
-    <div class="screen">
-      <h3>2. Question <span class="step">step.type = question</span></h3>
-      <div class="phone">
-        <div class="bar"><span class="brand">Metchu</span><span class="quiet">Start over</span></div>
-        <div class="cap">2026-09-29 · Lunch · 193 dishes</div>
-        <div class="cap on">Question 3 of up to 10</div>
-        <div class="track"><i></i></div>
-        <div class="big" style="min-height:42px">Do you feel like something fried?</div>
-        <div class="stack">
-          <div class="btn">Yes, sounds good</div><div class="btn">Probably yes</div><div class="btn">Doesn't matter</div>
-          <div class="btn">Probably not</div><div class="btn">No</div><div class="btn">Not sure</div>
-        </div>
-        <div class="grow"></div>
-        <div class="foot"><span>Back</span><span>Just recommend something</span></div>
-      </div>
-      <ul class="notes">
-        <li><b>An answer</b><span class="mono">POST …/answer/ {question_id, answer_id}</span><span class="to">to 2 again, or to 3 / 4 when the engine is ready to guess</span></li>
-        <li><b>Just recommend something</b><span class="mono">POST …/recommend-now/</span><span class="to">to 3</span></li>
-        <li><b>Back</b><span class="mono">POST …/undo/</span><span class="to">to the previous step; disabled on the first question</span></li>
-      </ul>
-    </div>
-
-    <div class="screen">
-      <h3>3. Guess, one dish <span class="step">guess · target_kind = food</span></h3>
-      <div class="phone">
-        <div class="bar"><span class="brand">Metchu</span><span class="quiet">Start over</span></div>
-        <div class="cap">2026-09-29 · Lunch · 193 dishes</div>
-        <div class="mid">Is this what you feel like eating?</div>
-        <div class="card">
-          <div class="cap on">Dish</div>
-          <div class="big">자메이카통다리</div>
-          <div>버거운버거 · Lunch · 6,100 won</div>
-        </div>
-        <div class="stack"><div class="btn primary">Yes, I'll have this</div><div class="btn">No, something else</div></div>
-        <div class="grow"></div>
-        <div class="foot"><span>Back</span></div>
-      </div>
-      <ul class="notes">
-        <li><b>Yes</b><span class="mono">POST …/feedback/ {guess_id, accepted: true}</span><span class="to">to 5</span></li>
-        <li><b>No, something else</b><span class="mono">POST …/feedback/ {guess_id, accepted: false}</span><span class="to">to 2, 3 or 4; to 6 when nothing is left</span></li>
-        <li><b>Back</b><span class="mono">POST …/undo/</span><span class="to">to the step before the guess</span></li>
-      </ul>
-    </div>
-
-    <div class="screen">
-      <h3>4. Guess, a kind of dish <span class="step">guess · target_kind = group</span></h3>
-      <div class="phone">
-        <div class="bar"><span class="brand">Metchu</span><span class="quiet">Start over</span></div>
-        <div class="cap">2026-09-29 · Lunch · 193 dishes</div>
-        <div class="mid">Is this what you feel like eating?</div>
-        <div class="card">
-          <div class="cap on">Kind of dish</div>
-          <div class="big">중식</div>
-          <div class="cap" style="margin-top:8px">For example</div>
-          <div class="mid">부대짬뽕</div>
-          <div>공대간이식당 · Lunch · 6,800 won</div>
-          <div class="quiet" style="margin-top:6px;font-size:11px">Also on the menu: 마라탕, 짜장면, 짬뽕, 순두부짬뽕, 중화제육덮밥 and 3 more</div>
-        </div>
-        <div class="stack"><div class="btn primary">Yes, I'll have this one</div><div class="btn">No, something else</div></div>
-        <div class="grow"></div>
-        <div class="foot"><span>Back</span></div>
-      </div>
-      <ul class="notes">
-        <li><b>Yes, I'll have this one</b><span class="to">Same call as 3. The session ends on the example dish, so the button says "this one".</span></li>
-        <li><b>No, something else</b><span class="to">Same call as 3. The engine then drops every dish in the group.</span></li>
-      </ul>
-    </div>
-
-    <div class="screen">
-      <h3>5. Recommendation <span class="step">step.type = recommendation</span></h3>
-      <div class="phone">
-        <div class="bar"><span class="brand">Metchu</span><span class="quiet">Start over</span></div>
-        <div class="cap">2026-09-29 · Lunch · 193 dishes</div>
-        <div class="mid">Enjoy your meal.</div>
-        <div class="card">
-          <div class="big">닭갈비볶음밥</div>
-          <div class="quiet">닭갈비볶음밥&amp;고구마맛탕</div>
-          <div class="cap" style="margin-top:8px">Where to get it</div>
-          <div>301동식당 · Lunch · 6,500 won</div>
-        </div>
-        <div class="btn primary">Start over</div>
-      </div>
-      <ul class="notes">
-        <li><b>Start over</b><span class="to">No request. Back to 1; the next Start creates a new session.</span></li>
-        <li><span class="to">The grey line is the full menu name, shown only when it differs from the dish name. One line per cafeteria that serves it.</span></li>
-      </ul>
-    </div>
-
-    <div class="screen">
-      <h3>6. Nothing to recommend <span class="step">step.type = unavailable</span></h3>
-      <div class="phone">
-        <div class="bar"><span class="brand">Metchu</span><span class="quiet">Start over</span></div>
-        <div class="cap">2026-10-06 · Breakfast · 0 dishes</div>
-        <div class="big">Nothing to recommend</div>
-        <div class="quiet">There is no menu for 2026-10-06 (Breakfast). Try another meal.</div>
-        <div class="btn primary">Start over</div>
-      </div>
-      <ul class="notes">
-        <li><span class="mono">reason = empty_candidates</span><span class="to">the text above</span></li>
-        <li><span class="mono">reason = candidates_exhausted</span><span class="to">"You have turned down every dish on today's menu. Start over to see them again."</span></li>
-      </ul>
-    </div>
-
-    <div class="screen">
-      <h3>Request failed <span class="step">overlay on any state</span></h3>
-      <div class="phone">
-        <div class="bar"><span class="brand">Metchu</span></div>
-        <div class="banner"><span>Could not reach the server. Check that it is running and that this device can reach it.</span><b>Try again</b></div>
-        <div style="height:6px"></div>
-        <div class="big">Not sure what to eat?</div>
-        <div class="quiet">Answer a few quick questions…</div>
-        <div class="seg"><span>Breakfast</span><span class="sel">Lunch</span><span>Dinner</span><span>All day</span></div>
-        <div class="btn primary">Start</div>
-      </div>
-      <ul class="notes">
-        <li><b>Try again</b><span class="to">Repeats the request that failed. The screen underneath stays as it was.</span></li>
-        <li><span class="to">The banner stays until the next request. While a request is running, a thin bar shows under the header and the screen is dimmed and ignores taps.</span></li>
-      </ul>
-    </div>
-
+  <div class="scroll">
+    <svg class="board" viewBox="0 0 1460 1140" role="img" aria-label="Wireframe of seven screens joined by numbered transition lines">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c62828"/></marker></defs>
+<text x="150" y="522" class="ttl" text-anchor="middle">1  Start</text>
+<rect x="50" y="100" width="200" height="400" rx="16" class="phone"/>
+<text x="66" y="124" class="brand" text-anchor="start">Metchu</text>
+<line x1="51" y1="136" x2="249" y2="136" class="rule"/>
+<text x="66" y="182" class="h" text-anchor="start">Not sure what to eat?</text>
+<rect x="66" y="200" width="168" height="6" rx="2" class="bar"/>
+<rect x="66" y="212" width="150" height="6" rx="2" class="bar"/>
+<rect x="66" y="224" width="90" height="6" rx="2" class="bar"/>
+<text x="66" y="266" class="cap" text-anchor="start">WHICH MEAL?</text>
+<rect x="66" y="276" width="50" height="26" rx="0" class="seg"/>
+<text x="91.0" y="293" class="ts" text-anchor="middle">Breakfast</text>
+<rect x="116" y="276" width="38" height="26" rx="0" class="seg sel"/>
+<text x="135.0" y="293" class="ts" text-anchor="middle">Lunch</text>
+<rect x="154" y="276" width="40" height="26" rx="0" class="seg"/>
+<text x="174.0" y="293" class="ts" text-anchor="middle">Dinner</text>
+<rect x="194" y="276" width="40" height="26" rx="0" class="seg"/>
+<text x="214.0" y="293" class="ts" text-anchor="middle">All day</text>
+<rect x="66" y="350" width="168" height="32" rx="5" class="btnp"/>
+<text x="150.0" y="369.5" class="tb" text-anchor="middle">Start</text>
+<text x="440" y="522" class="ttl" text-anchor="middle">2  Question</text>
+<rect x="340" y="100" width="200" height="400" rx="16" class="phone"/>
+<text x="356" y="124" class="brand" text-anchor="start">Metchu</text>
+<line x1="341" y1="136" x2="539" y2="136" class="rule"/>
+<text x="524" y="124" class="lnk" text-anchor="end">Start over</text>
+<circle cx="462" cy="120" r="9" class="bdg2"/>
+<text x="462" y="123.5" class="bt2" text-anchor="middle">H</text>
+<text x="356" y="154" class="cap" text-anchor="start">DATE · MEAL · N DISHES</text>
+<text x="356" y="176" class="cap" text-anchor="start">QUESTION 3 OF UP TO 10</text>
+<rect x="356" y="184" width="168" height="4" rx="2" class="bar"/>
+<rect x="356" y="184" width="50" height="4" rx="2" class="barfill"/>
+<text x="356" y="212" class="h" text-anchor="start">Question text from the</text>
+<text x="356" y="228" class="h" text-anchor="start">engine, 1 to 2 lines</text>
+<rect x="356" y="250" width="168" height="26" rx="5" class="btn"/>
+<text x="440.0" y="266.5" class="t" text-anchor="middle">Yes, sounds good</text>
+<rect x="356" y="282" width="168" height="26" rx="5" class="btn"/>
+<text x="440.0" y="298.5" class="t" text-anchor="middle">Probably yes</text>
+<rect x="356" y="314" width="168" height="26" rx="5" class="btn"/>
+<text x="440.0" y="330.5" class="t" text-anchor="middle">Doesn&#x27;t matter</text>
+<rect x="356" y="346" width="168" height="26" rx="5" class="btn"/>
+<text x="440.0" y="362.5" class="t" text-anchor="middle">Probably not</text>
+<rect x="356" y="378" width="168" height="26" rx="5" class="btn"/>
+<text x="440.0" y="394.5" class="t" text-anchor="middle">No</text>
+<rect x="356" y="410" width="168" height="26" rx="5" class="btn"/>
+<text x="440.0" y="426.5" class="t" text-anchor="middle">Not sure</text>
+<line x1="341" y1="456" x2="539" y2="456" class="rule"/>
+<circle cx="355" cy="475" r="9" class="bdg2"/>
+<text x="355" y="478.5" class="bt2" text-anchor="middle">B</text>
+<text x="367" y="479" class="lnk" text-anchor="start">Back</text>
+<text x="530" y="479" class="lnk" text-anchor="end">Just recommend something</text>
+<text x="730" y="522" class="ttl" text-anchor="middle">3  Guess: one dish</text>
+<rect x="630" y="100" width="200" height="400" rx="16" class="phone"/>
+<text x="646" y="124" class="brand" text-anchor="start">Metchu</text>
+<line x1="631" y1="136" x2="829" y2="136" class="rule"/>
+<text x="814" y="124" class="lnk" text-anchor="end">Start over</text>
+<circle cx="752" cy="120" r="9" class="bdg2"/>
+<text x="752" y="123.5" class="bt2" text-anchor="middle">H</text>
+<text x="646" y="154" class="cap" text-anchor="start">DATE · MEAL · N DISHES</text>
+<text x="646" y="176" class="t" text-anchor="start">Is this what you feel like eating?</text>
+<rect x="646" y="186" width="168" height="116" rx="8" class="card"/>
+<text x="658" y="204" class="cap" text-anchor="start">DISH</text>
+<text x="658" y="224" class="h" text-anchor="start">Dish name</text>
+<text x="658" y="248" class="t" text-anchor="start">Cafeteria · meal · price</text>
+<text x="658" y="264" class="ts" text-anchor="start">(one line per cafeteria)</text>
+<rect x="646" y="316" width="168" height="28" rx="5" class="btnp"/>
+<text x="730.0" y="333.5" class="tb" text-anchor="middle">Yes, I&#x27;ll have this</text>
+<rect x="646" y="350" width="168" height="28" rx="5" class="btn"/>
+<text x="730.0" y="367.5" class="t" text-anchor="middle">No, something else</text>
+<line x1="631" y1="456" x2="829" y2="456" class="rule"/>
+<circle cx="654" cy="475" r="9" class="bdg2"/>
+<text x="654" y="478.5" class="bt2" text-anchor="middle">B</text>
+<text x="668" y="479" class="lnk" text-anchor="start">Back</text>
+<text x="1020" y="522" class="ttl" text-anchor="middle">4  Guess: a kind of dish</text>
+<rect x="920" y="100" width="200" height="400" rx="16" class="phone"/>
+<text x="936" y="124" class="brand" text-anchor="start">Metchu</text>
+<line x1="921" y1="136" x2="1119" y2="136" class="rule"/>
+<text x="1104" y="124" class="lnk" text-anchor="end">Start over</text>
+<circle cx="1042" cy="120" r="9" class="bdg2"/>
+<text x="1042" y="123.5" class="bt2" text-anchor="middle">H</text>
+<text x="936" y="154" class="cap" text-anchor="start">DATE · MEAL · N DISHES</text>
+<text x="936" y="176" class="t" text-anchor="start">Is this what you feel like eating?</text>
+<rect x="936" y="186" width="168" height="170" rx="8" class="card"/>
+<text x="948" y="204" class="cap" text-anchor="start">KIND OF DISH</text>
+<text x="948" y="224" class="h" text-anchor="start">Group name</text>
+<text x="948" y="248" class="cap" text-anchor="start">FOR EXAMPLE</text>
+<text x="948" y="264" class="hs" text-anchor="start">Example dish</text>
+<text x="948" y="282" class="t" text-anchor="start">Cafeteria · meal · price</text>
+<text x="948" y="306" class="ts" text-anchor="start">Also on the menu:</text>
+<rect x="948" y="314" width="144" height="6" rx="2" class="bar"/>
+<rect x="948" y="326" width="110" height="6" rx="2" class="bar"/>
+<rect x="936" y="366" width="168" height="28" rx="5" class="btnp"/>
+<text x="1020.0" y="383.5" class="tb" text-anchor="middle">Yes, I&#x27;ll have this one</text>
+<rect x="936" y="400" width="168" height="28" rx="5" class="btn"/>
+<text x="1020.0" y="417.5" class="t" text-anchor="middle">No, something else</text>
+<line x1="921" y1="456" x2="1119" y2="456" class="rule"/>
+<circle cx="944" cy="475" r="9" class="bdg2"/>
+<text x="944" y="478.5" class="bt2" text-anchor="middle">B</text>
+<text x="958" y="479" class="lnk" text-anchor="start">Back</text>
+<text x="1310" y="522" class="ttl" text-anchor="middle">5  Recommendation</text>
+<rect x="1210" y="100" width="200" height="400" rx="16" class="phone"/>
+<text x="1226" y="124" class="brand" text-anchor="start">Metchu</text>
+<line x1="1211" y1="136" x2="1409" y2="136" class="rule"/>
+<text x="1394" y="124" class="lnk" text-anchor="end">Start over</text>
+<circle cx="1332" cy="120" r="9" class="bdg2"/>
+<text x="1332" y="123.5" class="bt2" text-anchor="middle">H</text>
+<text x="1226" y="154" class="cap" text-anchor="start">DATE · MEAL · N DISHES</text>
+<text x="1226" y="176" class="t" text-anchor="start">Enjoy your meal.</text>
+<rect x="1226" y="186" width="168" height="116" rx="8" class="card"/>
+<text x="1238" y="210" class="h" text-anchor="start">Dish name</text>
+<text x="1238" y="226" class="ts" text-anchor="start">Full menu name, if different</text>
+<text x="1238" y="252" class="cap" text-anchor="start">WHERE TO GET IT</text>
+<text x="1238" y="268" class="t" text-anchor="start">Cafeteria · meal · price</text>
+<text x="1238" y="284" class="ts" text-anchor="start">(one line per cafeteria)</text>
+<rect x="1226" y="316" width="168" height="28" rx="5" class="btnp"/>
+<text x="1310.0" y="333.5" class="tb" text-anchor="middle">Start over</text>
+<text x="150" y="1112" class="ttl" text-anchor="middle">6  Nothing to recommend</text>
+<rect x="50" y="690" width="200" height="400" rx="16" class="phone"/>
+<text x="66" y="714" class="brand" text-anchor="start">Metchu</text>
+<line x1="51" y1="726" x2="249" y2="726" class="rule"/>
+<text x="234" y="714" class="lnk" text-anchor="end">Start over</text>
+<circle cx="172" cy="710" r="9" class="bdg2"/>
+<text x="172" y="713.5" class="bt2" text-anchor="middle">H</text>
+<text x="66" y="744" class="cap" text-anchor="start">DATE · MEAL · 0 DISHES</text>
+<text x="66" y="776" class="h" text-anchor="start">Nothing to recommend</text>
+<text x="66" y="796" class="ts" text-anchor="start">Reason: no menu for this day</text>
+<text x="66" y="810" class="ts" text-anchor="start">and meal, or every dish was</text>
+<text x="66" y="824" class="ts" text-anchor="start">turned down</text>
+<rect x="66" y="840" width="168" height="28" rx="5" class="btnp"/>
+<text x="150.0" y="857.5" class="tb" text-anchor="middle">Start over</text>
+<text x="440" y="1112" class="ttl" text-anchor="middle">7  Request failed (on any screen)</text>
+<rect x="340" y="690" width="200" height="400" rx="16" class="phone dash"/>
+<text x="356" y="714" class="brand" text-anchor="start">Metchu</text>
+<line x1="341" y1="726" x2="539" y2="726" class="rule"/>
+<rect x="352" y="734" width="176" height="52" rx="6" class="warn"/>
+<text x="362" y="752" class="t" text-anchor="start">What went wrong and</text>
+<text x="362" y="766" class="t" text-anchor="start">what to check</text>
+<text x="518" y="763" class="lnkb" text-anchor="end">Try again</text>
+<rect x="356" y="802" width="168" height="230" rx="6" class="ghost"/>
+<text x="440" y="912" class="ts" text-anchor="middle">the screen the user was on,</text>
+<text x="440" y="926" class="ts" text-anchor="middle">unchanged</text>
+<path d="M234,366 L340,366" class="arw" marker-end="url(#ah)"/>
+<circle cx="290" cy="366" r="9" class="bdg"/>
+<text x="290" y="369.5" class="bt" text-anchor="middle">1</text>
+<path d="M66,366 L25,366 L25,660 L150,660 L150,690" class="arw" marker-end="url(#ah)"/>
+<circle cx="25" cy="560" r="9" class="bdg"/>
+<text x="25" y="563.5" class="bt" text-anchor="middle">2</text>
+<path d="M524,263 L560,263 L560,70 L440,70 L440,100" class="arw" marker-end="url(#ah)"/>
+<circle cx="560" cy="170" r="9" class="bdg"/>
+<text x="560" y="173.5" class="bt" text-anchor="middle">3</text>
+<path d="M524,327 L630,327" class="arw" marker-end="url(#ah)"/>
+<circle cx="600" cy="327" r="9" class="bdg"/>
+<text x="600" y="330.5" class="bt" text-anchor="middle">4</text>
+<path d="M524,295 L585,295 L585,50 L1020,50 L1020,100" class="arw" marker-end="url(#ah)"/>
+<circle cx="800" cy="50" r="9" class="bdg"/>
+<text x="800" y="53.5" class="bt" text-anchor="middle">5</text>
+<path d="M524,475 L630,475" class="arw" marker-end="url(#ah)"/>
+<circle cx="585" cy="475" r="9" class="bdg"/>
+<text x="585" y="478.5" class="bt" text-anchor="middle">6</text>
+<path d="M814,330 L875,330 L875,610 L1390,610 L1390,500" class="arw" marker-end="url(#ah)"/>
+<circle cx="1130" cy="610" r="9" class="bdg"/>
+<text x="1130" y="613.5" class="bt" text-anchor="middle">7</text>
+<path d="M1104,380 L1210,380" class="arw" marker-end="url(#ah)"/>
+<circle cx="1157" cy="380" r="9" class="bdg"/>
+<text x="1157" y="383.5" class="bt" text-anchor="middle">7</text>
+<path d="M646,364 L610,364" class="arw"/>
+<path d="M610,364 L540,364" class="arw" marker-end="url(#ah)"/>
+<circle cx="570" cy="364" r="9" class="bdg"/>
+<text x="570" y="367.5" class="bt" text-anchor="middle">8</text>
+<path d="M610,364 L610,640 L200,640 L200,690" class="arw" marker-end="url(#ah)"/>
+<circle cx="400" cy="640" r="9" class="bdg"/>
+<text x="400" y="643.5" class="bt" text-anchor="middle">9</text>
+<path d="M936,414 L895,414 L895,640 L610,640" class="arw"/>
+<circle cx="610" cy="364" r="3.5" class="jn"/>
+<circle cx="610" cy="640" r="3.5" class="jn"/>
+<path d="M1226,330 L1185,330 L1185,30 L150,30 L150,100" class="arw" marker-end="url(#ah)"/>
+<circle cx="700" cy="30" r="9" class="bdg"/>
+<text x="700" y="33.5" class="bt" text-anchor="middle">10</text>
+<path d="M66,854 L10,854 L10,75 L100,75 L100,100" class="arw" marker-end="url(#ah)"/>
+<circle cx="10" cy="760" r="9" class="bdg"/>
+<text x="10" y="763.5" class="bt" text-anchor="middle">11</text>
+<path d="M524,760 L575,760 L575,670 L440,670 L440,690" class="arw dsh" marker-end="url(#ah)"/>
+<circle cx="575" cy="720" r="9" class="bdg"/>
+<text x="575" y="723.5" class="bt" text-anchor="middle">12</text>
+<rect x="640" y="700" width="770" height="150" rx="8" class="key"/>
+<text x="658" y="726" class="cap" text-anchor="start">KEY</text>
+<path d="M658,750 L718,750" class="arw" marker-end="url(#ah)"/>
+<circle cx="682" cy="750" r="9" class="bdg"/>
+<text x="682" y="753.5" class="bt" text-anchor="middle">n</text>
+<text x="732" y="754" class="t" text-anchor="start">A tap moves to another screen. The number refers to the table below.</text>
+<path d="M658,778 L718,778" class="arw dsh" marker-end="url(#ah)"/>
+<text x="732" y="782" class="t" text-anchor="start">The tap repeats the failed request; the user stays on the same screen.</text>
+<circle cx="668" cy="806" r="9" class="bdg2"/>
+<text x="668" y="809.5" class="bt2" text-anchor="middle">H</text>
+<text x="732" y="810" class="t" text-anchor="start">Start over in the header: from any screen in a session, back to 1 Start.</text>
+<circle cx="668" cy="832" r="9" class="bdg2"/>
+<text x="668" y="835.5" class="bt2" text-anchor="middle">B</text>
+<text x="732" y="836" class="t" text-anchor="start">Back: undoes the last answer or guess and shows the previous step. Disabled on the first question.</text>
+<rect x="640" y="870" width="770" height="150" rx="8" class="key"/>
+<text x="658" y="896" class="cap" text-anchor="start">READING THE FRAMES</text>
+<text x="658" y="920" class="t" text-anchor="start">Grey bars stand for running text; outlined boxes are buttons; the filled button is the main action on a screen.</text>
+<text x="658" y="944" class="t" text-anchor="start">Frames 2 to 5 are one screen that redraws: the header and the date · meal · count line stay in place.</text>
+<text x="658" y="968" class="t" text-anchor="start">Frame 7 is not a separate screen. A banner appears above whatever the user was looking at.</text>
+<text x="658" y="992" class="t" text-anchor="start">While a request runs, the tapped button stays highlighted and the other buttons ignore taps.</text>
+    </svg>
   </div>
 
   <section>
-    <h2>Server replies the app handles</h2>
-    <div class="tablewrap">
-      <table>
-        <tr><th>Reply</th><th>When</th><th>What the app does</th></tr>
-        <tr><td class="mono">200 / 201 state</td><td>Any accepted request</td><td>Redraws from <code>state.step</code></td></tr>
-        <tr><td class="mono">409 stale_step</td><td>The answer or feedback is for a step the session has already left</td><td>Redraws from the <code>state</code> in the reply; no error shown</td></tr>
-        <tr><td class="mono">404 session_not_found</td><td>The server restarted and lost the session</td><td>Returns to 1 with "Your session ended on the server. Please start again."</td></tr>
-        <tr><td class="mono">400, 5xx</td><td>Rejected or failed request</td><td>Banner "The server could not handle that request." with Try again</td></tr>
-        <tr><td class="mono">no reply</td><td>Server down or unreachable</td><td>Banner as in the last frame, with Try again</td></tr>
-      </table>
-    </div>
+    <h2>Transitions</h2>
+    <div class="tw"><table>
+      <tr><th></th><th>From</th><th>User action</th><th>Goes to</th><th>When</th></tr>
+<tr><td class="n"><span class="pill">1</span></td><td>1 Start</td><td>Start</td><td>2 Question</td><td>The chosen day and meal has dishes</td></tr>
+<tr><td class="n"><span class="pill">2</span></td><td>1 Start</td><td>Start</td><td>6 Nothing to recommend</td><td>No menu for that day and meal</td></tr>
+<tr><td class="n"><span class="pill">3</span></td><td>2 Question</td><td>Any answer</td><td>2 Question, next question</td><td>The engine still needs to narrow down</td></tr>
+<tr><td class="n"><span class="pill">4</span></td><td>2 Question</td><td>Any answer</td><td>3 Guess: one dish</td><td>The engine is confident in one dish, or 10 answers were given</td></tr>
+<tr><td class="n"><span class="pill">5</span></td><td>2 Question</td><td>Any answer</td><td>4 Guess: a kind of dish</td><td>The engine is confident in a group of dishes</td></tr>
+<tr><td class="n"><span class="pill">6</span></td><td>2 Question</td><td>Just recommend something</td><td>3 Guess: one dish</td><td>Always</td></tr>
+<tr><td class="n"><span class="pill">7</span></td><td>3 or 4 Guess</td><td>Yes</td><td>5 Recommendation</td><td>Always. From 4, the example dish is the recommendation</td></tr>
+<tr><td class="n"><span class="pill">8</span></td><td>3 or 4 Guess</td><td>No, something else</td><td>2 Question, or another guess (3 or 4)</td><td>Dishes remain. After 10 answers it is always another guess</td></tr>
+<tr><td class="n"><span class="pill">9</span></td><td>3 or 4 Guess</td><td>No, something else</td><td>6 Nothing to recommend</td><td>Every dish has been turned down</td></tr>
+<tr><td class="n"><span class="pill">10</span></td><td>5 Recommendation</td><td>Start over</td><td>1 Start</td><td>Always</td></tr>
+<tr><td class="n"><span class="pill">11</span></td><td>6 Nothing to recommend</td><td>Start over</td><td>1 Start</td><td>Always</td></tr>
+<tr><td class="n"><span class="pill">12</span></td><td>7 Request failed</td><td>Try again</td><td>The same screen</td><td>The request is sent again; on success the banner goes away</td></tr>
+<tr><td class="n"><span class="pill alt">H</span></td><td>2 to 6</td><td>Start over (header)</td><td>1 Start</td><td>Always; the session is dropped</td></tr>
+<tr><td class="n"><span class="pill alt">B</span></td><td>2, 3, 4</td><td>Back</td><td>The previous step</td><td>Disabled when there is nothing to undo</td></tr>
+    </table></div>
   </section>
 
   <section>
-    <h2>Rules the frames follow</h2>
-    <ul class="rules">
-      <li>Question text, answer labels and guess text are the server's strings, shown unchanged. The answer buttons are built from <code>step.options</code>, so the app draws however many the server sends.</li>
-      <li>Food and cafeteria names stay in Korean; everything the app or engine authors is English.</li>
-      <li>"Question N of up to M" uses <code>max_questions</code> (10 by default). After M answers the engine must guess. With no cap, the line reads "Question N" and the bar is hidden.</li>
-      <li>Start over in the header is available in every session state and never asks the server.</li>
-    </ul>
+    <h2>Content hierarchy</h2>
+    <p>What each frame holds, in reading order from top to bottom.</p>
+    <div class="hier">
+<div class="h"><h3>1 Start</h3><ol><li>Headline and one line on what the app does</li><li>Meal choice: Breakfast, Lunch, Dinner, All day (Lunch preselected)</li><li>Start, the only main action</li></ol></div>
+<div class="h"><h3>2 Question</h3><ol><li>Session line: date, meal, number of dishes</li><li>Progress: question number and a bar</li><li>The question</li><li>Six answers, most positive at the top, &quot;Not sure&quot; last</li><li>Secondary actions at the bottom: Back, Just recommend something</li></ol></div>
+<div class="h"><h3>3 Guess: one dish</h3><ol><li>Session line</li><li>Prompt</li><li>Card: the dish, then each cafeteria with meal and price</li><li>Yes (main action), then No</li><li>Back at the bottom</li></ol></div>
+<div class="h"><h3>4 Guess: a kind of dish</h3><ol><li>Session line</li><li>Prompt</li><li>Card: the group name first, then one example dish with its cafeteria, then other dishes in the group</li><li>Yes (main action), then No</li><li>Back at the bottom</li></ol></div>
+<div class="h"><h3>5 Recommendation</h3><ol><li>Session line</li><li>Closing line</li><li>Card: the dish, its full menu name if different, where to get it</li><li>Start over, the only action</li></ol></div>
+<div class="h"><h3>6 Nothing to recommend</h3><ol><li>Session line</li><li>Headline</li><li>The reason</li><li>Start over, the only action</li></ol></div>
+<div class="h"><h3>7 Request failed</h3><ol><li>Banner at the top: what went wrong, with Try again beside it</li><li>Below it, the screen the user was on, unchanged</li></ol></div>
+    </div>
   </section>
 </div>
