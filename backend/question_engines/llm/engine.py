@@ -228,6 +228,8 @@ class LLMEngine:
         pending = self.next_step()
         if pending["type"] not in {"question", "guess"}:
             raise ValueError("The session is not active")
+        if pending["type"] == "guess":
+            return pending  # already a concrete proposal; another LLM call would add nothing
         self._record({"type": "recommend_now", "before": pending})
         self._pending = self._decide(force_guess=True)
         return copy.deepcopy(self._pending)

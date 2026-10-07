@@ -78,6 +78,8 @@ class SessionTests(SimpleTestCase):
         step = engine.recommend_now()
         self.assertEqual(step["type"], "guess")
         self.assertIn("Questions left: 0.", self.llm.prompt())
+        self.assertEqual(engine.recommend_now(), step)  # a shown guess is kept, no new call
+        self.assertEqual(len(self.llm.calls), 2)
 
     def test_undo_restores_the_exact_step_without_the_llm(self):
         engine = self.engine(ask(BROTH), recommend("물냉면"))
