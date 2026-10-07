@@ -1,0 +1,41 @@
+{
+  "session_id": "29a85ba0636e4213a10a42802877f7a8",
+  "engine": "llm",
+  "date": "2026-09-29",
+  "meal": "LU",
+  "candidate_count": 193,
+  "max_questions": 10,
+  "can_undo": false,
+  "step": {
+    "type": "question",
+    "question_count": 0,
+    "question_id": "q:llm-0",
+    "text": "Do you feel like something with broth?",
+    "options": [
+      {
+        "id": "yes",
+        "label": "Yes, sounds good"
+      },
+      {
+        "id": "probably_yes",
+        "label": "Probably yes"
+      },
+      {
+        "id": "any",
+        "label": "Doesn't matter"
+      },
+      {
+        "id": "probably_no",
+        "label": "Probably not"
+      },
+      {
+        "id": "no",
+        "label": "No"
+      },
+      {
+        "id": "unknown",
+        "label": "Not sure"
+      }
+    ]
+  }
+}

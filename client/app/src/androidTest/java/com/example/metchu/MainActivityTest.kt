@@ -42,6 +42,7 @@ class MainActivityTest {
     private lateinit var scenario: ActivityScenario<MainActivity>
 
     private val question = Fixtures.state("question")
+    private val llmQuestion = Fixtures.state("question_llm")
     private val guess = Fixtures.state("guess_food")
     private val groupGuess = Fixtures.state("guess_group")
     private val recommendation = Fixtures.state("recommendation")
@@ -111,9 +112,67 @@ class MainActivityTest {
             onView(withId(button)).perform(click())
             api.reply(question)
             onView(withId(R.id.btnStart)).perform(click())
-            assertEquals("create $meal", api.calls.last())
+            assertEquals("create $meal decision_tree", api.calls.last())
             onView(withId(R.id.btnQuit)).perform(click())
         }
+    }
+
+    @Test
+    fun theDecisionTreeIsSelectedFirstAndTheHintFollowsTheChoice() {
+        onView(withId(R.id.btnEngineDecisionTree)).check(matches(isChecked()))
+        onView(withId(R.id.tvEngineHint)).check(matches(withText(R.string.engine_decision_tree_hint)))
+        onView(withId(R.id.btnEngineLlm)).perform(scrollTo(), click())
+        onView(withId(R.id.tvEngineHint)).check(matches(withText(R.string.engine_llm_hint)))
+        onView(withId(R.id.btnEngineDecisionTree)).perform(scrollTo(), click())
+        onView(withId(R.id.tvEngineHint)).check(matches(withText(R.string.engine_decision_tree_hint)))
+    }
+
+    @Test
+    fun startSendsTheSelectedEngineAndTheSessionShowsWhichOneRan() {
+        onView(withId(R.id.btnEngineLlm)).perform(scrollTo(), click())
+        api.reply(llmQuestion)
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
+        assertEquals("create LU llm", api.calls.last())
+        assertOnlyPanel(R.id.panelQuestion)
+        onView(withId(R.id.tvContext)).check(matches(withText("2026-09-29 · Lunch · 193 dishes · LLM")))
+        onView(withId(R.id.tvQuestion)).check(matches(withText(llmQuestion.step.text)))
+        onView(withId(R.id.answers)).check(matches(hasChildCount(6)))
+
+        // The choice is still there after leaving the session.
+        onView(withId(R.id.btnQuit)).perform(click())
+        onView(withId(R.id.btnEngineLlm)).check(matches(isChecked()))
+        onView(withId(R.id.btnEngineDecisionTree)).perform(scrollTo(), click())
+        api.reply(question)
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
+        assertEquals("create LU decision_tree", api.calls.last())
+        onView(withId(R.id.tvContext))
+            .check(matches(withText("2026-09-29 · Lunch · 193 dishes · Decision tree")))
+    }
+
+    @Test
+    fun anLlmQuestionIsAnsweredWithItsOwnId() {
+        onView(withId(R.id.btnEngineLlm)).perform(scrollTo(), click())
+        startWith(llmQuestion)
+        api.reply(guess)
+        onView(withText("Probably yes")).perform(scrollTo(), click())
+        assertEquals("answer ${llmQuestion.sessionId} q:llm-0 probably_yes", api.calls.last())
+        assertOnlyPanel(R.id.panelGuess)
+    }
+
+    @Test
+    fun anUnavailableLlmEngineSaysSoAndTheDecisionTreeStillStarts() {
+        onView(withId(R.id.btnEngineLlm)).perform(scrollTo(), click())
+        api.fail(Fixtures.httpError(503, Fixtures.json("error_engine_unavailable")))
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
+        assertOnlyPanel(R.id.panelStart)
+        onView(withId(R.id.tvError)).check(matches(withText(R.string.error_engine_unavailable)))
+        assertGone(R.id.btnRetry)
+
+        onView(withId(R.id.btnEngineDecisionTree)).perform(scrollTo(), click())
+        api.reply(question)
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
+        assertOnlyPanel(R.id.panelQuestion)
+        assertGone(R.id.errorBanner)
     }
 
     // --- question ---
@@ -124,7 +183,7 @@ class MainActivityTest {
         assertOnlyPanel(R.id.panelQuestion)
         onView(withId(R.id.tvQuestion)).check(matches(withText(question.step.text)))
         onView(withId(R.id.tvProgress)).check(matches(withText("Question 1 of up to 10")))
-        onView(withId(R.id.tvContext)).check(matches(withText("2026-09-29 · Lunch · 193 dishes")))
+        onView(withId(R.id.tvContext)).check(matches(withText("2026-09-29 · Lunch · 193 dishes · Decision tree")))
         onView(withId(R.id.answers)).check(matches(hasChildCount(6)))
         for (option in question.step.options!!) {
             onView(withText(option.label)).check(matches(isDisplayed()))
@@ -319,7 +378,7 @@ class MainActivityTest {
         onView(withId(R.id.tvUnavailable)).check(
             matches(withText("There is no menu for 2026-01-01 (All day). Try another meal."))
         )
-        onView(withId(R.id.tvContext)).check(matches(withText("2026-01-01 · All day · 0 dishes")))
+        onView(withId(R.id.tvContext)).check(matches(withText("2026-01-01 · All day · 0 dishes · Decision tree")))
         assertGone(R.id.bottomBar)
         assertShown(R.id.btnStartOver)
     }
@@ -331,7 +390,7 @@ class MainActivityTest {
         onView(withId(R.id.tvUnavailable)).check(
             matches(withText("You have turned down every dish on today's menu. Start over to see them again."))
         )
-        onView(withId(R.id.tvContext)).check(matches(withText("2026-01-01 · All day · 1 dish")))
+        onView(withId(R.id.tvContext)).check(matches(withText("2026-01-01 · All day · 1 dish · Decision tree")))
     }
 
     // --- loading and failures ---
@@ -416,7 +475,7 @@ class MainActivityTest {
 
         api.reply(question)
         onView(withId(R.id.btnRetry)).perform(click())
-        assertEquals(listOf("create DN", "create DN"), api.calls.toList())
+        assertEquals(listOf("create DN decision_tree", "create DN decision_tree"), api.calls.toList())
         assertOnlyPanel(R.id.panelQuestion)
         assertGone(R.id.errorBanner)
     }

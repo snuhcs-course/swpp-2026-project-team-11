@@ -1,8 +1,10 @@
 package com.example.metchu.data
 
 import com.example.metchu.Fixtures
+import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
+import com.example.metchu.data.network.ApiError
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.repository.checked
 import org.junit.Assert.assertEquals
@@ -19,7 +21,7 @@ class ContractJsonTest {
     @Test
     fun question() {
         val state = Fixtures.state("question").checked()
-        assertEquals("decision_tree", state.engine)
+        assertEquals(Engine.DECISION_TREE, state.engine)
         assertEquals("2026-09-29", state.date)
         assertEquals("LU", state.meal)
         assertEquals(193, state.candidateCount)
@@ -40,6 +42,28 @@ class ContractJsonTest {
         assertNull(step.guessId)
         assertNull(step.food)
         assertNull(step.group)
+    }
+
+    /** The LLM engine sends the same shape; only the engine name and the question ID differ. */
+    @Test
+    fun questionFromTheLlmEngine() {
+        val state = Fixtures.state("question_llm").checked()
+        assertEquals(Engine.LLM, state.engine)
+        assertEquals(193, state.candidateCount)
+        assertEquals(10, state.maxQuestions)
+
+        val step = state.step
+        assertEquals(Step.QUESTION, step.type)
+        assertEquals("q:llm-0", step.questionId)
+        assertTrue(step.text.isNotBlank())
+        assertEquals(Fixtures.state("question").step.options, step.options)
+    }
+
+    @Test
+    fun engineUnavailableError() {
+        val body = Fixtures.error("error_engine_unavailable")
+        assertEquals(ApiError.ENGINE_UNAVAILABLE, body.error!!.code)
+        assertNull(body.state)
     }
 
     @Test

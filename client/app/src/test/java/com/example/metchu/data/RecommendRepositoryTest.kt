@@ -1,6 +1,7 @@
 package com.example.metchu.data
 
 import com.example.metchu.Fixtures
+import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.repository.RecommendRepository
@@ -54,6 +55,27 @@ class RecommendRepositoryTest {
         assertEquals("/api/sessions/", request.path)
         assertTrue(request.getHeader("Content-Type")!!.startsWith("application/json"))
         assertEquals("""{"meal":"LU"}""", request.json().toString())
+    }
+
+    @Test
+    fun createSessionSendsTheChosenEngine() = runTest {
+        reply("question_llm", 201)
+        val state = repository.createSession("LU", Engine.LLM)
+        assertEquals(Engine.LLM, state.engine)
+        assertEquals("""{"meal":"LU","engine":"llm"}""", server.takeRequest().json().toString())
+    }
+
+    /** The server refuses the LLM engine when it has no API key; the body says so. */
+    @Test
+    fun engineUnavailableBodyIsDecoded() = runTest {
+        reply("error_engine_unavailable", 503)
+        try {
+            repository.createSession("LU", Engine.LLM)
+            fail("Expected an HttpException")
+        } catch (e: HttpException) {
+            assertEquals(503, e.code())
+            assertEquals("engine_unavailable", repository.errorBody(e)!!.error!!.code)
+        }
     }
 
     /** Whole day: the field is left out, which the server reads as "no meal filter". */

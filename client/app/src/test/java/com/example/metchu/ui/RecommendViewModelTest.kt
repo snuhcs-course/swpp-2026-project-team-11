@@ -4,6 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.example.metchu.FakeApi
 import com.example.metchu.Fixtures
 import com.example.metchu.R
+import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.RecommendRepository
@@ -42,6 +43,7 @@ class RecommendViewModelTest {
     private val noServer = UiError(R.string.error_no_server, canRetry = true)
     private val serverError = UiError(R.string.error_server, canRetry = true)
     private val sessionLost = UiError(R.string.error_session_lost, canRetry = false)
+    private val engineUnavailable = UiError(R.string.error_engine_unavailable, canRetry = false)
 
     @Before
     fun setUp() {
@@ -80,6 +82,30 @@ class RecommendViewModelTest {
         viewModel.start("DN")
         assertEquals(listOf("create DN"), api.calls)
         assertIdle(question)
+    }
+
+    @Test
+    fun startAsksForTheChosenEngine() {
+        val llmQuestion = Fixtures.state("question_llm")
+        api.reply(llmQuestion)
+        viewModel.start("LU", Engine.LLM)
+        api.reply(question)
+        viewModel.startOver()
+        viewModel.start("LU", Engine.DECISION_TREE)
+        assertEquals(listOf("create LU llm", "create LU decision_tree"), api.calls)
+        assertIdle(question)
+    }
+
+    /** An LLM session is driven exactly like a decision-tree one. */
+    @Test
+    fun anLlmSessionAnswersItsOwnQuestionId() {
+        val llmQuestion = Fixtures.state("question_llm")
+        api.reply(llmQuestion)
+        viewModel.start("LU", Engine.LLM)
+        api.reply(guess)
+        viewModel.answer("probably_yes")
+        assertEquals("answer ${llmQuestion.sessionId} q:llm-0 probably_yes", api.calls.last())
+        assertIdle(guess)
     }
 
     @Test
@@ -287,6 +313,29 @@ class RecommendViewModelTest {
         api.reply(question)
         viewModel.start("LU")
         assertIdle(question)
+    }
+
+    @Test
+    fun anUnavailableEngineStaysOnTheStartScreenWithoutRetry() {
+        api.fail(Fixtures.httpError(503, Fixtures.json("error_engine_unavailable")))
+        viewModel.start("LU", Engine.LLM)
+        assertIdle(null, engineUnavailable)
+
+        viewModel.retry()
+        assertEquals(listOf("create LU llm"), api.calls)
+
+        // The other engine still starts, and clears the message.
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE)
+        assertIdle(question)
+    }
+
+    /** A 503 that is not about the engine, such as a proxy's, is an ordinary server error. */
+    @Test
+    fun another503OffersRetry() {
+        api.fail(Fixtures.httpError(503, "<html>Service Unavailable</html>"))
+        viewModel.start("LU", Engine.LLM)
+        assertIdle(null, serverError)
     }
 
     @Test
