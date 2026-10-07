@@ -8,6 +8,11 @@ The P10 question engine now consumes this candidate set. See the
 Python API, interactive demo, snapshots, and paired benchmark. Its demo requires
 no model API key when using the shared fixture.
 
+The P13/P14 LLM engine (MVP2) consumes the same candidate set but sends only the
+food names to Gemini. It needs the API key from step B.1 below. See the
+[LLM engine guide](question_engines/llm/README.md) for its API, settings and
+failure handling.
+
 - The local DB is **one file, `backend/db.sqlite3`**. It is gitignored, so everyone builds their own.
 - Two ways to fill it:
   - **A. Load the shared snapshot**: no API key. Enough for engine development.
@@ -52,7 +57,8 @@ Its content is a single line. Get the key from [Google AI Studio](https://aistud
 GOOGLE_API_KEY=your-key
 ```
 
-`manage.py` loads it automatically (see `backend/env.py`).
+`manage.py` loads it automatically (see `backend/env.py`). The LLM question engine reads the
+same key; its optional settings are listed in the [LLM engine guide](question_engines/llm/README.md#configuration-and-failures-p14).
 
 > **보안 규칙**
 > - `.env`는 `.gitignore`에 있습니다. `git status`에 `.env`가 보이지 않아야 정상이며, **절대 커밋하지 마세요.**
@@ -122,7 +128,7 @@ services.get_candidates(datetime.date(2026, 9, 29), meal="LU")   # meal=None: wh
 ```
 
 > **feature 값의 뜻:** "이 음식을 원하는 사람에게 그 질문을 하면 '예'라고 답할 확률" (0~1, 0.1 단위).
-> MVP1은 Bayesian update의 likelihood로 바로 쓰고, MVP2는 `display_name` 목록만 LLM에 넘기면 됩니다.
+> MVP1은 Bayesian update의 likelihood로 바로 쓰고, MVP2(`question_engines/llm`)는 `display_name` 목록만 LLM에 넘깁니다.
 
 - Only real meals (`is_food=True`) are returned. Drinks, 공기밥 and side orders are excluded.
 - Working in plain Python without Django? Read the JSON written by `export_candidates`.
@@ -149,6 +155,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `fetch_menus [--date]` | fetch and store a day's menu | no |
 | `extract_features [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |
+| `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** |
 
 ## Data model (`menus/models.py`)
 
