@@ -19,9 +19,10 @@ one they feel like eating most, with as few yes/no questions as possible.
   e.g. "Do you feel like something with broth?", "Do you feel like noodles?".
 - Ask about taste, temperature, broth, rice/noodles/bread, kind of meat, richness,
   lightness, or cuisine. Menu names are in Korean; write the question in English.
-- Never repeat a question, or ask one with the same meaning as an earlier one.
+- Never ask again about a topic already asked (e.g. rice after a rice question),
+  in any wording, whatever the answer was. "Doesn't matter" and "Not sure" mean the
+  user has no preference there: move on to a different topic.
 - Name a specific menu only when two or three remain.
-- "Doesn't matter" and "Not sure" tell you nothing about that question.
 - A rejected menu is not what the user wants now; it is no longer a candidate.
 
 ## Input data

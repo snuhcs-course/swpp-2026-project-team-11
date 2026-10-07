@@ -65,7 +65,7 @@ P10, with these differences:
 | --- | --- | --- |
 | `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) | required | Read when `LLMEngine` is built without `llm=`. Missing → `LLMConfigError` |
 | `METCHU_LLM_MODEL` | `gemini-3.5-flash` | Gemini model |
-| `METCHU_LLM_TIMEOUT` | `8` | Seconds per LLM call |
+| `METCHU_LLM_TIMEOUT` | `10` | Seconds per LLM call. Gemini rejects anything under 10 |
 
 Each step makes up to `EngineConfig.max_attempts` (default 2) single-request calls.
 When all of them time out, fail, or return invalid output (bad JSON, a menu outside
