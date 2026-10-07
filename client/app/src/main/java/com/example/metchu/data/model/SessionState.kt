@@ -21,6 +21,14 @@ data class SessionState(
     val step: Step
 )
 
+/** The question engines the server can run a session with; see [SessionState.engine]. */
+object Engine {
+    /** P10: picks each question from the dishes' extracted features. Answers at once. */
+    const val DECISION_TREE = "decision_tree"
+    /** P13/P14: Gemini writes each question from the dish names. A step can take seconds. */
+    const val LLM = "llm"
+}
+
 /** One engine step. [type] decides which of the optional fields are present. */
 data class Step(
     val type: String,
@@ -29,7 +37,7 @@ data class Step(
     // question
     @SerializedName("question_id") val questionId: String?,
     val options: List<AnswerOption>?,
-    // guess and recommendation
+    // guess and recommendation; only the decision tree sends a group
     @SerializedName("guess_id") val guessId: String?,
     @SerializedName("target_kind") val targetKind: String?,
     val food: Food?,

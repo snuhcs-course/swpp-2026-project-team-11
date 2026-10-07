@@ -10,10 +10,12 @@ import retrofit2.http.Path
 /**
  * The contract with backend/recommend/views.py. Field names must match its JSON.
  *
- * [CreateSessionRequest.meal] is "BR", "LU", "DN" or null for the whole day. The
- * menu date is the server's decision, so the phone does not send one.
+ * [CreateSessionRequest.meal] is "BR", "LU", "DN" or null for the whole day.
+ * [CreateSessionRequest.engine] is one of the [Engine] IDs, or null for the server's
+ * default. Gson leaves a null field out of the body. The menu date is the server's
+ * decision, so the phone does not send one.
  */
-data class CreateSessionRequest(val meal: String?)
+data class CreateSessionRequest(val meal: String?, val engine: String? = null)
 
 data class AnswerRequest(
     @SerializedName("question_id") val questionId: String,
@@ -28,7 +30,12 @@ data class FeedbackRequest(
 /** Body of a non-2xx response. `state` is only sent with a 409 stale_step. */
 data class ApiErrorResponse(val error: ApiError?, val state: SessionState?)
 
-data class ApiError(val code: String, val message: String)
+data class ApiError(val code: String, val message: String) {
+    companion object {
+        /** 503: the chosen engine cannot run on this server (the LLM engine has no API key). */
+        const val ENGINE_UNAVAILABLE = "engine_unavailable"
+    }
+}
 
 interface ApiService {
 

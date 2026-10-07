@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.metchu.R
 import com.example.metchu.data.model.SessionState
+import com.example.metchu.data.network.ApiError
 import com.example.metchu.data.repository.RecommendRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -40,8 +41,12 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
 
     private var lastRequest: (suspend () -> SessionState)? = null
 
-    /** [meal] is "BR", "LU", "DN" or null for the whole day. */
-    fun start(meal: String?) = request { repository.createSession(meal) }
+    /**
+     * [meal] is "BR", "LU", "DN" or null for the whole day. [engine] is one of the
+     * Engine IDs, or null for the server's default.
+     */
+    fun start(meal: String?, engine: String? = null) =
+        request { repository.createSession(meal, engine) }
 
     fun answer(answerId: String) {
         val current = _session.value ?: return
@@ -114,6 +119,11 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
                 lastRequest = null
                 _session.value = null
                 _error.value = UiError(R.string.error_session_lost, canRetry = false)
+            }
+            // The LLM engine has no API key on this server; asking again cannot help.
+            e.code() == 503 && body?.error?.code == ApiError.ENGINE_UNAVAILABLE -> {
+                lastRequest = null
+                _error.value = UiError(R.string.error_engine_unavailable, canRetry = false)
             }
             else -> _error.value = UiError(R.string.error_server, canRetry = true)
         }

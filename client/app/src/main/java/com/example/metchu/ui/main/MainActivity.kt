@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.example.metchu.R
+import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Food
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
@@ -25,6 +26,8 @@ import java.util.Locale
  *   guess      -> yes / no     recommendation, unavailable -> start over
  *
  * Question text, answer labels and guess text come from the server as they are.
+ * The start screen picks which question engine runs the session, so the two can be
+ * compared; the screens are the same for both.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -43,7 +46,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.root.padForSystemBars()
 
-        binding.btnStart.onTap { viewModel.start(selectedMeal()) }
+        binding.btnStart.onTap { viewModel.start(selectedMeal(), selectedEngine()) }
         binding.btnAccept.onTap { viewModel.feedback(accepted = true) }
         binding.btnReject.onTap { viewModel.feedback(accepted = false) }
         binding.btnUndo.onTap { viewModel.undo() }
@@ -51,6 +54,12 @@ class MainActivity : AppCompatActivity() {
         binding.btnStartOver.onTap { viewModel.startOver() }
         binding.btnQuit.onTap { viewModel.startOver() }
         binding.btnRetry.onTap { viewModel.retry() }
+        binding.engineToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) binding.tvEngineHint.setText(
+                if (checkedId == R.id.btnEngineLlm) R.string.engine_llm_hint
+                else R.string.engine_decision_tree_hint
+            )
+        }
 
         viewModel.session.observe(this) { render(it) }
 
@@ -90,6 +99,10 @@ class MainActivity : AppCompatActivity() {
         else -> null
     }
 
+    private fun selectedEngine(): String =
+        if (binding.engineToggle.checkedButtonId == R.id.btnEngineLlm) Engine.LLM
+        else Engine.DECISION_TREE
+
     private fun render(session: SessionState?) {
         val type = session?.step?.type
         binding.panelStart.isVisible = session == null
@@ -105,7 +118,9 @@ class MainActivity : AppCompatActivity() {
 
         binding.tvContext.text = getString(
             R.string.session_context, session.date, mealLabel(session.meal),
-            resources.getQuantityString(R.plurals.dishes, session.candidateCount, session.candidateCount)
+            resources.getQuantityString(R.plurals.dishes, session.candidateCount, session.candidateCount),
+            // The server says which engine it ran, which is not always the one asked for.
+            getString(if (session.engine == Engine.LLM) R.string.engine_llm else R.string.engine_decision_tree)
         )
         binding.btnUndo.isEnabled = session.canUndo
         // A guess is already a proposal, so "recommend now" has nothing to add there.

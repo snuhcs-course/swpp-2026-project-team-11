@@ -25,7 +25,9 @@ object RetrofitInstance {
     private val client = OkHttpClient.Builder()
         .addInterceptor(logging)
         .connectTimeout(5, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        // An LLM engine step makes up to two Gemini calls of 10 s each before the
+        // server falls back, so the reply can take just over 20 s.
+        .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
     val api: ApiService by lazy { create(BuildConfig.BASE_URL) }

@@ -7,13 +7,20 @@
     <string name="start_meal_label">Which meal?</string>
     <string name="start_button">Start</string>
 
+    <!-- which question engine runs the session -->
+    <string name="start_engine_label">Who asks the questions?</string>
+    <string name="engine_decision_tree">Decision tree</string>
+    <string name="engine_llm">LLM</string>
+    <string name="engine_decision_tree_hint">Picks each question from the dishes\' features. Answers instantly.</string>
+    <string name="engine_llm_hint">Gemini writes each question from the dish names. A step can take a few seconds.</string>
+
     <string name="meal_breakfast">Breakfast</string>
     <string name="meal_lunch">Lunch</string>
     <string name="meal_dinner">Dinner</string>
     <string name="meal_any">All day</string>
 
-    <!-- session header: date · meal · number of dishes -->
-    <string name="session_context">%1$s · %2$s · %3$s</string>
+    <!-- session header: date · meal · number of dishes · engine -->
+    <string name="session_context">%1$s · %2$s · %3$s · %4$s</string>
     <plurals name="dishes">
         <item quantity="one">%d dish</item>
         <item quantity="other">%d dishes</item>
@@ -52,5 +59,6 @@
     <string name="retry">Try again</string>
     <string name="error_no_server">Could not reach the server. Check that it is running and that this device can reach it.</string>
     <string name="error_server">The server could not handle that request.</string>
+    <string name="error_engine_unavailable">The LLM engine is not set up on this server (it needs GOOGLE_API_KEY). Choose the decision tree, or add the key and restart the server.</string>
     <string name="error_session_lost">Your session ended on the server. Please start again.</string>
 </resources>

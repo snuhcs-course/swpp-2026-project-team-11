@@ -16,8 +16,8 @@ import retrofit2.HttpException
  */
 class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
 
-    suspend fun createSession(meal: String?): SessionState =
-        api.createSession(CreateSessionRequest(meal)).checked()
+    suspend fun createSession(meal: String?, engine: String? = null): SessionState =
+        api.createSession(CreateSessionRequest(meal, engine)).checked()
 
     suspend fun answer(sessionId: String, questionId: String, answerId: String): SessionState =
         api.answer(sessionId, AnswerRequest(questionId, answerId)).checked()
