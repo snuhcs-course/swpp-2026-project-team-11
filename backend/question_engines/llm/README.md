@@ -64,7 +64,7 @@ P10, with these differences:
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) | required | Read when `LLMEngine` is built without `llm=`. Missing → `LLMConfigError` |
-| `METCHU_LLM_MODEL` | `gemini-3.5-flash` | Gemini model |
+| `METCHU_LLM_MODEL` | `gemini-3.5-flash-lite` | Gemini model. Free-tier limits differ per model; see AI Studio |
 | `METCHU_LLM_TIMEOUT` | `10` | Seconds per LLM call. Gemini rejects anything under 10 |
 
 Each step makes up to `EngineConfig.max_attempts` (default 2) single-request calls.

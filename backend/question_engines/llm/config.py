@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 import logging
 import os
 
-DEFAULT_MODEL = "gemini-3.5-flash"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"  # fast, and its free-tier quota is separate from 3.5-flash
 MIN_TIMEOUT_S = 10.0  # "Manually set deadline ... is too short. Minimum allowed deadline is 10s."
 DEFAULT_TIMEOUT_S = MIN_TIMEOUT_S
 
