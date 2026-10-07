@@ -48,6 +48,10 @@ python backend/manage.py loaddata menus_2026-09-29
 METCHU_MENU_DATE=2026-09-29 python backend/manage.py runserver 0.0.0.0:8000
 ```
 
+The start screen chooses which engine asks the questions, so the two can be
+compared on the same menu. The decision tree needs no key; the LLM engine needs
+`GOOGLE_API_KEY` in the repo-root `.env` before the server starts.
+
 See the [Android client guide](client/README.md) for the screens, the REST
 contract and how to run on a physical phone.
 
