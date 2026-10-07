@@ -64,15 +64,16 @@ class MalformedRequestTests(SmallMenuTestCase):
             self.call(url + "feedback/", {"guess_id": bad_guess, "accepted": True}, 409)
         self.assertEqual(self.client.get(url).json(), guess)
 
-    def test_create_rejects_bad_date_and_meal(self):
+    def test_create_rejects_bad_date_meal_and_engine(self):
         for body in ({"date": "2026-13-01"}, {"date": "29/09/2026"}, {"date": 20260929},
                      {"date": ""}, {"date": ["2026-09-29"]}, {"meal": "lu"}, {"meal": ""},
-                     {"meal": 1}, {"meal": ["LU"]}, {"meal": {"id": "LU"}}):
+                     {"meal": 1}, {"meal": ["LU"]}, {"meal": {"id": "LU"}},
+                     {"engine": "other"}, {"engine": ""}, {"engine": 1}, {"engine": ["llm"]}):
             response = post(self.client, "/api/sessions/", body)
             self.assertEqual(response.status_code, 400, body)
 
     def test_create_ignores_unknown_fields_and_accepts_an_empty_body(self):
-        state, _ = self.start(engine="other", extra=[1, 2])
+        state, _ = self.start(extra=[1, 2])
         check_state(self, state)
         response = self.client.post("/api/sessions/", data=b"", content_type="application/json")
         self.assertEqual(response.status_code, 201)

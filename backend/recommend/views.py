@@ -1,6 +1,6 @@
 """HTTP glue between the Android client and the question engine.
 
-    POST /api/sessions/                      {"date"?, "meal"?}            -> 201 state
+    POST /api/sessions/                      {"date"?, "meal"?, "engine"?} -> 201 state
     GET  /api/sessions/<id>/                                               -> state
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
@@ -11,6 +11,10 @@ Every success returns the same session state (see `RecommendSession.public_state
 so the client always redraws from one shape. Errors are
 `{"error": {"code", "message"}}`; a 409 `stale_step` also carries the current
 `state`, so a double tap redraws instead of failing.
+
+`engine` is "decision_tree" or "llm"; without it the server's default runs
+(settings.RECOMMEND_DEFAULT_ENGINE). Asking for "llm" on a server with no API key
+is a 503 `engine_unavailable`.
 """
 
 from __future__ import annotations
@@ -53,9 +57,16 @@ def create_session(request):
         meal = payload.get("meal")
         if meal is not None and meal not in MEALS:
             raise ValueError("meal must be one of BR, LU, DN.")
+        engine = payload.get("engine")
+        if engine is not None and engine not in sessions.ENGINES:
+            raise ValueError(f"engine must be one of {', '.join(sessions.ENGINES)}.")
     except ValueError as error:  # includes json.JSONDecodeError
         return _error(400, "invalid_request", str(error))
-    return JsonResponse(sessions.create(date, meal).public_state(), status=201)
+    try:
+        session = sessions.create(date, meal, engine)
+    except sessions.EngineUnavailable as error:
+        return _error(503, "engine_unavailable", str(error))
+    return JsonResponse(session.public_state(), status=201)
 
 
 @require_GET

@@ -1,8 +1,14 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal)        -> RecommendSession
-    get(session_id)           -> RecommendSession | None
-    session.public_state()    -> what the phone is allowed to see
+    create(date, meal, engine) -> RecommendSession
+    get(session_id)            -> RecommendSession | None
+    session.public_state()     -> what the phone is allowed to see
+
+A session runs one of ENGINES, chosen when it is created: the P10 decision tree
+or the P13/P14 LLM engine. Both have the same session API and step shapes, so
+everything below the constructor is the same for either. The LLM engine calls
+Gemini while it starts and after every answer, rejection and "recommend now", so
+those requests can take as long as its timeout allows; undo never calls it.
 
 The engine is one session per instance and is not safe to mutate from two
 requests at once, so every session carries its own lock. The candidate list is
@@ -25,8 +31,9 @@ from django.utils import timezone
 
 from menus.services import get_candidates, get_feature_schema
 from question_engines.decision_tree import DecisionTreeEngine
+from question_engines.llm import LLMConfigError, LLMEngine
 
-ENGINE_NAME = "decision_tree"
+ENGINES = ("decision_tree", "llm")
 MAX_SESSIONS = 500
 
 
@@ -34,20 +41,31 @@ class StaleStep(Exception):
     """The request refers to a step the session is no longer showing."""
 
 
+class EngineUnavailable(Exception):
+    """The requested engine cannot run on this server as it is configured."""
+
+
 class RecommendSession:
-    def __init__(self, date: datetime.date, meal: str | None):
+    def __init__(self, date: datetime.date, meal: str | None, engine: str):
         self.session_id = uuid.uuid4().hex
+        self.engine_name = engine
         self.date = date
         self.meal = meal
         self.lock = threading.Lock()
         candidates = get_candidates(date, meal)
         self.candidate_count = len(candidates)
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
-        self.engine = DecisionTreeEngine(
-            candidates, get_feature_schema(),
-            context={"date": date.isoformat(), "meal": meal},
-            config={"max_questions": self.max_questions},
-        )
+        config = {"max_questions": self.max_questions}
+        if engine == "llm":
+            try:
+                self.engine = LLMEngine(candidates, config=config)
+            except LLMConfigError as error:  # no API key, or a malformed LLM setting
+                raise EngineUnavailable(str(error)) from error
+        else:
+            self.engine = DecisionTreeEngine(
+                candidates, get_feature_schema(),
+                context={"date": date.isoformat(), "meal": meal}, config=config,
+            )
         self.engine.start()
 
     def answer(self, question_id: str, answer_id: str) -> None:
@@ -76,7 +94,8 @@ class RecommendSession:
         step = self.engine.next_step()
         group = step.get("group")
         if group:
-            # The engine lists members by ID only; the phone needs names to show them.
+            # Only the decision tree proposes groups. It lists members by ID only;
+            # the phone needs names to show them.
             foods = self.engine.catalog.by_id
             group["members"] = [
                 {"food_id": food_id, "display_name": foods[food_id].display_name}
@@ -84,7 +103,7 @@ class RecommendSession:
             ]
         return {
             "session_id": self.session_id,
-            "engine": ENGINE_NAME,
+            "engine": self.engine_name,
             "date": self.date.isoformat(),
             "meal": self.meal,
             "candidate_count": self.candidate_count,
@@ -98,8 +117,11 @@ _sessions: OrderedDict[str, RecommendSession] = OrderedDict()
 _sessions_lock = threading.Lock()
 
 
-def create(date: datetime.date | None = None, meal: str | None = None) -> RecommendSession:
-    session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(), meal)
+def create(date: datetime.date | None = None, meal: str | None = None,
+           engine: str | None = None) -> RecommendSession:
+    """Raises EngineUnavailable when `engine` is "llm" and the server has no API key."""
+    session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
+                               meal, engine or settings.RECOMMEND_DEFAULT_ENGINE)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:

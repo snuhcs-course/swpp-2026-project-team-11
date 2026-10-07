@@ -32,7 +32,7 @@ def check_state(test, state):
     """Assert the shape the Android client decodes (client/.../SessionState.kt)."""
     test.assertEqual(set(state), STATE_KEYS)
     test.assertIsInstance(state["session_id"], str)
-    test.assertEqual(state["engine"], "decision_tree")
+    test.assertIn(state["engine"], ("decision_tree", "llm"))
     test.assertIsInstance(state["can_undo"], bool)
     test.assertIsInstance(state["candidate_count"], int)
     step = state["step"]
