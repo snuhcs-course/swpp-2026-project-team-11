@@ -107,10 +107,6 @@ class SessionTests(SimpleTestCase):
                          {"question_count": 1, "guess_count": 1, "feedback_count": 1})
         self.assertEqual(len(diagnostics["llm_calls"]), 2)
 
-    def test_invalid_turn_reaches_the_caller(self):
-        with self.assertRaises(InvalidTurn):
-            self.engine(ask(" ")).start()
-
 
 class CandidateTests(SimpleTestCase):
     def test_same_display_name_is_one_choice_and_single_choice_skips_the_llm(self):
@@ -124,11 +120,13 @@ class CandidateTests(SimpleTestCase):
         self.assertEqual(step["reason"], "empty_candidates")
 
     def test_config(self):
-        self.assertEqual(LLMEngine([], llm=None).config, EngineConfig(max_questions=10))
-        self.assertIsNone(LLMEngine([], llm=None, config={"max_questions": None}).config.max_questions)
+        self.assertEqual(LLMEngine([], llm=FakeLLM()).config, EngineConfig(max_questions=10, max_attempts=2))
+        self.assertIsNone(LLMEngine([], llm=FakeLLM(), config={"max_questions": None}).config.max_questions)
         for bad in (0, -1, 2.5, True):
             with self.assertRaises(ValueError):
                 EngineConfig(max_questions=bad)
+            with self.assertRaises(ValueError):
+                EngineConfig(max_attempts=bad)
 
 
 class CheckTurnTests(SimpleTestCase):

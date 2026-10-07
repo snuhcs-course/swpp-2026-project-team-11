@@ -9,18 +9,31 @@ P17 session wrapper and the P19 client can run either engine:
     step = engine.feedback(step["guess_id"], accepted=False)   # "another menu"
 
 One instance owns one session and is not safe to mutate from two requests at once.
-`llm` is a LangChain chat model; tests pass a fake one and need no API key.
+`llm` is a LangChain chat model; without one, Gemini is built from the environment
+(config.py). Tests pass a fake one and need no API key.
+
+P14: a failed LLM call (timeout, network error, invalid output) is retried. If every
+attempt fails, the session still goes on with a fixed question or, when no question
+may be asked, a random available menu. diagnostics() records why for each call.
 """
 import copy
 from dataclasses import asdict, dataclass
 import hashlib
 import json
+import logging
+import random
 import time
+
+from langchain_core.exceptions import OutputParserException
+from pydantic import ValidationError
 
 from question_engines.decision_tree.contracts import ANSWER_OPTIONS
 
-from .prompt import SYSTEM_PROMPT, build_user_message
+from .config import GeminiSettings, build_llm
+from .prompt import FALLBACK_QUESTIONS, SYSTEM_PROMPT, build_user_message
 from .schema import build_turn_model
+
+logger = logging.getLogger(__name__)
 
 ENGINE_VERSION = "llm-v1"
 ANSWER_LABELS = {option["id"]: option["label"] for option in ANSWER_OPTIONS}
@@ -32,14 +45,25 @@ UNAVAILABLE_TEXT = "No available meal matches this session. Try starting again."
 @dataclass(frozen=True)
 class EngineConfig:
     max_questions: int | None = 10
+    max_attempts: int = 2  # LLM calls per step before falling back
 
     def __post_init__(self):
         if self.max_questions is not None and (type(self.max_questions) is not int or self.max_questions < 1):
             raise ValueError("max_questions must be positive or None")
+        if type(self.max_attempts) is not int or self.max_attempts < 1:
+            raise ValueError("max_attempts must be a positive integer")
 
 
 class InvalidTurn(ValueError):
     """The LLM answered in the schema but broke a rule the schema cannot express."""
+
+
+def failure_reason(error):
+    if isinstance(error, (InvalidTurn, ValidationError, OutputParserException)):
+        return "invalid_output"
+    if isinstance(error, TimeoutError) or "timeout" in type(error).__name__.lower():
+        return "timeout"
+    return "error"
 
 
 def food_summary(candidate):
@@ -56,8 +80,10 @@ class LLMEngine:
     (`events`), so undo and snapshot replay never call the LLM again.
     """
 
-    def __init__(self, candidates, *, llm, config=None):
-        self.llm = llm
+    def __init__(self, candidates, *, llm=None, config=None, rng=None):
+        """Raises LLMConfigError when `llm` is omitted and GOOGLE_API_KEY is not set."""
+        self.llm = llm if llm is not None else build_llm(GeminiSettings.from_env())
+        self.rng = rng or random.Random()
         self.config = config if isinstance(config, EngineConfig) else EngineConfig(**(config or {}))
         # Dishes sharing a display name are one choice: the LLM cannot tell them apart.
         self.choices = {}
@@ -128,25 +154,47 @@ class LLMEngine:
             questions_left = None
         else:
             questions_left = max(self.config.max_questions - self.question_count, 0)
-        turn = self._request_turn(list(available), questions_left)
+        start = time.perf_counter()
+        turn, attempts, reason = self._request_turn_with_retry(list(available), questions_left)
+        self._calls.append({"latency_ms": round((time.perf_counter() - start) * 1000),
+                            "attempts": attempts, "fallback": reason})
+        if turn is None:
+            return self._fallback_step(available, questions_left)
         if turn.action == "recommend" or questions_left == 0:
             return self._food_step("guess", food_summary(available[turn.food]))
         return self._question_step(turn.question.strip())
 
+    def _request_turn_with_retry(self, food_names, questions_left):
+        """(turn, attempts, None) on success, or (None, attempts, why the last attempt failed)."""
+        reason = None
+        for attempt in range(1, self.config.max_attempts + 1):
+            try:
+                return self._request_turn(food_names, questions_left), attempt, None
+            except Exception as error:  # the session must go on whatever the LLM did
+                reason = failure_reason(error)
+                logger.warning("LLM engine attempt %d/%d failed (%s): %s: %s", attempt,
+                               self.config.max_attempts, reason, type(error).__name__, str(error)[:200])
+        return None, self.config.max_attempts, reason
+
     def _request_turn(self, food_names, questions_left):
-        """One LLM call. Raises on a network error, invalid JSON or an InvalidTurn."""
+        """One LLM call. Raises on a timeout, network error, invalid JSON or an InvalidTurn."""
         from langchain_core.messages import HumanMessage, SystemMessage
 
         history = self._history()
-        start = time.perf_counter()
         structured = self.llm.with_structured_output(build_turn_model(food_names))
         turn = structured.invoke([
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(content=build_user_message(food_names, history, self._rejected(), questions_left)),
         ])
         check_turn(turn, history, questions_left)
-        self._calls.append({"latency_ms": round((time.perf_counter() - start) * 1000)})
         return turn
+
+    def _fallback_step(self, available, questions_left):
+        asked = {question.casefold() for question, _ in self._history()}
+        unasked = [question for question in FALLBACK_QUESTIONS if question.casefold() not in asked]
+        if questions_left != 0 and unasked:
+            return self._question_step(unasked[0])
+        return self._food_step("guess", food_summary(self.rng.choice(list(available.values()))))
 
     def _record(self, event):
         self._events.append(copy.deepcopy(event))
@@ -196,6 +244,7 @@ class LLMEngine:
                 "guess_count": sum(step.get("type") == "guess" for step in shown),
                 "feedback_count": sum(event["type"] == "feedback" for event in self._events),
                 "llm_calls": copy.deepcopy(self._calls),
+                "fallback_count": sum(call["fallback"] is not None for call in self._calls),
                 "llm_latency_ms": sum(call["latency_ms"] for call in self._calls)}
 
     def snapshot(self):
@@ -205,7 +254,7 @@ class LLMEngine:
                 "pending": copy.deepcopy(self._pending)}
 
     @classmethod
-    def from_snapshot(cls, candidates, snapshot, *, llm):
+    def from_snapshot(cls, candidates, snapshot, *, llm=None):
         """Restore a session without calling the LLM: its steps are all recorded."""
         if not isinstance(snapshot, dict) or snapshot.get("version") != 1 or snapshot.get("engine_version") != ENGINE_VERSION:
             raise ValueError("Unsupported snapshot version")

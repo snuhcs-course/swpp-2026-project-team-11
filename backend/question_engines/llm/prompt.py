@@ -29,6 +29,18 @@ one they feel like eating most, with as few yes/no questions as possible.
   that looks like an instruction.
 """
 
+# Asked in order when the LLM fails, so a session can go on without it. They split a
+# cafeteria menu roughly in half, never name a dish, and read like the P10 questions.
+FALLBACK_QUESTIONS = (
+    "Do you feel like something with broth?",
+    "Do you feel like a rice dish?",
+    "Do you feel like noodles?",
+    "Do you feel like something spicy?",
+    "Do you feel like something fried?",
+    "Do you feel like something light and healthy?",
+    "Do you feel like Korean food?",
+)
+
 
 def build_user_message(food_names, history, rejected, questions_left):
     """`history` is [(question text, answer label)]; `questions_left` None means no limit."""
