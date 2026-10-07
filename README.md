@@ -1,9 +1,10 @@
 # Metchu! — SNU SWPP 2026 Team 11
 
 Metchu helps users discover what they feel like eating through adaptive
-questions. The backend contains the cafeteria-menu DB, the P10 feature-based
-question engine and a REST API that runs it for the Android client in
-`client/`. The LLM conversation engine is a separate iteration task.
+questions. The backend contains the cafeteria-menu DB, two question engines
+with the same session API — the P10 feature-based engine (MVP1) and the P13/P14
+LLM engine (MVP2) — and a REST API that runs them for the Android client in
+`client/`.
 
 ## Run the current engine demo
 
@@ -24,8 +25,15 @@ the shared fixture and requires no API key. Add `--smoke` for a noninteractive
 answer/reject/accept flow, or `--policy lookahead` for the experimental bounded
 planner. The default is the greedy information-gain policy.
 
+The LLM engine has the same demo flow and needs `GOOGLE_API_KEY` in the
+repo-root `.env` (see the [DB setup guide](backend/README.md#1-put-your-key-in-env)):
+
 ```bash
-python backend/manage.py test menus question_engines.decision_tree
+python backend/manage.py demo_llm_engine --date 2026-09-29 --meal LU
+```
+
+```bash
+python backend/manage.py test menus question_engines
 python backend/manage.py benchmark_decision_tree --date 2026-09-29 --meal LU --trials 24 --output /tmp/benchmark.json
 ```
 
@@ -49,6 +57,7 @@ contract and how to run on a physical phone.
 
 - [Cafeteria DB setup and feature extraction](backend/README.md)
 - [P10 engine API, output shapes, snapshots, and P17/P19/P20 handoff](backend/question_engines/decision_tree/README.md)
+- [P13/P14 LLM engine API, configuration, failure handling and P17 integration](backend/question_engines/llm/README.md)
 - [Recorded paired synthetic benchmark](backend/question_engines/decision_tree/benchmarks/cafeteria_20260929_lunch.json)
 - [Requirements and design Wiki](https://github.com/snuhcs-course/swpp-2026-project-team-11/wiki)
 
