@@ -30,6 +30,9 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
 
     suspend fun undo(sessionId: String): SessionState = api.undo(sessionId).checked()
 
+    /** The session as the server has it now. Changes nothing. */
+    suspend fun state(sessionId: String): SessionState = api.getState(sessionId).checked()
+
     /**
      * Decodes the server's `{"error": ..., "state": ...}` body, or null if it is not
      * one. A `state` that fails [checked] is dropped rather than shown.

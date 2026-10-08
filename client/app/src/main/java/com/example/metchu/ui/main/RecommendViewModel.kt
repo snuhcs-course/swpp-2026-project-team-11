@@ -65,9 +65,18 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         request { repository.recommendNow(current.sessionId) }
     }
 
+    /**
+     * The server cannot tell a repeated undo from a second one: sent twice, it goes
+     * back two steps. If the reply to an undo is lost the server may already have
+     * gone back, so Try again first reads the state and sends undo again only when
+     * the server is still on the step this screen shows.
+     */
     fun undo() {
         val current = _session.value ?: return
-        request { repository.undo(current.sessionId) }
+        request(retry = {
+            val now = repository.state(current.sessionId)
+            if (now != current) now else repository.undo(current.sessionId)
+        }) { repository.undo(current.sessionId) }
     }
 
     /** Leaves the session and returns to the start screen. */
@@ -79,12 +88,16 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     }
 
     fun retry() {
-        lastRequest?.let { request(it) }
+        lastRequest?.let { request(call = it) }
     }
 
-    private fun request(call: suspend () -> SessionState) {
+    /** [retry] is what Try again runs if [call] fails; by default [call] itself. */
+    private fun request(
+        retry: (suspend () -> SessionState)? = null,
+        call: suspend () -> SessionState
+    ) {
         if (_loading.value == true) return
-        lastRequest = call
+        lastRequest = retry ?: call
         viewModelScope.launch {
             _loading.value = true
             _error.value = null

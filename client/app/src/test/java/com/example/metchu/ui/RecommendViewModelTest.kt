@@ -247,6 +247,66 @@ class RecommendViewModelTest {
         assertIdle(guess)
     }
 
+    /** The undo reached the server but its reply was lost: a second undo would skip a step. */
+    @Test
+    fun retryOfAnUndoThatAlreadyHappenedDoesNotUndoAgain() {
+        startWith(guess)
+        api.fail(IOException("timeout"))
+        viewModel.undo()
+        assertIdle(guess, noServer)
+
+        api.reply(question)  // the state read shows the server already went back
+        viewModel.retry()
+        assertEquals(listOf("undo ${guess.sessionId}", "state ${guess.sessionId}"), api.calls)
+        assertIdle(question)
+    }
+
+    @Test
+    fun retryOfAnUndoThatNeverArrivedSendsItAgain() {
+        startWith(guess)
+        api.fail(IOException("refused"))
+        viewModel.undo()
+
+        api.reply(guess)  // the server is still on the step the screen shows
+        api.reply(question)
+        viewModel.retry()
+        val id = guess.sessionId
+        assertEquals(listOf("undo $id", "state $id", "undo $id"), api.calls)
+        assertIdle(question)
+    }
+
+    /** However often Try again fails, at most one undo is sent per step. */
+    @Test
+    fun repeatedRetriesOfAnUndoStaySafe() {
+        startWith(guess)
+        val id = guess.sessionId
+        api.fail(IOException("timeout"))
+        viewModel.undo()
+        api.fail(IOException("still down"))  // the state read fails
+        viewModel.retry()
+        assertIdle(guess, noServer)
+        api.reply(guess)
+        api.fail(IOException("timeout"))  // this undo arrives, its reply does not
+        viewModel.retry()
+        assertIdle(guess, noServer)
+        api.reply(question)
+        viewModel.retry()
+        assertEquals(
+            listOf("undo $id", "state $id", "state $id", "undo $id", "state $id"), api.calls
+        )
+        assertIdle(question)
+    }
+
+    @Test
+    fun retryOfAnUndoOnALostSessionReturnsToTheStartScreen() {
+        startWith(guess)
+        api.fail(IOException("timeout"))
+        viewModel.undo()
+        api.fail(Fixtures.httpError(404, Fixtures.json("error_session_not_found")))
+        viewModel.retry()
+        assertIdle(null, sessionLost)
+    }
+
     @Test
     fun retryOfAFailedStartCreatesTheSession() {
         api.fail(IOException("refused"))

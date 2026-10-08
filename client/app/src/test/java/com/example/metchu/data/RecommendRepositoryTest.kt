@@ -87,6 +87,17 @@ class RecommendRepositoryTest {
     }
 
     @Test
+    fun stateReadsTheSessionWithoutChangingIt() = runTest {
+        reply("guess_food")
+        val state = repository.state("abc")
+        assertEquals(Step.GUESS, state.step.type)
+
+        val request = server.takeRequest()
+        assertEquals("GET", request.method)
+        assertEquals("/api/sessions/abc/", request.path)
+    }
+
+    @Test
     fun answerSendsQuestionAndAnswerIds() = runTest {
         reply("question")
         repository.answer("abc", "q:soupy", "probably_no")
