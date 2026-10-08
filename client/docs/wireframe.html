@@ -100,9 +100,7 @@ td.n { width: 44px; }
 <circle cx="462" cy="120" r="9" class="bdg2"/>
 <text x="462" y="123.5" class="bt2" text-anchor="middle">H</text>
 <text x="356" y="154" class="cap" text-anchor="start">DATE · MEAL · N DISHES</text>
-<text x="356" y="176" class="cap" text-anchor="start">QUESTION 3 OF UP TO 10</text>
-<rect x="356" y="184" width="168" height="4" rx="2" class="bar"/>
-<rect x="356" y="184" width="50" height="4" rx="2" class="barfill"/>
+<text x="356" y="176" class="cap" text-anchor="start">QUESTION 3</text>
 <text x="356" y="212" class="h" text-anchor="start">Question text from the</text>
 <text x="356" y="228" class="h" text-anchor="start">engine, 1 to 2 lines</text>
 <rect x="356" y="250" width="168" height="26" rx="5" class="btn"/>
@@ -285,11 +283,11 @@ td.n { width: 44px; }
 <tr><td class="n"><span class="pill">1</span></td><td>1 Start</td><td>Start</td><td>2 Question</td><td>The chosen day and meal has dishes</td></tr>
 <tr><td class="n"><span class="pill">2</span></td><td>1 Start</td><td>Start</td><td>6 Nothing to recommend</td><td>No menu for that day and meal</td></tr>
 <tr><td class="n"><span class="pill">3</span></td><td>2 Question</td><td>Any answer</td><td>2 Question, next question</td><td>The engine still needs to narrow down</td></tr>
-<tr><td class="n"><span class="pill">4</span></td><td>2 Question</td><td>Any answer</td><td>3 Guess: one dish</td><td>The engine is confident in one dish, or 10 answers were given</td></tr>
+<tr><td class="n"><span class="pill">4</span></td><td>2 Question</td><td>Any answer</td><td>3 Guess: one dish</td><td>The engine is confident in one dish, or the server's question limit was reached (none by default)</td></tr>
 <tr><td class="n"><span class="pill">5</span></td><td>2 Question</td><td>Any answer</td><td>4 Guess: a kind of dish</td><td>The engine is confident in a group of dishes</td></tr>
 <tr><td class="n"><span class="pill">6</span></td><td>2 Question</td><td>Just recommend something</td><td>3 Guess: one dish</td><td>Always</td></tr>
 <tr><td class="n"><span class="pill">7</span></td><td>3 or 4 Guess</td><td>Yes</td><td>5 Recommendation</td><td>Always. From 4, the example dish is the recommendation</td></tr>
-<tr><td class="n"><span class="pill">8</span></td><td>3 or 4 Guess</td><td>No, something else</td><td>2 Question, or another guess (3 or 4)</td><td>Dishes remain. After 10 answers it is always another guess</td></tr>
+<tr><td class="n"><span class="pill">8</span></td><td>3 or 4 Guess</td><td>No, something else</td><td>2 Question, or another guess (3 or 4)</td><td>Dishes remain. Past a question limit, if the server sets one, it is always another guess</td></tr>
 <tr><td class="n"><span class="pill">9</span></td><td>3 or 4 Guess</td><td>No, something else</td><td>6 Nothing to recommend</td><td>Every dish has been turned down</td></tr>
 <tr><td class="n"><span class="pill">10</span></td><td>5 Recommendation</td><td>Start over</td><td>1 Start</td><td>Always</td></tr>
 <tr><td class="n"><span class="pill">11</span></td><td>6 Nothing to recommend</td><td>Start over</td><td>1 Start</td><td>Always</td></tr>

@@ -57,7 +57,8 @@ P10, with these differences:
 - Dishes with the same `display_name` are one choice for the LLM. The first one's
   `food_id` and offers stand for them.
 - The default `max_questions` is 10 (`None` lets the LLM decide alone). At the
-  limit, the next step is always a guess.
+  limit, the next step is always a guess. The session API passes the server's
+  `METCHU_MAX_QUESTIONS` instead, which is no limit unless it is set.
 
 ## Configuration and failures (P14)
 

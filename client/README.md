@@ -39,6 +39,21 @@ to the untracked `client/local.properties` and to `ALLOWED_HOSTS` in
 metchu.baseUrl=http://192.168.0.3:8000/
 ```
 
+A phone on a USB cable needs no shared network. Forward the phone's port 8000 to
+your machine and point the app at the phone's own localhost, which is already in
+`ALLOWED_HOSTS`:
+
+```bash
+adb reverse tcp:8000 tcp:8000
+```
+
+```properties
+metchu.baseUrl=http://127.0.0.1:8000/
+```
+
+The forwarding is lost when the cable is replugged or adb restarts; the app then
+shows "Could not reach the server". Run the `adb reverse` command again.
+
 ## Screens
 
 | Engine step | What the app shows | Actions |
@@ -96,7 +111,7 @@ Every success returns the same session state:
   "date": "2026-09-29",
   "meal": "LU",
   "candidate_count": 193,
-  "max_questions": 10,
+  "max_questions": null,
   "can_undo": false,
   "step": {"type": "question", "question_count": 0, "question_id": "q:chicken",
            "text": "Do you feel like chicken?", "options": [{"id": "yes", "label": "Yes, sounds good"}]}
@@ -123,11 +138,16 @@ Errors are `{"error": {"code", "message"}}`:
 Server behavior to know about:
 
 - Sessions are kept in server memory. Restarting `runserver` ends them.
-- The server makes either engine guess after `METCHU_MAX_QUESTIONS` answers
-  (default 10; 0 removes the cap).
+- There is no question limit by default: `max_questions` is `null`, the engine
+  asks until it is ready to guess, and the user can tap "Just recommend
+  something" at any time. `METCHU_MAX_QUESTIONS=N` makes either engine guess
+  after N answers.
 - Requests for one session run one at a time. A request repeated while an LLM
   step is still running waits for it and then gets `stale_step` with the
   current state, so a retry after a timeout never answers twice.
+- `undo` has no such check: sent twice, it goes back two steps. After a failed
+  Back the app's Try again therefore reads the state first, and sends `undo`
+  again only if the server is still on the step the screen shows.
 - `recommend-now` on a guess, or after the session has ended, changes nothing
   and returns the current state.
 
@@ -141,7 +161,8 @@ Server behavior to know about:
 
 `app/src/sharedTest` holds what the two client suites share: a fake `ApiService`
 and `resources/contract/*.json`, replies captured from the real server on the
-2026-09-29 fixture (`question_llm.json` with a scripted LLM in place of Gemini).
+2026-09-29 fixture with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
+scripted LLM in place of Gemini).
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 
