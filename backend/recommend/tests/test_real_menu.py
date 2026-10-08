@@ -34,7 +34,8 @@ class RealMenuTestCase(TestCase):
 
 
 class QuestionCapTests(RealMenuTestCase):
-    def test_every_answer_choice_reaches_a_guess_within_the_default_cap(self):
+    @override_settings(RECOMMEND_MAX_QUESTIONS=10)
+    def test_every_answer_choice_reaches_a_guess_within_a_cap_of_ten(self):
         for answer_id in ANSWER_IDS:
             for meal in ("LU", "DN", None):
                 with self.subTest(answer=answer_id, meal=meal):

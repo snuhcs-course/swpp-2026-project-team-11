@@ -133,9 +133,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Recommendation sessions (recommend/sessions.py)
 
-# The engine has no question limit of its own and can ask its whole bank. After
-# this many answers it must guess. METCHU_MAX_QUESTIONS=0 (or less) removes the cap.
-RECOMMEND_MAX_QUESTIONS = max(int(os.environ.get('METCHU_MAX_QUESTIONS', '10')), 0) or None
+# No question limit by default: the engine asks until it is ready to guess, and
+# the user can ask for a recommendation at any time. METCHU_MAX_QUESTIONS=N makes
+# it guess after N answers; unset, 0 or less means no limit.
+RECOMMEND_MAX_QUESTIONS = max(int(os.environ.get('METCHU_MAX_QUESTIONS') or 0), 0) or None
 
 # Menu date used when the client sends none. Unset means today in Seoul; the
 # shared fixture only has 2026-09-29, so set METCHU_MENU_DATE to demo with it.

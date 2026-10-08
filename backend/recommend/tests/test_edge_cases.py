@@ -1,8 +1,11 @@
 """Requests a broken or impatient client can send. None of them may be a 500."""
 import datetime
+import os
 import threading
+import unittest
 from unittest import mock
 
+from django.conf import settings
 from django.test import Client, TestCase, override_settings
 
 from recommend import sessions
@@ -291,6 +294,12 @@ class SettingsTests(SmallMenuTestCase):
     def test_client_date_overrides_the_default(self):
         self.assertEqual(self.start()[0]["candidate_count"], 3)
         self.assertEqual(post(self.client, "/api/sessions/").json()["date"], "2026-01-01")
+
+    @unittest.skipIf(os.environ.get("METCHU_MAX_QUESTIONS"), "this environment sets a question limit")
+    def test_there_is_no_question_limit_unless_the_environment_sets_one(self):
+        self.assertIsNone(settings.RECOMMEND_MAX_QUESTIONS)
+        state, _ = self.start()
+        self.assertIsNone(state["max_questions"])
 
     @override_settings(RECOMMEND_MAX_QUESTIONS=None)
     def test_no_cap_is_reported_as_null(self):
