@@ -1,10 +1,10 @@
 # Metchu! — SNU SWPP 2026 Team 11
 
 Metchu helps users discover what they feel like eating through adaptive
-questions. The current backend contains the cafeteria-menu DB and two question
-engines with the same session API: the P10 feature-based engine (MVP1) and the
-P13/P14 LLM engine (MVP2). The shared P17 interface/REST layer and Android
-integration are separate iteration tasks.
+questions. The backend contains the cafeteria-menu DB, two question engines
+with the same session API — the P10 feature-based engine (MVP1) and the P13/P14
+LLM engine (MVP2) — and a REST API that runs them for the Android client in
+`client/`.
 
 ## Run the current engine demo
 
@@ -37,7 +37,27 @@ python backend/manage.py test menus question_engines
 python backend/manage.py benchmark_decision_tree --date 2026-09-29 --meal LU --trials 24 --output /tmp/benchmark.json
 ```
 
+## Run the Android MVP
+
+The app talks to the Django server over HTTP. Start the server with the fixture
+date, then run the `client/` project from Android Studio on an emulator:
+
+```bash
+python backend/manage.py migrate
+python backend/manage.py loaddata menus_2026-09-29
+METCHU_MENU_DATE=2026-09-29 python backend/manage.py runserver 0.0.0.0:8000
+```
+
+The start screen chooses which engine asks the questions, so the two can be
+compared on the same menu. The decision tree needs no key; the LLM engine needs
+`GOOGLE_API_KEY` in the repo-root `.env` before the server starts.
+
+See the [Android client guide](client/README.md) for the screens, the REST
+contract and how to run on a physical phone.
+
 ## Component guides
+
+- [Android client and recommendation REST API](client/README.md)
 
 - [Cafeteria DB setup and feature extraction](backend/README.md)
 - [P10 engine API, output shapes, snapshots, and P17/P19/P20 handoff](backend/question_engines/decision_tree/README.md)

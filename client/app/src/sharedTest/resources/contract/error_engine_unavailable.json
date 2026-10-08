@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "engine_unavailable",
+    "message": "GOOGLE_API_KEY is not set. Put it in the repo-root .env file."
+  }
+}

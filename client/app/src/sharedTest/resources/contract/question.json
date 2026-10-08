@@ -1,0 +1,41 @@
+{
+  "session_id": "5a3a26224708416b98533f9df8ca82c8",
+  "engine": "decision_tree",
+  "date": "2026-09-29",
+  "meal": "LU",
+  "candidate_count": 193,
+  "max_questions": 10,
+  "can_undo": false,
+  "step": {
+    "type": "question",
+    "question_count": 0,
+    "question_id": "q:chicken",
+    "text": "Do you feel like chicken?",
+    "options": [
+      {
+        "id": "yes",
+        "label": "Yes, sounds good"
+      },
+      {
+        "id": "probably_yes",
+        "label": "Probably yes"
+      },
+      {
+        "id": "any",
+        "label": "Doesn't matter"
+      },
+      {
+        "id": "probably_no",
+        "label": "Probably not"
+      },
+      {
+        "id": "no",
+        "label": "No"
+      },
+      {
+        "id": "unknown",
+        "label": "Not sure"
+      }
+    ]
+  }
+}

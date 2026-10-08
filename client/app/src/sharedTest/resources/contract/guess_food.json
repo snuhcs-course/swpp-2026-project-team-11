@@ -1,0 +1,29 @@
+{
+  "session_id": "5a3a26224708416b98533f9df8ca82c8",
+  "engine": "decision_tree",
+  "date": "2026-09-29",
+  "meal": "LU",
+  "candidate_count": 193,
+  "max_questions": 10,
+  "can_undo": true,
+  "step": {
+    "type": "guess",
+    "question_count": 0,
+    "food": {
+      "food_id": 1,
+      "name": "냉모밀",
+      "display_name": "냉모밀",
+      "food_group": "국수",
+      "offers": [
+        {
+          "restaurant": "220동식당",
+          "meal": "LU",
+          "price": 5900
+        }
+      ]
+    },
+    "target_kind": "food",
+    "text": "Is this what you feel like eating?",
+    "guess_id": "food:1"
+  }
+}

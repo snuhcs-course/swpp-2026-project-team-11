@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import datetime
 import os
 from pathlib import Path
 
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'menus',
+    'recommend',
 ]
 
 MIDDLEWARE = [
@@ -127,3 +129,24 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Recommendation sessions (recommend/sessions.py)
+
+# No question limit by default: the engine asks until it is ready to guess, and
+# the user can ask for a recommendation at any time. METCHU_MAX_QUESTIONS=N makes
+# it guess after N answers; unset, 0 or less means no limit.
+RECOMMEND_MAX_QUESTIONS = max(int(os.environ.get('METCHU_MAX_QUESTIONS') or 0), 0) or None
+
+# Menu date used when the client sends none. Unset means today in Seoul; the
+# shared fixture only has 2026-09-29, so set METCHU_MENU_DATE to demo with it.
+RECOMMEND_DEFAULT_DATE = (
+    datetime.date.fromisoformat(os.environ['METCHU_MENU_DATE'])
+    if os.environ.get('METCHU_MENU_DATE') else None
+)
+
+# Engine for a session whose client names none: "decision_tree" (P10, no API key)
+# or "llm" (P13/P14, needs GOOGLE_API_KEY). The client can ask for either per session.
+RECOMMEND_DEFAULT_ENGINE = os.environ.get('METCHU_ENGINE') or 'decision_tree'
+if RECOMMEND_DEFAULT_ENGINE not in ('decision_tree', 'llm'):
+    raise ValueError(f"METCHU_ENGINE must be decision_tree or llm: {RECOMMEND_DEFAULT_ENGINE!r}")

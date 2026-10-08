@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "session_not_found",
+    "message": "No such session. Start a new one."
+  }
+}

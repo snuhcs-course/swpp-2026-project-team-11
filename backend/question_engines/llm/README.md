@@ -57,7 +57,8 @@ P10, with these differences:
 - Dishes with the same `display_name` are one choice for the LLM. The first one's
   `food_id` and offers stand for them.
 - The default `max_questions` is 10 (`None` lets the LLM decide alone). At the
-  limit, the next step is always a guess.
+  limit, the next step is always a guess. The session API passes the server's
+  `METCHU_MAX_QUESTIONS` instead, which is no limit unless it is set.
 
 ## Configuration and failures (P14)
 
@@ -80,19 +81,15 @@ is logged as a warning. The API key never appears in logs or `repr()`.
 
 ## P17/P19 integration
 
-`recommend/sessions.py` on `feat/p19-engine-ui-wiring` builds a
-`DecisionTreeEngine`. The LLM engine drops in at the same place:
+`recommend/sessions.py` builds this engine for a session created with
+`{"engine": "llm"}` (or with no engine when `METCHU_ENGINE=llm`), and the Android
+start screen offers it next to the decision tree. See the
+[client guide](../../../client/README.md#rest-contract-backendrecommend).
 
-```python
-from question_engines.llm import LLMEngine
+The rest of the wrapper is the same for both engines: it validates
+`question_id` / `guess_id`, reads `snapshot()["events"]` for `can_undo`, and only
+touches `engine.catalog` for group guesses, which this engine never returns.
 
-self.engine = LLMEngine(candidates, config={"max_questions": self.max_questions})
-```
-
-The rest of the wrapper works unchanged: it validates `question_id` / `guess_id`,
-reads `snapshot()["events"]` for `can_undo`, and only touches
-`engine.catalog` for group guesses, which this engine never returns. Two things
-are the wrapper's choice:
-
-- `LLMConfigError` is raised when a session starts without an API key.
-- An LLM step can take seconds. The client should show a loading state.
+- `LLMConfigError` at session start becomes a 503 `engine_unavailable`.
+- An LLM step can take seconds. The client shows its loading state and waits up
+  to 30 seconds per request.
