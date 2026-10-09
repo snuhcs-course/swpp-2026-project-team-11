@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """P13/P14: an LLM asks the questions and picks the food from food names alone."""
 
 from .config import GeminiSettings, LLMConfigError

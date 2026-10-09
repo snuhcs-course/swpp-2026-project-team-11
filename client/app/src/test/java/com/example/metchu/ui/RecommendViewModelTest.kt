@@ -1,3 +1,4 @@
+// AI-generated: written with Claude (Anthropic) and reviewed by the team.
 package com.example.metchu.ui
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule

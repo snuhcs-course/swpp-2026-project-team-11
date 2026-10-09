@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """One recommendation session per client, kept in server memory.
 
     create(date, meal, engine) -> RecommendSession

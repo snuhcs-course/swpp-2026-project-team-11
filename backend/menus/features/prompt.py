@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """The prompt for tagging cafeteria dishes with feature probabilities.
 
 The feature list is generated from schema.FEATURES, so the prompt and the output

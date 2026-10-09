@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 import io
 import json
 from pathlib import Path

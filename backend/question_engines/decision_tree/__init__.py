@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 """P10: adaptive cafeteria questions and bounded menu-guess planning."""
 
 from .catalog import CandidateCatalog

@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Gemini settings for the LLM engine, read from the environment.
 
     GOOGLE_API_KEY (or GEMINI_API_KEY)   required; manage.py loads it from the repo-root .env

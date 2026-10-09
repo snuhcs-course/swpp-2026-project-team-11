@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Where cafeteria menus come from.
 
 siksha.py is the only source for the MVP. The official SNU co-op page

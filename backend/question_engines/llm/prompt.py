@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """The prompt for the LLM question engine (MVP2).
 
 The system prompt is fixed; the candidate list comes first in the user message and

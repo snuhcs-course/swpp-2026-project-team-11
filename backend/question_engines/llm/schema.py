@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Structured output of one LLM turn: ask one more question, or propose a food.
 
 The LLM sees only food names, never the extracted features. Its `food` field is an

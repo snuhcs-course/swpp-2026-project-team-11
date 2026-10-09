@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 """Run the P10 engine against a dated cafeteria candidate set, without a key."""
 import datetime
 import json

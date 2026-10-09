@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Turn a raw cafeteria menu line into a dish name, or tell that it is not one.
 
 Only the obvious, mechanical cleanup happens here. Whether a line is a real meal

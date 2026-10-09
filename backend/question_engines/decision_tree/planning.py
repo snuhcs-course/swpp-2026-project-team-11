@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 """Budgeted belief-space planning over questions and menu proposals.
 
 The full posterior is never pruned. Stratified particles approximate planning

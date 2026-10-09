@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """python manage.py export_candidates [--date YYYY-MM-DD] [--meal BR|LU|DN] [--output FILE]
 
 Dump one day's candidates (default: today in Seoul) and the feature schema as JSON,

@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 """English presentation metadata and stable, JSON-compatible answer IDs."""
 from enum import Enum
 

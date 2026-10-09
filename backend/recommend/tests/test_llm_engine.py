@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """The same REST API running the P13/P14 LLM engine, with a fake LLM (no API key)."""
 import functools
 from unittest import mock

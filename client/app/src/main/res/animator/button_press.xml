@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- AI-generated: written with Claude (Anthropic) and reviewed by the team. -->
 <!-- A button sinks slightly while pressed and stays down while its request runs
      (MainActivity marks the tapped button as selected), then springs back. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- AI-generated: written with Claude (Anthropic) and reviewed by the team. -->
 <!-- The tapped option fills with the soft brand color; the others stay clear. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:color="@color/primary_soft" android:state_selected="true" />

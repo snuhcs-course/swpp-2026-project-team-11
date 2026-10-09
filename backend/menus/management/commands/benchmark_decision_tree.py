@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 """Compare greedy and lookahead policies with a shared deterministic oracle."""
 import datetime
 import json

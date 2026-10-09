@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """The food features the question engines work with - the single source of truth.
 
 Each feature is a yes/no question the app can ask. A food's value for a feature is

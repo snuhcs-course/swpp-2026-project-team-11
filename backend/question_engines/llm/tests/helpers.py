@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 from question_engines.decision_tree.contracts import ANSWER_OPTIONS
 
 ANSWER_IDS = [option["id"] for option in ANSWER_OPTIONS]

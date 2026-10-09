@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 """Validated adapter for menus.services output, independent of Django/ORM.
 
 Food IDs are the identity boundary. Repeated display names may have different

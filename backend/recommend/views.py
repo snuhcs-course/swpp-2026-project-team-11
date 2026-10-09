@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """HTTP glue between the Android client and the question engine.
 
     POST /api/sessions/                      {"date"?, "meal"?, "engine"?} -> 201 state

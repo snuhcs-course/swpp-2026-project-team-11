@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """What the question engines read from the menu DB.
 
     get_feature_schema()          -> [{"key", "question"}, ...]

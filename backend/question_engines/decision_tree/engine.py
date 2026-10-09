@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 """Public P10 session API. No ORM, HTTP, Android, or model-provider imports."""
 import copy
 from dataclasses import asdict, dataclass

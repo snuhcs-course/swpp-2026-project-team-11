@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """SNU cafeteria menus from the Siksha public API (by Waffle Studio).
 
     GET https://siksha-api.wafflestudio.com/menus/?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD

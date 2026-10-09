@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 import unittest
 
 from ..evaluation import ResponseOracle, compare_policies

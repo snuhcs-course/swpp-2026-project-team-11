@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Load secrets from the repo-root .env, once, at the edge of the program.
 
 Only the server needs GOOGLE_API_KEY. `ChatGoogleGenerativeAI` reads it from the

@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """python manage.py extract_features [--date YYYY-MM-DD] [--batch-size 25] [--limit N] [--force] [--dry-run]
 
 Tag the dishes served on one day (default: today in Seoul) with feature

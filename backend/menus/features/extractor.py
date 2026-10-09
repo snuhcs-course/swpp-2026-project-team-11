@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Tag dishes with feature probabilities using Gemini structured output.
 
 `extract_batch()` takes the LLM as an argument so tests can pass a fake one and

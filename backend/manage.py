@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Django's command-line utility for administrative tasks."""
 import os
 import sys

@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Whole sessions against the shared 2026-09-29 fixture, the data the demo runs on."""
 import random
 

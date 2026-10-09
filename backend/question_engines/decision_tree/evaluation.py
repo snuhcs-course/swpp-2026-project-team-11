@@ -1,3 +1,4 @@
+# AI-generated: written with OpenAI Codex and reviewed by the team.
 """Paired synthetic evaluation with a shared, order-independent answer oracle.
 
 This measures internal menu matching and latency, not human acceptance. Both

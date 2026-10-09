@@ -1,3 +1,4 @@
+// AI-generated: written with Claude (Anthropic) and reviewed by the team.
 package com.example.metchu.data
 
 import com.example.metchu.Fixtures

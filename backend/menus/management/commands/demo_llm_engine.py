@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Run the P13/P14 LLM engine against a dated cafeteria candidate set (API key needed)."""
 import datetime
 import json

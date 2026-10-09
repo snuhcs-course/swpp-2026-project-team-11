@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """P13: the LLM chooses every question and the proposed food from food names alone.
 
 It has the same session API and step shapes as the P10 DecisionTreeEngine, so the

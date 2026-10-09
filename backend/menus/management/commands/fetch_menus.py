@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """python manage.py fetch_menus [--date YYYY-MM-DD]
 
 Fetch one day of SNU cafeteria menus (default: today in Seoul) and store them.
