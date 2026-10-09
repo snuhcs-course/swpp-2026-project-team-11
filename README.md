@@ -6,16 +6,36 @@ prototype at the end of Iteration 1.
 
 ## Demo video
 
-_To be added._
+[Watch the demo video](docs/iteration-1-demo.mp4) (2 min 18 s, a screen recording
+of the app).
+
+It plays two sessions on the same lunch menu (September 29, 2026, 193 dishes),
+one with each question engine:
+
+1. **Decision tree** (0:00). The app asks yes/no questions about the food. When
+   it proposes a kind of dish (볶음밥, then 정식/뷔페) the user says no, and it
+   goes on to propose a single dish, 숯불양념치킨덮밥, which the user accepts. The
+   result shows the cafeteria and the price.
+2. **LLM** (from about 1:15). Gemini writes the questions. The user rejects its first
+   proposal, 마라쌀국수, answers a few more questions, and gets 우삼겹짬뽕.
+
+[Step 4](#4-try-it) below repeats these two sessions on your own machine.
 
 ## How to run the demo
 
 The demo has two parts: a Django server that runs the question engines, and an
-Android app that plays a session against it.
+Android app that plays a session against it. Both run on one machine; the app
+runs on an Android emulator.
+
+You need:
+
+- Python 3.11 or newer
+- Android Studio with an emulator (we used "Medium Phone", API 36)
+- Only for the LLM half of the demo: a free Gemini API key
 
 ### 1. Start the server
 
-Requires Python 3.11 or newer. From the repository root:
+From the repository root:
 
 ```bash
 python -m venv .venv
@@ -30,6 +50,15 @@ METCHU_MENU_DATE=2026-09-29 python backend/manage.py runserver 0.0.0.0:8000
 is needed for the menu. The snapshot only has September 29, 2026, which is why
 the server is started with `METCHU_MENU_DATE`.
 
+Leave this terminal open. To check the server from a second terminal:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/sessions/ -H 'Content-Type: application/json' -d '{"meal": "LU"}'
+```
+
+It answers with a JSON session whose `candidate_count` is 193 and whose first
+`step` is a question.
+
 ### 2. (Optional) Enable the LLM engine
 
 The decision-tree engine needs nothing else. To try the LLM engine as well, get
@@ -40,14 +69,29 @@ a `.env` file in the repository root **before** starting the server:
 cp .env.example .env      # then set GOOGLE_API_KEY=your-key
 ```
 
-`.env` is gitignored. Without a key, choosing LLM in the app shows an error and
-the decision tree keeps working.
+`.env` is gitignored. If the server is already running, stop it with Ctrl-C and
+run the last command of step 1 again. Without a key, choosing LLM in the app
+shows a message that the LLM engine is not set up, and the decision tree keeps
+working.
 
 ### 3. Run the app
 
-Open the `client/` folder in Android Studio, wait for the Gradle sync, and run
-the `app` configuration on an emulator. The emulator reaches the server at
-`http://10.0.2.2:8000/`, which is the default.
+Open the `client/` folder (not the repository root) in Android Studio, wait for
+the Gradle sync, start an emulator from the Device Manager, and run the `app`
+configuration. The emulator reaches the server on the same machine at
+`http://10.0.2.2:8000/`, which is the app's default, so nothing has to be
+configured.
+
+From a terminal instead, with the emulator running and JDK 21 as `JAVA_HOME`
+(the build fails on JDK 25):
+
+```bash
+cd client && ./gradlew installDebug
+```
+
+If the app shows "Could not reach the server", the server from step 1 is not
+running, or `client/local.properties` has a `metchu.baseUrl` left over from
+another setup; remove that line and run the app again.
 
 For a phone on a USB cable, forward the port and point the app at it in the
 untracked `client/local.properties`, then run the app again:
@@ -62,11 +106,22 @@ metchu.baseUrl=http://127.0.0.1:8000/
 
 ### 4. Try it
 
-1. Pick a meal (Lunch has 193 dishes) and an engine, then tap **Start**.
-2. Answer the questions. **Back** undoes the last step; **Just recommend
-   something** asks for a proposal right away.
-3. When a dish is proposed, accept it or tap **No, something else**.
-4. The result shows the dish, the cafeteria and the price.
+This is the flow in the video.
+
+1. On the start screen, keep **Lunch** and **Decision tree**, and tap **Start**.
+   The top line shows `2026-09-29 · LUNCH · 193 DISHES · DECISION TREE`.
+2. Answer the questions with any of the six buttons. **Back** undoes the last
+   step. There is no fixed number of questions: the engine proposes something
+   when it is confident enough, and **Just recommend something** asks for a
+   proposal right away.
+3. A proposal is either one dish or a kind of dish with an example. Tap
+   **No, something else** to keep going, or **Yes, I'll have this** to accept.
+4. The result shows the dish, the cafeteria and the price. Tap **Start over**.
+5. Choose **LLM** and tap **Start** to play the same menu with Gemini writing
+   the questions (needs the key from step 2). Each step takes a few seconds.
+
+Your questions and dishes will differ from the video's: they depend on your
+answers, and the LLM engine words its questions differently every time.
 
 Without the app, the same engines run in a terminal:
 
