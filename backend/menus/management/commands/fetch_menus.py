@@ -104,7 +104,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         date = options["date"] or timezone.localdate()
-        records = [r for r in siksha.parse(siksha.fetch_raw(date)) if r.date == date]
+        records = [r for r in siksha.parse(siksha.fetch_days(date, date)) if r.date == date]
         if not records:
             self.stdout.write(f"{date}: 오늘 운영 메뉴 없음")
             return

@@ -48,10 +48,11 @@ def fetch_raw(date: datetime.date) -> dict:
 
 
 def fetch_days(start: datetime.date, end: datetime.date, retries: int = 2) -> dict:
-    """Download every day from start to end, one request per day.
+    """Download every day from start to end, one request per day, retrying failures.
 
     A single long date-range request can exceed the timeout (16 days did, on
-    2026-10-13), so days are fetched one by one and a failed day is retried.
+    2026-10-13), and the daily GitHub Actions run calls from far away, so days
+    are fetched one by one and a failed request is retried.
     """
     result = []
     day = start

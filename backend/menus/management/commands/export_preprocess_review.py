@@ -50,7 +50,7 @@ class Command(BaseCommand):
         if options["from_json"]:
             payload = json.loads(pathlib.Path(options["from_json"]).read_text(encoding="utf-8"))
         else:
-            payload = siksha.fetch_raw(date)
+            payload = siksha.fetch_days(date, date)
         records = [r for r in siksha.parse(payload) if r.date == date]
         counts = export_review(records, options["output"])
         self.stdout.write(self.style.SUCCESS(

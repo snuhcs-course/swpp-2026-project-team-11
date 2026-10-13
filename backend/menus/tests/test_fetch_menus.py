@@ -39,6 +39,19 @@ class SikshaParseTests(SimpleTestCase):
         [record] = siksha.parse(payload)
         self.assertTrue(record.no_meat)
 
+    def test_fetch_days_retries_a_failed_request(self):
+        import requests
+        day = {"result": [{"date": "2026-10-13"}]}
+        with mock.patch.object(siksha, "fetch_raw", side_effect=[requests.Timeout(), day]) as fetch_raw,                 mock.patch.object(siksha.time, "sleep"):
+            self.assertEqual(siksha.fetch_days(DAY, DAY)["result"], day["result"])
+        self.assertEqual(fetch_raw.call_count, 2)
+
+    def test_fetch_days_gives_up_after_the_retries(self):
+        import requests
+        with mock.patch.object(siksha, "fetch_raw", side_effect=requests.Timeout()),                 mock.patch.object(siksha.time, "sleep"):
+            with self.assertRaises(requests.Timeout):
+                siksha.fetch_days(DAY, DAY, retries=1)
+
     def test_empty_day(self):
         self.assertEqual(siksha.parse({"count": 0, "result": []}), [])
 
