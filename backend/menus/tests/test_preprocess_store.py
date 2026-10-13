@@ -89,6 +89,16 @@ class CachedMappingTests(TestCase):
         self.assertEqual(sorted(mala.menu_items.values_list("restaurant__name", flat=True)),
                          ["75-1동 4층 푸드코트", "공대간이식당"])
 
+    def test_two_lines_of_one_cafeteria_merged_into_one_dish_offer_it_once(self):
+        seed_llm("눈꽃치즈 돈까스", ["치즈돈까스"])
+        seed_llm("치즈돈까스", ["치즈돈까스"])
+        run([record("눈꽃치즈 돈까스", price=7900), record("치즈돈까스", price=7900),
+             record("치즈돈까스", meal="DN", price=7900)])
+        tag("치즈돈까스")
+        [candidate] = services.get_candidates(DAY)
+        self.assertEqual(candidate["offers"], [{"restaurant": "220동식당", "meal": "LU", "price": 7900},
+                                               {"restaurant": "220동식당", "meal": "DN", "price": 7900}])
+
     def test_lines_that_are_not_meals_are_not_stored(self):
         seed_llm("공기밥", [], is_meal=False)
         stats = run([record("공기밥", price=700), record("냉모밀")])
