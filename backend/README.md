@@ -236,6 +236,31 @@ python manage.py loaddata local_menus.json
 > **Free plan:** a project that sees little activity for 7 days is paused (restore it from the
 > dashboard), and the database is limited to 500 MB. Running the pipeline daily keeps it active.
 
+### Daily automation (GitHub Actions)
+
+`.github/workflows/daily-menu.yml` runs `run_daily_pipeline` against the shared database
+every day at **07:00 KST** (22:00 UTC), right after `migrate`. The day's review CSV is kept as
+a run artifact for 14 days. Days without a menu (weekends, holidays) finish without changes.
+
+Setup, once (needs admin rights on the repository):
+
+1. **Settings → Secrets and variables → Actions → New repository secret**: add
+   `DATABASE_URL` (the Session pooler URI above) and `GOOGLE_API_KEY`.
+2. **Put the workflow on the default branch.** GitHub only runs scheduled and manual triggers
+   for workflow files on the default branch, which is `main` today. Either set the default
+   branch to `MVP` (**Settings → General → Default branch**) or merge `MVP` into `main`.
+3. Test it: **Actions → Daily menu pipeline → Run workflow** (a date is optional).
+
+- The job runs the code on `MVP`. To use another branch, set the repository variable
+  `MENU_PIPELINE_REF`.
+- A failed run emails the person who last changed the schedule in the workflow file.
+- In a public repository, GitHub disables scheduled workflows after 60 days without repository
+  activity; turn it back on from the Actions tab.
+- The daily run also keeps the free Supabase project from pausing.
+
+> **주의:** `GOOGLE_API_KEY` 시크릿에 넣은 키로 매일 Gemini가 몇 번 호출됩니다. 누구의 키를 쓸지 팀에서 정해 두세요.
+> 새 테이블을 만드는 마이그레이션이 머지되면 위의 RLS SQL을 다시 실행하세요(이 작업이 `migrate`를 자동으로 돌립니다).
+
 ## Using it from the question engines (`menus/services.py`)
 
 ```python
@@ -276,7 +301,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 |---|---|---|
 | `migrate` | create the empty DB and tables | no |
 | `loaddata menus_YYYY-MM-DD` | load a shared snapshot | no |
-| `run_daily_pipeline [--date] [--review PATH]` | fetch + preprocess + tag a day (+ review CSV) | **yes** |
+| `run_daily_pipeline [--date] [--review PATH]` | fetch + preprocess + tag a day (+ review CSV); runs daily on GitHub Actions | **yes** |
 | `fetch_menus [--date] [--no-llm]` | fetch, preprocess and store a day's menu | for new lines |
 | `extract_features [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
