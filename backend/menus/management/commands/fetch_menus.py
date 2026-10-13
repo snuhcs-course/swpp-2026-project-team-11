@@ -1,7 +1,9 @@
 """python manage.py fetch_menus [--date YYYY-MM-DD]
 
-Fetch one day of SNU cafeteria menus (default: today in Seoul) and store them.
-Re-running replaces that day's menu items, so it is safe to run as often as needed.
+Fetch one day of SNU cafeteria menus (default: today in Seoul), resolve each menu
+line to the dishes it stands for (menus/preprocess), and store one MenuItem per
+dish. Re-running replaces that day's menu items, so it is safe to run as often
+as needed.
 """
 
 from __future__ import annotations
@@ -14,41 +16,74 @@ from django.db import transaction
 from django.utils import timezone
 
 from menus.models import Food, MenuItem, Restaurant
-from menus.normalize import clean_name, is_noise
+from menus.normalize import clean_name, dish_key, is_noise
+from menus.preprocess.mapper import NAME_MAX, Mapping, map_lines
 from menus.sources import siksha
 
 
+def menu_lines(records: list[siksha.MenuRecord]) -> dict[str, str]:
+    """{dish_key: cleaned name} for the non-noise lines of `records`, first name wins."""
+    lines: dict[str, str] = {}
+    for record in records:
+        if not is_noise(record.raw_name):
+            name, _ = clean_name(record.raw_name)
+            lines.setdefault(dish_key(name)[:NAME_MAX], name)
+    return lines
+
+
 @transaction.atomic
-def store(date: datetime.date, records: list[siksha.MenuRecord]) -> Counter:
-    """Replace the menu items of `date` with `records`. Returns counts for the log."""
+def store(date: datetime.date, records: list[siksha.MenuRecord],
+          mappings: dict[str, Mapping]) -> Counter:
+    """Replace the menu items of `date`: one MenuItem per (line, dish). Returns counts.
+
+    Written with few queries on purpose: the shared database (Supabase) is remote,
+    so the number of round trips decides how long a run takes.
+    """
     stats = Counter()
-    restaurants: dict[str, Restaurant] = {}
     MenuItem.objects.filter(date=date).delete()
 
+    kept = []
     for record in records:
         if is_noise(record.raw_name):
             stats["noise"] += 1
             continue
         name, price_in_name = clean_name(record.raw_name)
+        kept.append((record, mappings[dish_key(name)[:NAME_MAX]], price_in_name))
 
-        restaurant = restaurants.get(record.restaurant_code)
-        if restaurant is None:
-            restaurant, _ = Restaurant.objects.update_or_create(
-                code=record.restaurant_code,
-                defaults={"name": record.restaurant_name, "lat": record.lat,
-                          "lng": record.lng, "source": "siksha"},
-            )
-            restaurants[record.restaurant_code] = restaurant
-
-        food, created = Food.objects.get_or_create(name=name)
-        stats["new_foods"] += created
-        _, created = MenuItem.objects.get_or_create(
-            date=date, meal=record.meal, restaurant=restaurant, raw_name=record.raw_name,
-            defaults={"food": food, "price": price_in_name or record.price,
-                      "no_meat": record.no_meat},
+    restaurants = {}
+    for code, record in {r.restaurant_code: r for r, _, _ in kept}.items():
+        restaurants[code], _ = Restaurant.objects.update_or_create(
+            code=code,
+            defaults={"name": record.restaurant_name, "lat": record.lat,
+                      "lng": record.lng, "source": "siksha"},
         )
-        stats["menu_items"] += created
 
+    dish_names = {dish[:NAME_MAX] for _, mapping, _ in kept for dish in mapping.dishes}
+    foods = {food.name: food for food in Food.objects.filter(name__in=dish_names)}
+    new_foods = Food.objects.bulk_create([Food(name=n) for n in sorted(dish_names - foods.keys())])
+    foods.update({food.name: food for food in new_foods})
+    stats["new_foods"] = len(new_foods)
+
+    items, seen = [], set()
+    for record, mapping, price_in_name in kept:
+        if not mapping.is_meal:
+            stats["not_meal"] += 1
+            continue
+        if len(mapping.dishes) > 1:
+            stats["split_lines"] += 1
+        for dish in mapping.dishes:
+            unique = (record.meal, record.restaurant_code, record.raw_name, dish[:NAME_MAX])
+            if unique in seen:  # Siksha occasionally repeats a line within a meal
+                continue
+            seen.add(unique)
+            items.append(MenuItem(
+                date=date, meal=record.meal, restaurant=restaurants[record.restaurant_code],
+                raw_name=record.raw_name, food=foods[dish[:NAME_MAX]],
+                price=price_in_name or record.price, no_meat=record.no_meat,
+            ))
+    MenuItem.objects.bulk_create(items)
+
+    stats["menu_items"] = len(items)
     stats["restaurants"] = len(restaurants)
     return stats
 
@@ -67,9 +102,14 @@ class Command(BaseCommand):
             self.stdout.write(f"{date}: 오늘 운영 메뉴 없음")
             return
 
-        stats = store(date, records)
+        lines = menu_lines(records)
+        mappings = map_lines(lines)
+        stats = store(date, records, mappings)
         foods = Food.objects.filter(menu_items__date=date).distinct().count()
+        sources = Counter(m.source for m in mappings.values())
         self.stdout.write(self.style.SUCCESS(
             f"{date}: 식당 {stats['restaurants']} / 메뉴 {stats['menu_items']} / "
-            f"음식 {foods} (신규 {stats['new_foods']}) / 노이즈 스킵 {stats['noise']}"
+            f"음식 {foods} (신규 {stats['new_foods']}) / 노이즈 스킵 {stats['noise']} / "
+            f"세트 나눔 {stats['split_lines']} / 식사 아님 {stats['not_meal']} / "
+            f"메뉴 줄 {len(lines)} ({', '.join(f'{k} {v}' for k, v in sorted(sources.items()))})"
         ))
