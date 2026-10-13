@@ -4,9 +4,10 @@
     map_lines({dish_key: cleaned name}, llm) -> {dish_key: Mapping}
 
 Sources, first match wins:
-  1. MenuLine cache from an earlier run (LLM answers under PREPROCESS_VERSION)
-  2. the LLM, for lines never resolved before (answers are cached in MenuLine)
-  3. rule fallback: the whole line is one dish, named as it was first seen.
+  1. fixed_menus.json: reviewed rules for lines a cafeteria serves every day
+  2. MenuLine cache from an earlier run (LLM answers under PREPROCESS_VERSION)
+  3. the LLM, for lines never resolved before (answers are cached in MenuLine)
+  4. rule fallback: the whole line is one dish, named as it was first seen.
      Used without an API key or when the LLM fails; a later run retries the LLM.
 """
 
@@ -19,6 +20,7 @@ from pydantic import BaseModel, Field
 
 from menus.models import MenuLine
 
+from . import fixed
 from .prompt import SYSTEM_PROMPT, build_user_message
 
 PREPROCESS_VERSION = "v1"
@@ -115,27 +117,39 @@ def resolve_with_llm(names: list[str], llm, known: list[str], batch_size: int = 
     return results
 
 
-def known_dishes() -> list[str]:
-    """Canonical dish names chosen so far, for the LLM to reuse."""
-    names = set()
+def known_dishes(catalog_entries: dict | None = None) -> list[str]:
+    """Canonical dish names chosen so far (cache and fixed catalog), for the LLM to reuse."""
+    names = {dish for entry in (catalog_entries or {}).values() for dish in entry["dishes"]}
     for dishes in MenuLine.objects.filter(source=MenuLine.Source.LLM,
                                           version=PREPROCESS_VERSION).values_list("dishes", flat=True):
         names.update(dishes)
     return sorted(names)
 
 
-def map_lines(lines: dict[str, str], llm=None, on_progress=None) -> dict[str, Mapping]:
-    """Return a Mapping for every key of `lines` ({dish_key: cleaned name})."""
-    cached = {line.key: line for line in MenuLine.objects.filter(key__in=lines)}
-    result: dict[str, Mapping] = {}
+def map_lines(lines: dict[str, str], llm=None, on_progress=None,
+              use_catalog: bool = True) -> dict[str, Mapping]:
+    """Return a Mapping for every key of `lines` ({dish_key: cleaned name}).
 
+    use_catalog=False skips fixed_menus.json; build_fixed_menus uses it to resolve
+    lines for a new catalog.
+    """
+    catalog = fixed.catalog_lines(fixed.load_catalog()) if use_catalog else {}
+    result: dict[str, Mapping] = {
+        key: Mapping(catalog[key]["is_meal"], tuple(catalog[key]["dishes"]), "fixed")
+        for key in lines if key in catalog
+    }
+
+    cached = {line.key: line for line in MenuLine.objects.filter(key__in=lines)}
     for key, line in cached.items():
+        if key in result:
+            continue
         if line.source == MenuLine.Source.LLM and line.version == PREPROCESS_VERSION:
             result[key] = Mapping(line.is_meal, tuple(line.dishes), line.source)
 
     pending = {key: name for key, name in lines.items() if key not in result}
     if llm is not None and pending:
-        answers = resolve_with_llm(list(pending.values()), llm, known_dishes(), on_progress=on_progress)
+        answers = resolve_with_llm(list(pending.values()), llm, known_dishes(catalog),
+                                   on_progress=on_progress)
         rows = []
         for key, name in pending.items():
             if name in answers:

@@ -21,7 +21,7 @@ from django.utils import timezone
 from menus.models import Food, MenuItem, Restaurant
 from menus.normalize import clean_name, dish_key, is_noise
 from menus.features.extractor import api_key_available
-from menus.preprocess import mapper
+from menus.preprocess import fixed, mapper
 from menus.preprocess.mapper import NAME_MAX, Mapping, map_lines
 from menus.sources import siksha
 
@@ -119,6 +119,12 @@ class Command(BaseCommand):
         lines = menu_lines(records)
         mappings = map_lines(lines, llm, on_progress=self.stdout.write)
         stats = store(date, records, mappings)
+        changed = fixed.new_lines_in_fixed_restaurants(records, fixed.load_catalog())
+        if changed:
+            sample = ", ".join(f"{cafeteria} {line}" for cafeteria, line in changed[:3])
+            self.stdout.write(self.style.WARNING(
+                f"고정 메뉴 식당에 목록에 없는 메뉴 {len(changed)}개 (예: {sample}) "
+                f"-> 메뉴판이 바뀌었으면 build_fixed_menus로 목록을 갱신하세요."))
         foods = Food.objects.filter(menu_items__date=date).distinct().count()
         sources = Counter(m.source for m in mappings.values())
         self.stdout.write(self.style.SUCCESS(

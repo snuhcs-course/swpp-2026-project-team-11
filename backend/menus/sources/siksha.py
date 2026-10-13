@@ -10,6 +10,7 @@ We ask for a single day per run.
 from __future__ import annotations
 
 import datetime
+import time
 from dataclasses import dataclass
 
 import requests
@@ -44,6 +45,27 @@ def fetch_raw(date: datetime.date) -> dict:
     )
     response.raise_for_status()
     return response.json()
+
+
+def fetch_days(start: datetime.date, end: datetime.date, retries: int = 2) -> dict:
+    """Download every day from start to end, one request per day.
+
+    A single long date-range request can exceed the timeout (16 days did, on
+    2026-10-13), so days are fetched one by one and a failed day is retried.
+    """
+    result = []
+    day = start
+    while day <= end:
+        for attempt in range(retries + 1):
+            try:
+                result += fetch_raw(day).get("result") or []
+                break
+            except requests.RequestException:
+                if attempt == retries:
+                    raise
+                time.sleep(1 + attempt)
+        day += datetime.timedelta(days=1)
+    return {"count": len(result), "result": result}
 
 
 def parse(payload: dict) -> list[MenuRecord]:

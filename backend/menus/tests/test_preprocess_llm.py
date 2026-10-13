@@ -11,6 +11,7 @@ from menus.models import Food, MenuItem, MenuLine
 from menus.normalize import dish_key
 from menus.preprocess import mapper
 from menus.preprocess.mapper import LineBatch, map_lines
+from menus.tests.utils import without_fixed_catalog
 
 DAY = datetime.date(2026, 10, 13)
 
@@ -46,6 +47,7 @@ def lines(*names):
     return {dish_key(n): n for n in names}
 
 
+@without_fixed_catalog
 class MapLinesWithLLMTests(TestCase):
     def test_combo_lines_are_split_and_cached(self):
         llm = FakeLLM()
@@ -93,6 +95,7 @@ class MapLinesWithLLMTests(TestCase):
         self.assertEqual(result[dish_key("냉모밀")].source, "rule")
 
 
+@without_fixed_catalog
 class FetchMenusWithLLMTests(TestCase):
     PAYLOAD = {"result": [{"date": "2026-10-13", "LU": [
         {"code": "220동식당", "name_kr": "220동식당", "lat": None, "lng": None, "menus": [

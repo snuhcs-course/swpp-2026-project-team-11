@@ -61,7 +61,10 @@ def clean_name(raw: str) -> tuple[str, int | None]:
     return _TRAILING_PUNCT.sub("", name), price
 
 
+KEY_MAX = 300  # MenuLine.key max_length; Postgres enforces it
+
+
 def dish_key(name: str) -> str:
     """Key that is equal for lines differing only in spacing, size or portion markers."""
     key = _SAME_DISH_MARKERS.sub("", "".join(name.split()))
-    return (key or "".join(name.split())).lower()
+    return (key or "".join(name.split())).lower()[:KEY_MAX]
