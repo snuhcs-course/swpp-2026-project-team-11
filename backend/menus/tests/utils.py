@@ -2,7 +2,11 @@
 import pathlib
 from unittest import mock
 
-# Use as a class decorator: the test sees an empty fixed-menu catalog, whatever
-# menus/preprocess/fixed_menus.json currently contains.
-without_fixed_catalog = mock.patch("menus.preprocess.fixed.CATALOG_PATH",
-                                   new=pathlib.Path("__no_fixed_catalog__.json"))
+_MISSING = pathlib.Path("__no_committed_rules__.json")
+
+
+def without_committed_rules(cls):
+    """Class decorator: the test sees no fixed_menus.json and no overrides.json,
+    whatever the committed files currently contain."""
+    cls = mock.patch("menus.preprocess.fixed.CATALOG_PATH", new=_MISSING)(cls)
+    return mock.patch("menus.preprocess.overrides.OVERRIDES_PATH", new=_MISSING)(cls)

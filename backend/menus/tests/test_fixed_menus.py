@@ -15,6 +15,7 @@ from menus.preprocess import fixed, mapper
 from menus.preprocess.mapper import map_lines
 from menus.sources import siksha
 from menus.tests.test_preprocess_llm import FakeLLM
+from menus.tests.utils import without_committed_rules
 
 START = datetime.date(2026, 10, 5)
 
@@ -67,6 +68,7 @@ ANSWERS = {"핫치킨버거": (True, ["핫치킨버거"]), "통새우버거": (T
            "직화쌀국수": (True, ["쌀국수"])}
 
 
+@without_committed_rules
 class BuildFixedMenusTests(TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
@@ -131,9 +133,11 @@ class CatalogAtRunTimeTests(TestCase):
             dish_key("핫치킨버거"): {"name": "핫치킨버거", "is_meal": True, "dishes": ["핫치킨버거"]},
             dish_key("탄산음료"): {"name": "탄산음료", "is_meal": False, "dishes": []},
         }}}}, ensure_ascii=False), encoding="utf-8")
-        patcher = mock.patch.object(fixed, "CATALOG_PATH", self.path)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        for patcher in (mock.patch.object(fixed, "CATALOG_PATH", self.path),
+                        mock.patch("menus.preprocess.overrides.OVERRIDES_PATH",
+                                   new=pathlib.Path("__no_overrides__.json"))):
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def test_cataloged_lines_never_reach_the_llm(self):
         llm = FakeLLM(ANSWERS)

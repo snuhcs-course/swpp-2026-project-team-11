@@ -78,10 +78,10 @@ class Command(BaseCommand):
             for key, name in sorted(h.fixed_lines.items(), key=lambda kv: kv[1]):
                 if key in reviewed:
                     entries[key] = reviewed[key]
-                elif mappings[key].source == "llm":
+                elif mappings[key].source in ("llm", "override"):
                     m = mappings[key]
                     entries[key] = {"name": name, "is_meal": m.is_meal, "dishes": list(m.dishes),
-                                    "source": "llm"}
+                                    "source": m.source}
                 else:
                     skipped += 1  # never cache a guess as a permanent rule
                     continue

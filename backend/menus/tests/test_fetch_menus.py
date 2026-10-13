@@ -9,7 +9,7 @@ from django.test import SimpleTestCase, TestCase
 
 from menus.models import Food, MenuItem, Restaurant
 from menus.sources import siksha
-from menus.tests.utils import without_fixed_catalog
+from menus.tests.utils import without_committed_rules
 
 FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "siksha_2026-09-29.json"
 DAY = datetime.date(2026, 9, 29)
@@ -43,7 +43,7 @@ class SikshaParseTests(SimpleTestCase):
         self.assertEqual(siksha.parse({"count": 0, "result": []}), [])
 
 
-@without_fixed_catalog
+@without_committed_rules
 # Never call the real LLM from tests, even when a developer's .env has a key.
 @mock.patch("menus.management.commands.fetch_menus.api_key_available", new=lambda: False)
 @mock.patch("menus.sources.siksha.fetch_raw")

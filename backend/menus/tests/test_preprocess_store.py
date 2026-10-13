@@ -10,7 +10,7 @@ from menus.models import Food, MenuItem, MenuLine
 from menus.normalize import dish_key
 from menus.preprocess.mapper import PREPROCESS_VERSION, map_lines
 from menus.sources.siksha import MenuRecord
-from menus.tests.utils import without_fixed_catalog
+from menus.tests.utils import without_committed_rules
 
 DAY = datetime.date(2026, 10, 13)
 
@@ -35,7 +35,7 @@ def tag(*names):
         is_food=True, feature_version=FEATURE_VERSION, features={k: 0.5 for k in FEATURE_KEYS})
 
 
-@without_fixed_catalog
+@without_committed_rules
 class RuleMappingTests(TestCase):
     def test_without_an_llm_answer_each_line_is_one_dish(self):
         stats = run([record("육개장", "학생회관식당", price=3000), record("냉모밀")])
@@ -57,7 +57,7 @@ class RuleMappingTests(TestCase):
         self.assertEqual(list(Food.objects.values_list("name", flat=True)), ["돈가스 카레우동"])
 
 
-@without_fixed_catalog
+@without_committed_rules
 class CachedMappingTests(TestCase):
     def test_a_combo_line_is_stored_once_per_dish(self):
         seed_llm("돈가스 카레우동", ["돈까스", "카레우동"])
