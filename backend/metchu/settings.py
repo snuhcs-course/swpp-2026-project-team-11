@@ -12,7 +12,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import datetime
 import os
+import sys
 from pathlib import Path
+
+from .database import database_config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -79,13 +82,10 @@ WSGI_APPLICATION = 'metchu.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+# DATABASE_URL (the shared Supabase Postgres) or local SQLite; tests always use
+# SQLite. See metchu/database.py and backend/README.md.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DATABASES = database_config(os.environ, sys.argv, BASE_DIR)
 
 
 # Password validation
