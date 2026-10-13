@@ -1,7 +1,10 @@
 # Metchu! backend
 
-Django 5.2 + SQLite server. For now it holds the MVP's candidate set: **the SNU cafeteria
-dishes of a given day**, each tagged by an LLM with the features the question engines use.
+Django 5.2 server, on local SQLite or the team's shared Supabase Postgres
+([Shared database](#shared-database-supabase-p8)). For now it holds the MVP's candidate set:
+**the SNU cafeteria dishes of a given day**, split and merged into real dishes
+([Daily menu preprocessing](#daily-menu-preprocessing-p7)) and each tagged by an LLM with the
+features the question engines use.
 
 The P10 question engine now consumes this candidate set. See the
 [engine integration guide](question_engines/decision_tree/README.md) for its
@@ -13,8 +16,9 @@ food names to Gemini. It needs the API key from step B.1 below. See the
 [LLM engine guide](question_engines/llm/README.md) for its API, settings and
 failure handling.
 
-- The local DB is **one file, `backend/db.sqlite3`**. It is gitignored, so everyone builds their own.
-- Two ways to fill it:
+- Without `DATABASE_URL`, the DB is **one local file, `backend/db.sqlite3`**. It is gitignored, so everyone builds their own.
+- With `DATABASE_URL`, everyone shares the team's Supabase DB (see below).
+- Two ways to fill a DB:
   - **A. Load the shared snapshot**: no API key. Enough for engine development.
   - **B. Build any day yourself**: fetch that day's menu and tag it with Gemini using your own API key.
 
@@ -74,19 +78,23 @@ python -c "from env import load_env; import os; load_env(); print(bool(os.enviro
 
 If `GOOGLE_API_KEY` is already set as a Windows environment variable, that value wins over `.env`.
 
-### 2) Fetch the day's menu, then extract features
+### 2) Fetch, preprocess and tag the day's menu
 
-Today (Asia/Seoul):
+Today (Asia/Seoul), in one command:
 
 ```bash
-python manage.py fetch_menus          # today's menu from Siksha -> DB (no key needed)
-python manage.py extract_features     # tag new dishes with Gemini (key needed)
+python manage.py run_daily_pipeline --review review.csv
 ```
 
-A specific day: pass the same `--date` to both. Siksha usually has the whole week's menu in advance.
+It runs `fetch_menus` (download, split combos, merge duplicates, store), `extract_features`
+(tag the new dishes) and, with `--review`, writes the CSV for a person to check
+([Daily menu preprocessing](#daily-menu-preprocessing-p7)). A specific day: `--date 2026-09-30`.
+Siksha usually has the whole week's menu in advance.
+
+The steps can also run one by one:
 
 ```bash
-python manage.py fetch_menus --date 2026-09-30
+python manage.py fetch_menus --date 2026-09-30        # without a key: --no-llm, each new line stays one dish
 python manage.py extract_features --date 2026-09-30
 ```
 
@@ -97,8 +105,10 @@ python manage.py extract_features --date 2026-09-30
 
 ### 3) Cost and consistency
 
-- The first day costs about 10 calls (~240 dishes in batches of 25, `gemini-3.5-flash`), a few hundred won.
-- Dishes served every day (220동, the food court) are tagged once and reused. Later days only pay for new dishes.
+- Lines on fixed menu boards are handled by the committed catalog with no LLM call. On 2026-10-13,
+  167 of 206 lines were, and Gemini resolved the other 39 in 2 calls.
+- On an empty database the first day also tags every dish (about 145, 6 calls). Lines and dishes
+  resolved before are cached, so later days only pay for new ones.
 
 > **주의:** LLM 결과는 실행할 때마다 조금씩 달라서, 각자 뽑은 feature 값이 서로 다를 수 있습니다.
 > MVP1 vs MVP2 비교나 사용자 테스트처럼 **같은 조건이 필요한 경우에는 공유 스냅샷(방법 A)을 쓰세요.**
@@ -111,6 +121,120 @@ python manage.py createsuperuser && python manage.py runserver   # then http://1
 ```
 
 To start over, delete `backend/db.sqlite3` and run `python manage.py migrate` again.
+
+## Daily menu preprocessing (P7)
+
+A cafeteria menu line is not always one dish. `fetch_menus` resolves every line into the dishes
+it stands for before storing anything:
+
+| Menu line | Becomes |
+|---|---|
+| 돈가스 카레우동 | 돈까스, 카레우동 (each lists 220동식당 and the combo price in its offers) |
+| 즉석 마라탕 (75-1동), 마라탕 (공대간이식당) | one dish, 마라탕, with both cafeterias in its offers |
+| 눈꽃 치즈 돈까스 / 눈꽃치즈 돈까스, 육회 비빔밥(S) / (L) | one dish each (spacing and size markers ignored by rule) |
+| 공기밥, 탄산음료, 치즈스틱 2조각 | not a meal, not stored |
+| 핫치킨버거, 통새우버거, 양념치킨, 후라이드치킨 | stay separate dishes |
+
+Each line is answered by the first of these that knows it:
+
+1. `menus/preprocess/overrides.json`: a person's corrections (always wins)
+2. `menus/preprocess/fixed_menus.json`: the reviewed **fixed-menu catalog**
+3. the `MenuLine` cache: lines resolved on an earlier day
+4. Gemini (`gemini-3.5-flash`, structured output), only for lines never seen before
+5. without a key (or `--no-llm`), or if Gemini fails: the whole line stays one dish, and the next run retries
+
+**Fixed menus.** Half of a weekday's lines come from fixed boards (버거운버거, 공대간이식당,
+220동식당, 75-1동 푸드코트) or fixed items in daily cafeterias (두레미담's order menu, 301동's
+헬스팩). `build_fixed_menus` finds them in the menu history, resolves each once, and writes the
+catalog, so they are handled the same way in every database. When a fixed board shows lines the
+catalog does not know, `fetch_menus` warns; rebuild then (hand corrections in the file are kept):
+
+```bash
+python manage.py build_fixed_menus --start 2026-09-28 --end 2026-10-13 --review fixed_review.csv
+```
+
+**Human review.** Check the day's results in Excel and record corrections:
+
+```bash
+python manage.py export_preprocess_review --date 2026-10-13 --output review.csv   # no LLM call
+```
+
+Rows are `split` (a line split into dishes), `merge` (different lines that became one dish),
+`not_meal`, and `maybe_same` (dish names that differ only by a word like 즉석 or 왕).
+Mark wrong rows `N` and write the fix, then put it in `overrides.json`
+(or in `fixed_menus.json` for a fixed line) and re-run `fetch_menus --date`:
+
+```json
+{"lines":  {"돈가스 카레우동": ["돈까스", "카레우동"], "공기밥": []},
+ "dishes": {"즉석마라탕": "마라탕"}}
+```
+
+> **주의:** 이 파일들은 사람이 검토한 결과라 git으로 공유합니다. 고칠 때는 PR로 남겨 주세요.
+
+## Shared database: Supabase (P8)
+
+The team shares one Postgres database on Supabase, so every teammate's server sees the same
+menu and the daily pipeline runs once for everyone. Each server reads it through `DATABASE_URL`;
+without it nothing changes (local SQLite). **Tests always use SQLite**, even when `DATABASE_URL`
+is set, so they never touch the shared data.
+
+### Connect
+
+1. Ask to be invited to the team's Supabase organization (or create the project: region
+   **Northeast Asia (Seoul)**, Free plan, a DB password of letters and digits only).
+2. In the project, open **Connect** and copy the **Session pooler** URI. The direct connection is
+   IPv6-only on the free plan and often fails on campus and home networks; the pooler is IPv4.
+3. Put it in the repo-root `.env`, with the real password in place of `[YOUR-PASSWORD]`:
+
+```
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-<n>-ap-northeast-2.pooler.supabase.com:5432/postgres
+```
+
+4. Check: `python manage.py showmigrations menus` lists the migrations from Supabase.
+
+> **보안 규칙:** `DATABASE_URL`에는 DB 비밀번호가 들어 있습니다. `.env`에만 두고 커밋·채팅에 올리지 마세요.
+> 유출이 의심되면 Supabase에서 DB 비밀번호를 바로 바꾸세요. 앱(Android)은 Supabase에 직접 접속하지 않습니다.
+
+### First-time setup (once per project)
+
+```bash
+python manage.py migrate                       # creates the tables in Supabase
+python manage.py loaddata menus_2026-09-29     # the shared demo snapshot
+python manage.py run_daily_pipeline            # today's menu
+```
+
+Then lock down Supabase's automatic API, which would otherwise expose these tables to anyone
+with the project's public key: turn off the **Data API** in the project settings, and run this
+once in the **SQL Editor** (Django owns the tables, so it is not affected):
+
+```sql
+DO $$ DECLARE r record; BEGIN
+  FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', r.tablename);
+  END LOOP; END $$;
+```
+
+Run it again after a migration that adds tables.
+
+### Moving local data
+
+Only needed for data that exists only in someone's local `db.sqlite3`. Dump it with
+`DATABASE_URL` pointing at SQLite for that one command, then load it into Supabase:
+
+```bash
+DATABASE_URL=sqlite:///db.sqlite3 python -X utf8 manage.py dumpdata menus --indent 1 -o local_menus.json   # git bash
+python manage.py loaddata local_menus.json
+```
+
+```powershell
+$env:DATABASE_URL="sqlite:///db.sqlite3"; python -X utf8 manage.py dumpdata menus --indent 1 -o local_menus.json; Remove-Item Env:DATABASE_URL
+python manage.py loaddata local_menus.json
+```
+
+`loaddata` resets the Postgres ID sequences by itself.
+
+> **Free plan:** a project that sees little activity for 7 days is paused (restore it from the
+> dashboard), and the database is limited to 500 MB. Running the pipeline daily keeps it active.
 
 ## Using it from the question engines (`menus/services.py`)
 
@@ -152,8 +276,11 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 |---|---|---|
 | `migrate` | create the empty DB and tables | no |
 | `loaddata menus_YYYY-MM-DD` | load a shared snapshot | no |
-| `fetch_menus [--date]` | fetch and store a day's menu | no |
+| `run_daily_pipeline [--date] [--review PATH]` | fetch + preprocess + tag a day (+ review CSV) | **yes** |
+| `fetch_menus [--date] [--no-llm]` | fetch, preprocess and store a day's menu | for new lines |
 | `extract_features [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
+| `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
+| `export_preprocess_review [--date] --output PATH` | the day's results as a review CSV | no |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |
 | `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** |
 
@@ -163,12 +290,13 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 |---|---|---|
 | `Restaurant` | cafeteria | `code` is the Siksha id, e.g. `220동식당` |
 | `Food` | distinct dish | the unit that gets recommended; holds `features`, `is_food`, `display_name`, `food_group` |
-| `MenuItem` | dish x restaurant x meal x day | `meal` is `BR` / `LU` / `DN`; `price` in won |
+| `MenuItem` | dish x restaurant x meal x day | `meal` is `BR` / `LU` / `DN`; `price` in won. A combo line has one row per dish |
+| `MenuLine` | distinct menu line (`dish_key`) | cache of the dishes a line stands for (`is_meal`, `dishes`, `source`) |
 
 ## Data source
 
 Menus come from the public [Siksha](https://siksha.wafflestudio.com) API by Waffle Studio.
 
 - Endpoint: `https://siksha-api.wafflestudio.com/menus/?start_date=...&end_date=...`
-- One request per run.
+- One request per day (`build_fixed_menus` fetches day by day; long ranges time out).
 - The official SNU co-op page (`https://snuco.snu.ac.kr/foodmenu/`) is the planned fallback.
