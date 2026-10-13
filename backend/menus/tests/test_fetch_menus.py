@@ -42,6 +42,8 @@ class SikshaParseTests(SimpleTestCase):
         self.assertEqual(siksha.parse({"count": 0, "result": []}), [])
 
 
+# Never call the real LLM from tests, even when a developer's .env has a key.
+@mock.patch("menus.management.commands.fetch_menus.api_key_available", new=lambda: False)
 @mock.patch("menus.sources.siksha.fetch_raw")
 class FetchMenusCommandTests(TestCase):
     def run_command(self, *args) -> str:

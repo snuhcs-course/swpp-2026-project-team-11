@@ -1,9 +1,12 @@
-"""python manage.py fetch_menus [--date YYYY-MM-DD]
+"""python manage.py fetch_menus [--date YYYY-MM-DD] [--no-llm]
 
 Fetch one day of SNU cafeteria menus (default: today in Seoul), resolve each menu
 line to the dishes it stands for (menus/preprocess), and store one MenuItem per
 dish. Re-running replaces that day's menu items, so it is safe to run as often
 as needed.
+
+Lines never seen before are resolved by Gemini (needs GOOGLE_API_KEY). Without a
+key, or with --no-llm, each new line is stored as one dish, as before.
 """
 
 from __future__ import annotations
@@ -17,6 +20,8 @@ from django.utils import timezone
 
 from menus.models import Food, MenuItem, Restaurant
 from menus.normalize import clean_name, dish_key, is_noise
+from menus.features.extractor import api_key_available
+from menus.preprocess import mapper
 from menus.preprocess.mapper import NAME_MAX, Mapping, map_lines
 from menus.sources import siksha
 
@@ -94,6 +99,8 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--date", type=datetime.date.fromisoformat, default=None,
                             help="YYYY-MM-DD (default: today in Asia/Seoul)")
+        parser.add_argument("--no-llm", action="store_true",
+                            help="do not call the LLM; new lines are stored as one dish each")
 
     def handle(self, *args, **options):
         date = options["date"] or timezone.localdate()
@@ -102,8 +109,15 @@ class Command(BaseCommand):
             self.stdout.write(f"{date}: 오늘 운영 메뉴 없음")
             return
 
+        llm = None
+        if not options["no_llm"]:
+            if api_key_available():
+                llm = mapper.build_llm()
+            else:
+                self.stdout.write("GOOGLE_API_KEY가 없어 새 메뉴 줄은 LLM 없이 한 덩어리로 저장합니다.")
+
         lines = menu_lines(records)
-        mappings = map_lines(lines)
+        mappings = map_lines(lines, llm, on_progress=self.stdout.write)
         stats = store(date, records, mappings)
         foods = Food.objects.filter(menu_items__date=date).distinct().count()
         sources = Counter(m.source for m in mappings.values())
