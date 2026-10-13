@@ -11,6 +11,11 @@ from menus.normalize import clean_name, dish_key, is_noise
 
 REVIEW_COLUMNS = ["ok (Y/N)", "correction"]  # filled in by the reviewer
 
+# Words that do not make a different dish. Two dishes whose names differ only by one
+# of these (즉석마라탕 / 마라탕) are flagged as a possibly missed merge; names that
+# differ by an ingredient or flavor (돼지김치찌개 / 김치찌개) are different on purpose.
+SAME_DISH_WORDS = {"즉석", "특", "왕", "수제", "옛날", "더블", "미니", "1인", "점보", "빅"}
+
 
 def write_csv(path: str | pathlib.Path, header: list[str], rows: list[list]) -> None:
     """UTF-8 with a BOM, so Excel opens Korean text correctly by double-click."""
@@ -27,8 +32,8 @@ def review_rows(records, mappings) -> list[list]:
     - split: a line resolved into two or more dishes
     - not_meal: a line judged not to be a meal (drinks, add-ons, notices)
     - merge: two or more different lines resolved into the same dish
-    - maybe_same: two dishes whose names contain one another (마라탕 / 즉석마라탕),
-      i.e. a merge that may have been missed
+    - maybe_same: two dishes whose names differ only by a word such as 즉석 or 왕
+      (마라탕 / 즉석마라탕), i.e. a merge that may have been missed
     """
     lines = {}
     for record in records:
@@ -57,6 +62,6 @@ def review_rows(records, mappings) -> list[list]:
     keys = {dish: dish_key(dish) for dish in by_dish}
     for short, short_key in sorted(keys.items()):
         for long, long_key in sorted(keys.items()):
-            if len(short_key) >= 2 and short_key != long_key and short_key in long_key:
+            if short_key != long_key and short_key in long_key                     and long_key.replace(short_key, "", 1) in SAME_DISH_WORDS:
                 rows.append(["maybe_same", "", long, short, ""])
     return rows
