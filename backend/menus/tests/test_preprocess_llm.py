@@ -89,8 +89,13 @@ class MapLinesWithLLMTests(TestCase):
         self.assertEqual(result[dish_key("돈가스 카레우동")].dishes, ("돈까스", "카레우동"))
         self.assertEqual(MenuLine.objects.get().source, "llm")
 
+    def test_a_meal_without_a_nameable_main_is_its_own_dish(self):
+        llm = FakeLLM(answers={"세미양식부페": (True, [])})
+        result = map_lines(lines("세미양식부페"), llm)
+        self.assertEqual(result[dish_key("세미양식부페")], mapper.Mapping(True, ("세미양식부페",), "llm"))
+
     def test_unusable_answers_fall_back_to_the_rule(self):
-        llm = FakeLLM(answers={"냉모밀": (True, [])})  # a meal with no dish
+        llm = FakeLLM(answers={"냉모밀": (True, ["냉" * 60])})  # not a dish name
         result = map_lines(lines("냉모밀"), llm)
         self.assertEqual(result[dish_key("냉모밀")].source, "rule")
 

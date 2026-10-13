@@ -60,14 +60,17 @@ def _loose(name: str) -> str:
     return "".join(re.sub(r"^\s*\d+\.\s*", "", name).split())
 
 
-def _valid(item: LineDishes) -> tuple[bool, tuple[str, ...]] | None:
-    """Clean one answer, or None when it is unusable (then the rule fallback applies)."""
+def _valid(item: LineDishes, name: str) -> tuple[bool, tuple[str, ...]] | None:
+    """Clean one answer for line `name`, or None when it is unusable (rule fallback)."""
+    if not item.is_meal:
+        return False, ()
     dishes = tuple(dict.fromkeys(d.strip() for d in item.dishes if d.strip()))
-    if item.is_meal and not dishes:
-        return None
+    if not dishes:
+        # A meal with no nameable main, e.g. "세미양식부페": the line itself is the dish.
+        dishes = (name[:DISH_MAX],)
     if any(len(d) > DISH_MAX for d in dishes):
         return None
-    return (True, dishes) if item.is_meal else (False, ())
+    return True, dishes
 
 
 def _ask(llm, names: list[str], known: list[str]) -> dict[str, tuple[bool, tuple[str, ...]]]:
@@ -81,7 +84,7 @@ def _ask(llm, names: list[str], known: list[str]) -> dict[str, tuple[bool, tuple
         name = wanted.get(_loose(item.input_name))
         if name is None and len(names) == 1 and len(batch.items) == 1:
             name = names[0]  # a single answer can only be for the single line
-        answer = _valid(item) if name else None
+        answer = _valid(item, name) if name else None
         if answer is not None:
             found[name] = answer
     return found
