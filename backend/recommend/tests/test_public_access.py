@@ -131,6 +131,7 @@ class ServePublicTests(SimpleTestCase):
                 mock.patch.object(serve_public.shutil, "which", return_value=which), \
                 mock.patch.object(serve_public.Command, "poll_interval", 0), \
                 mock.patch.object(serve_public.Command, "url_timeout", 2.0), \
+                mock.patch.object(serve_public.Command, "connect_timeout", 0.2), \
                 mock.patch.object(serve_public, "CLIENT_PROPERTIES",
                                   pathlib.Path(directory) / "local.properties"), \
                 mock.patch.dict("os.environ", env or {}):
@@ -153,6 +154,7 @@ class ServePublicTests(SimpleTestCase):
         self.assertIn(f"Public address: {QUICK_URL}/", output)
         self.assertIn(f"metchu.baseUrl={QUICK_URL}/", output)
         self.assertIn("new on every start", output)
+        self.assertIn("wait before opening it", output)
         self.assertTrue(server.terminated)
         self.assertTrue(connector.terminated)
         self.assertIsNone(self.client_config)
@@ -171,6 +173,14 @@ class ServePublicTests(SimpleTestCase):
     def test_debug_flag_keeps_debug_on(self):
         self.run_command(FakeProcess([KeyboardInterrupt()]), FakeProcess(lines=QUICK_LOG), "--debug")
         self.assertEqual(self.popen.call_args_list[0].kwargs["env"]["METCHU_DEBUG"], "1")
+
+    def test_the_address_waits_for_the_first_connection(self):
+        output = self.run_command(FakeProcess([KeyboardInterrupt()]), FakeProcess(lines=QUICK_LOG))
+        self.assertNotIn("not reported a connection", output)
+        unconnected = [line for line in QUICK_LOG if "Registered" not in line]
+        output = self.run_command(FakeProcess([KeyboardInterrupt()]), FakeProcess(lines=unconnected))
+        self.assertIn("not reported a connection yet", output)
+        self.assertIn(f"Public address: {QUICK_URL}/", output)
 
     def test_write_client_config(self):
         self.run_command(FakeProcess([KeyboardInterrupt()]), FakeProcess(lines=QUICK_LOG),
