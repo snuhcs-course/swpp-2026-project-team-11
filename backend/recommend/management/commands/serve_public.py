@@ -37,8 +37,10 @@ CLIENT_PROPERTIES = pathlib.Path(settings.BASE_DIR).parent / "client" / "local.p
 class Command(BaseCommand):
     help = "Run the server behind a Cloudflare Tunnel and print its public address."
 
-    # Seconds to wait for a quick tunnel's address, and between liveness checks.
+    # Seconds to wait for a quick tunnel's address, for its first connection, and
+    # between liveness checks.
     url_timeout = 30.0
+    connect_timeout = 15.0
     poll_interval = 0.5
 
     def add_arguments(self, parser):
@@ -86,15 +88,21 @@ class Command(BaseCommand):
                 text=True, encoding="utf-8", errors="replace")
             processes.append(("cloudflared", connector))
 
-            found = threading.Event()
+            found, connected = threading.Event(), threading.Event()
             quick_url = []
             log = []
             reader = threading.Thread(
                 target=self._read_log, daemon=True,
-                args=(connector.stdout, quick_url, found, log, options["verbosity"] >= 2))
+                args=(connector.stdout, quick_url, found, connected, log, options["verbosity"] >= 2))
             reader.start()
             if not public_url:
                 public_url = self._wait_for_quick_url(connector, reader, quick_url, found, log)
+            # A hostname looked up before the tunnel connects can be cached as
+            # nonexistent for a while, so the address is shown only once it works.
+            if not connected.wait(self.connect_timeout):
+                self.stdout.write(self.style.WARNING(
+                    "cloudflared has not reported a connection yet; the address may not "
+                    "answer for a little while."))
 
             self._announce(public_url, quick=not token)
             if options["write_client_config"]:
@@ -114,9 +122,11 @@ class Command(BaseCommand):
                 self._stop(process)
             signal.signal(signal.SIGTERM, previous_sigterm)
 
-    def _read_log(self, stream, quick_url, found, log, echo):
+    def _read_log(self, stream, quick_url, found, connected, log, echo):
         """Drain cloudflared's log for as long as it runs; a full pipe would stall it."""
         for line in stream:
+            if "Registered tunnel connection" in line:
+                connected.set()
             if not found.is_set():
                 log.append(line.rstrip())
                 url = tunnel.find_quick_url(line)
@@ -148,6 +158,8 @@ class Command(BaseCommand):
         self.stdout.write(f"App setting:    {tunnel.CLIENT_URL_KEY}={public_url}   (client/local.properties)")
         if quick:
             self.stdout.write("This address is new on every start. Anyone who has it can use the server.")
+            self.stdout.write("Some networks (SNU campus DNS) find a new address only after about a minute,\n"
+                              "and remember an earlier lookup as missing for 60 s: wait before opening it.")
         self.stdout.write("Ctrl-C stops the server and the tunnel.\n")
 
     @staticmethod
