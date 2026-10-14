@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Pieces of `manage.py serve_public`: a Cloudflare Tunnel in front of the server.
 
 `cloudflared` dials out to Cloudflare, which then forwards https requests for a

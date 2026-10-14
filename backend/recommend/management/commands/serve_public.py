@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Run the server and a Cloudflare Tunnel to it, so the app works from any network.
 
     python manage.py serve_public                         # quick tunnel, random address

@@ -1,3 +1,4 @@
+# AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Reaching the server from another network (settings, `serve_public`, recommend/tunnel.py).
 
 cloudflared and the server are replaced by scripted processes, so nothing here
