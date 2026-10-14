@@ -78,8 +78,11 @@ Check it:       https://calm-red-fox-demo.trycloudflare.com/api/health/
 App setting:    metchu.baseUrl=https://calm-red-fox-demo.trycloudflare.com/   (client/local.properties)
 ```
 
-1. Open the "Check it" address in any browser; it shows `{"status": "ok"}`. A new
-   address can take a few seconds to resolve. If it does not, try again shortly.
+1. Open the "Check it" address in any browser; it shows `{"status": "ok"}`. The
+   address is printed once the tunnel has connected, but some networks find a new
+   address only after about a minute. On SNU campus Wi-Fi, a lookup before then fails
+   and the campus DNS remembers the failure for 60 s, so wait a minute before the
+   first try, and if it fails, wait another minute rather than retrying at once.
 2. `--write-client-config` has put the address in `client/local.properties`.
    Rebuild and install the app (`./gradlew installDebug`); it now works on any
    network for as long as the command keeps running.
@@ -96,6 +99,8 @@ Things to know:
 - The emulator and `adb reverse` setups keep working while it runs, on `--port`
   (default 8000).
 - `-v 2` shows cloudflared's own log, for when no address appears.
+- Mobile data, or Android's Private DNS (Settings > Network > Private DNS, e.g.
+  `one.one.one.one`), avoids the slow campus DNS.
 - Quick tunnels do not start if `~/.cloudflared/config.yml` exists; rename it or
   use a named tunnel.
 
