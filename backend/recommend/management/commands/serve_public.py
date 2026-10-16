@@ -32,6 +32,7 @@ INSTALL_HINT = (
     "or pass --cloudflared /path/to/cloudflared."
 )
 CLIENT_PROPERTIES = pathlib.Path(settings.BASE_DIR).parent / "client" / "local.properties"
+STOP_SIGNALS = [signal.SIGTERM] + ([signal.SIGHUP] if hasattr(signal, "SIGHUP") else [])  # no SIGHUP on Windows
 
 
 class Command(BaseCommand):
@@ -74,8 +75,9 @@ class Command(BaseCommand):
         tunnel_env = {**os.environ, "TUNNEL_TOKEN": token} if token else None
 
         processes = []
-        # A plain `kill` should also take the children down, as Ctrl-C does.
-        previous_sigterm = signal.signal(signal.SIGTERM, self._interrupt)
+        # A plain `kill` or a closed terminal (SIGHUP) must take the children down too,
+        # as Ctrl-C does; otherwise the tunnel stays open after this command is gone.
+        previous = {sig: signal.signal(sig, self._interrupt) for sig in STOP_SIGNALS}
         try:
             # --noreload keeps the server to one process, so stopping it stops it all.
             server = subprocess.Popen(
@@ -120,7 +122,8 @@ class Command(BaseCommand):
         finally:
             for _, process in reversed(processes):
                 self._stop(process)
-            signal.signal(signal.SIGTERM, previous_sigterm)
+            for sig, handler in previous.items():
+                signal.signal(sig, handler)
 
     def _read_log(self, stream, quick_url, found, connected, log, echo):
         """Drain cloudflared's log for as long as it runs; a full pipe would stall it."""
