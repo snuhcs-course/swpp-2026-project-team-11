@@ -155,7 +155,7 @@ Server behavior to know about:
 
 | What | Command | Needs |
 | --- | --- | --- |
-| REST API (`backend/recommend/tests`) | `python backend/manage.py test recommend` | Python only |
+| REST API (`backend/recommend/tests`) | `python -m pytest backend/recommend` | Python only |
 | JSON contract, repository and ViewModel (`app/src/test`) | `./gradlew testDebugUnitTest` | JDK only |
 | The screen against a fake server (`app/src/androidTest`) | `./gradlew connectedDebugAndroidTest` | a running emulator or phone |
 

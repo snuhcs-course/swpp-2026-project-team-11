@@ -133,7 +133,7 @@ python backend/manage.py demo_llm_engine --date 2026-09-29 --meal LU     # needs
 ### Tests
 
 ```bash
-python backend/manage.py test menus question_engines recommend     # 183 tests, no API key
+python -m pytest backend                                           # 183 tests, no API key
 cd client && ./gradlew testDebugUnitTest                            # 58 unit tests
 cd client && ./gradlew connectedDebugAndroidTest                    # 34 UI tests, needs an emulator
 ```
