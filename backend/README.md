@@ -9,7 +9,8 @@ Python API, interactive demo, snapshots, and paired benchmark. Its demo requires
 no model API key when using the shared fixture.
 
 The P13/P14 LLM engine (MVP2) consumes the same candidate set but sends only the
-food names to Gemini. It needs the API key from step B.1 below. See the
+food names to an LLM through OpenRouter. It needs `OPENROUTER_API_KEY` in the same
+`.env` as step B.1 below. See the
 [LLM engine guide](question_engines/llm/README.md) for its API, settings and
 failure handling.
 
@@ -57,8 +58,8 @@ Its content is a single line. Get the key from [Google AI Studio](https://aistud
 GOOGLE_API_KEY=your-key
 ```
 
-`manage.py` loads it automatically (see `backend/env.py`). The LLM question engine reads the
-same key; its optional settings are listed in the [LLM engine guide](question_engines/llm/README.md#configuration-and-failures-p14).
+`manage.py` loads it automatically (see `backend/env.py`). The LLM question engine reads
+`OPENROUTER_API_KEY` from the same file instead; it and the optional settings are listed in the [LLM engine guide](question_engines/llm/README.md#configuration-and-failures-p14).
 
 > **보안 규칙**
 > - `.env`는 `.gitignore`에 있습니다. `git status`에 `.env`가 보이지 않아야 정상이며, **절대 커밋하지 마세요.**
@@ -155,7 +156,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `fetch_menus [--date]` | fetch and store a day's menu | no |
 | `extract_features [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |
-| `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** |
+| `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** (OpenRouter) |
 
 ## Data model (`menus/models.py`)
 

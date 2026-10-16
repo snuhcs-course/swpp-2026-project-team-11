@@ -22,7 +22,7 @@ compared on the same menu.
    unless that day's menu has been fetched and tagged.
 
    The decision tree needs nothing else. For the LLM engine, put
-   `GOOGLE_API_KEY` in the repo-root `.env` (see `.env.example`) before starting
+   `OPENROUTER_API_KEY` in the repo-root `.env` (see `.env.example`) before starting
    the server; without it, choosing LLM in the app shows an error and the
    decision tree keeps working.
 
@@ -71,7 +71,7 @@ banner that stays until the next request, with Try again.
 The line under the header shows the date, meal, number of dishes and the engine
 the server ran. Both engines use the same screens. Two things differ in use:
 
-- An LLM step waits for Gemini, usually a few seconds and at most about 20
+- An LLM step waits for the LLM, usually a few seconds and at most about 20
   (two 10-second attempts) before the server falls back to a fixed question or
   a random dish. The app's read timeout is 30 seconds; raise it in
   `RetrofitInstance.kt` if you raise `METCHU_LLM_TIMEOUT`. Back never waits.
@@ -133,7 +133,7 @@ Errors are `{"error": {"code", "message"}}`:
 | 400 | `invalid_request` | Malformed body, unknown answer ID, bad date, meal or engine |
 | 404 | `session_not_found` | Unknown session; the app returns to the start screen |
 | 409 | `stale_step` | The question or guess is no longer current. The body also carries `state`, and the app redraws from it |
-| 503 | `engine_unavailable` | `engine` was `llm` and the server has no `GOOGLE_API_KEY` (or a malformed LLM setting). The app stays on the start screen |
+| 503 | `engine_unavailable` | `engine` was `llm` and the server has no `OPENROUTER_API_KEY` (or a malformed LLM setting). The app stays on the start screen |
 
 Server behavior to know about:
 

@@ -48,11 +48,11 @@ class EngineChoiceTests(LLMSessionTestCase):
             self.assertEqual(self.start(engine="decision_tree")[0]["engine"], "decision_tree")
 
     def test_llm_without_an_api_key_is_503_and_leaves_the_tree_usable(self):
-        with mock.patch.dict("os.environ", {"GOOGLE_API_KEY": "", "GEMINI_API_KEY": ""}):
+        with mock.patch.dict("os.environ", {"OPENROUTER_API_KEY": ""}):
             response = post(self.client, "/api/sessions/", {"date": DAY, "engine": "llm"})
             self.assertEqual(response.status_code, 503)
             self.assertEqual(response.json()["error"]["code"], "engine_unavailable")
-            self.assertIn("GOOGLE_API_KEY", response.json()["error"]["message"])
+            self.assertIn("OPENROUTER_API_KEY", response.json()["error"]["message"])
             check_state(self, self.start(engine="decision_tree")[0])
 
 

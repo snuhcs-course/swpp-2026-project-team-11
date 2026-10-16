@@ -12,16 +12,21 @@ from pydantic import BaseModel, Field, create_model
 class EngineTurn(BaseModel):
     """The LLM's answer for one turn. `food` is narrowed to the available names per call."""
 
+    known: str = Field(
+        default="",
+        description="Written first. What the answers so far settled, as short keywords, "
+                    "e.g. 'broth: yes, noodles: no, cheese: no preference'. Empty before the first answer.")
     action: Literal["ask", "recommend"] = Field(
         description="ask: ask one more question. recommend: propose `food` now.")
     question: str = Field(
-        description="When action=ask, one short yes/no question for the user. Otherwise empty.")
+        description="When action=ask, one short yes/no question for the user, about none of the "
+                    "topics in `known` except to narrow down a yes. Otherwise empty.")
     food: str = Field(
         description="The most likely menu given the answers so far; the proposal when action=recommend.")
 
 
 def build_turn_model(food_names):
-    """EngineTurn whose `food` must be one of `food_names` (sent to Gemini as an enum)."""
+    """EngineTurn whose `food` must be one of `food_names` (sent to the LLM as an enum)."""
     return create_model(
         "EngineTurn",
         __base__=EngineTurn,
