@@ -21,7 +21,7 @@ class EngineTurn(BaseModel):
 
 
 def build_turn_model(food_names):
-    """EngineTurn whose `food` must be one of `food_names` (sent to Gemini as an enum)."""
+    """EngineTurn whose `food` must be one of `food_names` (sent to the LLM as an enum)."""
     return create_model(
         "EngineTurn",
         __base__=EngineTurn,

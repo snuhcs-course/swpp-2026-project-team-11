@@ -9,12 +9,13 @@ P17 session wrapper and the P19 client can run either engine:
     step = engine.feedback(step["guess_id"], accepted=False)   # "another menu"
 
 One instance owns one session and is not safe to mutate from two requests at once.
-`llm` is a LangChain chat model; without one, Gemini is built from the environment
-(config.py). Tests pass a fake one and need no API key.
+`llm` is a LangChain chat model; without one, an OpenRouter model is built from the
+environment (config.py). Tests pass a fake one and need no API key.
 
 P14: a failed LLM call (timeout, network error, invalid output) is retried. If every
 attempt fails, the session still goes on with a fixed question or, when no question
-may be asked, a random available menu. diagnostics() records why for each call.
+may be asked, a random available menu. diagnostics() records why for each call,
+with the tokens and cost the LLM reported.
 """
 import copy
 from dataclasses import asdict, dataclass
@@ -29,7 +30,7 @@ from pydantic import ValidationError
 
 from question_engines.decision_tree.contracts import ANSWER_OPTIONS
 
-from .config import GeminiSettings, build_llm
+from .config import LLMSettings, build_llm
 from .prompt import FALLBACK_QUESTIONS, SYSTEM_PROMPT, build_user_message
 from .schema import build_turn_model
 
@@ -81,8 +82,8 @@ class LLMEngine:
     """
 
     def __init__(self, candidates, *, llm=None, config=None, rng=None):
-        """Raises LLMConfigError when `llm` is omitted and GOOGLE_API_KEY is not set."""
-        self.llm = llm if llm is not None else build_llm(GeminiSettings.from_env())
+        """Raises LLMConfigError when `llm` is omitted and OPENROUTER_API_KEY is not set."""
+        self.llm = llm if llm is not None else build_llm(LLMSettings.from_env())
         self.rng = rng or random.Random()
         self.config = config if isinstance(config, EngineConfig) else EngineConfig(**(config or {}))
         # Dishes sharing a display name are one choice: the LLM cannot tell them apart.
@@ -155,37 +156,45 @@ class LLMEngine:
         else:
             questions_left = max(self.config.max_questions - self.question_count, 0)
         start = time.perf_counter()
-        turn, attempts, reason = self._request_turn_with_retry(list(available), questions_left)
+        usage = {"input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0}
+        turn, attempts, reason = self._request_turn_with_retry(list(available), questions_left, usage)
         self._calls.append({"latency_ms": round((time.perf_counter() - start) * 1000),
-                            "attempts": attempts, "fallback": reason})
+                            "attempts": attempts, "fallback": reason, **usage})
         if turn is None:
             return self._fallback_step(available, questions_left)
         if turn.action == "recommend" or questions_left == 0:
             return self._food_step("guess", food_summary(available[turn.food]))
         return self._question_step(turn.question.strip())
 
-    def _request_turn_with_retry(self, food_names, questions_left):
-        """(turn, attempts, None) on success, or (None, attempts, why the last attempt failed)."""
+    def _request_turn_with_retry(self, food_names, questions_left, usage):
+        """(turn, attempts, None) on success, or (None, attempts, why the last attempt failed).
+
+        Adds what every answered attempt cost to `usage`, failed ones included.
+        """
         reason = None
         for attempt in range(1, self.config.max_attempts + 1):
             try:
-                return self._request_turn(food_names, questions_left), attempt, None
+                return self._request_turn(food_names, questions_left, usage), attempt, None
             except Exception as error:  # the session must go on whatever the LLM did
                 reason = failure_reason(error)
                 logger.warning("LLM engine attempt %d/%d failed (%s): %s: %s", attempt,
                                self.config.max_attempts, reason, type(error).__name__, str(error)[:200])
         return None, self.config.max_attempts, reason
 
-    def _request_turn(self, food_names, questions_left):
+    def _request_turn(self, food_names, questions_left, usage):
         """One LLM call. Raises on a timeout, network error, invalid JSON or an InvalidTurn."""
         from langchain_core.messages import HumanMessage, SystemMessage
 
         history = self._history()
-        structured = self.llm.with_structured_output(build_turn_model(food_names))
-        turn = structured.invoke([
+        structured = self.llm.with_structured_output(build_turn_model(food_names), include_raw=True)
+        reply = structured.invoke([
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(content=build_user_message(food_names, history, self._rejected(), questions_left)),
         ])
+        add_usage(usage, reply["raw"])
+        if reply["parsing_error"] is not None:
+            raise reply["parsing_error"]
+        turn = reply["parsed"]
         check_turn(turn, history, questions_left)
         return turn
 
@@ -247,7 +256,9 @@ class LLMEngine:
                 "feedback_count": sum(event["type"] == "feedback" for event in self._events),
                 "llm_calls": copy.deepcopy(self._calls),
                 "fallback_count": sum(call["fallback"] is not None for call in self._calls),
-                "llm_latency_ms": sum(call["latency_ms"] for call in self._calls)}
+                "llm_latency_ms": sum(call["latency_ms"] for call in self._calls),
+                "llm_tokens": sum(call["input_tokens"] + call["output_tokens"] for call in self._calls),
+                "llm_cost_usd": round(sum(call["cost_usd"] for call in self._calls), 6)}
 
     def snapshot(self):
         self.next_step()
@@ -269,6 +280,15 @@ class LLMEngine:
         engine._events = copy.deepcopy(snapshot["events"])
         engine._pending = copy.deepcopy(snapshot["pending"])
         return engine
+
+
+def add_usage(usage, message):
+    """Add the tokens and the OpenRouter cost (USD) one response reported."""
+    tokens = getattr(message, "usage_metadata", None) or {}
+    usage["input_tokens"] += tokens.get("input_tokens", 0)
+    usage["output_tokens"] += tokens.get("output_tokens", 0)
+    reported = (getattr(message, "response_metadata", None) or {}).get("token_usage") or {}
+    usage["cost_usd"] += reported.get("cost") or 0.0
 
 
 def check_turn(turn, history, questions_left):

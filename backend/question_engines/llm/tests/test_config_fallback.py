@@ -1,63 +1,50 @@
-import logging
 import random
 from unittest import mock
 
 from django.test import SimpleTestCase
 
 from .. import engine as llm_engine
-from ..config import DEFAULT_MODEL, DEFAULT_TIMEOUT_S, MIN_TIMEOUT_S, GeminiSettings, LLMConfigError, build_llm
+from ..config import DEFAULT_MODEL, DEFAULT_TIMEOUT_S, OPENROUTER_BASE_URL, LLMConfigError, LLMSettings, build_llm
 from ..engine import InvalidTurn, LLMEngine, failure_reason
 from ..prompt import FALLBACK_QUESTIONS
-from .helpers import CANDIDATES, FakeLLM, ask, check_step, recommend
+from .helpers import CANDIDATES, USAGE, FakeLLM, ask, check_step, recommend
 
 BROTH = "Do you feel like something with broth?"
 
 
-class GeminiSettingsTests(SimpleTestCase):
+class LLMSettingsTests(SimpleTestCase):
     def test_reads_key_and_defaults(self):
-        settings = GeminiSettings.from_env({"GOOGLE_API_KEY": "secret-key"})
+        settings = LLMSettings.from_env({"OPENROUTER_API_KEY": "secret-key"})
         self.assertEqual((settings.api_key, settings.model, settings.timeout_s),
                          ("secret-key", DEFAULT_MODEL, DEFAULT_TIMEOUT_S))
         self.assertNotIn("secret-key", repr(settings))
 
-    def test_gemini_api_key_and_overrides(self):
-        settings = GeminiSettings.from_env({"GEMINI_API_KEY": "k", "METCHU_LLM_MODEL": "gemini-x",
-                                            "METCHU_LLM_TIMEOUT": "12.5"})
-        self.assertEqual((settings.api_key, settings.model, settings.timeout_s), ("k", "gemini-x", 12.5))
+    def test_overrides(self):
+        settings = LLMSettings.from_env({"OPENROUTER_API_KEY": "k", "METCHU_LLM_MODEL": "openai/gpt-x",
+                                         "METCHU_LLM_TIMEOUT": "6.5"})
+        self.assertEqual((settings.api_key, settings.model, settings.timeout_s), ("k", "openai/gpt-x", 6.5))
 
     def test_missing_key_is_a_clear_error(self):
-        for environ in [{}, {"GOOGLE_API_KEY": "  "}]:
-            with self.assertRaisesMessage(LLMConfigError, "GOOGLE_API_KEY"):
-                GeminiSettings.from_env(environ)
+        for environ in [{}, {"OPENROUTER_API_KEY": "  "}, {"GOOGLE_API_KEY": "gemini-only"}]:
+            with self.assertRaisesMessage(LLMConfigError, "OPENROUTER_API_KEY"):
+                LLMSettings.from_env(environ)
 
     def test_bad_timeout_is_a_clear_error(self):
-        for timeout in ["abc", "0", "-1", "8", "9.9", "inf", "nan"]:
+        for timeout in ["abc", "0", "-1", "inf", "nan"]:
             with self.assertRaisesMessage(LLMConfigError, "METCHU_LLM_TIMEOUT"):
-                GeminiSettings.from_env({"GOOGLE_API_KEY": "k", "METCHU_LLM_TIMEOUT": timeout})
+                LLMSettings.from_env({"OPENROUTER_API_KEY": "k", "METCHU_LLM_TIMEOUT": timeout})
 
-    def test_client_gets_the_timeout_and_makes_one_request(self):
-        llm = build_llm(GeminiSettings(api_key="k", timeout_s=12.0))
-        self.assertEqual((llm.timeout, llm.max_retries), (12.0, 1))
+    def test_client_talks_to_openrouter_once_per_call(self):
+        llm = build_llm(LLMSettings(api_key="k", model="google/x", timeout_s=6.0))
+        self.assertEqual((llm.model_name, llm.openai_api_base, llm.request_timeout, llm.max_retries),
+                         ("google/x", OPENROUTER_BASE_URL, 6.0, 0))
+        self.assertEqual(llm.extra_body["provider"], {"require_parameters": True})
 
-    def test_default_timeout_is_accepted_by_gemini(self):
-        self.assertGreaterEqual(DEFAULT_TIMEOUT_S, MIN_TIMEOUT_S)
-        self.assertEqual(GeminiSettings.from_env({"GOOGLE_API_KEY": "k", "METCHU_LLM_TIMEOUT": "10"}).timeout_s, 10)
-
-    def test_only_the_afc_notice_is_silenced(self):
-        build_llm(GeminiSettings(api_key="k"))
-        build_llm(GeminiSettings(api_key="k"))
-        sdk_logger = logging.getLogger("google_genai.models")
-        with self.assertLogs(sdk_logger, "WARNING") as logs:
-            sdk_logger.warning("Direct use of automatic function calling (AFC) in Models.generate_content")
-            sdk_logger.warning("something else")
-        self.assertEqual(logs.output, ["WARNING:google_genai.models:something else"])
-        self.assertEqual(len(sdk_logger.filters), 1)
-
-    def test_engine_builds_gemini_from_the_environment(self):
-        with mock.patch.dict("os.environ", {"GOOGLE_API_KEY": "k"}, clear=True), \
-                mock.patch.object(llm_engine, "build_llm", return_value="gemini") as build:
+    def test_engine_builds_the_client_from_the_environment(self):
+        with mock.patch.dict("os.environ", {"OPENROUTER_API_KEY": "k"}, clear=True), \
+                mock.patch.object(llm_engine, "build_llm", return_value="client") as build:
             engine = LLMEngine(CANDIDATES)
-        self.assertEqual(engine.llm, "gemini")
+        self.assertEqual(engine.llm, "client")
         self.assertEqual(build.call_args.args[0].api_key, "k")
 
     def test_engine_without_key_fails_fast(self):
@@ -137,3 +124,14 @@ class FallbackTests(SimpleTestCase):
         self.assertEqual(failure_reason(ReadTimeout()), "timeout")
         self.assertEqual(failure_reason(InvalidTurn()), "invalid_output")
         self.assertEqual(failure_reason(RuntimeError()), "error")
+
+    def test_usage_and_cost_are_recorded_per_call(self):
+        engine = self.engine(ask(" "), ask(BROTH), TimeoutError(), TimeoutError())
+        engine.answer(engine.start()["question_id"], "yes")
+        first, second = engine.diagnostics()["llm_calls"]
+        self.assertEqual((first["input_tokens"], first["output_tokens"]),
+                         (2 * USAGE["input_tokens"], 2 * USAGE["output_tokens"]))  # the invalid attempt was paid for too
+        self.assertAlmostEqual(first["cost_usd"], 2 * USAGE["cost_usd"])
+        self.assertEqual((second["input_tokens"], second["cost_usd"]), (0, 0.0))  # no response, nothing billed
+        self.assertEqual(engine.diagnostics()["llm_tokens"], 2 * (USAGE["input_tokens"] + USAGE["output_tokens"]))
+        self.assertAlmostEqual(engine.diagnostics()["llm_cost_usd"], 2 * USAGE["cost_usd"])

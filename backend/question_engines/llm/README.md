@@ -19,8 +19,8 @@ python backend/manage.py demo_llm_engine --date 2026-09-29 --smoke --output /tmp
 python backend/manage.py test question_engines.llm                            # no API key needed
 ```
 
-The demo needs `GOOGLE_API_KEY` in the repo-root `.env` (see the
-[DB setup guide](../../README.md)). The tests use a fake LLM.
+The demo needs `OPENROUTER_API_KEY` in the repo-root `.env` (see
+`.env.example`). The tests use a fake LLM and need no key.
 
 ## Use it
 
@@ -30,12 +30,12 @@ from menus.services import get_candidates
 from question_engines.llm import LLMEngine
 
 candidates = get_candidates(datetime.date(2026, 9, 29), meal="LU")
-engine = LLMEngine(candidates, config={"max_questions": 10})   # Gemini from the environment
+engine = LLMEngine(candidates, config={"max_questions": 10})   # OpenRouter model from the environment
 step = engine.start()
 step = engine.answer(step["question_id"], "probably_yes")       # one of the six P10 answer IDs
 if step["type"] == "guess":
     step = engine.feedback(step["guess_id"], accepted=False)    # "another menu": answers are kept
-engine.diagnostics()   # question count, per-call LLM latency, attempts and fallbacks
+engine.diagnostics()   # question count, per-call LLM latency, attempts, fallbacks, tokens and cost
 engine.snapshot()      # JSON record; LLMEngine.from_snapshot(candidates, snapshot) restores it
 ```
 
@@ -64,9 +64,12 @@ P10, with these differences:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) | required | Read when `LLMEngine` is built without `llm=`. Missing → `LLMConfigError` |
-| `METCHU_LLM_MODEL` | `gemini-3.5-flash-lite` | Gemini model. Free-tier limits differ per model; see AI Studio |
-| `METCHU_LLM_TIMEOUT` | `10` | Seconds per LLM call. Gemini rejects anything under 10 |
+| `OPENROUTER_API_KEY` | required | Read when `LLMEngine` is built without `llm=`. Missing → `LLMConfigError` |
+| `METCHU_LLM_MODEL` | `google/gemini-3.5-flash-lite` | Any [OpenRouter model ID](https://openrouter.ai/models) that supports structured outputs |
+| `METCHU_LLM_TIMEOUT` | `10` | Seconds per LLM call |
+
+Requests go only to providers that honour the JSON schema
+(`provider.require_parameters`), with low reasoning effort.
 
 Each step makes up to `EngineConfig.max_attempts` (default 2) single-request calls.
 When all of them time out, fail, or return invalid output (bad JSON, a menu outside
@@ -75,8 +78,10 @@ the list, an empty or repeated question), the session still continues:
 - with the next unused fixed question from `prompt.FALLBACK_QUESTIONS`, or
 - with a random available menu as a guess, when no question may be asked.
 
-`diagnostics()["llm_calls"]` records `latency_ms`, `attempts` and `fallback`
-(`"timeout"`, `"error"` or `"invalid_output"`) for each call. Every failed attempt
+`diagnostics()["llm_calls"]` records `latency_ms`, `attempts`, `fallback`
+(`"timeout"`, `"error"` or `"invalid_output"`) and the `input_tokens`, `output_tokens` and
+`cost_usd` OpenRouter billed, failed attempts included, for each call. `llm_tokens` and
+`llm_cost_usd` are the session totals. Every failed attempt
 is logged as a warning. The API key never appears in logs or `repr()`.
 
 ## P17/P19 integration
