@@ -242,24 +242,26 @@ class ServePublicTests(SimpleTestCase):
         self.assertTrue(connector.terminated)
         self.assertFalse(server.terminated)
 
-    def test_sigterm_stops_both_like_ctrl_c(self):
-        class Killed(FakeProcess):
-            sent = False
+    def test_kill_and_a_closed_terminal_stop_both_like_ctrl_c(self):
+        for signum in serve_public.STOP_SIGNALS:  # SIGTERM, and SIGHUP where it exists
+            with self.subTest(signal=signum.name):
+                class Killed(FakeProcess):
+                    sent = False
 
-            def poll(self):
-                if not self.sent:
-                    self.sent = True
-                    os.kill(os.getpid(), signal.SIGTERM)
-                return super().poll()
+                    def poll(self):
+                        if not self.sent:
+                            self.sent = True
+                            os.kill(os.getpid(), signum)
+                        return super().poll()
 
-        before = signal.getsignal(signal.SIGTERM)
-        server, connector = Killed(), FakeProcess(lines=QUICK_LOG)
-        output = self.run_command(server, connector)
+                before = signal.getsignal(signum)
+                server, connector = Killed(), FakeProcess(lines=QUICK_LOG)
+                output = self.run_command(server, connector)
 
-        self.assertIn("Stopping.", output)
-        self.assertTrue(server.terminated)
-        self.assertTrue(connector.terminated)
-        self.assertIs(signal.getsignal(signal.SIGTERM), before)
+                self.assertIn("Stopping.", output)
+                self.assertTrue(server.terminated)
+                self.assertTrue(connector.terminated)
+                self.assertIs(signal.getsignal(signum), before)
 
     def test_a_process_that_ignores_terminate_is_killed(self):
         process = FakeProcess()
