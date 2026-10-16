@@ -23,6 +23,7 @@ import hashlib
 import json
 import logging
 import random
+import re
 import time
 
 from langchain_core.exceptions import OutputParserException
@@ -36,7 +37,7 @@ from .schema import build_turn_model
 
 logger = logging.getLogger(__name__)
 
-ENGINE_VERSION = "llm-v1"
+ENGINE_VERSION = "llm-v2"  # v2: `known` field and the reworded-repeat check
 ANSWER_LABELS = {option["id"]: option["label"] for option in ANSWER_OPTIONS}
 GUESS_TEXT = "Is this what you feel like eating?"
 RECOMMENDATION_TEXT = "Enjoy your meal."
@@ -171,25 +172,30 @@ class LLMEngine:
 
         Adds what every answered attempt cost to `usage`, failed ones included.
         """
-        reason = None
+        reason, refused = None, None
         for attempt in range(1, self.config.max_attempts + 1):
             try:
-                return self._request_turn(food_names, questions_left, usage), attempt, None
+                return self._request_turn(food_names, questions_left, usage, refused), attempt, None
             except Exception as error:  # the session must go on whatever the LLM did
                 reason = failure_reason(error)
+                refused = str(error) if isinstance(error, InvalidTurn) else None
                 logger.warning("LLM engine attempt %d/%d failed (%s): %s: %s", attempt,
                                self.config.max_attempts, reason, type(error).__name__, str(error)[:200])
         return None, self.config.max_attempts, reason
 
-    def _request_turn(self, food_names, questions_left, usage):
-        """One LLM call. Raises on a timeout, network error, invalid JSON or an InvalidTurn."""
+    def _request_turn(self, food_names, questions_left, usage, refused=None):
+        """One LLM call. Raises on a timeout, network error, invalid JSON or an InvalidTurn.
+
+        `refused` says why the previous attempt's question was rejected, so this one differs.
+        """
         from langchain_core.messages import HumanMessage, SystemMessage
 
         history = self._history()
         structured = self.llm.with_structured_output(build_turn_model(food_names), include_raw=True)
         reply = structured.invoke([
             SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(content=build_user_message(food_names, history, self._rejected(), questions_left)),
+            HumanMessage(content=build_user_message(food_names, history, self._rejected(), questions_left,
+                                                    refused)),
         ])
         add_usage(usage, reply["raw"])
         if reply["parsing_error"] is not None:
@@ -199,8 +205,8 @@ class LLMEngine:
         return turn
 
     def _fallback_step(self, available, questions_left):
-        asked = {question.casefold() for question, _ in self._history()}
-        unasked = [question for question in FALLBACK_QUESTIONS if question.casefold() not in asked]
+        asked = {topic_words(question) for question, _ in self._history()}
+        unasked = [question for question in FALLBACK_QUESTIONS if topic_words(question) not in asked]
         if questions_left != 0 and unasked:
             return self._question_step(unasked[0])
         return self._food_step("guess", food_summary(self.rng.choice(list(available.values()))))
@@ -291,6 +297,24 @@ def add_usage(usage, message):
     usage["cost_usd"] += reported.get("cost") or 0.0
 
 
+# Words that only frame a yes/no food question, e.g. "Do you feel like having ...?".
+FRAME_WORDS = frozenset("""
+    a an and any are be dish dishes do does eat eating feel food for have having i in into is it
+    like meal mood of on prefer some something the to today want with would you your
+""".split())
+# "Seafood other than salmon?" after no to salmon is a new question, not a repeat.
+EXCLUDING_WORDS = frozenset({"besides", "except", "instead", "other", "than"})
+NARROWING_ANSWERS = frozenset({ANSWER_LABELS["yes"], ANSWER_LABELS["probably_yes"]})
+
+
+def topic_words(question):
+    """What a question is about, without its framing or a note in brackets:
+    "Do you feel like eating rice?" and "Are you in the mood for a rice dish?" both give {"rice"}."""
+    words = re.findall(r"[^\W\d_]+", re.sub(r"\(.*?\)", " ", question).casefold())
+    return frozenset(word.removesuffix("s") if len(word) > 3 else word
+                     for word in words if word not in FRAME_WORDS)
+
+
 def check_turn(turn, history, questions_left):
     if turn is None:
         raise InvalidTurn("The structured response was empty")
@@ -299,5 +323,10 @@ def check_turn(turn, history, questions_left):
     question = turn.question.strip()
     if not question:
         raise InvalidTurn("action=ask with an empty question")
-    if question.casefold() in {asked.strip().casefold() for asked, _ in history}:
-        raise InvalidTurn(f"Repeated question: {question}")
+    words = topic_words(question)
+    for number, (asked, answer) in enumerate(history, start=1):
+        earlier = topic_words(asked)
+        # Only a yes makes a narrower question useful: "Cold noodles?" after yes to noodles.
+        narrows_a_yes = answer in NARROWING_ANSWERS or words & EXCLUDING_WORDS
+        if words == earlier or (earlier and earlier < words and not narrows_a_yes):
+            raise InvalidTurn(f'"{question}" asks again about Q{number} "{asked}" -> {answer}')

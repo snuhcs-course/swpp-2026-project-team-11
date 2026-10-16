@@ -72,6 +72,14 @@ class FallbackTests(SimpleTestCase):
         self.assertEqual(self.last_call(engine)["attempts"], 2)
         self.assertIsNone(self.last_call(engine)["fallback"])
 
+    def test_retry_is_told_why_the_draft_was_refused(self):
+        engine = self.engine(ask(BROTH), ask("Do you feel like having something with broth?"), ask("Noodles?"))
+        step = engine.answer(engine.start()["question_id"], "unknown")
+        self.assertEqual(step["text"], "Noodles?")
+        self.assertNotIn("previous draft", self.llm.prompt(1))
+        self.assertIn('## Your previous draft was refused\n"Do you feel like having something with broth?" '
+                      f'asks again about Q1 "{BROTH}" -> Not sure', self.llm.prompt(2))
+
     def test_timeout_falls_back_to_a_fixed_question(self):
         engine = self.engine(TimeoutError(), TimeoutError())
         step = engine.start()
