@@ -24,7 +24,7 @@ failure handling.
 cd backend
 pip install -r requirements.txt
 python manage.py migrate          # creates an empty db.sqlite3 (Restaurant / Food / MenuItem)
-python manage.py test menus       # runs without an API key
+pytest                           # every backend test; no API key needed
 ```
 
 ## A. Load the shared snapshot (no API key)
