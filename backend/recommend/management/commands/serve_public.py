@@ -46,7 +46,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--port", type=int, default=8000)
-        parser.add_argument("--cloudflared", default=os.environ.get("METCHU_CLOUDFLARED") or "cloudflared",
+        parser.add_argument("--cloudflared", default="cloudflared",
                             help="cloudflared executable (default: the one on PATH).")
         parser.add_argument("--write-client-config", action="store_true",
                             help="Write the public address to client/local.properties as metchu.baseUrl.")
