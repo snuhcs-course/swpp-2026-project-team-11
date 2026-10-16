@@ -83,10 +83,14 @@ App setting:    metchu.baseUrl=https://calm-red-fox-demo.trycloudflare.com/   (c
    address only after about a minute. On SNU campus Wi-Fi, a lookup before then fails
    and the campus DNS remembers the failure for 60 s, so wait a minute before the
    first try, and if it fails, wait another minute rather than retrying at once.
-2. `--write-client-config` has put the address in `client/local.properties`.
-   Rebuild and install the app (`./gradlew installDebug`); it now works on any
-   network for as long as the command keeps running.
-3. Ctrl-C stops the server and the tunnel.
+2. `--write-client-config` has replaced `metchu.baseUrl` in `client/local.properties`
+   with the address (without the flag, copy the printed "App setting" line there).
+   Rebuild and install the app from `client/` (`./gradlew installDebug`, JDK 21); it
+   now works on any network for as long as the command keeps running.
+3. Ctrl-C, `kill` or closing the terminal stops the server and the tunnel. The app
+   then shows "Could not reach the server".
+4. To go back to the emulator or a USB phone, delete the `metchu.baseUrl` line (or
+   set it back) and rebuild the app.
 
 Things to know:
 
