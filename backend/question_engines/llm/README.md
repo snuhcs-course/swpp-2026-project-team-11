@@ -16,7 +16,7 @@ python backend/manage.py migrate
 python backend/manage.py loaddata menus_2026-09-29
 python backend/manage.py demo_llm_engine --date 2026-09-29 --meal LU          # interactive
 python backend/manage.py demo_llm_engine --date 2026-09-29 --smoke --output /tmp/llm_session.json
-python backend/manage.py test question_engines.llm                            # no API key needed
+python -m pytest backend/question_engines/llm                                # no API key needed
 ```
 
 The demo needs `GOOGLE_API_KEY` in the repo-root `.env` (see the
