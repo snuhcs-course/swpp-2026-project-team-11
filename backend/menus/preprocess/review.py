@@ -62,6 +62,7 @@ def review_rows(records, mappings) -> list[list]:
     keys = {dish: dish_key(dish) for dish in by_dish}
     for short, short_key in sorted(keys.items()):
         for long, long_key in sorted(keys.items()):
-            if short_key != long_key and short_key in long_key                     and long_key.replace(short_key, "", 1) in SAME_DISH_WORDS:
+            if (short_key != long_key and short_key in long_key
+                    and long_key.replace(short_key, "", 1) in SAME_DISH_WORDS):
                 rows.append(["maybe_same", "", long, short, ""])
     return rows
