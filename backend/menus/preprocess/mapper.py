@@ -26,6 +26,10 @@ from . import fixed, overrides
 from .prompt import SYSTEM_PROMPT, build_user_message
 
 PREPROCESS_VERSION = "v1"
+# sha256(SYSTEM_PROMPT)[:12] for this version. A prompt change bumps PREPROCESS_VERSION,
+# so cached MenuLine answers from the old prompt are resolved again, and updates this;
+# test_preprocess_llm checks the pair.
+PROMPT_SHA256 = "c4e8e3df92f9"
 MODEL = "gemini-3.5-flash"
 NAME_MAX = 300   # MenuLine.name / Food.name max_length; Postgres enforces it
 DISH_MAX = 50    # a canonical dish name is short; longer means the model misbehaved

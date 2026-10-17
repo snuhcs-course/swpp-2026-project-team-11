@@ -1,16 +1,18 @@
 # AI-generated: written with Claude (Anthropic) and reviewed by the team.
 import datetime
+import hashlib
 import io
 import re
 from unittest import mock
 
 from django.core.management import CommandError, call_command
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
 from menus.models import Food, MenuItem, MenuLine
 from menus.normalize import dish_key
 from menus.preprocess import mapper
 from menus.preprocess.mapper import LineBatch, map_lines
+from menus.preprocess.prompt import SYSTEM_PROMPT
 from menus.tests.utils import without_committed_rules
 
 DAY = datetime.date(2026, 10, 13)
@@ -141,3 +143,9 @@ class FetchMenusWithLLMTests(TestCase):
             self.run_command(FakeLLM(fail=True))
         self.assertTrue(Food.objects.filter(name="돈가스 카레우동").exists())  # stored as one dish
 
+
+class PromptVersionTests(SimpleTestCase):
+    def test_a_prompt_change_comes_with_a_version_bump(self):
+        digest = hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest()[:12]
+        self.assertEqual(digest, mapper.PROMPT_SHA256,
+                         "The preprocessing prompt changed: bump PREPROCESS_VERSION and update PROMPT_SHA256.")
