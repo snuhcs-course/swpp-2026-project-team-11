@@ -253,7 +253,9 @@ Setup, once (needs admin rights on the repository):
 
 - The job runs the code on `MVP`. To use another branch, set the repository variable
   `MENU_PIPELINE_REF`.
-- A failed run emails the person who last changed the schedule in the workflow file.
+- A run fails when a secret is missing or when Gemini could not resolve every new line or tag
+  every new dish (an expired key, an exhausted quota). What it could store is kept, the next run
+  retries the rest, and GitHub emails the person who last changed the schedule in the workflow file.
 - In a public repository, GitHub disables scheduled workflows after 60 days without repository
   activity; turn it back on from the Actions tab.
 - The daily run also keeps the free Supabase project from pausing.

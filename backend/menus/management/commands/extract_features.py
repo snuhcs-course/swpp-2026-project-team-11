@@ -68,8 +68,9 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f"완료: {len(results)}개 {'확인' if options['dry_run'] else '저장'}, 실패 {len(failed)}개"))
-        for name in failed:
-            self.stdout.write(self.style.WARNING(f"  실패: {name}"))
+        if failed:
+            raise CommandError(f"특징을 뽑지 못한 음식 {len(failed)}개 (예: {', '.join(failed[:3])}). "
+                               f"키·할당량을 확인하고 다시 실행하세요.")
 
     def print_table(self, results):
         for name, annotation in results.items():

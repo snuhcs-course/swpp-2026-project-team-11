@@ -4,7 +4,7 @@ import io
 import re
 from unittest import mock
 
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.test import TestCase
 
 from menus.models import Food, MenuItem, MenuLine
@@ -135,3 +135,9 @@ class FetchMenusWithLLMTests(TestCase):
         self.run_command(llm, "--no-llm")
         self.assertEqual(llm.calls, [])
         self.assertTrue(Food.objects.filter(name="돈가스 카레우동").exists())
+
+    def test_gemini_failures_fail_the_command_after_storing(self):
+        with self.assertRaisesMessage(CommandError, "메뉴 줄 5개를 처리하지 못해"):
+            self.run_command(FakeLLM(fail=True))
+        self.assertTrue(Food.objects.filter(name="돈가스 카레우동").exists())  # stored as one dish
+

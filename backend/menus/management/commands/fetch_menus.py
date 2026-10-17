@@ -6,7 +6,8 @@ dish. Re-running replaces that day's menu items, so it is safe to run as often
 as needed.
 
 Lines never seen before are resolved by Gemini (needs GOOGLE_API_KEY). Without a
-key, or with --no-llm, each new line is stored as one dish, as before.
+key, or with --no-llm, each new line is stored as one dish, as before. If Gemini
+fails on some lines, they are stored that way too and the command exits with an error.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ from __future__ import annotations
 import datetime
 from collections import Counter
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
@@ -133,3 +134,9 @@ class Command(BaseCommand):
             f"세트 나눔 {stats['split_lines']} / 식사 아님 {stats['not_meal']} / "
             f"메뉴 줄 {len(lines)} ({', '.join(f'{k} {v}' for k, v in sorted(sources.items()))})"
         ))
+        if llm is not None:
+            fallen = [lines[key] for key, m in mappings.items() if m.source == "rule"]
+            if fallen:
+                raise CommandError(
+                    f"Gemini가 메뉴 줄 {len(fallen)}개를 처리하지 못해 한 덩어리로 저장했습니다 "
+                    f"(예: {', '.join(fallen[:3])}). 키·할당량을 확인하고 다시 실행하세요.")

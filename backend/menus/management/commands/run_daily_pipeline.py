@@ -7,7 +7,9 @@ One day's menu, start to finish (default: today in Seoul):
   3. export_preprocess_review (with --review) - CSV for a person to check
 
 Run it once a day; it needs GOOGLE_API_KEY. Re-running is safe: lines and dishes
-resolved before are reused, so only new menu lines cost LLM calls.
+resolved before are reused, so only new menu lines cost LLM calls. If a step fails
+(e.g. Gemini errors on some lines), the other steps still run and the command then
+exits with an error, so the daily GitHub Actions run fails visibly.
 """
 
 from __future__ import annotations
@@ -36,16 +38,22 @@ class Command(BaseCommand):
         date = options["date"] or timezone.localdate()
         day = date.isoformat()
 
-        self.stdout.write(f"[1/3] 메뉴 수집·전처리 ({day})")
-        call_command("fetch_menus", "--date", day, stdout=self.stdout)
-        self.stdout.write("[2/3] 새 요리 특징 추출")
-        call_command("extract_features", "--date", day, stdout=self.stdout)
+        steps = [("[1/3] 메뉴 수집·전처리", ["fetch_menus", "--date", day]),
+                 ("[2/3] 새 요리 특징 추출", ["extract_features", "--date", day])]
         if options["review"]:
-            self.stdout.write("[3/3] 검토용 CSV")
-            call_command("export_preprocess_review", "--date", day, "--output", options["review"],
-                         stdout=self.stdout)
+            steps.append(("[3/3] 검토용 CSV",
+                          ["export_preprocess_review", "--date", day, "--output", options["review"]]))
+        errors = []
+        for title, command in steps:
+            self.stdout.write(title)
+            try:
+                call_command(*command, stdout=self.stdout)
+            except CommandError as error:  # keep going: later steps still help, then fail below
+                errors.append(f"{command[0]}: {error}")
 
         counts = {meal: len(services.get_candidates(date, meal)) for meal in ("BR", "LU", "DN")}
         self.stdout.write(self.style.SUCCESS(
             f"{day} 추천 후보: 아침 {counts['BR']} / 점심 {counts['LU']} / 저녁 {counts['DN']} "
             f"/ 하루 {len(services.get_candidates(date))}"))
+        if errors:
+            raise CommandError("\n".join(errors))
