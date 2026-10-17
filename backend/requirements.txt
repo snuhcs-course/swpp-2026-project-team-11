@@ -8,3 +8,6 @@ pytest==9.*
 pytest-django==4.*
 requests==2.*
 numpy>=2.2,<3
+# Shared database (Supabase Postgres) through DATABASE_URL; see backend/README.md.
+dj-database-url==3.*
+psycopg[binary]>=3.2,<4

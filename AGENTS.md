@@ -37,6 +37,9 @@ cd client && ./gradlew testDebugUnitTest         # JDK 21; the build fails on JD
   `client/app/src/sharedTest/resources/contract/*.json` from the real server.
 - **Feature schema** (`menus/features/schema.py`): a change to keys, questions or
   meaning bumps `FEATURE_VERSION`, which re-tags every food.
+- **Menu preprocessing prompt** (`menus/preprocess/prompt.py`): a change bumps
+  `PREPROCESS_VERSION` and updates `PROMPT_SHA256` (`menus/preprocess/mapper.py`; a test
+  checks the pair), so cached `MenuLine` answers are resolved again.
 - **Snapshots**: if what a saved session means changes, bump `POLICY_VERSION`
   (`decision_tree/planning.py`) or `ENGINE_VERSION` (`llm/engine.py`).
 - **Shared data**: rebuild `menus/fixtures/menus_2026-09-29.json` only as backend/README.md,

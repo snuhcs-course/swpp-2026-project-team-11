@@ -127,10 +127,11 @@ class ExtractFeaturesCommandTests(TestCase):
         self.assertEqual(len(llm.calls), 1 + 3)
         self.assertEqual(Food.objects.filter(feature_version=FEATURE_VERSION).count(), 3)
 
-    def test_foods_that_keep_failing_stay_untagged(self):
-        output = self.run_command(FakeLLM(always_fail=["냉모밀"]))
-        self.assertIn("실패 1개", output)
+    def test_foods_that_keep_failing_stay_untagged_and_fail_the_command(self):
+        with self.assertRaisesMessage(CommandError, "특징을 뽑지 못한 음식 1개"):
+            self.run_command(FakeLLM(always_fail=["냉모밀"]))
         self.assertEqual(Food.objects.get(name="냉모밀").feature_version, "")
+        self.assertEqual(Food.objects.get(name="육개장").feature_version, FEATURE_VERSION)
 
     def test_dry_run_saves_nothing(self):
         output = self.run_command(FakeLLM(), "--dry-run")

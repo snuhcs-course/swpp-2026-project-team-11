@@ -1,0 +1,5 @@
+{
+ "_help": "Human corrections, applied before everything else. lines: cleaned menu line -> its dishes ([] = not a meal). dishes: a dish name -> the name it should be merged into. Keys ignore spacing and size markers.",
+ "lines": {},
+ "dishes": {}
+}

@@ -18,6 +18,13 @@ class MenuItemModelTests(TestCase):
         with self.assertRaises(IntegrityError):
             MenuItem.objects.create(food=self.food, price=3000, **kwargs)
 
+    def test_a_combo_line_can_hold_one_item_per_dish(self):
+        kwargs = dict(date=datetime.date(2026, 10, 13), meal="LU",
+                      restaurant=self.restaurant, raw_name="돈가스 카레우동")
+        MenuItem.objects.create(food=self.food, **kwargs)
+        MenuItem.objects.create(food=Food.objects.create(name="카레우동"), **kwargs)
+        self.assertEqual(MenuItem.objects.filter(raw_name="돈가스 카레우동").count(), 2)
+
     def test_one_food_is_shared_across_days(self):
         for day in (29, 30):
             MenuItem.objects.create(date=datetime.date(2026, 9, day), meal="LU",
