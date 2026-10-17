@@ -28,7 +28,7 @@ failure handling.
 cd backend
 pip install -r requirements.txt
 python manage.py migrate          # creates an empty db.sqlite3 (Restaurant / Food / MenuItem)
-python manage.py test menus       # runs without an API key
+pytest                           # every backend test; no API key needed
 ```
 
 ## A. Load the shared snapshot (no API key)
@@ -308,6 +308,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `export_preprocess_review [--date] --output PATH` | the day's results as a review CSV | no |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |
 | `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** |
+| `serve_public [--port] [--write-client-config] [--debug]` | run the server behind a Cloudflare Tunnel, reachable from any network ([guide](../client/README.md#from-another-network-cloudflare-tunnel)); needs `cloudflared` | no |
 
 ## Data model (`menus/models.py`)
 

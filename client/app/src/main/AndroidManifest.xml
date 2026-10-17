@@ -3,7 +3,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- usesCleartextTraffic: the development server is plain http on the LAN. -->
+    <!-- usesCleartextTraffic: the development server is plain http on the LAN.
+         A Cloudflare Tunnel address (manage.py serve_public) is https. -->
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

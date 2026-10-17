@@ -398,6 +398,15 @@ class RecommendViewModelTest {
         assertIdle(null, serverError)
     }
 
+    /** Cloudflare's reply when the tunnel's server has stopped: the server cannot be reached. */
+    @Test
+    fun aTunnelWithNoServerBehindItIsUnreachable() {
+        startWith(question)
+        api.fail(Fixtures.httpError(530, "<html>Cloudflare Tunnel error</html>"))
+        viewModel.recommendNow()
+        assertIdle(question, noServer)
+    }
+
     @Test
     fun otherHttpErrorsKeepTheScreenAndOfferRetry() {
         for (code in listOf(400, 403, 500, 502, 503)) {

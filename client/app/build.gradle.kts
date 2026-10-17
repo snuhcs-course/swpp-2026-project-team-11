@@ -25,7 +25,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // 10.0.2.2 is the emulator's name for the host machine. On a real phone,
-        // set metchu.baseUrl=http://<your LAN IP>:8000/ in local.properties.
+        // set metchu.baseUrl in local.properties: http://<your LAN IP>:8000/, or the
+        // https address printed by `manage.py serve_public` (which can write it here).
         val baseUrl = localProperties.getProperty("metchu.baseUrl") ?: "http://10.0.2.2:8000/"
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
     }

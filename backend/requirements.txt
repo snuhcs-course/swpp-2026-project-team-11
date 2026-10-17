@@ -3,6 +3,9 @@ django==5.2.*
 langchain-google-genai==4.4.0
 pydantic==2.*
 python-dotenv==1.*
+# Tests: `pytest` from backend/ (settings in pytest.ini).
+pytest==9.*
+pytest-django==4.*
 requests==2.*
 numpy>=2.2,<3
 # Shared database (Supabase Postgres) through DATABASE_URL; see backend/README.md.

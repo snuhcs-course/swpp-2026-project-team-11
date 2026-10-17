@@ -36,7 +36,7 @@ Automated end-to-end smoke and optional planning:
 python backend/manage.py demo_decision_tree --date 2026-09-29 --meal LU --smoke
 python backend/manage.py demo_decision_tree --date 2026-09-29 --meal LU --policy lookahead --smoke
 python backend/manage.py demo_decision_tree --date 2026-09-29 --meal LU --output /tmp/session.json
-python backend/manage.py test menus question_engines.decision_tree
+python -m pytest backend/menus backend/question_engines/decision_tree
 ```
 
 ## Integration example for P17/P19
