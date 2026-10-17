@@ -28,10 +28,19 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# On unless METCHU_DEBUG=0; `manage.py serve_public` turns it off, since its
+# error pages would otherwise be readable by anyone with the public address.
+DEBUG = os.environ.get('METCHU_DEBUG', '1').lower() not in ('0', 'false', 'no')
 
 # 10.0.2.2 is how the Android emulator reaches the host machine.
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2']
+# .trycloudflare.com covers the random hostname of a Cloudflare quick tunnel
+# (`manage.py serve_public`). METCHU_ALLOWED_HOSTS adds more, comma-separated:
+# a LAN address, or the hostname of a named tunnel.
+ALLOWED_HOSTS = [
+    'localhost', '127.0.0.1', '10.0.2.2', '.trycloudflare.com',
+    *(host.strip() for host in os.environ.get('METCHU_ALLOWED_HOSTS', '').split(',')
+      if host.strip()),
+]
 
 
 # Application definition

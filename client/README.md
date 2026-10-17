@@ -32,11 +32,15 @@ compared on the same menu.
 
 The emulator reaches the host machine at `http://10.0.2.2:8000/`, which is the
 default. For a physical phone on the same Wi-Fi, add your machine's LAN address
-to the untracked `client/local.properties` and to `ALLOWED_HOSTS` in
-`backend/metchu/settings.py`:
+to the untracked `client/local.properties`, and start the server with that
+address in `METCHU_ALLOWED_HOSTS` (comma-separated, or set it in `.env`):
 
 ```properties
 metchu.baseUrl=http://192.168.0.3:8000/
+```
+
+```bash
+METCHU_ALLOWED_HOSTS=192.168.0.3 python backend/manage.py runserver 0.0.0.0:8000
 ```
 
 A phone on a USB cable needs no shared network. Forward the phone's port 8000 to
@@ -53,6 +57,72 @@ metchu.baseUrl=http://127.0.0.1:8000/
 
 The forwarding is lost when the cable is replugged or adb restarts; the app then
 shows "Could not reach the server". Run the `adb reverse` command again.
+
+### From another network (Cloudflare Tunnel)
+
+The setups above need the phone next to the server machine. `serve_public` runs
+the server together with a Cloudflare Tunnel, which gives it a public https
+address that works from mobile data or any other network. Install
+[`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
+on the server machine once (`brew install cloudflared`,
+`winget install Cloudflare.cloudflared`), then start the server with this command
+instead of `runserver`:
+
+```bash
+METCHU_MENU_DATE=2026-09-29 python backend/manage.py serve_public --write-client-config
+```
+
+```
+Public address: https://calm-red-fox-demo.trycloudflare.com/
+Check it:       https://calm-red-fox-demo.trycloudflare.com/api/health/
+App setting:    metchu.baseUrl=https://calm-red-fox-demo.trycloudflare.com/   (client/local.properties)
+```
+
+1. Open the "Check it" address in any browser; it shows `{"status": "ok"}`. The
+   address is printed once the tunnel has connected, but some networks find a new
+   address only after about a minute. On SNU campus Wi-Fi, a lookup before then fails
+   and the campus DNS remembers the failure for 60 s, so wait a minute before the
+   first try, and if it fails, wait another minute rather than retrying at once.
+2. `--write-client-config` has replaced `metchu.baseUrl` in `client/local.properties`
+   with the address (without the flag, copy the printed "App setting" line there).
+   Rebuild and install the app from `client/` (`./gradlew installDebug`, JDK 21); it
+   now works on any network for as long as the command keeps running.
+3. Ctrl-C, `kill` or closing the terminal stops the server and the tunnel. The app
+   then shows "Could not reach the server".
+4. To go back to the emulator or a USB phone, delete the `metchu.baseUrl` line (or
+   set it back) and rebuild the app.
+
+Things to know:
+
+- **The address changes on every start** of a quick tunnel, so the app must be
+  rebuilt each time. For a fixed address, use a named tunnel (below).
+- **Anyone who has the address can use the server**, including the LLM engine and
+  so your Gemini quota. Share it only with the team and stop the command when done.
+  `serve_public` turns Django's `DEBUG` off and keeps the server itself bound to
+  `127.0.0.1`; `--debug` turns `DEBUG` back on.
+- The emulator and `adb reverse` setups keep working while it runs, on `--port`
+  (default 8000).
+- `-v 2` shows cloudflared's own log, for when no address appears.
+- Mobile data, or Android's Private DNS (Settings > Network > Private DNS, e.g.
+  `one.one.one.one`), avoids the slow campus DNS.
+- Quick tunnels do not start if `~/.cloudflared/config.yml` exists; rename it or
+  use a named tunnel.
+
+#### A fixed address (named tunnel)
+
+This needs a Cloudflare account with a domain on it. In the Zero Trust dashboard,
+create a tunnel (Networks > Tunnels), add a public hostname such as
+`metchu.example.com` with the service `http://localhost:8000`, and copy the
+tunnel's token. Put both in the repo-root `.env`:
+
+```
+METCHU_TUNNEL_TOKEN=eyJh...
+METCHU_PUBLIC_URL=https://metchu.example.com
+```
+
+`serve_public` then runs that tunnel instead of a quick one, and the app can be
+built once with `metchu.baseUrl=https://metchu.example.com/`. The token is a
+secret like the API key: keep it in `.env` only.
 
 ## Screens
 
@@ -155,7 +225,7 @@ Server behavior to know about:
 
 | What | Command | Needs |
 | --- | --- | --- |
-| REST API (`backend/recommend/tests`) | `python -m pytest backend/recommend` | Python only |
+| REST API and `serve_public` (`backend/recommend/tests`) | `python -m pytest backend/recommend` | Python only |
 | JSON contract, repository and ViewModel (`app/src/test`) | `./gradlew testDebugUnitTest` | JDK only |
 | The screen against a fake server (`app/src/androidTest`) | `./gradlew connectedDebugAndroidTest` | a running emulator or phone |
 
@@ -167,4 +237,6 @@ The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 
 The server tests include seeded random sessions on the fixture. A failure prints
-its seed; rerun that seed to reproduce it.
+its seed; rerun that seed to reproduce it. `test_public_access.py` runs
+`serve_public` against scripted stand-ins for the server and cloudflared, so it
+needs neither cloudflared nor the network.
