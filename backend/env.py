@@ -1,7 +1,8 @@
 """Load secrets from the repo-root .env, once, at the edge of the program.
 
-Only the server needs GOOGLE_API_KEY. `ChatGoogleGenerativeAI` reads it from the
-environment when it is constructed, so this just has to put it there first.
+Only the server needs the keys: GOOGLE_API_KEY for feature extraction and
+OPENROUTER_API_KEY for the LLM question engine. Both are read from the environment
+when the clients are constructed, so this just has to put them there first.
 An existing environment variable always wins over the file.
 """
 

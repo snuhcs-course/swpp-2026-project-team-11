@@ -1,3 +1,8 @@
+import json
+
+from langchain_core.messages import AIMessage
+from pydantic import ValidationError
+
 from question_engines.decision_tree.contracts import ANSWER_OPTIONS
 
 ANSWER_IDS = [option["id"] for option in ANSWER_OPTIONS]
@@ -20,10 +25,15 @@ def recommend(food):
     return {"action": "recommend", "question": "", "food": food}
 
 
-class FakeLLM:
-    """Plays the structured-output Gemini client: replies with the queued turns in order.
+# What FakeLLM reports for every answered call, as OpenRouter does.
+USAGE = {"input_tokens": 100, "output_tokens": 10, "cost_usd": 0.0001}
 
-    A queued exception is raised instead, like a timeout or network error.
+
+class FakeLLM:
+    """Plays the structured-output OpenRouter client: replies with the queued turns in order.
+
+    A queued exception is raised instead, like a timeout or network error. A reply
+    outside the schema comes back as a parsing error, as with include_raw=True.
     """
 
     def __init__(self, *replies):
@@ -31,7 +41,8 @@ class FakeLLM:
         self.calls = []
         self.models = []
 
-    def with_structured_output(self, model):
+    def with_structured_output(self, model, include_raw=False):
+        assert include_raw, "the engine reads usage from the raw response"
         self.models.append(model)
         return self
 
@@ -40,7 +51,15 @@ class FakeLLM:
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
             raise reply
-        return self.models[-1].model_validate(reply)
+        raw = AIMessage(content=json.dumps(reply, ensure_ascii=False),
+                        usage_metadata={"input_tokens": USAGE["input_tokens"],
+                                        "output_tokens": USAGE["output_tokens"],
+                                        "total_tokens": USAGE["input_tokens"] + USAGE["output_tokens"]},
+                        response_metadata={"token_usage": {"cost": USAGE["cost_usd"]}})
+        try:
+            return {"raw": raw, "parsed": self.models[-1].model_validate(reply), "parsing_error": None}
+        except ValidationError as error:
+            return {"raw": raw, "parsed": None, "parsing_error": error}
 
     def offered_foods(self, call=-1):
         """The food enum the LLM was allowed to answer with in one call."""

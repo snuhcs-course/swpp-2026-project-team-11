@@ -31,7 +31,7 @@ You need:
 
 - Python 3.11 or newer
 - Android Studio with an emulator (we used "Medium Phone", API 36)
-- Only for the LLM half of the demo: a free Gemini API key
+- Only for the LLM half of the demo: an OpenRouter API key
 
 ### 1. Start the server
 
@@ -62,11 +62,11 @@ It answers with a JSON session whose `candidate_count` is 193 and whose first
 ### 2. (Optional) Enable the LLM engine
 
 The decision-tree engine needs nothing else. To try the LLM engine as well, get
-a key from [Google AI Studio](https://aistudio.google.com/apikey) and put it in
-a `.env` file in the repository root **before** starting the server:
+an [OpenRouter](https://openrouter.ai/keys) key from the team and put it in a
+`.env` file in the repository root **before** starting the server:
 
 ```bash
-cp .env.example .env      # then set GOOGLE_API_KEY=your-key
+cp .env.example .env      # then set OPENROUTER_API_KEY=your-key
 ```
 
 `.env` is gitignored. If the server is already running, stop it with Ctrl-C and
@@ -132,7 +132,7 @@ This is the flow in the video.
 3. A proposal is either one dish or a kind of dish with an example. Tap
    **No, something else** to keep going, or **Yes, I'll have this** to accept.
 4. The result shows the dish, the cafeteria and the price. Tap **Start over**.
-5. Choose **LLM** and tap **Start** to play the same menu with Gemini writing
+5. Choose **LLM** and tap **Start** to play the same menu with the LLM writing
    the questions (needs the key from step 2). Each step takes a few seconds.
 
 Your questions and dishes will differ from the video's: they depend on your
