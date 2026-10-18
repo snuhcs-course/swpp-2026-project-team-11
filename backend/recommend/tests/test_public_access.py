@@ -5,7 +5,6 @@ cloudflared and the server are replaced by scripted processes, so nothing here
 opens a tunnel or needs the network.
 """
 import io
-import os
 import pathlib
 import signal
 import subprocess
@@ -251,7 +250,7 @@ class ServePublicTests(SimpleTestCase):
                     def poll(self):
                         if not self.sent:
                             self.sent = True
-                            os.kill(os.getpid(), signum)
+                            signal.raise_signal(signum)
                         return super().poll()
 
                 before = signal.getsignal(signum)

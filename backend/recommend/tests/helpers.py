@@ -2,7 +2,7 @@
 import datetime
 import json
 
-from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
+from menus.features.legacy_schema import FEATURE_KEYS, FEATURE_VERSION
 from menus.models import Food, MenuItem, Restaurant
 
 DAY = "2026-09-29"

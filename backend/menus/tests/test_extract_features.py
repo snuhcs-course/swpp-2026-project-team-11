@@ -1,6 +1,7 @@
+# AI-generated: written with Codex (OpenAI) and reviewed by the team.
 import datetime
 import io
-import re
+import json
 from unittest import mock
 
 from django.core.management import CommandError, call_command
@@ -9,20 +10,17 @@ from pydantic import ValidationError
 
 from menus import services
 from menus.features import extractor
-from menus.features.prompt import FEW_SHOT_EXAMPLES, SYSTEM_PROMPT
-from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
+from menus.features.prompt import SYSTEM_PROMPT, PROMPT_VERSION
+from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION, LLM_FEATURE_KEYS
 from menus.models import Food, MenuItem, Restaurant
 
 DAY = datetime.date(2026, 9, 29)
 
-
-def features(**overrides) -> dict:
-    return {key: 0.5 for key in FEATURE_KEYS} | overrides
-
+def moments(**overrides):
+    return {key: {"mean": 0.5, "std": 0.1} for key in LLM_FEATURE_KEYS} | overrides
 
 class FakeLLM:
-    """Answers like the structured-output Gemini client, without a network call."""
-
+    """Structured output with deterministic values; no key or network."""
     def __init__(self, drop_in_batches=(), fail_on_batches=False, always_fail=()):
         self.drop_in_batches = set(drop_in_batches)
         self.fail_on_batches = fail_on_batches
@@ -30,8 +28,7 @@ class FakeLLM:
         self.calls = []
 
     def invoke(self, messages):
-        names = [re.sub(r"^\d+\.\s*", "", line)
-                 for line in messages[-1].content.splitlines()[1:]]
+        names = [item["input_name"] for item in json.loads(messages[-1].content)["items"]]
         self.calls.append(names)
         if self.fail_on_batches and len(names) > 1:
             raise ValueError("model returned invalid JSON")
@@ -39,81 +36,121 @@ class FakeLLM:
         for name in names:
             if name in self.always_fail or (len(names) > 1 and name in self.drop_in_batches):
                 continue
-            items.append({
-                "input_name": name,
-                "is_food": name != "공기밥",
-                "display_name": name,
-                "food_group": "국/탕",
-                "features": features(spicy=0.87 if name == "육개장" else 0.0),
-            })
+            items.append({"input_name": name, "features": moments(
+                spicy={"mean": 0.87 if name == "육개장" else 0.0,
+                       "std": 0.12 if name == "육개장" else 0.0})})
         return extractor.FoodBatch.model_validate({"items": items})
 
-
 class SchemaTests(SimpleTestCase):
-    def test_output_model_matches_schema(self):
-        self.assertEqual(tuple(extractor.FoodFeatures.model_fields), FEATURE_KEYS)
+    def test_output_has_32_measurements_and_storage_has_33(self):
+        self.assertEqual(tuple(extractor.FoodFeatures.model_fields), LLM_FEATURE_KEYS)
+        self.assertEqual(len(FEATURE_KEYS), 33)
+        self.assertNotIn("meal_variety", LLM_FEATURE_KEYS)
 
-    def test_prompt_lists_every_feature(self):
-        for key in FEATURE_KEYS:
-            self.assertIn(f"- {key}:", SYSTEM_PROMPT)
+    def test_prompt_uses_accepted_rubric_without_questions(self):
+        self.assertEqual(PROMPT_VERSION, "food-name-32-v2-mean-std-draft7")
+        for key in LLM_FEATURE_KEYS:
+            self.assertIn("| " + key, SYSTEM_PROMPT)
+        self.assertIn("통상적인 1인", SYSTEM_PROMPT)
+        self.assertNotIn("Would you", SYSTEM_PROMPT)
+        self.assertIn("0.1 단위에 제한하지 않는다", SYSTEM_PROMPT)
 
-    def test_few_shot_examples_are_valid_output(self):
-        for example in FEW_SHOT_EXAMPLES:
-            annotation = extractor.FoodAnnotation.model_validate(example)
-            self.assertEqual(tuple(annotation.features.model_dump()), FEATURE_KEYS)
+    def test_invalid_moments_are_rejected(self):
+        for mean, std in [(1.3, 0), (0, .01), (1, .01), (.01, .2),
+                          (.5, .51), (.5, -.1), (float("nan"), 0),
+                          (.5, float("inf")), (True, 0), ("0.5", 0), (.123, .1)]:
+            with self.subTest(mean=mean, std=std), self.assertRaises(ValidationError):
+                extractor.FeatureStats(mean=mean, std=std)
 
-    def test_out_of_range_probability_is_rejected(self):
-        with self.assertRaises(ValidationError):
-            extractor.FoodFeatures.model_validate(features(spicy=1.3))
+    def test_valid_boundary_moments(self):
+        for mean, std in [(0, 0), (1, 0), (.5, .5), (.2, .4), (.87, .12)]:
+            self.assertEqual(extractor.FeatureStats(mean=mean, std=std).std, std)
 
-    def test_loose_name_matching(self):
+    def test_missing_or_extra_features_are_rejected(self):
+        for payload in [moments() | {"meal_variety": {"mean": 1, "std": 0}},
+                        {k: v for k, v in moments().items() if k != "spicy"}]:
+            with self.assertRaises(ValidationError):
+                extractor.FoodFeatures.model_validate(payload)
+
+    def test_wrong_or_duplicate_name_is_not_assigned_to_requested_food(self):
+        item = {"input_name": "다른 음식", "features": moments()}
         llm = mock.Mock()
-        llm.invoke.return_value = extractor.FoodBatch.model_validate({"items": [{
-            "input_name": "1. 쇠고기 육개장", "is_food": True, "display_name": "육개장",
-            "food_group": "국/탕", "features": features()}]})
-        self.assertEqual(list(extractor.extract_batch(["쇠고기육개장"], llm)), ["쇠고기육개장"])
-
+        llm.invoke.return_value = {"items": [item]}
+        self.assertEqual(extractor.extract_batch(["육개장"], llm), {})
+        item["input_name"] = "육개장"
+        llm.invoke.return_value = {"items": [item, item]}
+        self.assertEqual(extractor.extract_batch(["육개장"], llm), {})
 
 class ExtractFeaturesCommandTests(TestCase):
     def setUp(self):
-        restaurant = Restaurant.objects.create(code="학생회관식당", name="학생회관식당")
-        for name in ["육개장", "공기밥", "냉모밀"]:
-            food = Food.objects.create(name=name)
-            MenuItem.objects.create(date=DAY, meal="LU", restaurant=restaurant,
+        self.restaurant = Restaurant.objects.create(code="학생회관식당", name="학생회관식당")
+        for name in ["육개장", "짜장면", "냉모밀"]:
+            food = Food.objects.create(name=name, is_food=True, food_group="기존 분류")
+            MenuItem.objects.create(date=DAY, meal="LU", restaurant=self.restaurant,
                                     raw_name=name, food=food, price=3000)
         self.addCleanup(mock.patch.stopall)
         mock.patch.object(extractor, "api_key_available", return_value=True).start()
 
-    def run_command(self, llm, *args) -> str:
+    def run_command(self, llm, *args):
         out = io.StringIO()
         with mock.patch.object(extractor, "build_llm", return_value=llm):
             call_command("extract_features", "--date", DAY.isoformat(), *args, stdout=out)
         return out.getvalue()
 
-    def test_tags_and_saves_the_days_foods(self):
+    def test_tags_and_saves_mean_std_without_tenth_rounding(self):
         llm = FakeLLM()
         self.run_command(llm)
-
         self.assertEqual(len(llm.calls), 1)
         food = Food.objects.get(name="육개장")
         self.assertEqual(food.feature_version, FEATURE_VERSION)
-        self.assertEqual(food.features["spicy"], 0.9)  # rounded to 0.1
+        self.assertEqual(food.features["spicy"], .87)
+        self.assertEqual(food.feature_std["spicy"], .12)
         self.assertEqual(set(food.features), set(FEATURE_KEYS))
-        self.assertEqual(food.extraction_model, extractor.MODEL)
-        self.assertFalse(Food.objects.get(name="공기밥").is_food)
+        self.assertEqual(food.food_group, "기존 분류")
+        self.assertEqual(food.features["meal_variety"], 0)
+        self.assertEqual(food.feature_std["meal_variety"], 0)
 
     def test_already_tagged_foods_are_skipped(self):
         self.run_command(FakeLLM())
         llm = FakeLLM()
-        output = self.run_command(llm)
+        self.assertIn("새로 태깅할 음식 없음", self.run_command(llm))
         self.assertEqual(llm.calls, [])
-        self.assertIn("새로 태깅할 음식 없음", output)
 
-    def test_force_retags(self):
+    def test_force_retags_once_per_name_and_updates_other_dates(self):
+        other = Food.objects.create(name="육개장", is_set=True, is_food=True)
         self.run_command(FakeLLM())
         llm = FakeLLM()
         self.run_command(llm, "--force")
-        self.assertEqual(len(llm.calls), 1)
+        self.assertEqual(sum(call.count("육개장") for call in llm.calls), 1)
+        other.refresh_from_db()
+        plain = Food.objects.get(name="육개장", is_set=False)
+        self.assertEqual(other.features["spicy"], plain.features["spicy"])
+        self.assertEqual(other.feature_std, plain.feature_std)
+        self.assertEqual(other.features["meal_variety"], 1)
+        self.assertEqual(other.display_name, "육개장 (세트)")
+
+    def test_existing_name_cache_fills_new_variant_without_key_or_call(self):
+        self.run_command(FakeLLM())
+        other = Food.objects.create(name="육개장", is_set=True, is_food=True)
+        llm = FakeLLM()
+        with mock.patch.object(extractor, "api_key_available", return_value=False):
+            self.run_command(llm)
+        self.assertEqual(llm.calls, [])
+        other.refresh_from_db()
+        self.assertEqual(other.feature_version, FEATURE_VERSION)
+
+    def test_corrupt_versioned_cache_is_reextracted(self):
+        self.run_command(FakeLLM())
+        Food.objects.filter(name="육개장").update(feature_std={})
+        llm = FakeLLM()
+        self.run_command(llm)
+        self.assertEqual(llm.calls, [["육개장"]])
+
+    def test_preprocessing_exclusions_are_not_sent_to_llm(self):
+        Food.objects.filter(name="짜장면").update(is_food=False)
+        llm = FakeLLM()
+        self.run_command(llm)
+        self.assertNotIn("짜장면", llm.calls[0])
 
     def test_names_missing_from_a_batch_are_retried_alone(self):
         llm = FakeLLM(drop_in_batches=["냉모밀"])
@@ -124,65 +161,52 @@ class ExtractFeaturesCommandTests(TestCase):
     def test_failed_batch_falls_back_to_one_by_one(self):
         llm = FakeLLM(fail_on_batches=True)
         self.run_command(llm)
-        self.assertEqual(len(llm.calls), 1 + 3)
-        self.assertEqual(Food.objects.filter(feature_version=FEATURE_VERSION).count(), 3)
+        self.assertEqual(len(llm.calls), 4)
 
-    def test_foods_that_keep_failing_stay_untagged_and_fail_the_command(self):
+    def test_failed_names_remain_untagged_and_command_fails(self):
         with self.assertRaisesMessage(CommandError, "특징을 뽑지 못한 음식 1개"):
             self.run_command(FakeLLM(always_fail=["냉모밀"]))
         self.assertEqual(Food.objects.get(name="냉모밀").feature_version, "")
         self.assertEqual(Food.objects.get(name="육개장").feature_version, FEATURE_VERSION)
 
-    def test_dry_run_saves_nothing(self):
-        output = self.run_command(FakeLLM(), "--dry-run")
-        self.assertIn("육개장", output)
+    def test_dry_run_writes_nothing_including_cached_variants(self):
+        self.run_command(FakeLLM(), "--dry-run")
         self.assertFalse(Food.objects.filter(feature_version=FEATURE_VERSION).exists())
+        self.run_command(FakeLLM())
+        other = Food.objects.create(name="육개장", is_set=True, is_food=True)
+        self.run_command(FakeLLM(), "--dry-run")
+        other.refresh_from_db()
+        self.assertEqual(other.feature_version, "")
+
+    def test_limit_counts_names_and_rejects_nonpositive_options(self):
+        Food.objects.create(name="냉모밀", is_set=True, is_food=True)
+        llm = FakeLLM()
+        self.run_command(llm, "--limit", "1")
+        self.assertEqual(llm.calls, [["냉모밀"]])
+        self.assertEqual(Food.objects.filter(feature_version=FEATURE_VERSION).count(), 2)
+        for option in ("--batch-size", "--limit"):
+            with self.assertRaises(CommandError):
+                self.run_command(FakeLLM(), option, "0")
 
     def test_missing_api_key_is_a_clear_error(self):
         with mock.patch.object(extractor, "api_key_available", return_value=False):
             with self.assertRaisesMessage(CommandError, "GOOGLE_API_KEY"):
                 self.run_command(FakeLLM())
 
-
 class GetCandidatesTests(TestCase):
-    def setUp(self):
-        hall = Restaurant.objects.create(code="학생회관식당", name="학생회관식당")
-        dorm = Restaurant.objects.create(code="기숙사식당", name="기숙사식당")
-
-        def food(name, **kwargs):
-            defaults = dict(is_food=True, feature_version=FEATURE_VERSION, features=features())
-            return Food.objects.create(name=name, **(defaults | kwargs))
-
-        yukgaejang = food("육개장", display_name="육개장")
-        rice = food("공기밥", is_food=False)
-        untagged = food("냉모밀", is_food=None, feature_version="", features={})
-        old = food("짜장면", feature_version="v0")
-        for restaurant, meal, dish, price in [
-            (hall, "LU", yukgaejang, 3000), (dorm, "DN", yukgaejang, 6000),
-            (hall, "LU", rice, 700), (hall, "LU", untagged, 5900), (hall, "LU", old, 4500),
-        ]:
-            MenuItem.objects.create(date=DAY, meal=meal, restaurant=restaurant,
-                                    raw_name=dish.name, food=dish, price=price)
-
-    def test_only_tagged_meals_are_candidates(self):
-        [candidate] = services.get_candidates(DAY)
-        self.assertEqual(candidate["name"], "육개장")
-        self.assertEqual(set(candidate["features"]), set(FEATURE_KEYS))
-        self.assertEqual(candidate["offers"], [
-            {"restaurant": "학생회관식당", "meal": "LU", "price": 3000},
-            {"restaurant": "기숙사식당", "meal": "DN", "price": 6000},
-        ])
-
-    def test_meal_filter(self):
-        [candidate] = services.get_candidates(DAY, meal="DN")
-        self.assertEqual([o["meal"] for o in candidate["offers"]], ["DN"])
-        self.assertEqual(services.get_candidates(DAY, meal="BR"), [])
-
-    def test_defaults_to_today(self):
-        with mock.patch("django.utils.timezone.localdate", return_value=DAY):
-            self.assertEqual(len(services.get_candidates()), 1)
-
-    def test_feature_schema(self):
-        schema = services.get_feature_schema()
-        self.assertEqual([f["key"] for f in schema], list(FEATURE_KEYS))
-        self.assertTrue(all(f["question"].endswith("?") for f in schema))
+    def test_versions_are_not_mixed_and_default_candidate_keys_stay_stable(self):
+        hall = Restaurant.objects.create(code="hall", name="학생회관식당")
+        for version in ("v1", "v2"):
+            food = Food.objects.create(name=version, is_food=True, feature_version=version,
+                                       features={"spicy": .5}, feature_std={"spicy": .1})
+            MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name=version, food=food)
+        self.assertEqual([c["name"] for c in services.get_candidates(DAY)], ["v1"])
+        [candidate] = services.get_candidates(DAY, feature_version="v2")
+        self.assertEqual(candidate["name"], "v2")
+        self.assertEqual(set(candidate), {"food_id", "name", "display_name", "food_group", "features", "offers"})
+        [with_std] = services.get_candidates(DAY, feature_version="v2", include_std=True)
+        self.assertEqual(with_std["feature_std"], {"spicy": .1})
+        self.assertEqual(len(services.get_feature_schema("v1")), 23)
+        self.assertEqual(len(services.get_feature_schema("v2")), 33)
+        with self.assertRaises(ValueError):
+            services.get_candidates(DAY, feature_version="v0")
