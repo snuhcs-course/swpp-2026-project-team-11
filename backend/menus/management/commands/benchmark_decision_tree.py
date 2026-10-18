@@ -5,7 +5,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from menus.services import get_candidates, get_feature_schema
+from menus.services import get_catalog
 from question_engines.decision_tree.evaluation import compare_policies
 
 
@@ -22,7 +22,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         context = {"date": options["date"].isoformat(), "meal": options["meal"]}
         try:
-            report = compare_policies(get_candidates(options["date"], options["meal"]), get_feature_schema(),
+            rows, schema, version = get_catalog(options["date"], options["meal"])
+            context["feature_version"] = version
+            report = compare_policies(rows, schema,
                 trials=options["trials"], seed=options["seed"], context=context)
         except ValueError as error:
             raise CommandError(str(error)) from error

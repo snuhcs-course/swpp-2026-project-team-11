@@ -29,7 +29,7 @@ from collections import OrderedDict
 from django.conf import settings
 from django.utils import timezone
 
-from menus.services import get_candidates, get_feature_schema
+from menus.services import get_catalog
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.llm import LLMConfigError, LLMEngine
 
@@ -52,7 +52,7 @@ class RecommendSession:
         self.date = date
         self.meal = meal
         self.lock = threading.Lock()
-        candidates = get_candidates(date, meal)
+        candidates, schema, version = get_catalog(date, meal)
         self.candidate_count = len(candidates)
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
         config = {"max_questions": self.max_questions}
@@ -63,8 +63,8 @@ class RecommendSession:
                 raise EngineUnavailable(str(error)) from error
         else:
             self.engine = DecisionTreeEngine(
-                candidates, get_feature_schema(),
-                context={"date": date.isoformat(), "meal": meal}, config=config,
+                candidates, schema,
+                context={"date": date.isoformat(), "meal": meal, "feature_version": version}, config=config,
             )
         self.engine.start()
 

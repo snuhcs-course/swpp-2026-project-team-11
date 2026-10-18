@@ -1,10 +1,11 @@
 """What the question engines read from the menu DB.
 
-    get_feature_schema()          -> [{"key", "question"}, ...]
-    get_candidates(date, meal)    -> today's dishes with their features
+    get_catalog(date, meal)       -> matching candidates, schema, version
+    get_feature_schema("v1")      -> legacy schema
+    get_candidates(date, meal)    -> legacy candidate shape
 
-MVP2 (LLM engine) only needs each candidate's name; MVP1 (information-gain engine)
-uses `features` as P(yes | food) for each question in the schema.
+MVP2 only needs names. MVP1 receives v2 feature intensity means and recipe std,
+or v1 scores when a dated meal has no v2 candidates.
 """
 
 from __future__ import annotations
@@ -23,8 +24,28 @@ MEAL_ORDER = {"BR": 0, "LU": 1, "DN": 2}
 def get_feature_schema(feature_version: str = "v1") -> list[dict]:
     if feature_version not in ("v1", FEATURE_VERSION):
         raise ValueError(f"Unsupported feature version: {feature_version}")
-    features = LEGACY_FEATURES if feature_version == "v1" else FEATURES
-    return [{"key": f.key, "question": f.question} for f in features]
+    if feature_version == "v1":
+        return [{"key": f.key, "question": f.question} for f in LEGACY_FEATURES]
+    from question_engines.decision_tree.contracts import FEATURE_PRESENTATION_V2
+    return [{"key": f.key, "question": FEATURE_PRESENTATION_V2[f.key][0],
+             "question_en": FEATURE_PRESENTATION_V2[f.key][0],
+             "family": FEATURE_PRESENTATION_V2[f.key][1]} for f in FEATURES]
+
+
+def get_catalog(date: datetime.date | None = None, meal: str | None = None) -> tuple[list, list, str]:
+    """Load matching candidates/schema: prefer v2, otherwise retain the v1 snapshot.
+
+    A partially extracted date serves its completed v2 rows only; never mix
+    measurements with different meanings in one session.
+    """
+    date = date or timezone.localdate()
+    current = MenuItem.objects.filter(date=date, food__is_food=True,
+                                      food__feature_version=FEATURE_VERSION)
+    if meal:
+        current = current.filter(meal=meal)
+    version = FEATURE_VERSION if current.exists() else "v1"
+    return (get_candidates(date, meal, feature_version=version, include_std=True),
+            get_feature_schema(version), version)
 
 
 def get_candidates(date: datetime.date | None = None, meal: str | None = None, *,

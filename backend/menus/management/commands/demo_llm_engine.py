@@ -6,7 +6,7 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 
-from menus.services import get_candidates
+from menus.services import get_catalog
 from question_engines.llm import LLMConfigError, LLMEngine
 
 
@@ -21,7 +21,7 @@ class Command(BaseCommand):
         parser.add_argument("--output", type=Path, help="Save steps, timings, diagnostics and a replayable snapshot")
 
     def handle(self, *args, **options):
-        rows = get_candidates(options["date"], options["meal"])
+        rows, _, _ = get_catalog(options["date"], options["meal"])
         try:
             engine = LLMEngine(rows, config={"max_questions": options["max_questions"]})
         except (LLMConfigError, ValueError) as error:
