@@ -104,6 +104,21 @@ adb reverse tcp:8000 tcp:8000
 metchu.baseUrl=http://127.0.0.1:8000/
 ```
 
+From another network (mobile data, another Wi-Fi), start the server behind a
+[Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+instead of `runserver`. It needs `cloudflared` on the server machine, but no port
+forwarding or Cloudflare account:
+
+```bash
+brew install cloudflared                 # once; Windows: winget install Cloudflare.cloudflared
+METCHU_MENU_DATE=2026-09-29 python backend/manage.py serve_public --write-client-config
+```
+
+It prints a public `https://<random>.trycloudflare.com/` address and writes it to
+`client/local.properties`; rebuild the app to use it. The address changes on
+every start. The [client guide](client/README.md#from-another-network-cloudflare-tunnel)
+covers the details and a fixed address with a named tunnel.
+
 ### 4. Try it
 
 This is the flow in the video.
@@ -133,7 +148,7 @@ python backend/manage.py demo_llm_engine --date 2026-09-29 --meal LU     # needs
 ### Tests
 
 ```bash
-python backend/manage.py test menus question_engines recommend     # 183 tests, no API key
+python -m pytest backend                                           # 183 tests, no API key
 cd client && ./gradlew testDebugUnitTest                            # 58 unit tests
 cd client && ./gradlew connectedDebugAndroidTest                    # 34 UI tests, needs an emulator
 ```
@@ -143,7 +158,7 @@ cd client && ./gradlew connectedDebugAndroidTest                    # 34 UI test
 | | |
 | --- | --- |
 | OS | macOS 26.6 (Apple Silicon) |
-| Server | Python 3.14, Django 5.2, SQLite |
+| Server | Python 3.14, Django 5.2, SQLite (or the shared Supabase Postgres via `DATABASE_URL`, see `backend/README.md`) |
 | LLM | Gemini (`gemini-3.5-flash-lite` for questions) through `langchain-google-genai` 4.4 |
 | Android build | Android Studio 2026.1, Gradle 8.13, Android Gradle Plugin 8.12, Kotlin 2.0.21, JDK 21 |
 | Android target | `compileSdk` 36, `minSdk` 26 |

@@ -6,11 +6,15 @@
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
     POST /api/sessions/<id>/recommend-now/                                 -> state
     POST /api/sessions/<id>/undo/                                          -> state
+    GET  /api/health/                                                      -> {"status": "ok"}
 
 Every success returns the same session state (see `RecommendSession.public_state`),
 so the client always redraws from one shape. Errors are
 `{"error": {"code", "message"}}`; a 409 `stale_step` also carries the current
 `state`, so a double tap redraws instead of failing.
+
+`health` touches nothing; it is for checking from a browser that the server can
+be reached, for example through the tunnel of `manage.py serve_public`.
 
 `engine` is "decision_tree" or "llm"; without it the server's default runs
 (settings.RECOMMEND_DEFAULT_ENGINE). Asking for "llm" on a server with no API key
@@ -42,6 +46,11 @@ def _body(request) -> dict:
     if not isinstance(payload, dict):
         raise ValueError("Expected a JSON object body.")
     return payload
+
+
+@require_GET
+def health(request):
+    return JsonResponse({"status": "ok"})
 
 
 @csrf_exempt

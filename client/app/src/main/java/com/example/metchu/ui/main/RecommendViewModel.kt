@@ -138,6 +138,8 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
                 lastRequest = null
                 _error.value = UiError(R.string.error_engine_unavailable, canRetry = false)
             }
+            // Cloudflare answers 530 when nothing is behind a tunnel (serve_public stopped).
+            e.code() == 530 -> _error.value = UiError(R.string.error_no_server, canRetry = true)
             else -> _error.value = UiError(R.string.error_server, canRetry = true)
         }
     }

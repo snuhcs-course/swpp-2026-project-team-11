@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 
-from menus.normalize import clean_name, is_noise
+from menus.normalize import clean_name, dish_key, is_noise
 
 
 class IsNoiseTests(SimpleTestCase):
@@ -44,3 +44,30 @@ class CleanNameTests(SimpleTestCase):
     def test_dangling_equals_is_stripped(self):
         self.assertEqual(clean_name("한입떡말이 세트 - 눈꽃치즈떡볶이 + 김말이 10조각 ="),
                          ("한입떡말이 세트 - 눈꽃치즈떡볶이 + 김말이 10조각", None))
+
+
+class DishKeyTests(SimpleTestCase):
+    """Real names from 2026-09-28 ~ 10-13 that are the same menu line."""
+
+    def test_spacing_variants_share_a_key(self):
+        self.assertEqual(dish_key("눈꽃 치즈 돈까스"), dish_key("눈꽃치즈 돈까스"))
+        self.assertEqual(dish_key("치킨 마요 덮밥"), dish_key("치킨마요덮밥"))
+
+    def test_size_portion_and_serving_markers_are_ignored(self):
+        for variant, base in [
+            ("육회 비빔밥(S)", "육회 비빔밥"), ("육회 비빔밥(L)", "육회 비빔밥"),
+            ("케이준순살강정(소)", "케이준순살강정"), ("치킨탕수육 (大)", "치킨탕수육"),
+            ("순두부찌개(밥포함)", "순두부찌개"), ("갈릭슈림프샐러드(채식변경가능)", "갈릭슈림프샐러드"),
+            ("(뚝)어묵매운탕&계란찜", "어묵매운탕&계란찜"), ("야채춘권(3p)", "야채춘권"),
+            ("옥수수 감자고로케 2P", "옥수수 감자고로케"), ("김말이 10조각", "김말이"),
+            ("참치마요(R)+제육한접시 세트", "참치마요+제육한접시 세트"),
+        ]:
+            self.assertEqual(dish_key(variant), dish_key(base), variant)
+
+    def test_variety_markers_and_different_dishes_stay_apart(self):
+        self.assertNotEqual(dish_key("키친101 비빔밥(야채)"), dish_key("키친101 비빔밥"))
+        self.assertNotEqual(dish_key("물냉면"), dish_key("비빔냉면"))
+        self.assertNotEqual(dish_key("핫치킨버거"), dish_key("통새우버거"))
+
+    def test_key_is_never_empty(self):
+        self.assertEqual(dish_key("(소)"), "(소)")
