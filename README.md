@@ -158,7 +158,7 @@ cd client && ./gradlew connectedDebugAndroidTest                    # 34 UI test
 | | |
 | --- | --- |
 | OS | macOS 26.6 (Apple Silicon) |
-| Server | Python 3.14, Django 5.2, SQLite |
+| Server | Python 3.14, Django 5.2, SQLite (or the shared Supabase Postgres via `DATABASE_URL`, see `backend/README.md`) |
 | LLM | Gemini (`gemini-3.5-flash-lite` for questions) through `langchain-google-genai` 4.4 |
 | Android build | Android Studio 2026.1, Gradle 8.13, Android Gradle Plugin 8.12, Kotlin 2.0.21, JDK 21 |
 | Android target | `compileSdk` 36, `minSdk` 26 |
