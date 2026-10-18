@@ -1,19 +1,21 @@
 # P11: Review and integration handoff
 
-- PR: [#1 — adaptive cafeteria question engine](https://github.com/snuhcs-course/swpp-2026-project-team-11/pull/1)
-- Target branch: `MVP`
-- Work branch: `feat/p10-decision-tree-engine`
-- P10 implementation completion: `f445778a5fb74a98f0458facb4a477c93d180c18`
-- Default policy: `greedy`; optional experiment policy: `lookahead`
-- Validation: 78 tests, Django checks, no pending migrations, and both smoke demos passed.
-- [P10 GitHub test run](https://github.com/snuhcs-course/swpp-2026-project-team-11/actions/runs/37439828428) passed on Python 3.11.
-- P12 teammate review and integration into `MVP` remain the next team step.
+- PR: [#11 — feature-aware recommendation and question policy](https://github.com/snuhcs-course/swpp-2026-project-team-11/pull/11)
+- Work branch: `feat/i2-p11-dt-feature-integration`
+- Temporary target: `feat/i2-p11-feature-extractor` (extractor PR #10).
+- Merge order: preprocessing #5, extractor #10, then this PR. Retarget #11 to
+  `MVP` after #10 merges; do not merge into the temporary feature base.
+- Default policy: `preference`; reference policies: `greedy`, `lookahead`.
+- Engine policy version: `decision-tree.3.0`; older session snapshots are rejected.
+- Local validation: 295 backend tests and 98 subtests passed. The 10/13 failure
+  is covered by a regression fixture, and the local browser flow was verified.
+- Original P10 implementation and benchmark remain documented in the README.
 
 ## Start working with this component
 
 ```bash
 git fetch origin
-git switch feat/p10-decision-tree-engine
+git switch feat/i2-p11-dt-feature-integration
 python -m pip install -r backend/requirements.txt
 python backend/manage.py migrate
 python backend/manage.py loaddata menus_2026-09-29
@@ -41,7 +43,11 @@ session IDs, storage, locking, revisions, and idempotency. A final recommendatio
 contains a real input `food_id` and original cafeteria offers. The component's
 smoke demo does not establish that the complete Android MVP is integrated.
 
-The recorded paired benchmark shows a small question-count reduction and no
-first-guess advantage for lookahead. Keep the default policy unless new shared
-evaluation evidence supports a change. User acceptance and response likelihoods
-still require calibration; the current report is a synthetic development check.
+The historical paired benchmark compares the two intent-based reference policies.
+The default preference policy instead ranks concrete foods by signed explicit
+preferences and uses local expected decision value to select questions and stop.
+The October 13 regression ends in nine questions under the new ordering, versus
+the recorded fifteen-question failure; the newly asked spicy question is UNKNOWN
+in that test. These regression checks do not establish human acceptance rates.
+Question cost, response likelihoods, and preference strengths still need user
+calibration. See the README for the two-step approximation and its limits.

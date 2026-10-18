@@ -7,9 +7,9 @@ by the demo commands and integration tests. NumPy supports bounded planning.
 
 For review status and task owners, see the [P11 integration handoff](HANDOFF.md).
 
-**Default:** greedy expected-information-gain selection with early menu guesses.
-**Optional:** `lookahead`, ported from the personal prototype, which compares
-questions and guesses under a bounded interaction-cost model.
+**Default:** `preference`, which selects questions by expected decision value
+and proposes a concrete food when further questions do not justify their cost.
+**Reference policies:** `greedy` information gain and `lookahead` intent search.
 
 ## Quick start
 
@@ -207,6 +207,49 @@ from later proposals; a group whose members are all suppressed cannot be offered
 
 ## Policies and computation
 
+`preference` separates the answer forecast from recommendation fit. Explicit
+YES/PROBABLY YES/ANY/PROBABLY NO/NO/UNKNOWN have signed strengths
+`[1, .5, 0, -.5, -1, 0]`. A food's utility is the sum of answered strengths
+times its std-attenuated feature scores. Unasked traits contribute zero.
+ANY and UNKNOWN both have zero directional utility, but keep their distinct
+relevance/answerability updates in the forecast. Priors/posteriors break utility
+ties only. Several foods can simultaneously have high fit.
+
+For each unused question, let `S(f)` be current utility, `x(f,q)` the
+std-attenuated score, and `w(a)` the answer strength. Enumerate all six outcomes:
+
+```text
+S_a(f) = S(f) + w(a) * x(f,q)
+gain(q) = sum_a P(a|history,q) * max_f S_a(f)
+          - max_f sum_a P(a|history,q) * S_a(f)
+```
+
+Both decisions include the expected contribution of the queried trait. This
+prevents a question scoring well merely because all foods gain utility from it.
+The maximum is over unrejected foods. The answer probabilities use the existing
+full intent belief and std-aware channel; they are forecasts, not satisfaction
+probabilities. This is a local, one-attribute EVSI approximation: the forecast
+and explicit preference utility are not a fitted joint Bayesian user model.
+
+Ask the highest-gain question when its gain exceeds
+`EngineConfig.preference_question_cost` (initial experimental value `.06`,
+in units of one fully satisfied feature). Before stopping, check the four best
+root questions and all six outcomes for a useful second question. Add expected
+positive child gain after its cost; ask only if the combined net value is
+positive. This bounded two-step check uses exact outcome enumeration, no
+particles or random rollouts. It is a local approximation, not global optimality.
+The cost and answer strengths require user calibration; there is no default
+question-count cap or 65% acceptance threshold for this policy.
+
+Proposals and `recommend_now` rank by explicit preference utility, with forecast
+weights breaking ties. This policy proposes concrete foods. The retained
+intent policies can also propose groups. Rejection suppresses the proposed
+aliases and updates the answer forecast; it does not invent dislikes for every
+feature of the rejected food. Undo/snapshots replay both preference scores and
+the forecast. `recommendation_scores` reports answered-preference fit on [0,1],
+with .5 when there is no directional answer; it is not a distribution over foods
+or a calibrated acceptance probability. Public REST step keys are unchanged.
+
 `greedy` selects the unused question with highest expected information gain over
 the current intent belief and six response outcomes. It guesses when predicted
 acceptance reaches `.65`, useful information falls below `.001` bits, or the
@@ -238,7 +281,7 @@ or a statistically guaranteed first-pick acceptance rate.
 Snapshots store actual presented steps because time-limited searches can finish
 at different depths on different machines. Restore rejects changes in schema,
 features, std, offers, context, priors or engine/planner configuration. Policy
-`decision-tree.1.0` snapshots are rejected after this semantic change. Persist the
+`decision-tree.1.0` and `decision-tree.2.0` snapshots are rejected after this semantic change. Persist the
 exact candidate set and context used to start a session, or reload that same
 immutable menu snapshot before restoring it.
 
@@ -264,11 +307,20 @@ these levels when comparing MVP1 with an LLM that returns concrete foods.
 The checked-in [24-target report](benchmarks/cafeteria_20260929_lunch.json) records
 the dataset fingerprint, policy configuration, environment, per-trial answers,
 guesses, all interaction counts and latency. The small run shows only a minor
-question-count benefit for lookahead and no first-guess advantage. Therefore
-greedy is the default; lookahead remains an explicit experiment option. Neither
+question-count benefit for lookahead and no first-guess advantage. These are
+historical reference-policy results; they do not evaluate `preference`. Neither
 this synthetic benchmark nor the DB's LLM annotations prove human satisfaction.
 Latency here is Python computation on the development computer, not on-device
 Android inference or a deployed-network guarantee.
+
+The compact October 13 lunch regression fixture contains 146 reviewed mean/std
+vectors. The reported user history reproduces 15 questions under `greedy`.
+Replaying its first seven answers under `preference` proposes chicken soup
+immediately. Letting the new policy choose its own order takes nine questions;
+the newly asked spicy question is answered UNKNOWN in that test, not attributed
+to the user. Separate deterministic noodle and burger profiles take six and
+seven questions. These are regression/synthetic checks, not human acceptance
+measurements or a general question-count guarantee.
 
 Recorded results on the September 29 lunch fixture (193 candidates, 23 features,
 seed `20261006`, 24 paired synthetic targets):

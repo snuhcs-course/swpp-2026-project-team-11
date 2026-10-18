@@ -303,6 +303,15 @@ feature intensity across ordinary recipes and serving styles; std describes
 variation across those recipes, **not model confidence or a standard error**.
 These are initial judgments from a name, not calibrated nutritional statistics
 or response probabilities. No distribution family is assumed.
+
+The DT default is now the `preference` policy: explicit signed answers determine
+recommendation fit, and six-outcome expected decision value determines questions
+and stopping, with a bounded two-question check before proposing a food.
+Recipe std affects both fit and the answer forecast. This policy has no default
+question-count cap or fixed acceptance-probability threshold. The previous
+`greedy` and `lookahead` policies remain available for comparison.
+See `question_engines/decision_tree/README.md` for utility units, assumptions,
+regressions, and the distinction between fit and forecast probability.
 Both numbers have at most two decimal places. Validation rejects nonfinite values,
 mean outside [0,1], std outside [0,0.5], and
 `std² > mean * (1 - mean)`; endpoints require zero std. Invalid output is retried,
