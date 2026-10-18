@@ -90,6 +90,9 @@ do, or draft messages for someone, use these formats.
 - **Branches** start from `MVP`, and PRs target `MVP`: `feat/i2-p<n>-<topic>` for a
   work item of the schedule sheet, `feat/i2-a<n>-<topic>` for work added during the
   iteration. Iteration ends are tagged `iteration-<n>` on `MVP`.
+  A dependent PR may start from and temporarily target its prerequisite branch
+  to keep the review diff separate. Name that dependency in the PR body; after
+  it merges, retarget the dependent PR to `MVP` before merging it.
 - **Commits**: `type(i2-P<n>): subject` (`i2-A<n>` for added work); types `feat`,
   `fix`, `test`, `docs`, `ci`, `chore`, `refactor`. Lower-case imperative subject,
   at most about 70 characters; an optional body of one to three lines on why; no AI

@@ -43,13 +43,12 @@ python -m pytest backend/menus backend/question_engines/decision_tree
 
 ```python
 import datetime
-from menus.services import get_candidates, get_feature_schema
+from menus.services import get_catalog
 from question_engines.decision_tree import DecisionTreeEngine
 
 date = datetime.date(2026, 9, 29)
-candidates = get_candidates(date, meal="LU")
-schema = get_feature_schema()
-context = {"date": date.isoformat(), "meal": "LU"}
+candidates, schema, version = get_catalog(date, meal="LU")
+context = {"date": date.isoformat(), "meal": "LU", "feature_version": version}
 
 engine = DecisionTreeEngine(candidates, schema, context=context)
 step = engine.start()
@@ -72,14 +71,20 @@ engine is not intended to be mutated concurrently by multiple requests.
 
 ### Inputs
 
-`candidates` is the exact shape returned by `get_candidates`: positive integer
+`candidates` is the shape returned by `get_catalog`: positive integer
 `food_id`, `name`, `display_name`, `food_group`, a complete `features` dictionary,
 and `offers` containing cafeteria name, meal and price. Numeric food IDs remain
 the identity boundary; display names are not unique. Feature values must be
-finite probabilities in `[0,1]`. Candidate count and feature count are dynamic.
+finite scores in `[0,1]`. V2 also carries a complete `feature_std` dictionary.
+Std must be finite, in `[0,0.5]`, and satisfy `std² <= mean * (1-mean)`.
+An explicitly supplied partial/empty std map is rejected. V1 omits the map:
+this retains legacy behavior, without asserting that its recipes have zero
+variation. Candidate count and feature count are dynamic.
 
 `schema` uses the existing `[{"key", "question"}, ...]` shape. English presentation
-text is supplied for the current 23 keys. A custom schema can provide
+text is supplied for the legacy 23 keys and the v2 33 keys. V2 keeps grilled
+and stir-fried, oily and greasy, large portion and filling, and the individual
+seafood/cuisine features separate. A custom schema can provide
 `question_en` and `family`. Families share session-level importance estimates.
 The original schema, candidate values/offers, context and prior all contribute
 to the replay fingerprint. Source food and cafeteria names retain their original
@@ -157,13 +162,37 @@ menu group. 35% of a grouped food's prior is allocated to its generic group
 intent; the rest stays specific. Marginalizing back to foods reproduces the
 original normalized prior, so adding a parent does not duplicate probability.
 
-The team's feature `p` is used directly as a binary-yes propensity. A normalized
-six-answer observation channel extends that binary input: informative answer
-probabilities are linear mixtures of the positive/negative endpoint channels,
-multiplied by session relevance and answerability. It does **not** temperature-
-sharpen an already supplied probability. The endpoint assumptions are
-`[.68, .24, .06, .02]` for positive intent and their reverse for negative intent.
-These are not measured user-response probabilities.
+V1 scores retain their original binary-yes interpretation. V2 means describe
+feature intensity across ordinary recipes and serving styles; std describes
+that recipe variation, not model confidence, a standard error, or user preference.
+The two moments alone do not identify a distribution or a calibrated response
+likelihood. Policy `decision-tree.2.0` therefore makes an explicit, provisional
+response assumption for each food and feature:
+
+```text
+u = 4 * std²
+response_score = (1 - u) * mean + u * 0.5
+```
+
+The factor 4 normalizes variance by the maximum possible variance on [0,1].
+It reduces directional contrast toward a neutral response score as ordinary
+recipes vary more. It never modifies the stored mean/std. Zero std (or missing
+legacy std) reproduces the old channel; scores are not sharpened. Family intent
+scores average these food-level response scores. Existing within-family
+differences between food means still control the generic-intent resolution.
+Recipe std does not itself raise the probability of `any` or `unknown`.
+
+A normalized six-answer channel mixes positive and negative endpoint channels
+using that response score, then applies session relevance and answerability.
+The endpoint assumptions are `[.68, .24, .06, .02]` and their reverse.
+These constants and the variance attenuation require human-response calibration.
+No Beta, normal distribution, or truncated interval is inferred from mean/std.
+
+Both greedy information gain and lookahead shortlists, rollouts, and posterior
+updates use this channel. As a synthetic check, two equally likely foods with
+means 0.8/0.2 produce about 78.3% posterior for the first after YES at std 0;
+at std 0.35 for both, that posterior is about 64.4%. NO weakens symmetrically.
+This is an algorithm check, not an observed recommendation-quality result.
 
 `any` lowers importance in the related family and can favor a generic intent
 when variants differ on that attribute. `unknown` preserves food direction and
@@ -208,11 +237,18 @@ or a statistically guaranteed first-pick acceptance rate.
 
 Snapshots store actual presented steps because time-limited searches can finish
 at different depths on different machines. Restore rejects changes in schema,
-features, offers, context, priors or engine/planner configuration. Persist the
+features, std, offers, context, priors or engine/planner configuration. Policy
+`decision-tree.1.0` snapshots are rejected after this semantic change. Persist the
 exact candidate set and context used to start a session, or reload that same
 immutable menu snapshot before restoring it.
 
 ## Evaluation and handoff
+
+The committed September benchmark predates v2. The paired synthetic oracle still
+uses a mean-based response model independent of engine beliefs, so it does not
+establish that the new attenuation improves real user acceptance. V2 tests check
+question ordering, both directions of posterior attenuation, channel normalization,
+snapshot/undo behavior, dated schema selection, and unchanged API reply keys.
 
 ```bash
 python backend/manage.py benchmark_decision_tree --date 2026-09-29 --meal LU --trials 24 --output /tmp/engine-benchmark.json

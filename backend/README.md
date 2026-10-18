@@ -276,12 +276,17 @@ services.get_candidates(datetime.date(2026, 9, 29), meal="LU")   # meal=None: wh
 # [{"food_id", "name", "display_name", "food_group",
 #   "features": {"spicy": 0.9, "soupy": 1.0, ...},
 #   "offers": [{"restaurant": "학생회관식당", "meal": "LU", "price": 3000}, ...]}, ...]
+
+# New sessions load one matching version of candidates and questions together:
+candidates, schema, version = services.get_catalog(datetime.date(2026, 10, 13), meal="LU")
 ```
 
-The default reader above remains on **v1** during the two-PR rollout. The
-9/29 fixture and its 23 legacy scores are unchanged. Do not run the v2 daily
-pipeline in production until the dependent DT integration is merged: extraction
-replaces a food's previous version, so those rows leave the v1 candidate set.
+The low-level readers above default to **v1** for existing callers. Recommendation
+sessions and demo/benchmark commands use `get_catalog`: prefer v2 for the requested
+date and meal, otherwise use v1. Candidates and questions always have the same
+version. A partially extracted day serves only completed v2 rows when any are
+available; it does not mix legacy meanings or invent missing std. The 9/29
+fixture and its 23 legacy scores remain unchanged.
 
 ### Feature extraction v2 (P11)
 
@@ -327,8 +332,9 @@ services.get_candidates(date, meal="LU", feature_version="v2", include_std=True)
 
 `export_candidates --feature-version v2` (the export default) includes std;
 `--feature-version v1` exports the legacy snapshot. The default candidate reader
-keeps its original keys. The dependent DT PR enables v2 serving and std-aware
-question selection and answer updates, without changing REST reply shapes.
+keeps its original keys. The DT integration uses `get_catalog` to enable v2
+serving and std-aware question selection and answer updates. Its internal
+candidate dictionaries carry std; REST reply shapes stay unchanged.
 
 - Only real meals (`is_food=True`) are returned. Drinks, 공기밥 and side orders are excluded.
 - Working in plain Python without Django? Read the JSON written by `export_candidates`.
