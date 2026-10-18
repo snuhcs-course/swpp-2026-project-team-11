@@ -22,6 +22,7 @@ from django.utils import timezone
 
 from menus import services
 from menus.features.extractor import api_key_available
+from menus.features.schema import FEATURE_VERSION
 
 
 class Command(BaseCommand):
@@ -51,9 +52,10 @@ class Command(BaseCommand):
             except CommandError as error:  # keep going: later steps still help, then fail below
                 errors.append(f"{command[0]}: {error}")
 
-        counts = {meal: len(services.get_candidates(date, meal)) for meal in ("BR", "LU", "DN")}
+        counts = {meal: len(services.get_candidates(date, meal, feature_version=FEATURE_VERSION))
+                  for meal in ("BR", "LU", "DN")}
         self.stdout.write(self.style.SUCCESS(
             f"{day} 추천 후보: 아침 {counts['BR']} / 점심 {counts['LU']} / 저녁 {counts['DN']} "
-            f"/ 하루 {len(services.get_candidates(date))}"))
+            f"/ 하루 {len(services.get_candidates(date, feature_version=FEATURE_VERSION))}"))
         if errors:
             raise CommandError("\n".join(errors))

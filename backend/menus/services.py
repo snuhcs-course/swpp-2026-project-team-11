@@ -14,24 +14,30 @@ import datetime
 from django.utils import timezone
 
 from .features.schema import FEATURE_VERSION, FEATURES
+from .features.legacy_schema import FEATURES as LEGACY_FEATURES
 from .models import MenuItem
 
 MEAL_ORDER = {"BR": 0, "LU": 1, "DN": 2}
 
 
-def get_feature_schema() -> list[dict]:
-    return [{"key": f.key, "question": f.question} for f in FEATURES]
+def get_feature_schema(feature_version: str = "v1") -> list[dict]:
+    if feature_version not in ("v1", FEATURE_VERSION):
+        raise ValueError(f"Unsupported feature version: {feature_version}")
+    features = LEGACY_FEATURES if feature_version == "v1" else FEATURES
+    return [{"key": f.key, "question": f.question} for f in features]
 
 
-def get_candidates(date: datetime.date | None = None, meal: str | None = None) -> list[dict]:
+def get_candidates(date: datetime.date | None = None, meal: str | None = None, *,
+                   feature_version: str = "v1", include_std: bool = False) -> list[dict]:
     """Dishes served on `date` (default: today in Seoul), optionally for one meal ("BR"/"LU"/"DN").
 
-    Only real meals (is_food) tagged under the current FEATURE_VERSION are returned.
+    Version selection is explicit during the staged extractor/DT rollout.
     """
+    get_feature_schema(feature_version)  # reject unsupported versions
     items = (
         MenuItem.objects
         .filter(date=date or timezone.localdate(),
-                food__is_food=True, food__feature_version=FEATURE_VERSION)
+                food__is_food=True, food__feature_version=feature_version)
         .select_related("food", "restaurant")
         .order_by("food__name", "restaurant__name")
     )
@@ -49,6 +55,8 @@ def get_candidates(date: datetime.date | None = None, meal: str | None = None) -
             "features": food.features,
             "offers": [],
         })
+        if include_std and feature_version == FEATURE_VERSION:
+            candidate["feature_std"] = food.feature_std
         offer = {"restaurant": item.restaurant.name, "meal": item.meal, "price": item.price}
         # Two lines of one cafeteria can become the same dish ("눈꽃치즈 돈까스" and
         # "치즈돈까스"); list that cafeteria, meal and price once.

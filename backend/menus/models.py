@@ -17,20 +17,27 @@ class Restaurant(models.Model):
 class Food(models.Model):
     """A distinct dish - the unit the question engines recommend.
 
-    One row per cleaned menu name, shared across days and restaurants, so the
-    LLM feature extraction runs once per dish and is reused when it comes back.
+    One row per (cleaned name, set status), shared across days and restaurants.
+    Both variants share name-based measurements; meal variety is deterministic.
     """
 
-    name = models.CharField(max_length=300, unique=True)  # normalize.clean_name()
-    display_name = models.CharField(max_length=50, blank=True)  # short name from the LLM
-    is_food = models.BooleanField(null=True)  # LLM verdict; False for notices/headers
+    name = models.CharField(max_length=300)  # normalize.clean_name()
+    is_set = models.BooleanField(default=False)
+    display_name = models.CharField(max_length=50, blank=True)
+    is_food = models.BooleanField(null=True)  # preprocessing verdict; legacy rows may be null
     food_group = models.CharField(max_length=30, blank=True)  # 국밥, 덮밥, 돈까스, ...
 
-    # {feature_key: P(user answers "yes" to that feature's question | wants this food)}
+    # v2: expected feature intensity; v1: legacy response score.
     features = models.JSONField(default=dict, blank=True)
+    feature_std = models.JSONField(default=dict, blank=True)  # recipe variation; absent in v1
     feature_version = models.CharField(max_length=10, blank=True)
     extraction_model = models.CharField(max_length=50, blank=True)
     extracted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=["name", "is_set"], name="unique_food_name_and_set",
+        )]
 
     def __str__(self):
         return self.display_name or self.name

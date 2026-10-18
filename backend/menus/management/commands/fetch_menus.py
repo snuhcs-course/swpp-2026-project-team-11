@@ -64,10 +64,16 @@ def store(date: datetime.date, records: list[siksha.MenuRecord],
                       "lng": record.lng, "source": "siksha"},
         )
 
-    dish_names = {dish[:NAME_MAX] for _, mapping, _ in kept for dish in mapping.dishes}
-    foods = {food.name: food for food in Food.objects.filter(name__in=dish_names)}
-    new_foods = Food.objects.bulk_create([Food(name=n) for n in sorted(dish_names - foods.keys())])
-    foods.update({food.name: food for food in new_foods})
+    dish_keys = {(dish[:NAME_MAX], len(mapping.dishes) > 1)
+                 for _, mapping, _ in kept if mapping.is_meal for dish in mapping.dishes}
+    foods = {(food.name, food.is_set): food
+             for food in Food.objects.filter(name__in={name for name, _ in dish_keys})}
+    new_foods = Food.objects.bulk_create([
+        Food(name=name, is_set=is_set, is_food=True)
+        for name, is_set in sorted(dish_keys - foods.keys())
+    ])
+    foods.update({(food.name, food.is_set): food for food in new_foods})
+    Food.objects.filter(pk__in=[foods[key].pk for key in dish_keys]).update(is_food=True)
     stats["new_foods"] = len(new_foods)
 
     items, seen = [], set()
@@ -84,7 +90,7 @@ def store(date: datetime.date, records: list[siksha.MenuRecord],
             seen.add(unique)
             items.append(MenuItem(
                 date=date, meal=record.meal, restaurant=restaurants[record.restaurant_code],
-                raw_name=record.raw_name, food=foods[dish[:NAME_MAX]],
+                raw_name=record.raw_name, food=foods[(dish[:NAME_MAX], len(mapping.dishes) > 1)],
                 price=price_in_name or record.price, no_meat=record.no_meat,
             ))
     MenuItem.objects.bulk_create(items)
