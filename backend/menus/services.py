@@ -49,8 +49,11 @@ def get_candidates(date: datetime.date | None = None, meal: str | None = None) -
             "features": food.features,
             "offers": [],
         })
-        candidate["offers"].append(
-            {"restaurant": item.restaurant.name, "meal": item.meal, "price": item.price})
+        offer = {"restaurant": item.restaurant.name, "meal": item.meal, "price": item.price}
+        # Two lines of one cafeteria can become the same dish ("눈꽃치즈 돈까스" and
+        # "치즈돈까스"); list that cafeteria, meal and price once.
+        if offer not in candidate["offers"]:
+            candidate["offers"].append(offer)
     for candidate in candidates.values():
         candidate["offers"].sort(key=lambda offer: MEAL_ORDER[offer["meal"]])  # stable: keeps name order
     return list(candidates.values())

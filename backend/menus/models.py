@@ -36,6 +36,30 @@ class Food(models.Model):
         return self.display_name or self.name
 
 
+class MenuLine(models.Model):
+    """A distinct menu line (by normalize.dish_key) and the dishes it stands for.
+
+    This caches the preprocessing result, so a line seen on an earlier day is not
+    sent to the LLM again. A combo line maps to several dishes; drinks, add-ons and
+    notices map to none (is_meal=False).
+    """
+
+    class Source(models.TextChoices):
+        RULE = "rule", "rule"  # no LLM answer yet: the whole line is one dish
+        LLM = "llm", "llm"
+
+    key = models.CharField(max_length=300, unique=True)
+    name = models.CharField(max_length=300)  # cleaned name the first time the line was seen
+    is_meal = models.BooleanField(default=True)
+    dishes = models.JSONField(default=list, blank=True)  # canonical dish names (Food.name)
+    source = models.CharField(max_length=10, choices=Source.choices, default=Source.RULE)
+    version = models.CharField(max_length=10, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} -> {', '.join(self.dishes) or '(not a meal)'}"
+
+
 class MenuItem(models.Model):
     """One dish served at one restaurant for one meal on one day."""
 
@@ -56,9 +80,11 @@ class MenuItem(models.Model):
 
     class Meta:
         constraints = [
+            # A combo line ("돈가스 카레우동") is stored once per dish it contains, so
+            # each dish lists that cafeteria and the combo price among its offers.
             models.UniqueConstraint(
-                fields=["date", "meal", "restaurant", "raw_name"],
-                name="unique_menu_item_per_meal",
+                fields=["date", "meal", "restaurant", "raw_name", "food"],
+                name="unique_menu_item_per_dish",
             )
         ]
         ordering = ["date", "meal", "restaurant__name"]
