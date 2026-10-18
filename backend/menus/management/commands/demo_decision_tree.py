@@ -16,7 +16,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--date", required=True, type=datetime.date.fromisoformat)
         parser.add_argument("--meal", choices=["BR", "LU", "DN"], default="LU")
-        parser.add_argument("--policy", choices=["greedy", "lookahead"], default="greedy")
+        parser.add_argument("--policy", choices=["preference", "greedy", "lookahead"], default="preference")
         parser.add_argument("--smoke", action="store_true", help="Exercise answer, rejection and acceptance without input")
         parser.add_argument("--output", type=Path, help="Save steps, timings and a replayable snapshot")
 

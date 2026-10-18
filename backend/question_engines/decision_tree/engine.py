@@ -10,21 +10,27 @@ import numpy as np
 from .catalog import CandidateCatalog
 from .contracts import ANSWER_OPTIONS
 from .planning import IntentModel, Planner, PlannerConfig, POLICY_VERSION
+from .preference import PreferencePlanner
 
 
 @dataclass(frozen=True)
 class EngineConfig:
-    policy: str = "greedy"
+    policy: str = "preference"
     max_questions: int | None = None
     greedy_acceptance_threshold: float = .65
     greedy_information_floor: float = .001
+    preference_question_cost: float = .06
+    preference_lookahead_beam: int = 4
 
     def __post_init__(self):
-        if self.policy not in {"lookahead", "greedy"}:
-            raise ValueError("policy must be lookahead or greedy")
+        if self.policy not in {"preference", "lookahead", "greedy"}:
+            raise ValueError("policy must be preference, lookahead or greedy")
+        if (type(self.preference_lookahead_beam) is not int
+                or not 1 <= self.preference_lookahead_beam <= 12):
+            raise ValueError("preference_lookahead_beam must be in [1,12]")
         if self.max_questions is not None and (type(self.max_questions) is not int or self.max_questions < 1):
             raise ValueError("max_questions must be positive or None")
-        for key in ("greedy_acceptance_threshold", "greedy_information_floor"):
+        for key in ("greedy_acceptance_threshold", "greedy_information_floor", "preference_question_cost"):
             value = getattr(self, key)
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 <= value <= 1:
                 raise ValueError(f"{key} must be in [0,1]")
@@ -47,6 +53,8 @@ class DecisionTreeEngine:
         self.planner_config = (planner_config if isinstance(planner_config, PlannerConfig)
                                else PlannerConfig(**(planner_config or {})))
         self.model = IntentModel(self.catalog, self.planner_config) if self.catalog.candidates else None
+        self.preference = (PreferencePlanner(self.model, self.config.preference_question_cost,
+                           self.config.preference_lookahead_beam) if self.model else None)
         meaning = {"version": POLICY_VERSION, "catalog": self.catalog.fingerprint,
                    "engine": asdict(self.config), "planner": asdict(self.planner_config)}
         self.fingerprint = hashlib.sha256(json.dumps(meaning, sort_keys=True).encode()).hexdigest()
@@ -56,6 +64,7 @@ class DecisionTreeEngine:
         self.belief = self.model.prior.copy() if self.model else np.empty(0)
         self.salience = self.model.salience_prior.copy() if self.model else np.empty((0, 4))
         self._asked, self._rejected = set(), set()
+        self._answers = {}
         self._events = []
         self._accepted = None
         self._pending = self._descriptor = None
@@ -71,10 +80,23 @@ class DecisionTreeEngine:
         values = np.einsum("zf,z->f", self.model.intent_to_food, self.belief)
         return {c.food_id: float(value) for c, value in zip(self.catalog.candidates, values)}
 
+    @property
+    def recommendation_scores(self):
+        """Preference fit in [0,1], not normalized probabilities of acceptance."""
+        if self.model is None:
+            return {}
+        values = self.preference.fit(self._answers)
+        return {c.food_id: float(value) for c, value in zip(self.catalog.candidates, values)}
+
+    def _ranked_food_ids(self, eligible):
+        fit = self.recommendation_scores if self.config.policy == "preference" else {}
+        probabilities = self.probabilities
+        return sorted(eligible, key=lambda food_id:
+                      (-fit.get(food_id, 0), -probabilities[food_id], food_id))
+
     def _representative(self, node_id):
         if self.model is None or node_id not in self.model.node_index:
             raise ValueError("Unknown menu proposal")
-        probabilities = self.probabilities
         eligible = []
         for food_node in self.catalog.food_tree.descendant_food_ids(node_id):
             pi = self.model.node_index[food_node]
@@ -83,7 +105,7 @@ class DecisionTreeEngine:
                 eligible.append(candidate.food_id)
         if not eligible:
             raise ValueError("Proposal has no eligible concrete food")
-        return min(eligible, key=lambda food_id: (-probabilities[food_id], food_id))
+        return self._ranked_food_ids(eligible)[0]
 
     def _render(self, descriptor):
         kind = descriptor["kind"]
@@ -167,7 +189,10 @@ class DecisionTreeEngine:
         force = self.config.max_questions is not None and self.question_count >= self.config.max_questions
         trace = [(e["type"], e.get("question_id"), e.get("answer_id"), e.get("guess_id")) for e in self._events]
         seed = int(hashlib.sha256(json.dumps(trace).encode()).hexdigest()[:8], 16)
-        if self.config.policy == "greedy" and not force:
+        if self.config.policy == "preference":
+            action, planning = self.preference.plan(self.belief, self.salience, self._answers,
+                                                    self._rejected, force_guess=force)
+        elif self.config.policy == "greedy" and not force:
             action, planning = self._greedy_action(), {"policy": "greedy"}
         else:
             action, planning = Planner(self.model).plan(self.belief, self.salience, self._asked,
@@ -195,6 +220,7 @@ class DecisionTreeEngine:
             qi = self.model.question_index[event["question_id"]]
             _, self.belief, self.salience = self.model.observe(self.belief, self.salience, qi, self.model.answer_ids.index(event["answer_id"]))
             self._asked.add(qi)
+            self._answers[qi] = self.model.answer_ids.index(event["answer_id"])
         elif kind == "feedback":
             if before["type"] != "guess" or before["guess_id"] != event["guess_id"] or type(event["accepted"]) is not bool:
                 raise ValueError("Feedback does not match the recorded guess")
@@ -236,12 +262,11 @@ class DecisionTreeEngine:
         pending = self.next_step()
         if pending["type"] not in {"question", "guess"}:
             raise ValueError("The session is not active")
-        probabilities = self.probabilities
         ids = [c.food_id for c in self.catalog.candidates
                if int(self.model.alias_ids[self.model.node_index[f"food:{c.food_id}"]]) not in self._rejected]
         if not ids:
             raise ValueError("No candidate remains")
-        food_id = min(ids, key=lambda key: (-probabilities[key], key))
+        food_id = self._ranked_food_ids(ids)[0]
         node_id = f"food:{food_id}"
         self._transition({"type": "recommend_now", "guess_id": node_id, "food_id": food_id, "before": self._descriptor})
         return self._set_pending({"kind": "guess", "id": node_id, "food_id": food_id,
@@ -255,6 +280,7 @@ class DecisionTreeEngine:
                 "guess_count": sum(e["before"]["kind"] == "guess" for e in self._events) + int((self._descriptor or {}).get("kind") == "guess"),
                 "feedback_count": sum(e["type"] == "feedback" for e in self._events),
                 "entropy_bits": entropy, "posterior": self.probabilities,
+                "recommendation_scores": self.recommendation_scores,
                 "salience": {name: float(row[0] / row[:2].sum()) for name, row in zip(self.model.group_names, self.salience)} if self.model else {},
                 "planning": copy.deepcopy((self._descriptor or {}).get("planning")),
                 "probability_interpretation": "uncalibrated_response_model"}
