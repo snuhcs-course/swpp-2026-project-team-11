@@ -278,8 +278,57 @@ services.get_candidates(datetime.date(2026, 9, 29), meal="LU")   # meal=None: wh
 #   "offers": [{"restaurant": "학생회관식당", "meal": "LU", "price": 3000}, ...]}, ...]
 ```
 
-> **feature 값의 뜻:** "이 음식을 원하는 사람에게 그 질문을 하면 '예'라고 답할 확률" (0~1, 0.1 단위).
-> MVP1은 Bayesian update의 likelihood로 바로 쓰고, MVP2(`question_engines/llm`)는 `display_name` 목록만 LLM에 넘깁니다.
+The default reader above remains on **v1** during the two-PR rollout. The
+9/29 fixture and its 23 legacy scores are unchanged. Do not run the v2 daily
+pipeline in production until the dependent DT integration is merged: extraction
+replaces a food's previous version, so those rows leave the v1 candidate set.
+
+### Feature extraction v2 (P11)
+
+`schema.py` declares 33 features: 32 name-based measurements and deterministic
+`meal_variety`. The accepted rubric is `menus/features/rubric.json`, version
+`food-name-32-v2-mean-std-draft7`; `instructions.txt` supplies the common rules.
+The extractor prompt contains no user questions, food filtering or combo splitting.
+Filling uses the dish's usual one-person serving, including its conventional meal
+composition; extra ingredients do not imply a larger serving. No dish-score
+overrides are applied in code.
+
+Each model measurement is `{"mean": number, "std": number}`. Mean is expected
+feature intensity across ordinary recipes and serving styles; std describes
+variation across those recipes, **not model confidence or a standard error**.
+These are initial judgments from a name, not calibrated nutritional statistics
+or response probabilities. No distribution family is assumed.
+Both numbers have at most two decimal places. Validation rejects nonfinite values,
+mean outside [0,1], std outside [0,0.5], and
+`std² > mean * (1 - mean)`; endpoints require zero std. Invalid output is retried,
+never silently clipped or filled with 0.1/0.5.
+
+Migration 0003 adds `Food.is_set=False` and `Food.feature_std={}`, preserving
+old data and menu links. Identity is now `(name, is_set)`. After preprocessing,
+two or more dishes in a line select set rows, regardless of mapping source.
+The feature command evaluates each distinct name once and shares its 32
+measurements across both variants, including variants offered on other dates.
+`features` remains a scalar mean dictionary; `feature_std` stores the matching
+std dictionary. `meal_variety` is 1 for sets and 0 otherwise, always with std 0.
+Set display names end in ` (세트)`. Existing food groups are preserved; new groups
+are left empty rather than introducing a second model task.
+
+Valid v2 data on an existing variant supplies a new variant without an API call.
+`--force` reevaluates each name once, `--limit` counts distinct names, and failed
+names keep their old version while the command exits with an error. `--dry-run`
+still calls the model when needed, but writes nothing. Tests use fake responses.
+
+For explicit v2 inspection, use:
+
+```python
+services.get_feature_schema("v2")
+services.get_candidates(date, meal="LU", feature_version="v2", include_std=True)
+```
+
+`export_candidates --feature-version v2` (the export default) includes std;
+`--feature-version v1` exports the legacy snapshot. The default candidate reader
+keeps its original keys. The dependent DT PR enables v2 serving and std-aware
+question selection and answer updates, without changing REST reply shapes.
 
 - Only real meals (`is_food=True`) are returned. Drinks, 공기밥 and side orders are excluded.
 - Working in plain Python without Django? Read the JSON written by `export_candidates`.
@@ -317,7 +366,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | Model | One row per | Notes |
 |---|---|---|
 | `Restaurant` | cafeteria | `code` is the Siksha id, e.g. `220동식당` |
-| `Food` | distinct dish | the unit that gets recommended; holds `features`, `is_food`, `display_name`, `food_group` |
+| `Food` | distinct (dish name, set status) | recommendation unit; holds mean `features`, `feature_std`, preprocessing `is_food`, `display_name`, `food_group` |
 | `MenuItem` | dish x restaurant x meal x day | `meal` is `BR` / `LU` / `DN`; `price` in won. A combo line has one row per dish |
 | `MenuLine` | distinct menu line (`dish_key`) | cache of the dishes a line stands for (`is_meal`, `dishes`, `source`) |
 
