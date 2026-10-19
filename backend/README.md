@@ -276,12 +276,18 @@ services.get_candidates(datetime.date(2026, 9, 29), meal="LU")   # meal=None: wh
 # [{"food_id", "name", "display_name", "food_group",
 #   "features": {"spicy": 0.9, "soupy": 1.0, ...},
 #   "offers": [{"restaurant": "학생회관식당", "meal": "LU", "price": 3000}, ...]}, ...]
+
+# New sessions load one matching version of candidates and questions together:
+candidates, schema, version = services.get_catalog(datetime.date(2026, 10, 13), meal="LU")
 ```
 
-The default reader above remains on **v1** during the two-PR rollout. The
-9/29 fixture and its 23 legacy scores are unchanged. Do not run the v2 daily
-pipeline in production until the dependent DT integration is merged: extraction
-replaces a food's previous version, so those rows leave the v1 candidate set.
+The low-level readers above default to **v1** for existing callers. Recommendation
+sessions and demo/benchmark commands use `get_catalog`: select whichever version covers
+more candidates on the requested date and meal (`v2` when `v2_count >= total - v2_count`,
+`v1` otherwise), logging the served version and candidate counts with a warning when
+coverage is partial. Candidates and questions always have the same version; legacy
+meanings are never mixed and missing std is never invented. The 9/29 fixture and its
+23 legacy scores remain unchanged.
 
 ### Feature extraction v2 (P11)
 
@@ -298,6 +304,17 @@ feature intensity across ordinary recipes and serving styles; std describes
 variation across those recipes, **not model confidence or a standard error**.
 These are initial judgments from a name, not calibrated nutritional statistics
 or response probabilities. No distribution family is assumed.
+
+The DT default is now the `preference` policy (configurable on the server via
+`METCHU_DT_POLICY=preference|greedy|lookahead` / `settings.RECOMMEND_DT_POLICY`):
+explicit signed answers determine recommendation fit, and six-outcome expected
+decision value determines questions and stopping, with a bounded two-question
+check before proposing a food. Recipe std affects both fit and the answer
+forecast. This policy has no default question-count cap or fixed
+acceptance-probability threshold. The previous `greedy` and `lookahead` policies
+remain available for comparison and runtime fallback.
+See `question_engines/decision_tree/README.md` for utility units, assumptions,
+regressions, and the distinction between fit and forecast probability.
 Both numbers have at most two decimal places. Validation rejects nonfinite values,
 mean outside [0,1], std outside [0,0.5], and
 `std² > mean * (1 - mean)`; endpoints require zero std. Invalid output is retried,
@@ -329,8 +346,9 @@ services.get_candidates(date, meal="LU", feature_version="v2", include_std=True)
 `export_candidates` selects `v2` (including std) when every candidate on the
 requested date/meal is `v2`, and falls back to `v1` otherwise; `--feature-version`
 (`v1` or `v2`) forces a specific version. The default candidate reader
-keeps its original keys. The dependent DT PR enables v2 serving and std-aware
-question selection and answer updates, without changing REST reply shapes.
+keeps its original keys. The DT integration uses `get_catalog` to enable v2
+serving and std-aware question selection and answer updates. Its internal
+candidate dictionaries carry std; REST reply shapes stay unchanged.
 
 - Only real meals (`is_food=True`) are returned. Drinks, 공기밥 and side orders are excluded.
 - Working in plain Python without Django? Read the JSON written by `export_candidates`.

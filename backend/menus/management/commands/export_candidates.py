@@ -33,18 +33,16 @@ class Command(BaseCommand):
         meal = options["meal"]
         version = options["feature_version"]
         if version is None:
-            v2 = services.get_candidates(date, meal, feature_version=FEATURE_VERSION, include_std=True)
-            v1 = services.get_candidates(date, meal, feature_version="v1", include_std=False)
-            version = FEATURE_VERSION if v2 and len(v2) >= len(v1) else "v1"
-            candidates = v2 if version == FEATURE_VERSION else v1
+            candidates, features, version = services.get_catalog(date, meal)
         else:
             candidates = services.get_candidates(date, meal, feature_version=version,
                                                  include_std=(version == FEATURE_VERSION))
+            features = services.get_feature_schema(version)
         text = json.dumps({
             "date": date.isoformat(),
-            "meal": options["meal"],
+            "meal": meal,
             "feature_version": version,
-            "features": services.get_feature_schema(version),
+            "features": features,
             "candidates": candidates,
         }, ensure_ascii=False, indent=2)
 

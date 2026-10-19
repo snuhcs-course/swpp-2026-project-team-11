@@ -47,3 +47,30 @@ FEATURE_PRESENTATION = {
     "japanese": ("Do you feel like Japanese food?", "cuisine"),
     "western_asian": ("Do you feel like Western or Southeast Asian food?", "cuisine"),
 }
+
+# The old keys and their meanings remain available for v1 snapshots.
+FEATURE_PRESENTATION_V2 = {
+    key: value for key, value in FEATURE_PRESENTATION.items()
+    if key not in {"sour_fresh", "bread_flour", "seafood", "meatless",
+                   "heavy", "light_healthy", "western_asian"}
+} | {
+    "sour": ("Do you feel like something sour?", "taste"),
+    "oily": ("Do you feel like food with a noticeable oily texture?", "richness"),
+    "greasy": ("Do you feel like something rich and heavy on the palate?", "richness"),
+    "smoky": ("Do you feel like something with a smoky flavor?", "taste"),
+    "crispy": ("Do you feel like something crispy?", "texture"),
+    "grilled": ("Do you feel like grilled food?", "preparation"),
+    "stir_fried": ("Do you feel like stir-fried food?", "preparation"),
+    "bread": ("Do you feel like a bread-based meal?", "starch"),
+    "wheat": ("Do you feel like food made with wheat?", "ingredient"),
+    "fish": ("Do you feel like fish?", "protein"),
+    "crustacean": ("Do you feel like shrimp, crab or other crustaceans?", "protein"),
+    "bivalve": ("Do you feel like clams, mussels or other bivalve shellfish?", "protein"),
+    "cephalopod": ("Do you feel like squid or octopus?", "protein"),
+    "large_portion": ("Do you feel like a large portion?", "portion"),
+    "filling": ("Do you feel like a filling meal?", "satiety"),
+    "western": ("Do you feel like Western food?", "cuisine"),
+    "southeast_asian": ("Do you feel like Southeast Asian food?", "cuisine"),
+    "indian": ("Do you feel like Indian food?", "cuisine"),
+    "meal_variety": ("Do you feel like several dishes in one meal?", "variety"),
+}

@@ -17,7 +17,7 @@ import numpy as np
 
 from .contracts import ANSWER_OPTIONS
 
-POLICY_VERSION = "decision-tree.1.0"
+POLICY_VERSION = "decision-tree.3.0"
 
 
 @dataclass(frozen=True)
@@ -134,10 +134,15 @@ class IntentModel:
         for qi, q in enumerate(self.questions):
             if q["kind"] == "attribute":
                 values = np.array([f["attributes"][q["attribute"]] for f in catalog.foods])
-                # Team features already represent P(binary yes | food).
+                stds = np.array([f["attribute_std"].get(q["attribute"], 0.0)
+                                 for f in catalog.foods])
+                # Explicit response-model assumption: recipe variation reduces
+                # directional contrast. Zero/missing std preserves v1 behavior.
+                # 4 normalizes variance by the maximum possible bounded variance.
+                response_values = values + (.5 - values) * (4 * stds * stds)
                 mean = np.einsum("zf,f->z", self.intent_to_food, values)
                 variance = np.einsum("zf,f->z", self.intent_to_food, values * values) - mean * mean
-                self.values[qi] = mean
+                self.values[qi] = np.einsum("zf,f->z", self.intent_to_food, response_values)
                 # Variation *inside an indifferent intent* makes this trait
                 # less relevant. Uncertainty between specific intents does not.
                 self.resolution[qi] = np.clip(1 - 4 * variance, .05, 1)
