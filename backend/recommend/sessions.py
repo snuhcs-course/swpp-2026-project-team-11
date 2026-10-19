@@ -53,6 +53,7 @@ class RecommendSession:
         self.meal = meal
         self.lock = threading.Lock()
         candidates, schema, version = get_catalog(date, meal)
+        self.feature_version = version
         self.candidate_count = len(candidates)
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
         config = {"max_questions": self.max_questions}
@@ -64,7 +65,8 @@ class RecommendSession:
         else:
             self.engine = DecisionTreeEngine(
                 candidates, schema,
-                context={"date": date.isoformat(), "meal": meal, "feature_version": version}, config=config,
+                context={"date": date.isoformat(), "meal": meal, "feature_version": version},
+                config=config | {"policy": settings.RECOMMEND_DT_POLICY},
             )
         self.engine.start()
 

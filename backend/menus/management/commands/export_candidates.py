@@ -15,7 +15,6 @@ from django.utils import timezone
 
 from menus import services
 from menus.features.schema import FEATURE_VERSION
-from menus.models import MenuItem
 
 
 class Command(BaseCommand):
@@ -34,18 +33,16 @@ class Command(BaseCommand):
         meal = options["meal"]
         version = options["feature_version"]
         if version is None:
-            items = MenuItem.objects.filter(date=date, food__is_food=True)
-            if meal:
-                items = items.filter(meal=meal)
-            has_v2 = items.exists() and not items.exclude(food__feature_version=FEATURE_VERSION).exists()
-            version = FEATURE_VERSION if has_v2 else "v1"
-        candidates = services.get_candidates(date, meal, feature_version=version,
-                                             include_std=(version == FEATURE_VERSION))
+            candidates, features, version = services.get_catalog(date, meal)
+        else:
+            candidates = services.get_candidates(date, meal, feature_version=version,
+                                                 include_std=(version == FEATURE_VERSION))
+            features = services.get_feature_schema(version)
         text = json.dumps({
             "date": date.isoformat(),
-            "meal": options["meal"],
+            "meal": meal,
             "feature_version": version,
-            "features": services.get_feature_schema(version),
+            "features": features,
             "candidates": candidates,
         }, ensure_ascii=False, indent=2)
 

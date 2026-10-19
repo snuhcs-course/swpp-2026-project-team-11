@@ -276,6 +276,8 @@ class DecisionTreeEngine:
         probabilities = list(self.probabilities.values())
         entropy = -math.fsum(p * math.log2(p) for p in probabilities if p > 0)
         return {"engine_version": POLICY_VERSION, "policy": self.config.policy,
+                "feature_version": self.catalog.context.get("feature_version"),
+                "candidate_count": len(self.catalog.candidates),
                 "question_count": self.question_count,
                 "guess_count": sum(e["before"]["kind"] == "guess" for e in self._events) + int((self._descriptor or {}).get("kind") == "guess"),
                 "feedback_count": sum(e["type"] == "feedback" for e in self._events),

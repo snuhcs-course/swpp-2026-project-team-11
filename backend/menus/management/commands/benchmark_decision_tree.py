@@ -1,4 +1,4 @@
-"""Compare greedy and lookahead policies with a shared deterministic oracle."""
+"""Compare preference, greedy and lookahead policies with a shared deterministic oracle."""
 import datetime
 import json
 from pathlib import Path
