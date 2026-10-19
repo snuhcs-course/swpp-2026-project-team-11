@@ -69,11 +69,10 @@ class V2SessionTests(TestCase):
         self.assertEqual(guess["step"]["food"]["food_id"], self.foods[1].pk)
         self.assertTrue(guess["step"]["food"]["display_name"].endswith(" (세트)"))
 
-    def test_version_selection_is_scoped_to_meal_and_never_mixed(self):
+    def test_version_selection_requires_full_v2_coverage_and_logs_partial_fallback(self):
         legacy = Food.objects.create(name="Legacy", is_food=True, feature_version="v1")
-        for meal in ("LU", "DN"):
-            MenuItem.objects.create(date=DAY, meal=meal, restaurant=self.hall,
-                                    raw_name="Legacy", food=legacy)
+        MenuItem.objects.create(date=DAY, meal="DN", restaurant=self.hall,
+                                raw_name="Legacy", food=legacy)
         rows, schema, version = services.get_catalog(DAY, "LU")
         self.assertEqual(version, "v2")
         self.assertEqual(len(schema), 33)
@@ -84,6 +83,48 @@ class V2SessionTests(TestCase):
         self.assertEqual(len(schema), 23)
         self.assertEqual([r["food_id"] for r in rows], [legacy.pk])
         self.assertNotIn("feature_std", rows[0])
+
+        MenuItem.objects.create(date=DAY, meal="LU", restaurant=self.hall,
+                                raw_name="Legacy", food=legacy)
+        with self.assertLogs("menus.services", level="WARNING") as cm:
+            rows, schema, version = services.get_catalog(DAY, "LU")
+        self.assertEqual(version, "v1")
+        self.assertEqual([r["food_id"] for r in rows], [legacy.pk])
+        self.assertIn("serving 1/3 candidates with feature_version=v1 (2 v2 candidates present)",
+                      "\n".join(cm.output))
+
+    def test_retagging_shared_dish_on_later_date_keeps_earlier_day_on_v1(self):
+        old_day = datetime.date(2026, 9, 29)
+        later_day = datetime.date(2026, 10, 20)
+        old_foods = [
+            Food.objects.create(name=name, is_food=True, feature_version="v1",
+                                features={"spicy": 0.5})
+            for name in ("짬뽕", "짜장면", "볶음밥")
+        ]
+        for food in old_foods:
+            MenuItem.objects.create(date=old_day, meal="LU", restaurant=self.hall,
+                                    raw_name=food.name, food=food, price=5000)
+        MenuItem.objects.create(date=later_day, meal="LU", restaurant=self.hall,
+                                raw_name="짬뽕", food=old_foods[0], price=6000)
+        with mock.patch.object(extractor, "api_key_available", return_value=True), \
+                mock.patch.object(extractor, "build_llm", return_value=FakeLLM()):
+            call_command("extract_features", "--date", str(later_day), stdout=io.StringIO())
+        with self.assertLogs("menus.services", level="WARNING"):
+            rows, _, version = services.get_catalog(old_day, "LU")
+        self.assertEqual(version, "v1")
+        self.assertEqual({r["name"] for r in rows}, {"짜장면", "볶음밥"})
+
+    def test_dt_policy_setting_and_diagnostics_expose_version_and_counts(self):
+        session = sessions.create(DAY, "LU", "decision_tree")
+        self.assertEqual(session.feature_version, "v2")
+        diag = session.engine.diagnostics()
+        self.assertEqual(diag["policy"], "preference")
+        self.assertEqual(diag["feature_version"], "v2")
+        self.assertEqual(diag["candidate_count"], 2)
+        with self.settings(RECOMMEND_DT_POLICY="greedy"):
+            greedy_session = sessions.create(DAY, "LU", "decision_tree")
+        self.assertEqual(greedy_session.engine.config.policy, "greedy")
+        self.assertEqual(greedy_session.engine.diagnostics()["policy"], "greedy")
 
     def test_v2_demo_uses_same_catalog_and_replay_version(self):
         out = io.StringIO()
