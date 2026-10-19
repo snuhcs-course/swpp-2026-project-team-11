@@ -319,10 +319,25 @@ Replaying its first seven answers under `preference` proposes chicken soup
 immediately. Letting the new policy choose its own order takes nine questions;
 the newly asked spicy question is answered UNKNOWN in that test, not attributed
 to the user. Separate deterministic noodle and burger profiles take six and
-seven questions. These are regression/synthetic checks, not human acceptance
-measurements or a general question-count guarantee.
+seven questions.
 
-Recorded results on the September 29 lunch fixture (193 candidates, 23 features,
+On the paired 24-target `ResponseOracle` simulated-user benchmark on the
+October 13 v2 lunch fixture (146 candidates, 33 features, seed `20261006`),
+comparing `preference`, `greedy`, and `lookahead`:
+
+| Metric (October 13 v2, 24 trials) | Preference | Greedy | Lookahead |
+| --- | ---: | ---: | ---: |
+| Mean questions before first guess | 10.83 (median 10.0) | 28.12 (median 29.0) | 22.88 (median 26.5) |
+| First-guess synthetic menu match | 7/24 (29.2%) | 7/24 (29.2%) | 6/24 (25.0%) |
+| Mean total questions (until target matched) | 15.71 | 28.38 | 26.96 |
+| Mean total interactions (questions + guesses) | 24.71 | 33.79 | 32.83 |
+
+These are regression/synthetic checks, not human acceptance measurements or a
+general question-count guarantee. The server policy can be switched without a
+code change via `METCHU_DT_POLICY=preference|greedy|lookahead`
+(`settings.RECOMMEND_DT_POLICY`).
+
+Historical results on the September 29 v1 lunch fixture (193 candidates, 23 features,
 seed `20261006`, 24 paired synthetic targets):
 
 | Metric | Greedy | Lookahead |

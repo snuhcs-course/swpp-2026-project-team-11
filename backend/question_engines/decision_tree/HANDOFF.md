@@ -5,10 +5,10 @@
 - Temporary target: `feat/i2-p11-feature-extractor` (extractor PR #10).
 - Merge order: preprocessing #5, extractor #10, then this PR. Retarget #11 to
   `MVP` after #10 merges; do not merge into the temporary feature base.
-- Default policy: `preference`; reference policies: `greedy`, `lookahead`.
+- Default policy: `preference` (configurable via `METCHU_DT_POLICY=preference|greedy|lookahead`); reference policies: `greedy`, `lookahead`.
 - Engine policy version: `decision-tree.3.0`; older session snapshots are rejected.
-- Local validation: 295 backend tests and 98 subtests passed. The 10/13 failure
-  is covered by a regression fixture, and the local browser flow was verified.
+- Local validation: 297 backend tests passed. The 10/13 failure
+  is covered by a regression fixture, 24-trial `ResponseOracle` simulated-user comparisons, and local browser flow verification.
 - Original P10 implementation and benchmark remain documented in the README.
 
 ## Start working with this component

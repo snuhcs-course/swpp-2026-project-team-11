@@ -282,11 +282,12 @@ candidates, schema, version = services.get_catalog(datetime.date(2026, 10, 13), 
 ```
 
 The low-level readers above default to **v1** for existing callers. Recommendation
-sessions and demo/benchmark commands use `get_catalog`: prefer v2 for the requested
-date and meal, otherwise use v1. Candidates and questions always have the same
-version. A partially extracted day serves only completed v2 rows when any are
-available; it does not mix legacy meanings or invent missing std. The 9/29
-fixture and its 23 legacy scores remain unchanged.
+sessions and demo/benchmark commands use `get_catalog`: select `v2` only when every
+candidate on the requested date and meal has `v2` features, and otherwise fall back
+to `v1` (logging the served version and candidate counts, with a warning if a date/meal
+is only partly `v2`). Candidates and questions always have the same version; legacy
+meanings are never mixed and missing std is never invented. The 9/29 fixture and its
+23 legacy scores remain unchanged.
 
 ### Feature extraction v2 (P11)
 
@@ -304,12 +305,14 @@ variation across those recipes, **not model confidence or a standard error**.
 These are initial judgments from a name, not calibrated nutritional statistics
 or response probabilities. No distribution family is assumed.
 
-The DT default is now the `preference` policy: explicit signed answers determine
-recommendation fit, and six-outcome expected decision value determines questions
-and stopping, with a bounded two-question check before proposing a food.
-Recipe std affects both fit and the answer forecast. This policy has no default
-question-count cap or fixed acceptance-probability threshold. The previous
-`greedy` and `lookahead` policies remain available for comparison.
+The DT default is now the `preference` policy (configurable on the server via
+`METCHU_DT_POLICY=preference|greedy|lookahead` / `settings.RECOMMEND_DT_POLICY`):
+explicit signed answers determine recommendation fit, and six-outcome expected
+decision value determines questions and stopping, with a bounded two-question
+check before proposing a food. Recipe std affects both fit and the answer
+forecast. This policy has no default question-count cap or fixed
+acceptance-probability threshold. The previous `greedy` and `lookahead` policies
+remain available for comparison and runtime fallback.
 See `question_engines/decision_tree/README.md` for utility units, assumptions,
 regressions, and the distinction between fit and forecast probability.
 Both numbers have at most two decimal places. Validation rejects nonfinite values,
