@@ -50,10 +50,10 @@ def build_llm():
     """The configured model (menus/llm.py). Replace this in tests."""
     return llm.build(FoodBatch)
 
-def extract_batch(names: list[str], llm) -> dict[str, FoodAnnotation]:
+def extract_batch(names: list[str], llm, system_prompt: str = SYSTEM_PROMPT) -> dict[str, FoodAnnotation]:
     from langchain_core.messages import HumanMessage, SystemMessage
     batch = FoodBatch.model_validate(llm.invoke([
-        SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=build_user_message(names)),
+        SystemMessage(content=system_prompt), HumanMessage(content=build_user_message(names)),
     ]))
     wanted = set(names)
     found, duplicates = {}, set()
@@ -64,7 +64,8 @@ def extract_batch(names: list[str], llm) -> dict[str, FoodAnnotation]:
             found[item.input_name] = item
     return {name: item for name, item in found.items() if name not in duplicates}
 
-def extract(names: list[str], llm, batch_size: int = 25, on_progress=None) -> tuple[dict, list]:
+def extract(names: list[str], llm, batch_size: int = 25, on_progress=None,
+            system_prompt: str = SYSTEM_PROMPT) -> tuple[dict, list]:
     if batch_size < 1:
         raise ValueError("batch_size must be positive")
     names = list(dict.fromkeys(names))
@@ -72,7 +73,7 @@ def extract(names: list[str], llm, batch_size: int = 25, on_progress=None) -> tu
     for start in range(0, len(names), batch_size):
         chunk = names[start:start + batch_size]
         try:
-            results.update(extract_batch(chunk, llm))
+            results.update(extract_batch(chunk, llm, system_prompt))
         except Exception as error:
             if on_progress:
                 on_progress(f"배치 실패, 하나씩 재시도: {type(error).__name__}")
@@ -80,7 +81,7 @@ def extract(names: list[str], llm, batch_size: int = 25, on_progress=None) -> tu
             if name in results:
                 continue
             try:
-                results.update(extract_batch([name], llm))
+                results.update(extract_batch([name], llm, system_prompt))
             except Exception as error:
                 if on_progress:
                     on_progress(f"실패: {name} ({type(error).__name__})")
