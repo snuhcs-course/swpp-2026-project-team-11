@@ -2,6 +2,7 @@
 django==5.2.*
 langchain-google-genai==4.4.0
 langchain-openai==1.*
+matplotlib>=3.9,<4  # histograms in the benchmark_features report
 pydantic==2.*
 python-dotenv==1.*
 # Tests: `pytest` from backend/ (settings in pytest.ini).

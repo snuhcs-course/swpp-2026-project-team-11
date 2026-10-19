@@ -9,6 +9,9 @@ venv/
 .env
 backend/db.sqlite3
 
+# Feature extraction benchmark output (benchmark_features)
+feature_benchmark_report/
+
 # Editors / OS
 .DS_Store
 .idea/
