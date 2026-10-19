@@ -19,8 +19,8 @@ python backend/manage.py demo_llm_engine --date 2026-09-29 --smoke --output /tmp
 python -m pytest backend/question_engines/llm                                # no API key needed
 ```
 
-The demo needs `GOOGLE_API_KEY` in the repo-root `.env` (see the
-[DB setup guide](../../README.md)). The tests use a fake LLM.
+The demo needs `OPENROUTER_API_KEY` in the repo-root `.env` (see
+`.env.example`). The tests use a fake LLM and need no key.
 
 ## Use it
 
@@ -30,12 +30,12 @@ from menus.services import get_candidates
 from question_engines.llm import LLMEngine
 
 candidates = get_candidates(datetime.date(2026, 9, 29), meal="LU")
-engine = LLMEngine(candidates, config={"max_questions": 10})   # Gemini from the environment
+engine = LLMEngine(candidates, config={"max_questions": 10})   # OpenRouter model from the environment
 step = engine.start()
 step = engine.answer(step["question_id"], "probably_yes")       # one of the six P10 answer IDs
 if step["type"] == "guess":
     step = engine.feedback(step["guess_id"], accepted=False)    # "another menu": answers are kept
-engine.diagnostics()   # question count, per-call LLM latency, attempts and fallbacks
+engine.diagnostics()   # question count, per-call LLM latency, attempts, fallbacks, tokens and cost
 engine.snapshot()      # JSON record; LLMEngine.from_snapshot(candidates, snapshot) restores it
 ```
 
@@ -64,20 +64,71 @@ P10, with these differences:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) | required | Read when `LLMEngine` is built without `llm=`. Missing → `LLMConfigError` |
-| `METCHU_LLM_MODEL` | `gemini-3.5-flash-lite` | Gemini model. Free-tier limits differ per model; see AI Studio |
-| `METCHU_LLM_TIMEOUT` | `10` | Seconds per LLM call. Gemini rejects anything under 10 |
+| `OPENROUTER_API_KEY` | required | Read when `LLMEngine` is built without `llm=`. Missing → `LLMConfigError` |
+| `METCHU_LLM_MODEL` | `google/gemini-3.5-flash-lite` | Any [OpenRouter model ID](https://openrouter.ai/models) that supports structured outputs |
+| `METCHU_LLM_TIMEOUT` | `10` | Seconds per LLM call |
+
+Requests go only to providers that honour the JSON schema
+(`provider.require_parameters`), with low reasoning effort.
 
 Each step makes up to `EngineConfig.max_attempts` (default 2) single-request calls.
 When all of them time out, fail, or return invalid output (bad JSON, a menu outside
-the list, an empty or repeated question), the session still continues:
+the list, an empty or [repeated](#repeated-questions-i2-p4) question), the session still continues:
 
 - with the next unused fixed question from `prompt.FALLBACK_QUESTIONS`, or
 - with a random available menu as a guess, when no question may be asked.
 
-`diagnostics()["llm_calls"]` records `latency_ms`, `attempts` and `fallback`
-(`"timeout"`, `"error"` or `"invalid_output"`) for each call. Every failed attempt
+`diagnostics()["llm_calls"]` records `latency_ms`, `attempts`, `fallback`
+(`"timeout"`, `"error"` or `"invalid_output"`) and the `input_tokens`, `output_tokens` and
+`cost_usd` OpenRouter billed, failed attempts included, for each call. `llm_tokens` and
+`llm_cost_usd` are the session totals. Every failed attempt
 is logged as a warning. The API key never appears in logs or `repr()`.
+
+## Repeated questions (i2-P4)
+
+The LLM sometimes asks a topic again in other words, mostly after "Not sure",
+"Doesn't matter" or a rejected guess. Three layers keep that down:
+
+1. **Prompt** (`prompt.py`): one thing per question, only what the menu names show,
+   and what each answer means for the next question (narrow down after yes; never
+   ask narrower kinds of something answered no).
+2. **`known` field** (`schema.py`): before writing the question, the LLM sums up
+   what the answers settled (`broth: yes, noodles: no, ...`).
+3. **Check** (`engine.check_turn`): a question is refused and retried when its
+   words, without the framing ("Do you feel like having ..."), are the same as an
+   earlier question's, or contain them after any answer but yes ("Pork in your
+   stew?" after "Pork?" -> Not sure). The retry is told which question it repeated.
+   A narrower question after yes ("Cold noodles?") and "other than" questions pass.
+
+### Benchmark
+
+```bash
+python backend/manage.py benchmark_llm_engine --date 2026-09-29 --trials 20 --max-questions 0 --output /tmp/llm.json
+```
+
+An LLM (`anthropic/claude-haiku-5.5`, another family than the engine) plays a
+student craving one target menu per trial; targets come from `--seed`, so two
+versions are compared on the same menus. It reports how often the target was
+found within three guesses, questions asked, cost and latency. `--max-questions 0`
+is the server default (no limit), where repeats are most common. A trial costs
+about $0.015. `--judge-model` adds an LLM count of repeated questions; judges
+disagreed on borderline cases, so the numbers below were counted by reading the
+transcripts.
+
+Lunch 2026-09-29, 20 trials, no question limit, seed `20261016`:
+
+| | Before | Prompt + `known` | + check (current) |
+| --- | --- | --- | --- |
+| Repeated questions (sessions) | 8 / 194 (3) | 4 / 180 (3) | 3 / 185 (3), 3 more refused and retried |
+| Target found within 3 guesses | 70% | 60% | 65% |
+| First guess right | 40% | 30% | 25% |
+| Questions per session | 9.7 | 9.0 | 9.3 |
+| Seconds per LLM call | 1.18 | 1.27 | 1.30 |
+
+Two runs of the unchanged engine on the same targets found 45% and 70%, so the
+found and first-guess rates differ within run-to-run noise; only the repeat counts
+moved clearly. The simulated user also says "Not sure" more often than a person
+would (e.g. about the meat in a burger).
 
 ## P17/P19 integration
 

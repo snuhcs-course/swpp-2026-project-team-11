@@ -24,7 +24,7 @@ class DemoCommandTests(TestCase):
     def run_demo(self, llm, *args, answers=()):
         stream = io.StringIO()
         with mock.patch.object(llm_engine, "build_llm", return_value=llm), \
-                mock.patch.dict("os.environ", {"GOOGLE_API_KEY": "k"}), \
+                mock.patch.dict("os.environ", {"OPENROUTER_API_KEY": "k"}), \
                 mock.patch("builtins.input", side_effect=list(answers)):
             call_command("demo_llm_engine", "--date", "2026-09-29", *args, stdout=stream)
         return stream.getvalue()
@@ -52,9 +52,10 @@ class DemoCommandTests(TestCase):
         self.assertIn("Choose one of the displayed options.", output)
         self.assertIn(f"Recommended meal: {self.first}", output)
         self.assertIn("Questions: 1", output)
+        self.assertIn("tokens: 330, cost: $0.0003", output)
         self.assertEqual(len(llm.calls), 3)  # undo restores the question; answering it again asks the LLM
 
     def test_missing_key_is_a_command_error(self):
         with mock.patch.dict("os.environ", {}, clear=True):
-            with self.assertRaisesMessage(CommandError, "GOOGLE_API_KEY"):
+            with self.assertRaisesMessage(CommandError, "OPENROUTER_API_KEY"):
                 call_command("demo_llm_engine", "--date", "2026-09-29", stdout=io.StringIO())

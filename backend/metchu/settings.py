@@ -155,7 +155,7 @@ RECOMMEND_DEFAULT_DATE = (
 )
 
 # Engine for a session whose client names none: "decision_tree" (P10, no API key)
-# or "llm" (P13/P14, needs GOOGLE_API_KEY). The client can ask for either per session.
+# or "llm" (P13/P14, needs OPENROUTER_API_KEY). The client can ask for either per session.
 RECOMMEND_DEFAULT_ENGINE = os.environ.get('METCHU_ENGINE') or 'decision_tree'
 if RECOMMEND_DEFAULT_ENGINE not in ('decision_tree', 'llm'):
     raise ValueError(f"METCHU_ENGINE must be decision_tree or llm: {RECOMMEND_DEFAULT_ENGINE!r}")

@@ -17,11 +17,18 @@ one they feel like eating most, with as few yes/no questions as possible.
 ## Questions
 - One short, friendly sentence the user can answer from their mood,
   e.g. "Do you feel like something with broth?", "Do you feel like noodles?".
-- Ask about taste, temperature, broth, rice/noodles/bread, kind of meat, richness,
-  lightness, or cuisine. Menu names are in Korean; write the question in English.
-- Never ask again about a topic already asked (e.g. rice after a rice question),
-  in any wording, whatever the answer was. "Doesn't matter" and "Not sure" mean the
-  user has no preference there: move on to a different topic.
+  Menu names are in Korean; write the question in English.
+- Ask about one thing at a time, never "A or B".
+- Ask only about what the menu names show: the kind of dish (rice, noodles, soup,
+  burger...), a main ingredient, how it is cooked, or the cuisine. If the names do not
+  tell which menus have it (e.g. the meat in a burger), the question splits nothing.
+- Every answer narrows the list:
+  - "Yes" / "Probably yes": keep the menus that fit; asking about narrower kinds of
+    them next is good (e.g. cold noodles after yes to noodles).
+  - "No" / "Probably not": drop the menus that fit, and never ask about narrower kinds
+    of them (e.g. no ramen after no to noodles, no stew after no to broth).
+  - "Doesn't matter" / "Not sure": the user has no preference there; keep everything.
+- Never ask again about a topic already asked, in any wording, whatever the answer was.
 - Name a specific menu only when two or three remain.
 - A rejected menu is not what the user wants now; it is no longer a candidate.
 
@@ -43,8 +50,11 @@ FALLBACK_QUESTIONS = (
 )
 
 
-def build_user_message(food_names, history, rejected, questions_left):
-    """`history` is [(question text, answer label)]; `questions_left` None means no limit."""
+def build_user_message(food_names, history, rejected, questions_left, refused=None):
+    """`history` is [(question text, answer label)]; `questions_left` None means no limit.
+
+    `refused` says why the app refused the previous draft of this turn.
+    """
     candidates = "\n".join(f"- {name}" for name in food_names)
     asked = "\n".join(f"Q{i}. {question} -> {answer}"
                       for i, (question, answer) in enumerate(history, start=1)) or "(none yet)"
@@ -52,6 +62,8 @@ def build_user_message(food_names, history, rejected, questions_left):
              f"## Questions and answers so far\n{asked}"]
     if rejected:
         parts.append("## Menus the user rejected\n" + "\n".join(f"- {name}" for name in rejected))
+    if refused:
+        parts.append(f"## Your previous draft was refused\n{refused}. Ask about a different topic.")
     if questions_left == 0:
         parts.append("Questions left: 0. Do not ask; propose one menu with action=recommend.")
     elif questions_left is None:

@@ -7,7 +7,7 @@
 A session runs one of ENGINES, chosen when it is created: the P10 decision tree
 or the P13/P14 LLM engine. Both have the same session API and step shapes, so
 everything below the constructor is the same for either. The LLM engine calls
-Gemini while it starts and after every answer, rejection and "recommend now", so
+the LLM while it starts and after every answer, rejection and "recommend now", so
 those requests can take as long as its timeout allows; undo never calls it.
 
 The engine is one session per instance and is not safe to mutate from two

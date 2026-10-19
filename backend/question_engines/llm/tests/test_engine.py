@@ -140,6 +140,30 @@ class CheckTurnTests(SimpleTestCase):
         check_turn(EngineTurn(**ask(" ")), history, questions_left=0)  # will be a guess anyway
         check_turn(EngineTurn(**recommend("육개장")), history, questions_left=3)
 
+    def test_rewordings_of_an_asked_topic_are_refused(self):
+        for asked, answer, question in [
+            ("Do you feel like noodles?", "Yes, sounds good", "Do you feel like eating noodles?"),
+            ("Are you in the mood for a rice dish?", "No", "Do you feel like eating rice?"),
+            ("Do you feel like cheese on your burger?", "Not sure", "Do you feel like a burger with cheese?"),
+            # after anything but a yes, a narrower question is answered already
+            ("Do you feel like noodles?", "No", "Do you feel like cold noodles?"),
+            ("Do you feel like having pork?", "Not sure", "Do you feel like having pork in your stew?"),
+            ("Do you feel like a burger?", "Doesn't matter", "Do you feel like a burger or a set?"),
+        ]:
+            with self.subTest(question=question), self.assertRaisesMessage(InvalidTurn, f'Q1 "{asked}"'):
+                check_turn(EngineTurn(**ask(question)), [(asked, answer)], questions_left=3)
+
+    def test_new_topics_and_narrowing_a_yes_are_allowed(self):
+        for asked, answer, question in [
+            ("Do you feel like noodles?", "Yes, sounds good", "Do you feel like cold noodles?"),
+            ("Do you feel like noodles?", "Probably yes", "Do you feel like 짬뽕 (spicy seafood noodles)?"),
+            ("Do you feel like beef?", "No", "Do you feel like pork?"),
+            ("Do you feel like salmon?", "No", "Do you feel like seafood other than salmon?"),
+            ("Do you feel like seafood?", "Not sure", "Do you feel like 짬뽕 (spicy seafood noodles)?"),
+        ]:
+            with self.subTest(question=question):
+                check_turn(EngineTurn(**ask(question)), [(asked, answer)], questions_left=3)
+
 
 class CafeteriaFixtureTests(TestCase):
     fixtures = ["menus_2026-09-29"]

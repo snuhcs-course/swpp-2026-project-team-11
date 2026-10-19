@@ -97,5 +97,6 @@ class Command(BaseCommand):
             self.stdout.write(step["text"])
         diagnostics = engine.diagnostics()
         self.stdout.write(f"Questions: {diagnostics['question_count']}, LLM time: {diagnostics['llm_latency_ms']} ms, "
-                          f"fallbacks: {diagnostics['fallback_count']}")
+                          f"fallbacks: {diagnostics['fallback_count']}, tokens: {diagnostics['llm_tokens']}, "
+                          f"cost: ${diagnostics['llm_cost_usd']:.4f}")
         return step
