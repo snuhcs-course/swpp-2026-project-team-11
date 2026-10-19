@@ -42,17 +42,20 @@ class Command(BaseCommand):
         if options["batch_size"] < 1 or (options["limit"] is not None and options["limit"] < 1):
             raise CommandError("--batch-size와 --limit은 양수여야 합니다.")
         date = options["date"] or timezone.localdate()
-        names = list(Food.objects.filter(menu_items__date=date, is_food=True)
-                     .order_by("name").values_list("name", flat=True).distinct())
+        targets = {}
+        for food in (Food.objects.filter(menu_items__date=date, is_food=True)
+                     .order_by("name", "is_set", "pk").distinct()):
+            targets.setdefault(food.name, []).append(food)
+        names = list(targets)
         variants = {}
         for food in Food.objects.filter(name__in=names).order_by("-extracted_at", "pk"):
             variants.setdefault(food.name, []).append(food)
         pending, cached = [], {}
         for name in names:
-            valid = [(food, cached_features(food)) for food in variants[name]]
-            source = next(((food, stats) for food, stats in valid if stats is not None), None)
+            source = next(((food, stats) for food in variants[name]
+                           if (stats := cached_features(food)) is not None), None)
             if not options["force"] and source is not None:
-                if all(stats == source[1] for _, stats in valid):
+                if all(cached_features(food) == source[1] for food in targets[name]):
                     continue
                 cached[name] = source
             pending.append(name)
@@ -87,9 +90,10 @@ class Command(BaseCommand):
                 self.stdout.write(f"{name}: {values}")
             else:
                 with transaction.atomic():
-                    for food in variants[name]:
+                    for food in targets[name]:
                         suffix = " (세트)" if food.is_set else ""
-                        food.display_name = food.name[:50 - len(suffix)] + suffix
+                        base = (food.display_name or food.name).removesuffix(" (세트)")
+                        food.display_name = base[:50 - len(suffix)] + suffix
                         food.features = means | {"meal_variety": float(food.is_set)}
                         food.feature_std = stds | {"meal_variety": 0.0}
                         food.feature_version = FEATURE_VERSION

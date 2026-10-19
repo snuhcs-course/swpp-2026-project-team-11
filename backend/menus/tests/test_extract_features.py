@@ -116,22 +116,35 @@ class ExtractFeaturesCommandTests(TestCase):
         self.assertIn("새로 태깅할 음식 없음", self.run_command(llm))
         self.assertEqual(llm.calls, [])
 
-    def test_force_retags_once_per_name_and_updates_other_dates(self):
+    def test_force_retags_once_per_name_and_leaves_unserved_variants_untouched(self):
         other = Food.objects.create(name="육개장", is_set=True, is_food=True)
+        MenuItem.objects.create(date=DAY, meal="DN", restaurant=self.restaurant,
+                                raw_name="육개장 정식", food=other, price=5000)
+        unserved = Food.objects.create(name="냉모밀", is_set=True, is_food=True,
+                                       display_name="시원한 냉모밀", feature_version="v1",
+                                       features={"cold": 1.0})
+        Food.objects.filter(name="육개장", is_set=False).update(display_name="옛날 육개장")
         self.run_command(FakeLLM())
         llm = FakeLLM()
         self.run_command(llm, "--force")
         self.assertEqual(sum(call.count("육개장") for call in llm.calls), 1)
         other.refresh_from_db()
+        unserved.refresh_from_db()
         plain = Food.objects.get(name="육개장", is_set=False)
         self.assertEqual(other.features["spicy"], plain.features["spicy"])
         self.assertEqual(other.feature_std, plain.feature_std)
         self.assertEqual(other.features["meal_variety"], 1)
         self.assertEqual(other.display_name, "육개장 (세트)")
+        self.assertEqual(plain.display_name, "옛날 육개장")
+        self.assertEqual(unserved.feature_version, "v1")
+        self.assertEqual(unserved.display_name, "시원한 냉모밀")
+        self.assertEqual(unserved.features, {"cold": 1.0})
 
     def test_existing_name_cache_fills_new_variant_without_key_or_call(self):
         self.run_command(FakeLLM())
         other = Food.objects.create(name="육개장", is_set=True, is_food=True)
+        MenuItem.objects.create(date=DAY, meal="DN", restaurant=self.restaurant,
+                                raw_name="육개장 정식", food=other, price=5000)
         llm = FakeLLM()
         with mock.patch.object(extractor, "api_key_available", return_value=False):
             self.run_command(llm)
@@ -174,12 +187,16 @@ class ExtractFeaturesCommandTests(TestCase):
         self.assertFalse(Food.objects.filter(feature_version=FEATURE_VERSION).exists())
         self.run_command(FakeLLM())
         other = Food.objects.create(name="육개장", is_set=True, is_food=True)
+        MenuItem.objects.create(date=DAY, meal="DN", restaurant=self.restaurant,
+                                raw_name="육개장 정식", food=other, price=5000)
         self.run_command(FakeLLM(), "--dry-run")
         other.refresh_from_db()
         self.assertEqual(other.feature_version, "")
 
     def test_limit_counts_names_and_rejects_nonpositive_options(self):
-        Food.objects.create(name="냉모밀", is_set=True, is_food=True)
+        other = Food.objects.create(name="냉모밀", is_set=True, is_food=True)
+        MenuItem.objects.create(date=DAY, meal="DN", restaurant=self.restaurant,
+                                raw_name="냉모밀 정식", food=other, price=5000)
         llm = FakeLLM()
         self.run_command(llm, "--limit", "1")
         self.assertEqual(llm.calls, [["냉모밀"]])

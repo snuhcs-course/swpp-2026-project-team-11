@@ -55,3 +55,8 @@ class SeedFixtureTests(TestCase):
         self.assertGreater(len(candidates), 100)
         for candidate in candidates:
             self.assertEqual(set(candidate["features"]), set(LEGACY_KEYS), candidate["name"])
+        out = io.StringIO()
+        call_command("export_candidates", "--date", DAY.isoformat(), "--meal", "LU", stdout=out)
+        exported = json.loads(out.getvalue())
+        self.assertEqual(exported["feature_version"], "v1")
+        self.assertEqual(len(exported["candidates"]), len(candidates))

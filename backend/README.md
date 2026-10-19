@@ -321,7 +321,8 @@ Migration 0003 adds `Food.is_set=False` and `Food.feature_std={}`, preserving
 old data and menu links. Identity is now `(name, is_set)`. After preprocessing,
 two or more dishes in a line select set rows, regardless of mapping source.
 The feature command evaluates each distinct name once and shares its 32
-measurements across both variants, including variants offered on other dates.
+measurements across variants served on the target date (reusing any cached v2
+variant from another date without modifying rows not served on the target date).
 `features` remains a scalar mean dictionary; `feature_std` stores the matching
 std dictionary. `meal_variety` is 1 for sets and 0 otherwise, always with std 0.
 Set display names end in ` (세트)`. Existing food groups are preserved; new groups
@@ -339,8 +340,9 @@ services.get_feature_schema("v2")
 services.get_candidates(date, meal="LU", feature_version="v2", include_std=True)
 ```
 
-`export_candidates --feature-version v2` (the export default) includes std;
-`--feature-version v1` exports the legacy snapshot. The default candidate reader
+`export_candidates` selects `v2` (including std) when every candidate on the
+requested date/meal is `v2`, and falls back to `v1` otherwise; `--feature-version`
+(`v1` or `v2`) forces a specific version. The default candidate reader
 keeps its original keys. The DT integration uses `get_catalog` to enable v2
 serving and std-aware question selection and answer updates. Its internal
 candidate dictionaries carry std; REST reply shapes stay unchanged.
