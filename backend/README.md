@@ -361,6 +361,76 @@ candidate dictionaries carry std; REST reply shapes stay unchanged.
 - Working in plain Python without Django? Read the JSON written by `export_candidates`.
 - The feature list lives in `menus/features/schema.py`. If you change it, bump `FEATURE_VERSION` and re-run `extract_features`.
 
+## Feature extraction benchmark (P12)
+
+Benchmarks are experiments that inform design choices; tests check that the code works.
+`menus/features/benchmark/` measures how good the extracted mean/std values are, as far as
+that can be measured. One command runs it end to end and keeps everything in
+`feature_benchmark_results/NAME/`, committed so the team shares runs, reports and rating
+forms (`benchmark_features` alone writes to the gitignored `feature_benchmark_report/`).
+Running the same name again continues a stopped run and rewrites the report:
+
+```
+NAME/
+  config.json              dishes, conditions, extraction model, prompt version, git commit
+  report.md, summary.json  every section's results
+  runs/runs.jsonl          every extraction
+  1_integrity/ 2_distribution/ 3_stability/ 4_human_reference/ 5_triplets/ 6_downstream_impact/
+  4_human_reference/forms/     blank rating forms and the LLM's answers in the same format
+  4_human_reference/ratings/   the raters' filled copies, read when --ratings is not given
+```
+
+```bash
+python manage.py run_feature_benchmark --name 2026-10-20 --date 2026-10-20 --dry-run   # LLM calls only
+python manage.py run_feature_benchmark --name 2026-10-20 --date 2026-10-20
+R=../feature_benchmark_results/2026-10-20
+python manage.py export_feature_rating_form --runs $R/runs/runs.jsonl \
+    --output $R/4_human_reference/forms/rating_form.xlsx --all invariant --close variant --n 0
+# filled copies into $R/4_human_reference/ratings/, then the same run adds sections 4 and 6:
+python manage.py run_feature_benchmark --name 2026-10-20 --date 2026-10-20
+```
+
+The steps it runs can also be used one by one. Only `collect_feature_runs` costs API calls:
+
+```bash
+python manage.py build_eval_menu_set --output menu_set.json                    # variant / invariant dishes of past days
+python manage.py collect_feature_runs --menu-set menu_set.json --output runs.jsonl --condition repeat --dry-run
+python manage.py collect_feature_runs --menu-set menu_set.json --output runs.jsonl --condition repeat
+python manage.py collect_feature_runs --menu-set menu_set.json --output runs.jsonl --condition shuffle_foods
+python manage.py collect_feature_runs --menu-set menu_set.json --output runs.jsonl --condition shuffle_features
+python manage.py export_feature_rating_form --runs runs.jsonl --output rating_form.xlsx \
+    --all invariant --close variant --n 0                                     # one copy per rater
+python manage.py benchmark_features --runs runs.jsonl --ratings kim.xlsx lee.xlsx         # no LLM call
+```
+
+| Section | What it measures | Needs |
+|---|---|---|
+| 1. Integrity | 33 keys (32 measured + `meal_variety` for stored foods), bounds, std² <= mean(1 - mean). The only pass/fail | any run |
+| 2. Distribution | each feature's histogram of means, and dish pairs the features cannot tell apart (collisions) | any run |
+| 3. Stability | spread over repeated runs: `repeat`, `shuffle_foods` (batch neighbours), `shuffle_features` (rubric order) | 2+ runs per condition |
+| 4. Human reference | LLM means and stds against human ratings, next to how far raters are from each other | `--ratings` |
+| 5. Triplets | "anchor is closer to near than to far", by kind (`close` / `distinct`) and source (`ai` / `human`) | the triplet dishes |
+| 6. Downstream impact | the decision tree with AI vs human features, same policy and simulated user: first-pick acceptance, interactions to acceptance | `--ratings` |
+
+- Sections 2-4 are also reported apart for variant dishes (daily menus) and invariant dishes
+  (the fixed-menu catalog). `--date D` instead of `--menu-set` takes one day from the database,
+  and `--stored` copies its v2 features as a run with no LLM call.
+- The rating form has a `<feature>_mean` and `<feature>_std` column per rubric feature and a
+  `recipe_notes` column. A `.xlsx` form checks the input as raters type and carries the guide
+  and the rubric; a `.csv` form is the same columns as plain text. Raters use the extractor's
+  rubric (`menus/features/instructions.txt`, `rubric.json`) and look at real recipes or serving
+  examples before judging a std.
+- The form's dishes: `--all KIND` takes every dish of a kind, `--close KIND` each dish of a kind
+  whose closest dish is a collision, with that dish (can raters tell them apart?), and `--n` a
+  sample of the rest. A `kind` column shows 고정 메뉴 / 매일 바뀌는 메뉴 / 비교용 예시 (triplet-only);
+  rows are grouped by it and shuffled within; `<output>_selection.csv` keeps why each dish is there.
+  `--llm-values` writes the same form filled with the LLM's answers (averaged over the runs) to
+  set side by side with the raters' copies; it is not a rating, so do not pass it to `--ratings`.
+- Triplets are a JSON list or CSV of `anchor, near, far, kind, source, note`;
+  `menus/features/benchmark/data/triplets.json` is an AI draft, and `--triplets` takes another file.
+- The downstream simulated user is the decision tree's `ResponseOracle`. Its answer
+  probabilities are assumptions that real user logs should calibrate once the app records them.
+
 ## Making a new shared snapshot
 
 Use this to share your DB with the team. The file contains **every day** currently in your DB.
@@ -385,6 +455,11 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
 | `export_preprocess_review [--date] --output PATH` | the day's results as a review CSV | no |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |
+| `build_eval_menu_set --output [--start] [--end] [--dry-run]` | variant and invariant dishes of past days, for the benchmark | for new lines |
+| `collect_feature_runs --output --condition [--menu-set \\| --date] [--repeats] [--stored] [--dry-run]` | extract dishes repeatedly for the benchmark | **yes** (not with `--stored`) |
+| `export_feature_rating_form --runs --output [--all] [--close] [--n] [--segment] [--llm-values]` | blank human rating form, or the LLM's answers in its format | no |
+| `run_feature_benchmark --name (--menu-set \\| --date) [--conditions] [--ratings ...] [--dry-run]` | the whole benchmark into `feature_benchmark_results/NAME/` | **yes** |
+| `benchmark_features --runs [--ratings ...] [--triplets] [--policy]` | the feature extraction benchmark report | no |
 | `serve_public [--port] [--write-client-config] [--debug]` | run the server behind a Cloudflare Tunnel, reachable from any network ([guide](../client/README.md#from-another-network-cloudflare-tunnel)); needs `cloudflared` | no |
 | `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** (OpenRouter) |
 
