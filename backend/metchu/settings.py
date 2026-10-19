@@ -159,3 +159,11 @@ RECOMMEND_DEFAULT_DATE = (
 RECOMMEND_DEFAULT_ENGINE = os.environ.get('METCHU_ENGINE') or 'decision_tree'
 if RECOMMEND_DEFAULT_ENGINE not in ('decision_tree', 'llm'):
     raise ValueError(f"METCHU_ENGINE must be decision_tree or llm: {RECOMMEND_DEFAULT_ENGINE!r}")
+
+# Decision-tree policy: "preference" (expected preference value), "greedy"
+# (information gain + acceptance threshold), or "lookahead".
+RECOMMEND_DT_POLICY = os.environ.get('METCHU_DT_POLICY') or 'preference'
+if RECOMMEND_DT_POLICY not in ('preference', 'lookahead', 'greedy'):
+    raise ValueError(
+        f"METCHU_DT_POLICY must be preference, lookahead or greedy: {RECOMMEND_DT_POLICY!r}"
+    )

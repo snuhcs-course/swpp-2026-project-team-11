@@ -8,6 +8,7 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
+from menus.features.legacy_schema import FEATURE_KEYS as LEGACY_KEYS
 from menus.models import Food, MenuItem, Restaurant
 
 DAY = datetime.date(2026, 9, 29)
@@ -53,4 +54,9 @@ class SeedFixtureTests(TestCase):
         candidates = services.get_candidates(DAY, meal="LU")
         self.assertGreater(len(candidates), 100)
         for candidate in candidates:
-            self.assertEqual(set(candidate["features"]), set(FEATURE_KEYS), candidate["name"])
+            self.assertEqual(set(candidate["features"]), set(LEGACY_KEYS), candidate["name"])
+        out = io.StringIO()
+        call_command("export_candidates", "--date", DAY.isoformat(), "--meal", "LU", stdout=out)
+        exported = json.loads(out.getvalue())
+        self.assertEqual(exported["feature_version"], "v1")
+        self.assertEqual(len(exported["candidates"]), len(candidates))

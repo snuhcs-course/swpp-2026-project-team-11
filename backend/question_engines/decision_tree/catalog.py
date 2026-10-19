@@ -12,7 +12,7 @@ import math
 from numbers import Real
 from types import MappingProxyType
 
-from .contracts import FEATURE_PRESENTATION
+from .contracts import FEATURE_PRESENTATION, FEATURE_PRESENTATION_V2
 
 
 @dataclass(frozen=True)
@@ -23,6 +23,7 @@ class Candidate:
     food_group: str
     features: object
     offers: tuple
+    feature_std: object = None
 
     def summary(self):
         return {"food_id": self.food_id, "name": self.name,
@@ -78,10 +79,12 @@ class CandidateCatalog:
         if not keys or any(not isinstance(key, str) or not key.strip() for key in keys) or len(set(keys)) != len(keys):
             raise ValueError("Feature schema requires distinct nonempty keys")
         self.feature_keys = tuple(keys)
+        is_v2 = set(keys) == set(FEATURE_PRESENTATION_V2)
+        presentation = FEATURE_PRESENTATION_V2 if is_v2 else FEATURE_PRESENTATION
         self.questions = []
         for row in schema:
             key = row["key"]
-            default = FEATURE_PRESENTATION.get(key, (f"Do you feel like {key.replace('_', ' ')}?", key))
+            default = presentation.get(key, (f"Do you feel like {key.replace('_', ' ')}?", key))
             text = row.get("question_en", default[0])
             family = row.get("family", default[1])
             if not isinstance(text, str) or not text.strip() or not isinstance(family, str) or not family.strip():
@@ -105,8 +108,22 @@ class CandidateCatalog:
             values = {}
             for key, value in features.items():
                 if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or not 0 <= value <= 1:
-                    raise ValueError(f"Food {food_id}: {key} must be a probability in [0,1]")
+                    raise ValueError(f"Food {food_id}: {key} must be a finite score in [0,1]")
                 values[key] = float(value)
+            stds = None
+            if is_v2 and "feature_std" not in raw:
+                raise ValueError(f"Food {food_id}: v2 requires std; load candidates with get_catalog")
+            if "feature_std" in raw:
+                supplied = raw["feature_std"]
+                if not isinstance(supplied, dict) or set(supplied) != set(keys):
+                    raise ValueError(f"Food {food_id}: std must cover exactly the declared feature keys")
+                stds = {}
+                for key, std in supplied.items():
+                    if (isinstance(std, bool) or not isinstance(std, Real)
+                            or not math.isfinite(std) or not 0 <= std <= .5
+                            or std * std > values[key] * (1 - values[key]) + 1e-12):
+                        raise ValueError(f"Food {food_id}: invalid bounded std for {key}")
+                    stds[key] = float(std)
             offers = raw.get("offers", [])
             if not isinstance(offers, list):
                 raise ValueError("Candidate offers must be a list")
@@ -116,7 +133,9 @@ class CandidateCatalog:
                 price = offer.get("price")
                 if price is not None and (type(price) is not int or price < 0):
                     raise ValueError("Offer price must be a nonnegative integer or null")
-            rows.append(Candidate(food_id, name.strip(), label.strip(), group.strip(), MappingProxyType(values), tuple(copy.deepcopy(offers))))
+            rows.append(Candidate(food_id, name.strip(), label.strip(), group.strip(),
+                                  MappingProxyType(values), tuple(copy.deepcopy(offers)),
+                                  None if stds is None else MappingProxyType(stds)))
         if len({c.food_id for c in rows}) != len(rows):
             raise ValueError("Duplicate food_id")
         self.candidates = tuple(sorted(rows, key=lambda c: c.food_id))
@@ -138,9 +157,14 @@ class CandidateCatalog:
         self.context = copy.deepcopy(context or {})
         self.food_tree = MenuTree(self.candidates)
         self.foods = [{"id": f"food:{c.food_id}", "display_name": c.display_name,
-                       "attributes": dict(c.features), "prior_probability": probabilities[c.food_id]}
+                       "attributes": dict(c.features),
+                       "attribute_std": {} if c.feature_std is None else dict(c.feature_std),
+                       "prior_probability": probabilities[c.food_id]}
                       for c in self.candidates]
-        canonical = {"candidates": [c.summary() | {"features": dict(c.features), "prior": probabilities[c.food_id]} for c in self.candidates],
+        canonical = {"candidates": [c.summary() | {
+                         "features": dict(c.features), "prior": probabilities[c.food_id],
+                         "feature_std": None if c.feature_std is None else dict(c.feature_std),
+                     } for c in self.candidates],
                      "questions": self.questions, "source_schema": copy.deepcopy(schema), "context": self.context}
         try:
             encoded = json.dumps(canonical, ensure_ascii=False, sort_keys=True, allow_nan=False).encode()

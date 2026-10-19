@@ -6,7 +6,7 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 
-from menus.services import get_candidates, get_feature_schema
+from menus.services import get_catalog
 from question_engines.decision_tree import DecisionTreeEngine
 
 
@@ -16,15 +16,16 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--date", required=True, type=datetime.date.fromisoformat)
         parser.add_argument("--meal", choices=["BR", "LU", "DN"], default="LU")
-        parser.add_argument("--policy", choices=["greedy", "lookahead"], default="greedy")
+        parser.add_argument("--policy", choices=["preference", "greedy", "lookahead"], default="preference")
         parser.add_argument("--smoke", action="store_true", help="Exercise answer, rejection and acceptance without input")
         parser.add_argument("--output", type=Path, help="Save steps, timings and a replayable snapshot")
 
     def handle(self, *args, **options):
         context = {"date": options["date"].isoformat(), "meal": options["meal"]}
-        rows = get_candidates(options["date"], options["meal"])
+        rows, schema, version = get_catalog(options["date"], options["meal"])
+        context["feature_version"] = version
         start = time.perf_counter()
-        engine = DecisionTreeEngine(rows, get_feature_schema(), context=context, config={"policy": options["policy"]})
+        engine = DecisionTreeEngine(rows, schema, context=context, config={"policy": options["policy"]})
         step = engine.start()
         events = [{"action": "start", "elapsed_ms": (time.perf_counter() - start) * 1000, "step": step}]
 

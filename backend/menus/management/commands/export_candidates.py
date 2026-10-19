@@ -26,15 +26,23 @@ class Command(BaseCommand):
         parser.add_argument("--meal", choices=["BR", "LU", "DN"], default=None,
                             help="one meal only (default: the whole day)")
         parser.add_argument("--output", default=None, help="write to this file instead of stdout")
+        parser.add_argument("--feature-version", choices=["v1", FEATURE_VERSION], default=None)
 
     def handle(self, *args, **options):
         date = options["date"] or timezone.localdate()
-        candidates = services.get_candidates(date, options["meal"])
+        meal = options["meal"]
+        version = options["feature_version"]
+        if version is None:
+            candidates, features, version = services.get_catalog(date, meal)
+        else:
+            candidates = services.get_candidates(date, meal, feature_version=version,
+                                                 include_std=(version == FEATURE_VERSION))
+            features = services.get_feature_schema(version)
         text = json.dumps({
             "date": date.isoformat(),
-            "meal": options["meal"],
-            "feature_version": FEATURE_VERSION,
-            "features": services.get_feature_schema(),
+            "meal": meal,
+            "feature_version": version,
+            "features": features,
             "candidates": candidates,
         }, ensure_ascii=False, indent=2)
 

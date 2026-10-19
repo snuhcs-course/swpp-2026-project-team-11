@@ -66,7 +66,7 @@ def compare_policies(candidates, feature_schema, *, trials=12, seed=20261006,
     ids = [c.food_id for c in catalog.candidates]
     random.Random(seed).shuffle(ids)
     targets = [ids[trial % len(ids)] for trial in range(trials)]
-    records = {policy: [] for policy in ("greedy", "lookahead")}
+    records = {policy: [] for policy in ("preference", "greedy", "lookahead")}
     for trial, food_id in enumerate(targets):
         oracle = ResponseOracle(catalog, food_id, seed, trial)
         for policy in records:
@@ -77,7 +77,7 @@ def compare_policies(candidates, feature_schema, *, trials=12, seed=20261006,
             step = engine.start()
             decision_ms = [build_ms + (time.perf_counter() - start) * 1000]
             trace, guesses = [], 0
-            first_match, match, exact = None, False, False
+            first_match, first_questions, match, exact = None, None, False, False
             proposal_size = 0
             # Every question and displayed alias can occur at most once. This
             # is an evaluator invariant, not an application question limit.
@@ -98,6 +98,7 @@ def compare_policies(candidates, feature_schema, *, trials=12, seed=20261006,
                 matched = oracle.accepts(step)
                 if first_match is None:
                     first_match = matched
+                    first_questions = engine.question_count
                 proposal_size = len(step.get("group", {}).get("food_ids", [step["food"]["food_id"]]))
                 trace.append({"guess_id": step["guess_id"], "representative_food_id": step["food"]["food_id"],
                               "target_kind": step["target_kind"], "synthetic_match": matched})
@@ -112,7 +113,9 @@ def compare_policies(candidates, feature_schema, *, trials=12, seed=20261006,
             else:
                 raise AssertionError("Engine exceeded its finite action bound")
             records[policy].append({"trial": trial, "target_food_id": food_id,
-                "first_guess_menu_match": bool(first_match), "eventual_menu_match": match,
+                "first_guess_menu_match": bool(first_match),
+                "first_guess_questions": engine.question_count if first_questions is None else first_questions,
+                "eventual_menu_match": match,
                 "exact_food_id_match": exact, "questions": engine.question_count,
                 "guesses": guesses, "interactions": engine.question_count + guesses,
                 "proposal_size": proposal_size, "terminal_type": step["type"],
@@ -122,6 +125,7 @@ def compare_policies(candidates, feature_schema, *, trials=12, seed=20261006,
         times = [value for row in runs for value in row["decision_ms"]]
         summaries[policy] = {
             "first_guess_menu_match_rate": statistics.mean(r["first_guess_menu_match"] for r in runs),
+            "mean_first_guess_questions": statistics.mean(r["first_guess_questions"] for r in runs),
             "eventual_menu_match_rate": statistics.mean(r["eventual_menu_match"] for r in runs),
             "exact_food_id_match_rate": statistics.mean(r["exact_food_id_match"] for r in runs),
             "mean_questions": statistics.mean(r["questions"] for r in runs),

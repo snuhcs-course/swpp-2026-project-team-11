@@ -1,5 +1,6 @@
 """Whole sessions against the shared 2026-09-29 fixture, the data the demo runs on."""
 import random
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 
@@ -83,6 +84,17 @@ class QuestionCapTests(RealMenuTestCase):
 
 
 class GroupGuessTests(RealMenuTestCase):
+    def setUp(self):
+        # Group proposals belong to the retained intent-based policy.
+        # The default preference policy proposes individual matching dishes.
+        from question_engines.decision_tree import DecisionTreeEngine
+        def legacy_engine(*args, **kwargs):
+            kwargs["config"] = kwargs.get("config", {}) | {"policy": "greedy"}
+            return DecisionTreeEngine(*args, **kwargs)
+        patcher = patch("recommend.sessions.DecisionTreeEngine", side_effect=legacy_engine)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def first_group_guess(self):
         """Reject guesses until the engine proposes a group."""
         state, url = self.start()
