@@ -69,7 +69,7 @@ class V2SessionTests(TestCase):
         self.assertEqual(guess["step"]["food"]["food_id"], self.foods[1].pk)
         self.assertTrue(guess["step"]["food"]["display_name"].endswith(" (세트)"))
 
-    def test_version_selection_requires_full_v2_coverage_and_logs_partial_fallback(self):
+    def test_version_selection_picks_majority_version_and_logs_partial_warning(self):
         legacy = Food.objects.create(name="Legacy", is_food=True, feature_version="v1")
         MenuItem.objects.create(date=DAY, meal="DN", restaurant=self.hall,
                                 raw_name="Legacy", food=legacy)
@@ -88,9 +88,9 @@ class V2SessionTests(TestCase):
                                 raw_name="Legacy", food=legacy)
         with self.assertLogs("menus.services", level="WARNING") as cm:
             rows, schema, version = services.get_catalog(DAY, "LU")
-        self.assertEqual(version, "v1")
-        self.assertEqual([r["food_id"] for r in rows], [legacy.pk])
-        self.assertIn("serving 1/3 candidates with feature_version=v1 (2 v2 candidates present)",
+        self.assertEqual(version, "v2")
+        self.assertEqual([r["food_id"] for r in rows], [f.pk for f in self.foods])
+        self.assertIn("serving 2/3 candidates with feature_version=v2 (2 v2 candidates present)",
                       "\n".join(cm.output))
 
     def test_retagging_shared_dish_on_later_date_keeps_earlier_day_on_v1(self):

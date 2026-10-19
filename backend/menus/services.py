@@ -35,10 +35,10 @@ def get_feature_schema(feature_version: str = "v1") -> list[dict]:
 
 
 def get_catalog(date: datetime.date | None = None, meal: str | None = None) -> tuple[list, list, str]:
-    """Load matching candidates/schema: choose v2 only when it covers every candidate on the date/meal.
+    """Load matching candidates/schema: choose whichever version covers more candidates on the date/meal.
 
-    Never mix measurements with different meanings in one session; if a date/meal is only
-    partly v2, fall back to v1 and log a warning with the served vs. total candidate counts.
+    Never mix measurements with different meanings in one session; when coverage is partial,
+    log a warning with the served vs. total candidate counts.
     """
     date = date or timezone.localdate()
     items = MenuItem.objects.filter(date=date, food__is_food=True)
@@ -46,7 +46,7 @@ def get_catalog(date: datetime.date | None = None, meal: str | None = None) -> t
         items = items.filter(meal=meal)
     total = items.values("food_id").distinct().count()
     v2_count = items.filter(food__feature_version=FEATURE_VERSION).values("food_id").distinct().count()
-    version = FEATURE_VERSION if total > 0 and v2_count == total else "v1"
+    version = FEATURE_VERSION if total > 0 and v2_count >= total - v2_count else "v1"
     candidates = get_candidates(date, meal, feature_version=version, include_std=(version == FEATURE_VERSION))
     if len(candidates) != total:
         logger.warning(

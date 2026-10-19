@@ -282,10 +282,10 @@ candidates, schema, version = services.get_catalog(datetime.date(2026, 10, 13), 
 ```
 
 The low-level readers above default to **v1** for existing callers. Recommendation
-sessions and demo/benchmark commands use `get_catalog`: select `v2` only when every
-candidate on the requested date and meal has `v2` features, and otherwise fall back
-to `v1` (logging the served version and candidate counts, with a warning if a date/meal
-is only partly `v2`). Candidates and questions always have the same version; legacy
+sessions and demo/benchmark commands use `get_catalog`: select whichever version covers
+more candidates on the requested date and meal (`v2` when `v2_count >= total - v2_count`,
+`v1` otherwise), logging the served version and candidate counts with a warning when
+coverage is partial. Candidates and questions always have the same version; legacy
 meanings are never mixed and missing std is never invented. The 9/29 fixture and its
 23 legacy scores remain unchanged.
 
