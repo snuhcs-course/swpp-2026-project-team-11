@@ -1,11 +1,12 @@
 # AI-generated: written with Claude (Anthropic) and reviewed by the team.
-"""python manage.py export_feature_rating_form --runs runs.jsonl --output ratings.csv [--n 50]
+"""python manage.py export_feature_rating_form --runs runs.jsonl --output rating_form.xlsx [--n 50]
 
 Write a blank rating form for human raters: a sample of the menu dishes in the
 runs file, spread over cafeterias or food groups, with a mean and a std column per
-rubric feature and a recipe_notes column. Each rater fills in a copy with the
-extractor's rubric (menus/features/instructions.txt, rubric.json); the copies go to
-benchmark_features --ratings. The format is in menus/features/benchmark/human.py.
+rubric feature and a recipe_notes column. A .xlsx output is an Excel workbook with
+input checks, the rater's guide and the rubric; any other is a CSV. Each rater fills
+in a copy with the extractor's rubric (menus/features/instructions.txt, rubric.json);
+the copies go to benchmark_features --ratings. The format is in menus/features/benchmark/human.py.
 """
 
 from __future__ import annotations
