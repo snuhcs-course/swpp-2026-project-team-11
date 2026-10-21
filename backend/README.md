@@ -62,7 +62,9 @@ Its content is a single line. Get the key from [Google AI Studio](https://aistud
 GOOGLE_API_KEY=your-key
 ```
 
-`manage.py` loads it automatically (see `backend/env.py`). The LLM question engine reads
+`manage.py` loads it automatically (see `backend/env.py`). To preprocess and tag with an OpenAI
+model instead, add `METCHU_MENU_MODEL=openai:<model>` (e.g. `openai:gpt-5.4-mini`) and
+`OPENAI_API_KEY` to the same file; see `backend/menus/llm.py`. The LLM question engine reads
 `OPENROUTER_API_KEY` from the same file instead; it and the optional settings are listed in the [LLM engine guide](question_engines/llm/README.md#configuration-and-failures-p14).
 
 > **보안 규칙**
