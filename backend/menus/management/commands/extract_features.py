@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 from pydantic import ValidationError
+from menus import llm
 from menus.features import extractor
 from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION, LLM_FEATURE_KEYS
 from menus.models import Food
@@ -68,7 +69,7 @@ class Command(BaseCommand):
         results, failed = {}, []
         if missing:
             if not extractor.api_key_available():
-                raise CommandError("GOOGLE_API_KEY가 없습니다. 레포 루트의 .env에 넣어 주세요.")
+                raise CommandError(f"{llm.key_name()}가 없습니다. 레포 루트의 .env에 넣어 주세요.")
             results, failed = extractor.extract(
                 missing, extractor.build_llm(), batch_size=options["batch_size"],
                 on_progress=self.stdout.write,
@@ -77,7 +78,7 @@ class Command(BaseCommand):
         completed = 0
         for name in pending:
             if name in results:
-                stats, model, extracted_at = results[name].features, extractor.MODEL, now
+                stats, model, extracted_at = results[name].features, llm.model_id(), now
             elif name in cached and not options["force"]:
                 source, stats = cached[name]
                 model, extracted_at = source.extraction_model, source.extracted_at

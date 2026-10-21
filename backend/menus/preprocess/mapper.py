@@ -30,7 +30,6 @@ PREPROCESS_VERSION = "v1"
 # so cached MenuLine answers from the old prompt are resolved again, and updates this;
 # test_preprocess_llm checks the pair.
 PROMPT_SHA256 = "c4e8e3df92f9"
-MODEL = "gemini-3.5-flash"
 NAME_MAX = 300   # MenuLine.name / Food.name max_length; Postgres enforces it
 DISH_MAX = 50    # a canonical dish name is short; longer means the model misbehaved
 
@@ -53,10 +52,10 @@ class LineBatch(BaseModel):
 
 
 def build_llm():
-    """The real Gemini client. Replace this in tests."""
-    from langchain_google_genai import ChatGoogleGenerativeAI
+    """The configured model (menus/llm.py). Replace this in tests."""
+    from menus import llm
 
-    return ChatGoogleGenerativeAI(model=MODEL, thinking_level="low").with_structured_output(LineBatch)
+    return llm.build(LineBatch)
 
 
 def _loose(name: str) -> str:
