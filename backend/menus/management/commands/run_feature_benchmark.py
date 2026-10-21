@@ -4,9 +4,12 @@
 Run the feature extraction benchmark end to end and keep everything in one folder:
 
     feature_benchmark_results/NAME/
-        config.json   what was run: dishes, conditions, extraction model, prompt, git commit
-        runs.jsonl    every extraction (collect_feature_runs)
-        report/       benchmark_features output: report.md, CSVs, histograms
+        config.json            what was run: dishes, conditions, extraction model, prompt, git commit
+        report.md              every section's results (benchmark_features), summary.json
+        runs/runs.jsonl        every extraction (collect_feature_runs)
+        1_integrity/ ... 6_downstream_impact/   each section's CSVs and histograms
+        4_human_reference/forms/     rating forms and the LLM's answers (export_feature_rating_form)
+        4_human_reference/ratings/   the raters' filled copies, read when --ratings is not given
 
 Each condition is collected the given number of times (default repeat 3,
 shuffle_foods 2, shuffle_features 2). Running the same NAME again continues a
@@ -32,6 +35,7 @@ from menus.features.prompt import PROMPT_VERSION
 from menus.features.schema import FEATURE_VERSION
 
 DEFAULT_CONDITIONS = "repeat:3,shuffle_foods:2,shuffle_features:2"
+RATINGS = pathlib.Path("4_human_reference", "ratings")
 
 
 def parse_conditions(text) -> list[tuple[str, int]]:
@@ -67,7 +71,8 @@ class Command(BaseCommand):
         parser.add_argument("--invariant-limit", type=int, default=30)
         parser.add_argument("--batch-size", type=int, default=25)
         parser.add_argument("--triplets", default=None, help="triplet file (default: the AI draft)")
-        parser.add_argument("--ratings", nargs="*", default=[], help="filled rating forms, one per rater")
+        parser.add_argument("--ratings", nargs="*", default=[],
+                            help=f"filled rating forms, one per rater (default: NAME/{RATINGS}/)")
         parser.add_argument("--results-dir", default=str(pathlib.Path(settings.BASE_DIR).parent / "feature_benchmark_results"))
         parser.add_argument("--seed", type=int, default=0)
         parser.add_argument("--dry-run", action="store_true", help="print the LLM calls and stop")
@@ -77,7 +82,9 @@ class Command(BaseCommand):
             raise CommandError("--menu-set과 --date 중 하나만 주세요.")
         conditions = parse_conditions(options["conditions"])
         folder = pathlib.Path(options["results_dir"]) / options["name"]
-        runs_path = folder / "runs.jsonl"
+        runs_path = folder / "runs" / "runs.jsonl"
+        ratings = options["ratings"] or sorted(str(path) for path in (folder / RATINGS).glob("*")
+                                               if path.suffix in (".csv", ".xlsx") and not path.name.startswith("~$"))
         source = ["--menu-set", options["menu_set"]] if options["menu_set"] else ["--date", options["date"].isoformat()]
         common = [*source, "--output", str(runs_path), "--batch-size", str(options["batch_size"]),
                   "--invariant-limit", str(options["invariant_limit"]), "--seed", str(options["seed"])]
@@ -86,13 +93,13 @@ class Command(BaseCommand):
         if options["dry_run"]:
             common.append("--dry-run")
         else:
-            folder.mkdir(parents=True, exist_ok=True)
+            runs_path.parent.mkdir(parents=True, exist_ok=True)
             (folder / "config.json").write_text(json.dumps({
                 "name": options["name"], "updated_at": timezone.now().isoformat(),
                 "dishes": {"menu_set": options["menu_set"], "date": options["date"] and options["date"].isoformat(),
                            "limit": options["limit"], "invariant_limit": options["invariant_limit"]},
                 "conditions": dict(conditions), "batch_size": options["batch_size"], "seed": options["seed"],
-                "triplets": options["triplets"], "ratings": options["ratings"],
+                "triplets": options["triplets"], "ratings": ratings,
                 "extraction_model": llm.model_id(), "feature_version": FEATURE_VERSION,
                 "prompt_version": PROMPT_VERSION, "git_commit": git_commit(),
             }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
@@ -104,7 +111,7 @@ class Command(BaseCommand):
         if options["dry_run"]:
             return
         self.stdout.write("== report")
-        call_command("benchmark_features", "--runs", str(runs_path), "--output-dir", str(folder / "report"),
-                     *(["--ratings", *options["ratings"]] if options["ratings"] else []),
+        call_command("benchmark_features", "--runs", str(runs_path), "--output-dir", str(folder),
+                     *(["--ratings", *ratings] if ratings else []),
                      *(["--triplets", options["triplets"]] if options["triplets"] else []), stdout=self.stdout)
         self.stdout.write(self.style.SUCCESS(f"결과 -> {folder}"))

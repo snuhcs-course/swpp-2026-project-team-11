@@ -1,6 +1,10 @@
 # AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Run the sections and write report.md, summary.json, one CSV per table and histograms.
 
+report.md and summary.json go in the output folder, each section's files in a folder
+named after it: 1_integrity/, 2_distribution/, 3_stability/, 4_human_reference/,
+5_triplets/, 6_downstream_impact/.
+
 Every section returns {"title", "lines", "tables", "checks"?} or {"title", "skipped"}.
 Distribution, stability and human run once per kind of menu dish when the runs
 file has variant and invariant dishes (runs.py); the others run once.
@@ -53,8 +57,16 @@ def _table(header, rows) -> list[str]:
             *("| " + " | ".join(map(cell, row)) + " |" for row in rows)]
 
 
+def section_dir(title) -> str:
+    """"2. Distribution (variant)" -> "2_distribution"."""
+    number, _, name = title.split(" (")[0].partition(". ")
+    return f"{number}_{name.lower().replace(' ', '_')}"
+
+
 def _file(name, result) -> str:
-    return name if not result.get("segment") else name.replace(".", f"_{result['segment']}.", 1)
+    """The section's file `name`, relative to the output folder."""
+    name = name if not result.get("segment") else name.replace(".", f"_{result['segment']}.", 1)
+    return f"{section_dir(result['title'])}/{name}"
 
 
 def write(results, records, output_dir, plots=True) -> pathlib.Path:
@@ -77,10 +89,12 @@ def write(results, records, output_dir, plots=True) -> pathlib.Path:
                  for label, value, limit, ok in result.get("checks", [])] + [""]
         if result["title"].startswith("2. Distribution") and plots:
             image = _file("histograms.png", result)
+            (output / image).parent.mkdir(exist_ok=True)
             distribution.plot(result["runset"], output / image)
             text += [f"![Feature histograms]({image})", ""]
         for file_name, title, header, rows, shown in result["tables"]:
             file_name = _file(file_name, result)
+            (output / file_name).parent.mkdir(exist_ok=True)
             with open(output / file_name, "w", encoding="utf-8-sig", newline="") as f:
                 csv.writer(f).writerows([header, *rows])
             if shown and rows:

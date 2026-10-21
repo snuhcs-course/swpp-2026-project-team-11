@@ -89,6 +89,7 @@ class Command(BaseCommand):
         random.Random(options["seed"]).shuffle(names)
         names.sort(key=lambda name: list(LABELS).index(sources[name]))
         output = pathlib.Path(options["output"])
+        output.parent.mkdir(parents=True, exist_ok=True)
         dishes = [(name, LABELS[sources[name]]) for name in names]
         if options["llm_values"]:
             index = {key: i for i, key in enumerate(runset.keys)}
