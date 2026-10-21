@@ -30,6 +30,9 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # The menu model, "<provider>:<model>" (backend/menus/llm.py); empty: Gemini.
+      METCHU_MENU_MODEL: ${{ vars.METCHU_MENU_MODEL }}
       MENU_DATE: ${{ inputs.date }}
     steps:
       - uses: actions/checkout@v4
@@ -46,8 +49,9 @@ jobs:
         run: python -m pip install -r backend/requirements.txt
       - name: Check the secrets
         run: |
-          if [ -z "$DATABASE_URL" ] || [ -z "$GOOGLE_API_KEY" ]; then
-            echo "::error::Add the DATABASE_URL and GOOGLE_API_KEY repository secrets (backend/README.md, Daily automation)."
+          key=$(cd backend && python -c "from menus import llm; print(llm.key_name())")
+          if [ -z "$DATABASE_URL" ] || [ -z "${!key}" ]; then
+            echo "::error::Add the DATABASE_URL and $key repository secrets (backend/README.md, Daily automation)."
             exit 1
           fi
       - name: Apply database migrations

@@ -2,12 +2,12 @@
 """Extract bounded feature moments from preprocessed dish names."""
 from __future__ import annotations
 import math
-import os
 from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator, model_validator
+from menus import llm
+
 from .prompt import SYSTEM_PROMPT, build_user_message
 from .schema import LLM_FEATURES
 
-MODEL = "gemini-3.5-flash"
 
 class FeatureStats(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -44,11 +44,11 @@ class FoodBatch(BaseModel):
     items: list[FoodAnnotation]
 
 def api_key_available() -> bool:
-    return bool(os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY"))
+    return llm.api_key_available()
 
 def build_llm():
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    return ChatGoogleGenerativeAI(model=MODEL, thinking_level="low").with_structured_output(FoodBatch)
+    """The configured model (menus/llm.py). Replace this in tests."""
+    return llm.build(FoodBatch)
 
 def extract_batch(names: list[str], llm) -> dict[str, FoodAnnotation]:
     from langchain_core.messages import HumanMessage, SystemMessage

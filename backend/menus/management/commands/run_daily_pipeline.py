@@ -6,7 +6,7 @@ One day's menu, start to finish (default: today in Seoul):
   2. extract_features - tag the new dishes with feature values
   3. export_preprocess_review (with --review) - CSV for a person to check
 
-Run it once a day; it needs GOOGLE_API_KEY. Re-running is safe: lines and dishes
+Run it once a day; it needs the key of METCHU_MENU_MODEL (menus/llm.py). Re-running is safe: lines and dishes
 resolved before are reused, so only new menu lines cost LLM calls. If a step fails
 (e.g. Gemini errors on some lines), the other steps still run and the command then
 exits with an error, so the daily GitHub Actions run fails visibly.
@@ -21,6 +21,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from menus import services
+from menus import llm
 from menus.features.extractor import api_key_available
 from menus.features.schema import FEATURE_VERSION
 
@@ -35,7 +36,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not api_key_available():
-            raise CommandError("GOOGLE_API_KEY가 없습니다. 레포 루트의 .env에 넣어 주세요.")
+            raise CommandError(f"{llm.key_name()}가 없습니다. 레포 루트의 .env에 넣어 주세요.")
         date = options["date"] or timezone.localdate()
         day = date.isoformat()
 

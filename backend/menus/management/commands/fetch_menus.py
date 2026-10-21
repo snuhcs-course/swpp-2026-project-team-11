@@ -5,8 +5,8 @@ line to the dishes it stands for (menus/preprocess), and store one MenuItem per
 dish. Re-running replaces that day's menu items, so it is safe to run as often
 as needed.
 
-Lines never seen before are resolved by Gemini (needs GOOGLE_API_KEY). Without a
-key, or with --no-llm, each new line is stored as one dish, as before. If Gemini
+Lines never seen before are resolved by the model of METCHU_MENU_MODEL. Without a
+key, or with --no-llm, each new line is stored as one dish, as before. If the model
 fails on some lines, they are stored that way too and the command exits with an error.
 """
 
@@ -21,6 +21,7 @@ from django.utils import timezone
 
 from menus.models import Food, MenuItem, Restaurant
 from menus.normalize import clean_name, dish_key, is_noise
+from menus import llm as menu_llm
 from menus.features.extractor import api_key_available
 from menus.preprocess import fixed, mapper
 from menus.preprocess.mapper import NAME_MAX, Mapping, map_lines
@@ -121,7 +122,7 @@ class Command(BaseCommand):
             if api_key_available():
                 llm = mapper.build_llm()
             else:
-                self.stdout.write("GOOGLE_API_KEY가 없어 새 메뉴 줄은 LLM 없이 한 덩어리로 저장합니다.")
+                self.stdout.write(f"{menu_llm.key_name()}가 없어 새 메뉴 줄은 LLM 없이 한 덩어리로 저장합니다.")
 
         lines = menu_lines(records)
         mappings = map_lines(lines, llm, on_progress=self.stdout.write)

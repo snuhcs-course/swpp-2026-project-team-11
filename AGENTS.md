@@ -59,8 +59,9 @@ cd client && ./gradlew testDebugUnitTest         # JDK 21; the build fails on JD
 ## Secrets
 
 - The team's keys are GitHub Actions repository secrets, named as in `.env`:
-  `GOOGLE_API_KEY`, `OPENROUTER_API_KEY`, `DATABASE_URL`. Workflows read them as
-  `${{ secrets.NAME }}` and stop with a clear error when one is missing.
+  `GOOGLE_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `DATABASE_URL`. Workflows read
+  them as `${{ secrets.NAME }}` and stop with a clear error when one is missing. Settings
+  that are not secret, such as `METCHU_MENU_MODEL`, are repository variables (`${{ vars.NAME }}`).
 - A new key goes, commented out, into `.env.example`; a repository admin adds the secret.
 - Never print, log or commit a key, locally (`.env`) or anywhere else.
 
