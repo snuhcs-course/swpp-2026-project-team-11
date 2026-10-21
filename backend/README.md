@@ -248,7 +248,10 @@ a run artifact for 14 days. Days without a menu (weekends, holidays) finish with
 Setup, once (needs admin rights on the repository):
 
 1. **Settings → Secrets and variables → Actions → New repository secret**: add
-   `DATABASE_URL` (the Session pooler URI above) and `GOOGLE_API_KEY`.
+   `DATABASE_URL` (the Session pooler URI above) and `GOOGLE_API_KEY`. To run the menu steps
+   on OpenAI instead, also add the secret `OPENAI_API_KEY` and, under **Variables**, the
+   repository variable `METCHU_MENU_MODEL` (e.g. `openai:gpt-5.4-mini`). Deleting the variable
+   goes back to Gemini.
 2. **Put the workflow on the default branch.** GitHub only runs scheduled and manual triggers
    for workflow files on the default branch, which is `main` today. Either set the default
    branch to `MVP` (**Settings → General → Default branch**) or merge `MVP` into `main`.
@@ -256,14 +259,15 @@ Setup, once (needs admin rights on the repository):
 
 - The job runs the code on `MVP`. To use another branch, set the repository variable
   `MENU_PIPELINE_REF`.
-- A run fails when a secret is missing or when Gemini could not resolve every new line or tag
-  every new dish (an expired key, an exhausted quota). What it could store is kept, the next run
-  retries the rest, and GitHub emails the person who last changed the schedule in the workflow file.
+- A run fails when a secret is missing (the key of the configured model) or when the model
+  could not resolve every new line or tag every new dish (an expired key, an exhausted quota).
+  What it could store is kept, the next run retries the rest, and GitHub emails the person who
+  last changed the schedule in the workflow file.
 - In a public repository, GitHub disables scheduled workflows after 60 days without repository
   activity; turn it back on from the Actions tab.
 - The daily run also keeps the free Supabase project from pausing.
 
-> **주의:** `GOOGLE_API_KEY` 시크릿에 넣은 키로 매일 Gemini가 몇 번 호출됩니다. 누구의 키를 쓸지 팀에서 정해 두세요.
+> **주의:** 설정한 모델의 키(`GOOGLE_API_KEY` 또는 `OPENAI_API_KEY` 시크릿)로 매일 LLM이 몇 번 호출됩니다. 누구의 키를 쓸지 팀에서 정해 두세요.
 > 새 테이블을 만드는 마이그레이션이 머지되면 위의 RLS SQL을 다시 실행하세요(이 작업이 `migrate`를 자동으로 돌립니다).
 
 ## Using it from the question engines (`menus/services.py`)
