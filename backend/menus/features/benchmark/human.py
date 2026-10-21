@@ -188,11 +188,12 @@ def evaluate(runset, ratings) -> dict:
     return {"title": title, "lines": lines, "tables": tables}
 
 
-def write_form(path, dishes) -> None:
-    """A blank rating form, Excel for a .xlsx path and CSV otherwise: one row per
-    (name, kind) in `dishes`, a mean and a std column per rubric feature."""
+def write_form(path, dishes, values=None, rater="", note="") -> None:
+    """A rating form, Excel for a .xlsx path and CSV otherwise: one row per (name, kind)
+    in `dishes`, a mean and a std column per rubric feature. Blank for raters, or
+    filled by `rater` with `values` ({name: (means, stds)}), e.g. the LLM's answers."""
     if pathlib.Path(path).suffix == ".xlsx":
-        _write_workbook(path, dishes)
+        _write_workbook(path, dishes, values, rater, note)
         return
     labels = {feature["key"]: feature["label_ko"] for feature in RUBRIC["features"]}
     header = ["name", "kind", "rater", "recipe_notes"]
@@ -202,7 +203,7 @@ def write_form(path, dishes) -> None:
         writer = csv.writer(f)
         writer.writerow(header)
         for name, kind in dishes:
-            writer.writerow([name, kind] + [""] * (len(header) - 2))
+            writer.writerow([name, kind, rater, ""] + _values(values, name))
 
 
 FONT, BOLD, KEY_FONT = Font(name="Arial", size=10), Font(name="Arial", size=10, bold=True), \
@@ -217,6 +218,13 @@ EXAMPLE = [("name", "김치찌개 (예시)"), ("kind", "고정 메뉴"), ("recip
            ("pork_mean", 0.6), ("pork_std", 0.35), ("noodle_mean", 0), ("noodle_std", 0)]
 
 
+def _values(values, name) -> list:
+    if not values:
+        return [""] * (2 * len(LLM_FEATURE_KEYS))
+    means, stds = values[name]
+    return [value for key in LLM_FEATURE_KEYS for value in (means[key], stds[key])]
+
+
 def _cell(sheet, row, column, value, font=FONT, fill=None):
     cell = sheet.cell(row, column, value)
     cell.font, cell.alignment = font, WRAP
@@ -225,13 +233,14 @@ def _cell(sheet, row, column, value, font=FONT, fill=None):
     return cell
 
 
-def _write_workbook(path, dishes) -> None:
+def _write_workbook(path, dishes, values, rater, note) -> None:
     book = openpyxl.Workbook()
     form = book.active
     form.title = SHEET
+    blank = INPUT if not values else None
     _cell(form, 1, 1, "평가자 이름", BOLD)
-    _cell(form, 1, 2, None, fill=INPUT)
-    _cell(form, 1, 3, "노란 칸만 입력하세요. 작성 방법은 '안내', 기준은 '루브릭' 시트에 있습니다.")
+    _cell(form, 1, 2, rater or None, fill=blank)
+    _cell(form, 1, 3, note or "노란 칸만 입력하세요. 작성 방법은 '안내', 기준은 '루브릭' 시트에 있습니다.")
     form.merge_cells(start_row=1, start_column=3, end_row=1, end_column=12)
     first, last = 5, 4 + len(dishes)
     labels = {feature["key"]: feature["label_ko"] for feature in RUBRIC["features"]}
@@ -243,8 +252,9 @@ def _write_workbook(path, dishes) -> None:
     for row, (name, kind) in enumerate(dishes, start=first):
         _cell(form, row, 1, name, fill=FIXED)
         _cell(form, row, 2, kind, fill=FIXED)
-        for column in range(3, len(columns) + 1):
-            _cell(form, row, column, None, fill=INPUT)
+        _cell(form, row, 3, None, fill=blank)
+        for column, value in enumerate(_values(values, name), start=4):
+            _cell(form, row, column, value if values else None, fill=blank)
 
     ranges = {}
     for field, top in (("mean", 1), ("std", 0.5)):
@@ -270,8 +280,13 @@ def _write_workbook(path, dishes) -> None:
     for index in range(4, len(columns) + 1):
         form.column_dimensions[get_column_letter(index)].width = 7
     form.freeze_panes = f"B{first}"
+    if not values:
+        _write_guide(book.create_sheet("안내"))
+    _write_rubric(book.create_sheet("루브릭"))
+    book.save(path)
 
-    guide = book.create_sheet("안내")
+
+def _write_guide(guide) -> None:
     lines = [
         ("Metchu! feature 평가 양식", BOLD),
         ("음식 이름으로 추출한 32개 feature를 사람의 평가와 비교하기 위한 기준 데이터입니다. "
@@ -308,7 +323,8 @@ def _write_workbook(path, dishes) -> None:
     for index in range(2, len(EXAMPLE) + 1):
         guide.column_dimensions[get_column_letter(index)].width = 12
 
-    rubric = book.create_sheet("루브릭")
+
+def _write_rubric(rubric) -> None:
     header = ["key", "이름", "정의", "구분 규칙", "평균 기준", "표준편차 기준"]
     for index, text in enumerate(header, start=1):
         _cell(rubric, 1, index, text, BOLD, HEAD)
@@ -320,4 +336,3 @@ def _write_workbook(path, dishes) -> None:
     for letter, width in zip("ABCDEF", (14, 10, 40, 60, 50, 50)):
         rubric.column_dimensions[letter].width = width
     rubric.freeze_panes = "C2"
-    book.save(path)
