@@ -3,7 +3,7 @@
 
 The form (export_feature_rating_form) is one file per rater, an Excel workbook or a CSV:
 
-    name, rater, recipe_notes, spicy_mean, spicy_std, sweet_mean, sweet_std, ...
+    name, kind, rater, recipe_notes, spicy_mean, spicy_std, sweet_mean, sweet_std, ...
 
 The workbook's sheet "평가" holds these columns from the row whose first cell is
 `name`, with the rater's name in B1 instead of a `rater` column; its other sheets are
@@ -11,6 +11,7 @@ the rater's guide and the rubric.
 
 - `<key>_mean`, `<key>_std`: 0 to 1, at most two decimals, std² <= mean * (1 - mean);
   the same rules as the extractor's answer (menus/features/instructions.txt)
+- `kind`: what kind of dish it is (고정 메뉴, 매일 바뀌는 메뉴, ...), for the rater only
 - `recipe_notes`: the recipes or serving examples looked at before judging the stds
 - a blank cell is skipped; a header may carry a label after a colon ("spicy_mean: 매운맛 평균")
 - without a `rater` column, the file name is the rater
@@ -84,6 +85,7 @@ def load(paths) -> dict[str, dict[str, dict]]:
         for where, row in _rows(path):
             name, rater = row.pop("name", ""), row.pop("rater", "") or path.stem
             notes = row.pop("recipe_notes", "")
+            row.pop("kind", None)
             if not name:
                 continue
             entry = {"mean": {}, "std": {}, "notes": notes}
@@ -186,21 +188,21 @@ def evaluate(runset, ratings) -> dict:
     return {"title": title, "lines": lines, "tables": tables}
 
 
-def write_form(path, names) -> None:
-    """A blank rating form, Excel for a .xlsx path and CSV otherwise: one row per dish,
-    a mean and a std column per rubric feature."""
+def write_form(path, dishes) -> None:
+    """A blank rating form, Excel for a .xlsx path and CSV otherwise: one row per
+    (name, kind) in `dishes`, a mean and a std column per rubric feature."""
     if pathlib.Path(path).suffix == ".xlsx":
-        _write_workbook(path, names)
+        _write_workbook(path, dishes)
         return
     labels = {feature["key"]: feature["label_ko"] for feature in RUBRIC["features"]}
-    header = ["name", "rater", "recipe_notes"]
+    header = ["name", "kind", "rater", "recipe_notes"]
     for key in LLM_FEATURE_KEYS:
         header += [f"{key}_mean: {labels[key]} 평균", f"{key}_std: {labels[key]} 표준편차"]
     with open(path, "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(header)
-        for name in names:
-            writer.writerow([name] + [""] * (len(header) - 1))
+        for name, kind in dishes:
+            writer.writerow([name, kind] + [""] * (len(header) - 2))
 
 
 FONT, BOLD, KEY_FONT = Font(name="Arial", size=10), Font(name="Arial", size=10, bold=True), \
@@ -210,7 +212,7 @@ BROKEN = PatternFill("solid", fgColor="F4B6B6")
 WRAP = Alignment(wrap_text=True, vertical="top")
 # The extractor's instructions up to its output format, which is only for the LLM.
 GUIDE = (pathlib.Path(__file__).parents[1] / "instructions.txt").read_text(encoding="utf-8").split("\n출력\n")[0]
-EXAMPLE = [("name", "김치찌개 (예시)"), ("recipe_notes", "레시피 3개: 돼지고기·참치 변형, 김치 숙성도 차이"),
+EXAMPLE = [("name", "김치찌개 (예시)"), ("kind", "고정 메뉴"), ("recipe_notes", "레시피 3개: 돼지고기·참치 변형, 김치 숙성도 차이"),
            ("spicy_mean", 0.6), ("spicy_std", 0.15), ("sour_mean", 0.4), ("sour_std", 0.15),
            ("pork_mean", 0.6), ("pork_std", 0.35), ("noodle_mean", 0), ("noodle_std", 0)]
 
@@ -223,7 +225,7 @@ def _cell(sheet, row, column, value, font=FONT, fill=None):
     return cell
 
 
-def _write_workbook(path, names) -> None:
+def _write_workbook(path, dishes) -> None:
     book = openpyxl.Workbook()
     form = book.active
     form.title = SHEET
@@ -231,16 +233,17 @@ def _write_workbook(path, names) -> None:
     _cell(form, 1, 2, None, fill=INPUT)
     _cell(form, 1, 3, "노란 칸만 입력하세요. 작성 방법은 '안내', 기준은 '루브릭' 시트에 있습니다.")
     form.merge_cells(start_row=1, start_column=3, end_row=1, end_column=12)
-    first, last = 5, 4 + len(names)
+    first, last = 5, 4 + len(dishes)
     labels = {feature["key"]: feature["label_ko"] for feature in RUBRIC["features"]}
-    columns = ["name", "recipe_notes"] + [f"{key}_{field}" for key in LLM_FEATURE_KEYS for field in FIELDS]
-    _cell(form, 3, 1, "음식", BOLD, HEAD)
-    _cell(form, 3, 2, "참고한 레시피·제공 예시", BOLD, HEAD)
+    columns = ["name", "kind", "recipe_notes"] + [f"{key}_{field}" for key in LLM_FEATURE_KEYS for field in FIELDS]
+    for index, text in enumerate(("음식", "구분", "참고한 레시피·제공 예시"), start=1):
+        _cell(form, 3, index, text, BOLD, HEAD)
     for index, column in enumerate(columns, start=1):
         _cell(form, 4, index, column, KEY_FONT, HEAD)
-    for row, name in enumerate(names, start=first):
+    for row, (name, kind) in enumerate(dishes, start=first):
         _cell(form, row, 1, name, fill=FIXED)
-        for column in range(2, len(columns) + 1):
+        _cell(form, row, 2, kind, fill=FIXED)
+        for column in range(3, len(columns) + 1):
             _cell(form, row, column, None, fill=INPUT)
 
     ranges = {}
@@ -250,7 +253,7 @@ def _write_workbook(path, names) -> None:
                                        error=f"{field}는 0~{top} 사이 숫자입니다.")
         form.add_data_validation(ranges[field])
     for index, key in enumerate(LLM_FEATURE_KEYS):
-        column = 3 + 2 * index
+        column = 4 + 2 * index
         mean, std = get_column_letter(column), get_column_letter(column + 1)
         _cell(form, 3, column, f"{labels[key]} ({key})", BOLD, HEAD)
         form.merge_cells(start_row=3, start_column=column, end_row=3, end_column=column + 1)
@@ -260,10 +263,11 @@ def _write_workbook(path, names) -> None:
             f"AND(ISNUMBER(${mean}{first}),ISNUMBER(${std}{first}),"
             f"${std}{first}^2>${mean}{first}*(1-${mean}{first})+0.000000001)"]))
     end = get_column_letter(len(columns))
-    form.conditional_formatting.add(f"C{first}:{end}{last}", FormulaRule(fill=BROKEN, formula=[
-        f"AND(ISNUMBER(C{first}),ABS(C{first}-ROUND(C{first},2))>0.000000001)"]))
-    form.column_dimensions["A"].width, form.column_dimensions["B"].width = 20, 28
-    for index in range(3, len(columns) + 1):
+    form.conditional_formatting.add(f"D{first}:{end}{last}", FormulaRule(fill=BROKEN, formula=[
+        f"AND(ISNUMBER(D{first}),ABS(D{first}-ROUND(D{first},2))>0.000000001)"]))
+    for letter, width in zip("ABC", (20, 14, 28)):
+        form.column_dimensions[letter].width = width
+    for index in range(4, len(columns) + 1):
         form.column_dimensions[get_column_letter(index)].width = 7
     form.freeze_panes = f"B{first}"
 
@@ -272,6 +276,8 @@ def _write_workbook(path, names) -> None:
         ("Metchu! feature 평가 양식", BOLD),
         ("음식 이름으로 추출한 32개 feature를 사람의 평가와 비교하기 위한 기준 데이터입니다. "
          "평가자마다 이 파일을 한 부씩 받아 같은 음식을 각자 평가합니다.", FONT),
+        ("구분: 고정 메뉴는 학식의 고정 메뉴판 음식, 매일 바뀌는 메뉴는 날마다 바뀌는 식단의 음식, "
+         "비교용 예시는 비슷한 음식과 구분되는지 보려고 넣은 음식입니다. 평가 방법은 모두 같습니다.", FONT),
         ("", FONT), ("작성 순서", BOLD),
         ("1. '평가' 시트 B1에 이름을 적습니다.", FONT),
         ("2. 음식마다 레시피와 식당 제공 예시(사진·메뉴 설명)를 2~3개 찾아보고, 참고한 내용을 recipe_notes에 짧게 적습니다. "

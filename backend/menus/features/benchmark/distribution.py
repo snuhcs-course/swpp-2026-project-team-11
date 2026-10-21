@@ -45,6 +45,18 @@ def evaluate(runset) -> dict:
                        ("distribution_collisions.csv", "Collisions", ["dish_a", "dish_b", "mean_gap"], collisions, 10)]}
 
 
+def neighbours(runset, sources) -> list[tuple[str, str, float]]:
+    """(dish, its closest dish, mean gap) for each dish of `sources` whose closest dish
+    in the runs file, of any kind, is a collision."""
+    names = runset.names()
+    means = np.array([runset.mean(name) for name in names])
+    gap = np.abs(means[:, None, :] - means[None, :, :]).mean(axis=2)
+    np.fill_diagonal(gap, np.inf)
+    wanted = set(runset.names(sources))
+    closest = gap.argmin(axis=1)
+    return [(name, names[closest[i]], round(float(gap[i, closest[i]]), 3)) for i, name in enumerate(names)
+            if name in wanted and gap[i, closest[i]] <= COLLISION]
+
 def plot(runset, path) -> None:
     import matplotlib
     matplotlib.use("Agg")
