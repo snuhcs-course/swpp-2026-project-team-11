@@ -1,0 +1,109 @@
+[
+ {
+  "section": "1. Integrity",
+  "status": "pass",
+  "skipped": null,
+  "lines": [
+   "966 records, 0 with problems; those are left out of the other sections."
+  ]
+ },
+ {
+  "section": "2. Distribution",
+  "status": "reported",
+  "skipped": null,
+  "lines": [
+   "94 dishes, 32 features.",
+   "Collisions (mean gap <= 0.05): 41 pairs."
+  ]
+ },
+ {
+  "section": "2. Distribution (variant)",
+  "status": "reported",
+  "skipped": null,
+  "lines": [
+   "39 dishes, 32 features.",
+   "Collisions (mean gap <= 0.05): 4 pairs."
+  ]
+ },
+ {
+  "section": "2. Distribution (invariant)",
+  "status": "reported",
+  "skipped": null,
+  "lines": [
+   "55 dishes, 32 features.",
+   "Collisions (mean gap <= 0.05): 29 pairs."
+  ]
+ },
+ {
+  "section": "3. Stability",
+  "status": "reported",
+  "skipped": null,
+  "lines": [
+   "`repeat`: 138 dishes x 3 runs; mean SD of means 0.018 (largest 0.40), of stds 0.010; flips 0.14%",
+   "`shuffle_features`: 138 dishes x 2 runs; mean SD of means 0.015 (largest 0.49), of stds 0.008; flips 0.02%",
+   "`shuffle_foods`: 138 dishes x 2 runs; mean SD of means 0.020 (largest 0.60), of stds 0.011; flips 0.11%",
+   "`repeat` vs `shuffle_features`: averaged means of 138 shared dishes differ by 0.017 per feature",
+   "`repeat` vs `shuffle_foods`: averaged means of 138 shared dishes differ by 0.020 per feature",
+   "`shuffle_features` vs `shuffle_foods`: averaged means of 138 shared dishes differ by 0.021 per feature"
+  ]
+ },
+ {
+  "section": "3. Stability (variant)",
+  "status": "reported",
+  "skipped": null,
+  "lines": [
+   "`repeat`: 39 dishes x 3 runs; mean SD of means 0.017 (largest 0.39), of stds 0.009; flips 0.16%",
+   "`shuffle_features`: 39 dishes x 2 runs; mean SD of means 0.016 (largest 0.49), of stds 0.008; flips 0.08%",
+   "`shuffle_foods`: 39 dishes x 2 runs; mean SD of means 0.020 (largest 0.32), of stds 0.010; flips 0.08%",
+   "`repeat` vs `shuffle_features`: averaged means of 39 shared dishes differ by 0.016 per feature",
+   "`repeat` vs `shuffle_foods`: averaged means of 39 shared dishes differ by 0.019 per feature",
+   "`shuffle_features` vs `shuffle_foods`: averaged means of 39 shared dishes differ by 0.020 per feature"
+  ]
+ },
+ {
+  "section": "3. Stability (invariant)",
+  "status": "reported",
+  "skipped": null,
+  "lines": [
+   "`repeat`: 55 dishes x 3 runs; mean SD of means 0.020 (largest 0.38), of stds 0.011; flips 0.11%",
+   "`shuffle_features`: 55 dishes x 2 runs; mean SD of means 0.017 (largest 0.32), of stds 0.009; flips 0.00%",
+   "`shuffle_foods`: 55 dishes x 2 runs; mean SD of means 0.022 (largest 0.53), of stds 0.012; flips 0.11%",
+   "`repeat` vs `shuffle_features`: averaged means of 55 shared dishes differ by 0.020 per feature",
+   "`repeat` vs `shuffle_foods`: averaged means of 55 shared dishes differ by 0.023 per feature",
+   "`shuffle_features` vs `shuffle_foods`: averaged means of 55 shared dishes differ by 0.024 per feature"
+  ]
+ },
+ {
+  "section": "4. Human reference",
+  "status": "skipped",
+  "skipped": "No rating file. Make the form with export_feature_rating_form and pass the filled copies with --ratings.",
+  "lines": []
+ },
+ {
+  "section": "4. Human reference (variant)",
+  "status": "skipped",
+  "skipped": "No rating file. Make the form with export_feature_rating_form and pass the filled copies with --ratings.",
+  "lines": []
+ },
+ {
+  "section": "4. Human reference (invariant)",
+  "status": "skipped",
+  "skipped": "No rating file. Make the form with export_feature_rating_form and pass the filled copies with --ratings.",
+  "lines": []
+ },
+ {
+  "section": "5. Triplets",
+  "status": "reported",
+  "skipped": null,
+  "lines": [
+   "51 of 51 triplets evaluated: 100.0% pass (a random vector passes 50%); with cosine distance 100.0%.",
+   "By kind and source: close 100% (24), distinct 100% (27), ai 100% (51)"
+  ]
+ },
+ {
+  "section": "6. Downstream impact",
+  "status": "skipped",
+  "skipped": "Needs at least two dishes with both a complete human reference (--ratings) and extracted features.",
+  "lines": []
+ }
+]

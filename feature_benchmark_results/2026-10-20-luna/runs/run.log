@@ -1,0 +1,75 @@
+== repeat x 3
+variant 39개 + invariant 42개 + triplet용 57개 = 138개, repeat x 3회 -> LLM 호출 약 18번
+[repeat-0] 138개
+25/138 처리
+50/138 처리
+75/138 처리
+100/138 처리
+125/138 처리
+138/138 처리
+[repeat-1] 138개
+25/138 처리
+50/138 처리
+75/138 처리
+100/138 처리
+125/138 처리
+138/138 처리
+[repeat-2] 138개
+25/138 처리
+50/138 처리
+75/138 처리
+100/138 처리
+125/138 처리
+138/138 처리
+저장 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna/runs.jsonl
+== shuffle_foods x 2
+variant 39개 + invariant 42개 + triplet용 57개 = 138개, shuffle_foods x 2회 -> LLM 호출 약 12번
+[shuffle_foods-0] 138개
+25/138 처리
+50/138 처리
+75/138 처리
+배치 실패, 하나씩 재시도: ValidationError
+100/138 처리
+125/138 처리
+138/138 처리
+[shuffle_foods-1] 138개
+25/138 처리
+50/138 처리
+75/138 처리
+100/138 처리
+125/138 처리
+138/138 처리
+저장 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna/runs.jsonl
+== shuffle_features x 2
+variant 39개 + invariant 42개 + triplet용 57개 = 138개, shuffle_features x 2회 -> LLM 호출 약 12번
+[shuffle_features-0] 138개
+25/138 처리
+50/138 처리
+75/138 처리
+100/138 처리
+125/138 처리
+138/138 처리
+[shuffle_features-1] 138개
+25/138 처리
+50/138 처리
+75/138 처리
+100/138 처리
+125/138 처리
+138/138 처리
+저장 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna/runs.jsonl
+== report
+PASS     1. Integrity
+REPORTED 2. Distribution
+REPORTED 2. Distribution (variant)
+REPORTED 2. Distribution (invariant)
+REPORTED 3. Stability
+REPORTED 3. Stability (variant)
+REPORTED 3. Stability (invariant)
+SKIPPED  4. Human reference
+SKIPPED  4. Human reference (variant)
+SKIPPED  4. Human reference (invariant)
+REPORTED 5. Triplets
+SKIPPED  6. Downstream impact
+리포트 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna/report/report.md
+결과 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna
+exit 0

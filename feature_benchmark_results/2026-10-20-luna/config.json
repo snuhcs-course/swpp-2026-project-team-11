@@ -1,0 +1,23 @@
+{
+ "name": "2026-10-20-luna",
+ "updated_at": "2026-10-19T12:00:58.582068+00:00",
+ "dishes": {
+  "menu_set": null,
+  "date": "2026-10-20",
+  "limit": null,
+  "invariant_limit": 30
+ },
+ "conditions": {
+  "repeat": 3,
+  "shuffle_foods": 2,
+  "shuffle_features": 2
+ },
+ "batch_size": 25,
+ "seed": 0,
+ "triplets": null,
+ "ratings": [],
+ "extraction_model": "openai:gpt-6-luna",
+ "feature_version": "v2",
+ "prompt_version": "food-name-32-v2-mean-std-draft7",
+ "git_commit": "e76162b"
+}
