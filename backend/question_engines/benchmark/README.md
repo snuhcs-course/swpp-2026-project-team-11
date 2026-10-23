@@ -26,16 +26,21 @@ python manage.py run_engine_benchmark --name 2026-10-20 --date 2026-10-20
 ```
 
 `config.json` records the question limit, the models, the prompts and the scenarios actually
-played. A session that ended in an error (a lost connection) is played again by the next run of
-the same name; three such sessions in a row stop the run.
+played. Its `collection` part is written with the first sessions and kept: a rerun with another
+question limit, DT policy, model or prompt is refused (use a new name), while more repeats or a
+larger `--limit` continue the run. A git commit ending in `-dirty` had uncommitted changes. A
+session that ended in an error (a lost connection) is played again by the next run of the same
+name; three such sessions in a row stop the run.
 
 ```
 NAME/
-  config.json              menus, counts, repeats, models, the LLM engine's and the simulated
-                           user's prompts (text and id), DT policy, git commit
+  config.json              collection (fixed): menus, question limit, DT policy, models, the LLM
+                           engine's and the simulated user's prompts (text and id), git commit;
+                           then counts, repeats and the report's git commit
   scenarios.json           made once; delete it to make new scenarios
   sessions/                sessions.jsonl, simulator_cache.jsonl (readable), run.log
   report.md, summary.json  the sections below
+  plots/                   one panel per situation (plots.py)
   sessions.csv, questions.csv, proposals.csv   one row per session, question, proposal
   1_main_metrics/ 2_baselines/ 3_situations/ 4_paired_tests/ 5_latency_and_cost/
   6_stability/ 7_recommend_now/ 8_similarity/ 9_user_study/
@@ -47,7 +52,7 @@ The user study, 30+ students with two sessions on each engine:
 ```bash
 R=../engine_benchmark_results/2026-10-20
 python manage.py play_engine_session --scenarios $R/scenarios.json --output $R/9_user_study/human/kim.jsonl --tester kim
-# four times per tester; then
+# four times per tester; then (--dry-run first: how many simulated-user calls)
 python manage.py validate_simulator --human $R/9_user_study/human/*.jsonl --output $R/9_user_study/simulator_check.jsonl
 python manage.py run_engine_benchmark --name 2026-10-20   # rewrites the report with them
 ```
@@ -106,15 +111,16 @@ model would understand its own questions too well. A user happy with several men
 answers yes when a question is true of at least one of them, no when of none ("any"
 only when it does not matter for any). A question naming a kind of dish asks for that
 dish: wanting a chicken burger, "fried chicken?" is no and "chicken?" yes. Answers
-are cached, so reruns and repeats ask nothing twice, and the same question gets the
-same answer from either engine. Its calls and tokens are recorded per session
+are cached by model and prompt, so reruns and repeats ask nothing twice, the same
+question gets the same answer from either engine, and another model asks again. Its calls and tokens are recorded per session
 (benchmark overhead, section 5); OpenAI and Google report no price, so cost them
 with the provider's price list.
 
 ## What is recorded (`harness.py`, `metrics.py`, `cost.py`)
 
 Per session (`sessions/sessions.jsonl`): outcome (accepted, gave up after 5 rejected
-proposals, unavailable, error), whether the first proposal was accepted and whether it
+proposals, unavailable, error, with `error_source`: the engine or the simulated user),
+the questions answered (kept when a session fails partway), whether the first proposal was accepted and whether it
 was a wanted menu by the rule, the final menu, engine time per step (the user's time
 is never counted), and a trace with enough to tell later what went wrong:
 
@@ -125,9 +131,11 @@ is never counted), and a trace with enough to tell later what went wrong:
 - at each decision-tree step: its top 5 candidates with probabilities, the entropy,
   and why it asked or proposed;
 - for the LLM engine: every call (latency, attempts, fallback reason, tokens, cost).
-  Why an attempt was retried (a repeated question, an invalid reply) is in `run.log`.
+  The report counts every attempt as a call. Why an attempt was retried (a repeated
+  question, an invalid reply) is in `run.log`.
 
-At 0, 2 and 4 questions a copy of the session is asked to "recommend now"; its LLM use
+At 0, 2 and 4 questions (also when the engine proposes there) a copy of the session is
+asked to "recommend now"; its LLM use
 is counted apart. The copy at 0 questions is the no-question baseline. The simulated
 user's cache says, for each answer, who was asked what under which prompt.
 
@@ -144,8 +152,8 @@ Every table has one row per situation and engine.
 | 1 | Main metrics | questions / session, questions to accept, first pick (and exact), latency p50/p95, cost / session; also LLM sessions with and without a fallback |
 | 2 | Baselines | first pick (exact) against proposing without a question, a random dish and the other engine, as points and as a ratio, with a 95% interval; served situations only |
 | 3 | Situations | success, first pick, interactions, giving up, similarity, regret, rank by situation and certainty |
-| 4 | Paired tests | LLM - decision tree per scenario: bootstrap interval, Wilcoxon, McNemar |
-| 5 | Latency and cost | session and step latency, LLM calls, tokens, cost (mean, p95), fallback and error rates, recommend-now overhead, the simulated user's calls and tokens |
+| 4 | Paired tests | LLM - decision tree per scenario: bootstrap interval; McNemar for yes/no metrics (Wilcoxon is unreliable on their tied repeat means), Wilcoxon for the others |
+| 5 | Latency and cost | session and step latency, LLM calls (every attempt, retries included), tokens, cost (mean, p95), fallback rate, engine and simulated-user error rates, recommend-now overhead, the simulated user's calls and tokens |
 | 6 | Stability | each engine over repeats: same final menu, same outcome, questions SD |
 | 7 | Recommend now | success and similarity after k questions |
 | 8 | Similarity | similarity of accepted and rejected proposals, for the not-served threshold |
@@ -172,6 +180,12 @@ sessions), 20-question limit, decision tree `preference`, LLM engine
 `engine_benchmark_results/2026-10-20/report.md`; a one-page summary with plots:
 `engine_benchmark_results/2026-10-20/benchmark_report.md`.
 
+The sessions were played at `e1eeeae`, a commit from before this branch's history was
+reorganized. The code that plays sessions has only been refactored since: the engine and
+simulated-user prompt ids match this branch (`dbd8e5d890d8`, `45d1d4125724`), and the
+acceptance rule gives the same verdict on every scenario's candidates. The report and the
+plots are regenerated from the saved sessions by this branch's code.
+
 | Situation | First pick (exact), DT / LLM | Success, DT / LLM | Questions, DT / LLM | Latency p50, DT / LLM | LLM cost / session |
 |---|---|---|---|---|---|
 | `in_menu` | 40.0% (32.5%) / 26.7% (20.8%) | 64.2% / 43.3% | 10.2 / 8.2 | 36 ms / 16.2 s | $0.0127 |
@@ -196,6 +210,10 @@ Findings:
   more questions here.
 - `close_alternative`: the decision tree's first pick is 11.7 points higher, not
   significant (LLM - DT: [-31.7, +6.7]).
-- The LLM engine asks 1.3-5.9 fewer questions in every situation (all significant), takes
-  15-19 s per session against 36-61 ms, and is less stable over repeats (same final menu
-  45-90% against 58-93%). 2 of 300 LLM sessions used a fallback.
+- The LLM engine asks 1.3-5.9 fewer questions in every situation (all significant), but it
+  also proposes more and gives up more often (in `in_menu` 45.8% vs 21.7%). Questions plus
+  proposals (interactions) differ significantly only in `not_in_menu`, so "fewer questions"
+  is not "less effort for the user".
+- The LLM engine takes 15-19 s per session against 36-61 ms, and is less stable over
+  repeats (same final menu 45-90% against 58-93%). 2 of 300 LLM sessions used a fallback;
+  33 of its 3,709 decisions needed a second attempt.
