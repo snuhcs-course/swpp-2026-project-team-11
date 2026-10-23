@@ -54,7 +54,7 @@ def session(record, scenario, index: MenuIndex) -> dict:
                                             "engine_ms")}
     row["interactions"] = (record.get("questions") or 0) + (record.get("guesses") or 0)
     llm = record.get("llm") or {}
-    row.update({"llm_calls": llm.get("calls", 0), "input_tokens": llm.get("input_tokens", 0),
+    row.update({"llm_calls": llm_calls(record), "input_tokens": llm.get("input_tokens", 0),
                 "output_tokens": llm.get("output_tokens", 0), "cost_usd": llm.get("cost_usd", 0.0),
                 "fallback": llm.get("fallbacks", 0) > 0})
     row.update(baselines(record, scenario, foods))
@@ -69,6 +69,11 @@ def session(record, scenario, index: MenuIndex) -> dict:
                regret=_round(best - sim) if sim is not None else None,
                rank=round(sum(other < sim for other in known) / max(len(known) - 1, 1), 4) if sim is not None else None)
     return row
+
+
+def llm_calls(record) -> int:
+    """The LLM engine's calls in a session, every attempt (retries included)."""
+    return sum(call["attempts"] for call in record.get("llm_calls") or [])
 
 
 def baselines(record, scenario, foods) -> dict:

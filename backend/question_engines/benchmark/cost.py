@@ -5,7 +5,8 @@
            (or the simulated user's LLM call) is never counted.
 - cost:    the LLM engine's USD per session, as OpenRouter reports it for each call;
            the decision tree makes no call and costs nothing.
-- calls and tokens per session, and the share of sessions with a fallback or an error.
+- calls (every attempt, retries included) and tokens per session, and the share of
+  sessions with a fallback, an engine error or a simulated-user error.
 - the simulated user's calls and tokens: benchmark overhead, not part of the app.
 
 "Recommend now" copies are benchmark overhead, not part of a session: their calls
@@ -19,6 +20,7 @@ import statistics
 import numpy as np
 
 from . import ENGINES
+from .metrics import llm_calls
 
 
 def percentile(values, q):
@@ -45,13 +47,14 @@ def summary(records) -> dict[str, dict]:
             "sessions": len(rows),
             "session_ms_p50": percentile(sessions, 50), "session_ms_p95": percentile(sessions, 95),
             "step_ms_p50": percentile(steps, 50), "step_ms_p95": percentile(steps, 95),
-            "llm_calls": _mean([u.get("calls", 0) for u in llm]),
+            "llm_calls": _mean([llm_calls(r) for r in rows]),
             "input_tokens": _mean([u.get("input_tokens", 0) for u in llm]),
             "output_tokens": _mean([u.get("output_tokens", 0) for u in llm]),
             "cost_usd": _mean([u.get("cost_usd", 0.0) for u in llm]),
             "cost_usd_p95": percentile([u.get("cost_usd", 0.0) for u in llm], 95),
             "fallback_rate": _mean([u.get("fallbacks", 0) > 0 for u in llm]),
-            "error_rate": _mean([r["outcome"] == "error" for r in rows]),
+            "error_rate": _mean([r["outcome"] == "error" and r.get("error_source") != "user" for r in rows]),
+            "user_error_rate": _mean([r.get("error_source") == "user" for r in rows]),
             "recommend_now_calls": sum(u.get("calls", 0) for u in extra),
             "recommend_now_cost_usd": sum(u.get("cost_usd", 0.0) for u in extra),
             "simulator_calls": sum(u.get("calls", 0) for u in user),

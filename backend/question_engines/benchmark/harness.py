@@ -22,10 +22,12 @@ rule_only for a close alternative, person); at each decision-tree step its state
 
 A session ends when a proposal is accepted, after MAX_REJECTIONS rejected
 proposals ("gave_up"), when the engine has nothing left ("unavailable"), or on an
-engine error. At each question count in `anytime`, a copy of the session is
-restored from a snapshot and asked to "recommend now": how good would the
-proposal have been if the user had stopped answering there? At 0 questions that is
-the no-question baseline. The copy's LLM use is counted apart from the session's.
+error; `error_source` says whether the engine or the user (the simulator's LLM)
+failed. At each question count in `anytime`, a copy of the session is restored
+from a snapshot and asked to "recommend now": how good would the proposal have
+been if the user had stopped answering there? At 0 questions that is the
+no-question baseline. The copy's LLM use is counted apart from the session's, and
+LLM calls count every attempt, retries included.
 """
 
 from __future__ import annotations
@@ -83,6 +85,17 @@ class EngineFactory:
         return LLMEngine.from_snapshot(self.menu["candidates"], snapshot, llm=self.llm)
 
 
+class UserError(Exception):
+    """The user (the simulator's LLM, or a person's input) failed, not the engine."""
+
+
+def _ask(function, *args):
+    try:
+        return function(*args)
+    except Exception as error:
+        raise UserError(f"{type(error).__name__}: {error}") from error
+
+
 class Clock:
     def __init__(self):
         self.steps = []
@@ -96,9 +109,10 @@ class Clock:
 
 
 def llm_use(engines) -> dict:
-    """The LLM calls, tokens and cost of LLM engines, from their diagnostics."""
+    """The LLM calls (every attempt), decisions, tokens and cost of LLM engines, from their diagnostics."""
     calls = [call for engine in engines for call in engine.diagnostics()["llm_calls"]]
-    return {"calls": len(calls), "input_tokens": sum(call["input_tokens"] for call in calls),
+    return {"calls": sum(call["attempts"] for call in calls), "decisions": len(calls),
+            "input_tokens": sum(call["input_tokens"] for call in calls),
             "output_tokens": sum(call["output_tokens"] for call in calls),
             "cost_usd": round(sum(call["cost_usd"] for call in calls), 6),
             "fallbacks": sum(call["fallback"] is not None for call in calls)}
@@ -122,22 +136,22 @@ def play(factory, scenario, user, repeat=0, anytime=ANYTIME) -> dict:
               "menu": scenario["menu"], "engine": factory.engine, "repeat": repeat, "outcome": None,
               "final_food_id": None, "first_guess_accepted": None, "first_guess_exact": None,
               "questions": 0, "guesses": 0,
-              "trace": [], "anytime": {}, "error": None}
+              "trace": [], "anytime": {}, "error": None, "error_source": None}
     clock, engine, branches = Clock(), None, []
     try:
         engine = clock(factory.build)
         step = clock(engine.start)
         pending = set(anytime)
         for _ in range(MAX_STEPS):
-            if step["type"] == "question" and step["question_count"] in pending:
+            if step["type"] in ("question", "guess") and step["question_count"] in pending:
                 pending.discard(step["question_count"])
                 record["anytime"][str(step["question_count"])] = _recommend_now(factory, engine, branches)
             if step["type"] == "question":
-                reply = user.answer(step, repeat)
+                reply = _ask(user.answer, step, repeat)
                 record["trace"].append({"question": step["text"], **reply, "state": explain(engine)})
                 step = clock(engine.answer, step["question_id"], reply["answer"])
             elif step["type"] == "guess":
-                verdict = user.judge(step)
+                verdict = _ask(user.judge, step)
                 accepted = verdict["accepted"]
                 record["guesses"] += 1
                 if record["first_guess_accepted"] is None:
@@ -160,9 +174,11 @@ def play(factory, scenario, user, repeat=0, anytime=ANYTIME) -> dict:
                 break
         else:
             record["outcome"] = "step_limit"
-        record["questions"] = engine.question_count
-    except Exception as error:  # an engine bug must not stop a 500-session run
+    except Exception as error:  # a failure must not stop a 500-session run
         record["outcome"], record["error"] = "error", f"{type(error).__name__}: {error}"[:300]
+        record["error_source"] = "user" if isinstance(error, UserError) else "engine"
+    if engine is not None:
+        record["questions"] = engine.question_count
     record["engine_ms"] = round(sum(clock.steps), 2)
     record["step_ms"] = clock.steps
     is_llm = factory.engine == "llm" and engine is not None
