@@ -14,7 +14,9 @@ Run the feature extraction benchmark end to end and keep everything in one folde
 Each condition is collected the given number of times (default repeat 3,
 shuffle_foods 2, shuffle_features 2). Running the same NAME again continues a
 stopped run without repeating finished extractions, then rewrites the report.
---dry-run prints the LLM calls without making any.
+config.json's "extraction" part is written with the first extractions and kept:
+a rerun with other dishes, model, prompt, seed or batch size is refused, so one
+folder never mixes two setups. --dry-run prints the LLM calls without making any.
 """
 
 from __future__ import annotations
@@ -52,11 +54,32 @@ def parse_conditions(text) -> list[tuple[str, int]]:
 
 
 def git_commit() -> str:
+    """The checked-out commit, with "-dirty" when the working tree has uncommitted changes."""
     try:
-        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
+        return subprocess.run(["git", "describe", "--always", "--dirty"], capture_output=True, text=True,
                               cwd=settings.BASE_DIR, check=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return ""
+
+
+def extraction_config(options) -> dict:
+    """What decides the extractions; a folder's runs all share it."""
+    return {"dishes": {"menu_set": options["menu_set"], "date": options["date"] and options["date"].isoformat(),
+                       "limit": options["limit"], "invariant_limit": options["invariant_limit"]},
+            "triplets": options["triplets"], "batch_size": options["batch_size"], "seed": options["seed"],
+            "model": llm.model_id(), "feature_version": FEATURE_VERSION, "prompt_version": PROMPT_VERSION}
+
+
+def checked_extraction(saved, current) -> dict:
+    """The folder's extraction settings: the saved ones when runs exist and match `current`."""
+    if saved is None:
+        return current | {"git_commit": git_commit()}
+    saved = saved["extraction"]
+    changed = [key for key in current if saved.get(key) != current[key]]
+    if changed:
+        raise CommandError(f"이 폴더의 추출 설정과 다릅니다 ({', '.join(changed)}). 같은 설정으로 실행하거나 "
+                           "새 --name을 쓰세요.")
+    return saved
 
 
 class Command(BaseCommand):
@@ -90,18 +113,20 @@ class Command(BaseCommand):
                   "--invariant-limit", str(options["invariant_limit"]), "--seed", str(options["seed"])]
         common += ["--limit", str(options["limit"])] if options["limit"] is not None else []
         common += ["--triplets", options["triplets"]] if options["triplets"] else []
+        config_path = folder / "config.json"
+        saved = json.loads(config_path.read_text(encoding="utf-8")) \
+            if runs_path.exists() and config_path.exists() else None
+        extraction = checked_extraction(saved, extraction_config(options))
         if options["dry_run"]:
             common.append("--dry-run")
         else:
             runs_path.parent.mkdir(parents=True, exist_ok=True)
-            (folder / "config.json").write_text(json.dumps({
-                "name": options["name"], "updated_at": timezone.now().isoformat(),
-                "dishes": {"menu_set": options["menu_set"], "date": options["date"] and options["date"].isoformat(),
-                           "limit": options["limit"], "invariant_limit": options["invariant_limit"]},
-                "conditions": dict(conditions), "batch_size": options["batch_size"], "seed": options["seed"],
-                "triplets": options["triplets"], "ratings": ratings,
-                "extraction_model": llm.model_id(), "feature_version": FEATURE_VERSION,
-                "prompt_version": PROMPT_VERSION, "git_commit": git_commit(),
+            collected = dict(saved["conditions"]) if saved else {}
+            for condition, count in conditions:
+                collected[condition] = max(count, collected.get(condition, 0))
+            config_path.write_text(json.dumps({
+                "name": options["name"], "updated_at": timezone.now().isoformat(), "extraction": extraction,
+                "conditions": collected, "ratings": ratings, "report_git_commit": git_commit(),
             }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
         for condition, count in conditions:

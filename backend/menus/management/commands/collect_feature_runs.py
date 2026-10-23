@@ -5,7 +5,8 @@ Extract the same dishes several times and store every answer, so benchmark_featu
 can run without calling the LLM again. This is the only benchmark step that costs
 API calls; --dry-run prints how many. Run it once per condition (runs.py):
 repeat, shuffle_foods, shuffle_features. Runs already in --output are skipped, so a
-stopped collection continues where it stopped.
+stopped collection continues where it stopped; a run made with another model or prompt
+is refused instead of being mixed in.
 
 Dishes come from --menu-set (build_eval_menu_set, marked variant or invariant) or
 from one day in the database (--date, marked by the fixed-menu catalog), plus the
@@ -13,7 +14,8 @@ dishes of the triplet file. --limit samples the variant dishes and
 --invariant-limit the invariant ones, spread over cafeterias or food groups.
 
 --stored copies the v2 features the database already holds for --date as one run,
-with no LLM call: enough for the integrity and distribution sections.
+with no LLM call: enough for the integrity and distribution sections. It carries
+meal_variety (33 keys), so it goes in a file of its own.
 """
 
 from __future__ import annotations
@@ -44,6 +46,22 @@ def menu_dishes(options) -> dict[str, dict]:
     fixed_dishes = menu_set.catalog_dishes()
     return {food.name: {"source": menu_set.segment(food.name, fixed_dishes), "group": food.food_group}
             for food in stored_foods(options["date"] or timezone.localdate())}
+
+
+def existing(output) -> list[runs.Record]:
+    return runs.load(output) if output.exists() else []
+
+
+def check_resume(records, plan, model) -> None:
+    """Refuse to continue runs that an earlier collection made with another model or prompt."""
+    if any(r.condition == runs.STORED for r in records):
+        raise CommandError("이 파일에는 --stored 기록이 있습니다. LLM 추출은 다른 --output에 저장하세요.")
+    expected = {run: runs.prompt_hash(prompt.build_system_prompt(features)) for run, _, features in plan}
+    for record in records:
+        if record.run in expected and (record.model, record.prompt_hash) != (model, expected[record.run]):
+            raise CommandError(f"{record.run}은 다른 설정(모델 {record.model}, 프롬프트 {record.prompt_hash})으로 "
+                               f"추출됐습니다. 지금 설정(모델 {model}, 프롬프트 {expected[record.run]})으로 이어서 "
+                               "추출할 수 없으니 다른 --output을 쓰세요.")
 
 
 def sample(dishes, source, limit, seed) -> list[str]:
@@ -95,9 +113,11 @@ class Command(BaseCommand):
             raise CommandError("추출할 음식이 없습니다. --menu-set이나 --date를 확인하세요.")
 
         output = pathlib.Path(options["output"])
-        done = {(r.run, r.name) for r in runs.load(output)} if output.exists() else set()
-        plan = [(run, [n for n in order if (run, n) not in done], features)
-                for run, order, features in runs.plan(names, options["condition"], options["repeats"], options["seed"])]
+        records = existing(output)
+        planned = runs.plan(names, options["condition"], options["repeats"], options["seed"])
+        check_resume(records, planned, menu_llm.model_id())
+        done = {(r.run, r.name) for r in records}
+        plan = [(run, [n for n in order if (run, n) not in done], features) for run, order, features in planned]
         total = sum(runs.calls(todo, options["batch_size"]) for _, todo, _ in plan)
         counts = {kind: sum(s == kind for s in source.values()) for kind in (runs.VARIANT, runs.INVARIANT, runs.SUITE)}
         self.stdout.write(f"variant {counts['variant']}개 + invariant {counts['invariant']}개 + triplet용 "
@@ -117,26 +137,33 @@ class Command(BaseCommand):
             results, failed = extractor.extract(todo, llm, batch_size=options["batch_size"],
                                                 on_progress=self.stdout.write, system_prompt=system_prompt)
             # Saved run by run, so a stopped collection keeps its progress.
-            records = []
+            new = []
             for name, item in results.items():
                 values = item.features.model_dump()
-                records.append(runs.Record(
+                new.append(runs.Record(
                     run=run, condition=options["condition"], source=source[name], name=name,
                     means={k: v["mean"] for k, v in values.items()}, stds={k: v["std"] for k, v in values.items()},
                     group=dishes.get(name, {}).get("group", ""), model=menu_llm.model_id(),
                     prompt_hash=runs.prompt_hash(system_prompt)))
-            runs.append(output, records)
+            runs.append(output, new)
             for name in failed:
                 self.stdout.write(self.style.WARNING(f"  실패: {name}"))
         self.stdout.write(self.style.SUCCESS(f"저장 -> {output}"))
 
     def copy_stored(self, options):
+        run = f"{runs.STORED}-0"
+        records = existing(pathlib.Path(options["output"]))
+        if any(r.condition != runs.STORED for r in records):
+            raise CommandError("이 파일에는 LLM 추출 기록이 있습니다. --stored는 다른 --output에 저장하세요.")
+        if any(r.run == run for r in records):
+            self.stdout.write(f"{run}이 이미 있어 건너뜁니다 -> {options['output']}")
+            return
         fixed_dishes = menu_set.catalog_dishes()
         foods = [f for f in stored_foods(options["date"] or timezone.localdate()) if f.feature_version == FEATURE_VERSION]
         if not foods:
             raise CommandError("그 날짜에 v2 feature가 저장된 음식이 없습니다.")
         runs.append(options["output"], [
-            runs.Record(run=f"{runs.STORED}-0", condition=runs.STORED,
+            runs.Record(run=run, condition=runs.STORED,
                         source=menu_set.segment(food.name, fixed_dishes),
                         name=f"{food.name} (세트)" if food.is_set else food.name,
                         means=food.features, stds=food.feature_std, group=food.food_group,
