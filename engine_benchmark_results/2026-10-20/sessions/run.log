@@ -89,6 +89,6 @@ LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like h
   260/289 세션
   280/289 세션
   289/289 세션
-저장 -> /private/tmp/claude-501/-Users-bonjaeku-projects-swpp-2026-project-team-11/e0e6a88f-2161-4be7-8cdb-5f148809d073/scratchpad/eng/engine_benchmark_results/2026-10-20/sessions/sessions.jsonl (가상 사용자 호출 2254번)
-세션 600개 -> /private/tmp/claude-501/-Users-bonjaeku-projects-swpp-2026-project-team-11/e0e6a88f-2161-4be7-8cdb-5f148809d073/scratchpad/eng/engine_benchmark_results/2026-10-20/report.md
-결과 -> /private/tmp/claude-501/-Users-bonjaeku-projects-swpp-2026-project-team-11/e0e6a88f-2161-4be7-8cdb-5f148809d073/scratchpad/eng/engine_benchmark_results/2026-10-20
+저장 -> engine_benchmark_results/2026-10-20/sessions/sessions.jsonl (가상 사용자 호출 2254번)
+세션 600개 -> engine_benchmark_results/2026-10-20/report.md
+결과 -> engine_benchmark_results/2026-10-20

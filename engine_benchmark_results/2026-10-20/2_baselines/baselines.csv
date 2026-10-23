@@ -10,7 +10,7 @@ multiple,decision_tree,random dish,20,6.7%,2.7%,+4.0,"[-2.7, +12.6]",+150%,no,ye
 multiple,decision_tree,llm,20,6.7%,21.7%,-15.0,"[-31.7, +1.7]",-69%,no,no
 multiple,llm,no question,20,21.7%,8.3%,+13.3,"[-3.3, +30.0]",+160%,no,yes
 multiple,llm,random dish,20,21.7%,2.7%,+19.0,"[+7.2, +32.5]",+712%,yes,yes
-multiple,llm,decision_tree,20,21.7%,6.7%,+15.0,"[-1.7, +31.7]",+225%,no,yes
+multiple,llm,decision_tree,20,21.7%,6.7%,+15.0,"[-1.7, +31.7]",+225%,yes,yes
 close_alternative,decision_tree,no question,20,26.7%,5.0%,+21.7,"[+6.7, +38.3]",+433%,yes,yes
 close_alternative,decision_tree,random dish,20,26.7%,1.0%,+25.6,"[+9.0, +44.0]",+2518%,yes,yes
 close_alternative,decision_tree,llm,20,26.7%,15.0%,+11.7,"[-6.7, +31.7]",+78%,no,yes

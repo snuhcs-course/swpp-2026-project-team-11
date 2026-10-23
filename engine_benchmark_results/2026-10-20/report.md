@@ -1,5 +1,7 @@
 # Question engine benchmark: decision tree (MVP1) vs LLM engine (MVP2)
 
+Plots by situation: `plots/` (first pick, outcomes, paired differences, questions / latency / cost, first pick by certainty).
+
 100 scenarios on 1 menus, 600 sessions (decision_tree 300, llm 300).
 
 ## 1. Main metrics
@@ -54,7 +56,7 @@
 | multiple | decision_tree | llm | 20 | 6.7% | 21.7% | -15.0 | [-31.7, +1.7] | -69% | no | no |
 | multiple | llm | no question | 20 | 21.7% | 8.3% | +13.3 | [-3.3, +30.0] | +160% | no | yes |
 | multiple | llm | random dish | 20 | 21.7% | 2.7% | +19.0 | [+7.2, +32.5] | +712% | yes | yes |
-| multiple | llm | decision_tree | 20 | 21.7% | 6.7% | +15.0 | [-1.7, +31.7] | +225% | no | yes |
+| multiple | llm | decision_tree | 20 | 21.7% | 6.7% | +15.0 | [-1.7, +31.7] | +225% | yes | yes |
 | close_alternative | decision_tree | no question | 20 | 26.7% | 5.0% | +21.7 | [+6.7, +38.3] | +433% | yes | yes |
 | close_alternative | decision_tree | random dish | 20 | 26.7% | 1.0% | +25.6 | [+9.0, +44.0] | +2518% | yes | yes |
 | close_alternative | decision_tree | llm | 20 | 26.7% | 15.0% | +11.7 | [-6.7, +31.7] | +78% | no | yes |
@@ -112,26 +114,26 @@
 
 ## 4. Paired tests
 
-- LLM - decision tree per scenario, each engine's mean over its repeats; positive = the LLM engine is higher. 95% bootstrap interval, Wilcoxon signed-rank p, McNemar p for yes/no metrics.
+- LLM - decision tree per scenario, each engine's mean over its repeats; positive = the LLM engine is higher. 95% bootstrap interval; McNemar p for yes/no metrics, Wilcoxon signed-rank p for the others.
 
 **Paired comparison** (`4_paired_tests/paired.csv`)
 
 | situation | metric | pairs | decision tree | llm | diff | 95% CI | Wilcoxon p | McNemar p |
 |---|---|---|---|---|---|---|---|---|
-| in_menu | first_guess_accepted | 40 | 0.400 | 0.267 | -0.133 | [-0.267, 0.008] | 0.041 | 0.092 |
-| in_menu | first_guess_exact | 40 | 0.325 | 0.208 | -0.117 | [-0.242, -0.000] | 0.051 | 0.109 |
+| in_menu | first_guess_accepted | 40 | 0.400 | 0.267 | -0.133 | [-0.267, 0.008] | - | 0.092 |
+| in_menu | first_guess_exact | 40 | 0.325 | 0.208 | -0.117 | [-0.242, -0.000] | - | 0.109 |
 | in_menu | questions | 40 | 10.2 | 8.225 | -1.992 | [-3.025, -0.967] | 0.002 | - |
 | in_menu | engine_ms | 40 | 51.4 | 16,061.1 | 16,009.6 | [14,915.5, 17,160.3] | 0.000 | - |
 | in_menu | cost_usd | 40 | 0.000 | 0.013 | 0.013 | [0.012, 0.014] | 0.000 | - |
-| in_menu | success | 40 | 0.642 | 0.433 | -0.208 | [-0.325, -0.100] | 0.000 | 0.065 |
-| in_menu | interactions | 40 | 12.8 | 11.7 | -1.133 | [-2.500, 0.200] | 0.197 | - |
+| in_menu | success | 40 | 0.642 | 0.433 | -0.208 | [-0.325, -0.100] | - | 0.065 |
+| in_menu | interactions | 40 | 12.8 | 11.7 | -1.133 | [-2.500, 0.200] | 0.194 | - |
 | in_menu | similarity | 31 | 0.987 | 0.988 | 0.001 | [-0.001, 0.004] | 0.249 | - |
-| multiple | first_guess_accepted | 20 | 0.317 | 0.383 | 0.067 | [-0.167, 0.283] | 0.954 | 0.727 |
-| multiple | first_guess_exact | 20 | 0.067 | 0.217 | 0.150 | [-0.017, 0.317] | 0.104 | 0.625 |
-| multiple | questions | 20 | 9.150 | 7.883 | -1.267 | [-2.333, -0.133] | 0.042 | - |
+| multiple | first_guess_accepted | 20 | 0.317 | 0.383 | 0.067 | [-0.167, 0.283] | - | 0.727 |
+| multiple | first_guess_exact | 20 | 0.067 | 0.217 | 0.150 | [-0.017, 0.317] | - | 0.625 |
+| multiple | questions | 20 | 9.150 | 7.883 | -1.267 | [-2.333, -0.133] | 0.040 | - |
 | multiple | engine_ms | 20 | 56.3 | 15,828.0 | 15,771.7 | [13,862.3, 17,831.3] | 0.000 | - |
 | multiple | cost_usd | 20 | 0.000 | 0.012 | 0.012 | [0.011, 0.014] | 0.000 | - |
-| multiple | success | 20 | 0.300 | 0.383 | 0.083 | [-0.133, 0.300] | 0.431 | 1.000 |
+| multiple | success | 20 | 0.300 | 0.383 | 0.083 | [-0.133, 0.300] | - | 1.000 |
 | multiple | interactions | 20 | 12.1 | 10.8 | -1.200 | [-2.750, 0.483] | 0.173 | - |
 | multiple | similarity | 15 | 0.946 | 0.978 | 0.032 | [0.012, 0.054] | 0.010 | - |
 | not_in_menu | first_guess_accepted | 20 | 0.050 | 0.083 | 0.033 | [-0.117, 0.167] | - | 1.000 |
@@ -140,31 +142,31 @@
 | not_in_menu | cost_usd | 20 | 0.000 | 0.015 | 0.015 | [0.014, 0.016] | 0.000 | - |
 | not_in_menu | interactions | 20 | 19.5 | 13.5 | -6.000 | [-7.450, -4.383] | 0.000 | - |
 | not_in_menu | similarity | 2 | 0.928 | 0.910 | -0.018 | [-0.036, 0.000] | - | - |
-| close_alternative | first_guess_accepted | 20 | 0.267 | 0.150 | -0.117 | [-0.317, 0.067] | 0.165 | 0.625 |
-| close_alternative | first_guess_exact | 20 | 0.267 | 0.150 | -0.117 | [-0.317, 0.067] | 0.165 | 0.625 |
-| close_alternative | questions | 20 | 10.4 | 7.767 | -2.600 | [-4.267, -1.067] | 0.017 | - |
+| close_alternative | first_guess_accepted | 20 | 0.267 | 0.150 | -0.117 | [-0.317, 0.067] | - | 0.625 |
+| close_alternative | first_guess_exact | 20 | 0.267 | 0.150 | -0.117 | [-0.317, 0.067] | - | 0.625 |
+| close_alternative | questions | 20 | 10.4 | 7.767 | -2.600 | [-4.267, -1.067] | 0.016 | - |
 | close_alternative | engine_ms | 20 | 48.4 | 15,650.1 | 15,601.8 | [14,132.6, 17,020.6] | 0.000 | - |
 | close_alternative | cost_usd | 20 | 0.000 | 0.012 | 0.012 | [0.011, 0.014] | 0.000 | - |
-| close_alternative | success | 20 | 0.633 | 0.467 | -0.167 | [-0.333, 0.017] | 0.057 | 0.125 |
-| close_alternative | interactions | 20 | 13.6 | 11.5 | -2.100 | [-4.200, -0.000] | 0.073 | - |
+| close_alternative | success | 20 | 0.633 | 0.467 | -0.167 | [-0.333, 0.017] | - | 0.125 |
+| close_alternative | interactions | 20 | 13.6 | 11.5 | -2.100 | [-4.200, -0.000] | 0.070 | - |
 | close_alternative | similarity | 12 | 1.000 | 1.000 | 0.000 | [0.000, 0.000] | - | - |
 
 ## 5. Latency and cost
 
-- Engine time only. LLM calls, tokens and cost are the engine's own, as OpenRouter reported them; "recommend now" copies are benchmark overhead and counted apart (totals).
+- Engine time only. LLM calls (every attempt, retries included), tokens and cost are the engine's own, as OpenRouter reported them; "recommend now" copies are benchmark overhead and counted apart (totals).
 
 **Per situation** (`5_latency_and_cost/latency_cost.csv`)
 
-| situation | engine | sessions | session ms p50 | p95 | step ms p50 | p95 | LLM calls | input tokens | output tokens | cost / session | cost p95 | sessions with a fallback | errors | recommend-now calls | recommend-now cost |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| in_menu | decision_tree | 120 | 36.1 | 106.6 | 0.930 | 15.2 | 0.000 | 0 | 0 | $0.00000 | $0.00000 | 0.0% | 0.0% | 0 | $0.00000 |
-| in_menu | llm | 120 | 16,204.1 | 24,128.3 | 1,139.0 | 2,501.3 | 12.1 | 30,461 | 1,409 | $0.01266 | $0.01930 | 0.0% | 0.0% | 356 | $0.29886 |
-| multiple | decision_tree | 60 | 45.7 | 122.4 | 0.980 | 15.5 | 0.000 | 0 | 0 | $0.00000 | $0.00000 | 0.0% | 0.0% | 0 | $0.00000 |
-| multiple | llm | 60 | 15,027.3 | 27,776.5 | 1,146.1 | 2,829.1 | 11.2 | 28,220 | 1,455 | $0.01210 | $0.02067 | 1.7% | 0.0% | 176 | $0.14795 |
-| not_in_menu | decision_tree | 60 | 60.6 | 131.0 | 0.850 | 15.7 | 0.000 | 0 | 0 | $0.00000 | $0.00000 | 0.0% | 0.0% | 0 | $0.00000 |
-| not_in_menu | llm | 60 | 18,759.0 | 28,378.0 | 1,155.3 | 2,486.6 | 14.3 | 36,220 | 1,629 | $0.01494 | $0.02236 | 1.7% | 0.0% | 180 | $0.15115 |
-| close_alternative | decision_tree | 60 | 42.0 | 108.1 | 0.520 | 14.0 | 0.000 | 0 | 0 | $0.00000 | $0.00000 | 0.0% | 0.0% | 0 | $0.00000 |
-| close_alternative | llm | 60 | 15,888.4 | 21,678.0 | 1,128.3 | 2,455.1 | 12.1 | 30,068 | 1,333 | $0.01235 | $0.01764 | 0.0% | 0.0% | 179 | $0.15073 |
+| situation | engine | sessions | session ms p50 | p95 | step ms p50 | p95 | LLM calls | input tokens | output tokens | cost / session | cost p95 | sessions with a fallback | engine errors | simulated-user errors | recommend-now calls | recommend-now cost |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| in_menu | decision_tree | 120 | 36.1 | 106.6 | 0.930 | 15.2 | 0.000 | 0 | 0 | $0.00000 | $0.00000 | 0.0% | 0.0% | 0.0% | 0 | $0.00000 |
+| in_menu | llm | 120 | 16,204.1 | 24,128.3 | 1,139.0 | 2,501.3 | 12.2 | 30,461 | 1,409 | $0.01266 | $0.01930 | 0.0% | 0.0% | 0.0% | 356 | $0.29886 |
+| multiple | decision_tree | 60 | 45.7 | 122.4 | 0.980 | 15.5 | 0.000 | 0 | 0 | $0.00000 | $0.00000 | 0.0% | 0.0% | 0.0% | 0 | $0.00000 |
+| multiple | llm | 60 | 15,027.3 | 27,776.5 | 1,146.1 | 2,829.1 | 11.3 | 28,220 | 1,455 | $0.01210 | $0.02067 | 1.7% | 0.0% | 0.0% | 176 | $0.14795 |
+| not_in_menu | decision_tree | 60 | 60.6 | 131.0 | 0.850 | 15.7 | 0.000 | 0 | 0 | $0.00000 | $0.00000 | 0.0% | 0.0% | 0.0% | 0 | $0.00000 |
+| not_in_menu | llm | 60 | 18,759.0 | 28,378.0 | 1,155.3 | 2,486.6 | 14.5 | 36,220 | 1,629 | $0.01494 | $0.02236 | 1.7% | 0.0% | 0.0% | 180 | $0.15115 |
+| close_alternative | decision_tree | 60 | 42.0 | 108.1 | 0.520 | 14.0 | 0.000 | 0 | 0 | $0.00000 | $0.00000 | 0.0% | 0.0% | 0.0% | 0 | $0.00000 |
+| close_alternative | llm | 60 | 15,888.4 | 21,678.0 | 1,128.3 | 2,455.1 | 12.1 | 30,068 | 1,333 | $0.01235 | $0.01764 | 0.0% | 0.0% | 0.0% | 179 | $0.15073 |
 
 **Simulated user (benchmark overhead, totals)** (`5_latency_and_cost/simulator_usage.csv`)
 
