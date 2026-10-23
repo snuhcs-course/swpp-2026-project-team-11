@@ -368,11 +368,15 @@ Benchmarks are experiments that inform design choices; tests check that the code
 that can be measured. One command runs it end to end and keeps everything in
 `feature_benchmark_results/NAME/`, committed so the team shares runs, reports and rating
 forms (`benchmark_features` alone writes to the gitignored `feature_benchmark_report/`).
-Running the same name again continues a stopped run and rewrites the report:
+Running the same name again continues a stopped run and rewrites the report. Its
+extraction settings (dishes, model, prompt version, seed, batch size, git commit) are kept
+in `config.json` from the first extractions, and a rerun with other settings is refused, so a
+folder never mixes two setups; `collect_feature_runs` likewise refuses to continue a run made
+with another model or prompt. A git commit ending in `-dirty` had uncommitted changes:
 
 ```
 NAME/
-  config.json              dishes, conditions, extraction model, prompt version, git commit
+  config.json              extraction settings (fixed), conditions, ratings, git commits
   report.md, summary.json  every section's results
   runs/runs.jsonl          every extraction
   1_integrity/ 2_distribution/ 3_stability/ 4_human_reference/ 5_triplets/ 6_downstream_impact/
@@ -405,16 +409,21 @@ python manage.py benchmark_features --runs runs.jsonl --ratings kim.xlsx lee.xls
 
 | Section | What it measures | Needs |
 |---|---|---|
-| 1. Integrity | 33 keys (32 measured + `meal_variety` for stored foods), bounds, std² <= mean(1 - mean). The only pass/fail | any run |
+| 1. Integrity | 33 keys (32 measured + `meal_variety` for stored foods), bounds, two decimals, std² <= mean(1 - mean). The only pass/fail | any run |
 | 2. Distribution | each feature's histogram of means, and dish pairs the features cannot tell apart (collisions) | any run |
-| 3. Stability | spread over repeated runs: `repeat`, `shuffle_foods` (batch neighbours), `shuffle_features` (rubric order) | 2+ runs per condition |
-| 4. Human reference | LLM means and stds against human ratings, next to how far raters are from each other | `--ratings` |
+| 3. Stability | spread over repeated runs: `repeat`, `shuffle_foods` (batch neighbours), `shuffle_features` (rubric order); each dish over all its runs | 2+ runs per condition |
+| 4. Human reference | LLM means and stds against human ratings, next to how far raters are from each other on the same dishes | `--ratings` |
 | 5. Triplets | "anchor is closer to near than to far", by kind (`close` / `distinct`) and source (`ai` / `human`) | the triplet dishes |
 | 6. Downstream impact | the decision tree with AI vs human features, same policy and simulated user: first-pick acceptance, interactions to acceptance | `--ratings` |
 
 - Sections 2-4 are also reported apart for variant dishes (daily menus) and invariant dishes
   (the fixed-menu catalog). `--date D` instead of `--menu-set` takes one day from the database,
-  and `--stored` copies its v2 features as a run with no LLM call.
+  and `--stored` copies its v2 features as a run with no LLM call, into a file of its own (it
+  has 33 keys, extraction runs 32).
+- Stability: the default conditions have 3 `repeat` runs and 2 of each shuffle. An SD from two
+  runs is noisy, so small differences between conditions are not meaningful; the report says so.
+- Human reference, the ratio (LLM-to-rater gap over rater-to-rater gap): about 1 means the LLM
+  looks like one more rater; an LLM at the raters' true average would score about 0.7 (1/√2).
 - The rating form has a `<feature>_mean` and `<feature>_std` column per rubric feature and a
   `recipe_notes` column. A `.xlsx` form checks the input as raters type and carries the guide
   and the rubric; a `.csv` form is the same columns as plain text. Raters use the extractor's
@@ -430,6 +439,13 @@ python manage.py benchmark_features --runs runs.jsonl --ratings kim.xlsx lee.xls
   `menus/features/benchmark/data/triplets.json` is an AI draft, and `--triplets` takes another file.
 - The downstream simulated user is the decision tree's `ResponseOracle`. Its answer
   probabilities are assumptions that real user logs should calibrate once the app records them.
+- Downstream favours the human features by design: the simulated user answers from them, so
+  the human-feature engine plays against its own truth. The gap measures how much the AI
+  features' disagreement with the raters changes recommendations, not that human features
+  recommend better.
+- `feature_benchmark_results/2026-10-20-luna/` was collected at `e76162b` with the menu model
+  setting (#12) applied but not yet committed, hence `e76162b-dirty` in its config. The prompts
+  are unchanged since: every run's `prompt_hash` matches the prompt this code builds.
 
 ## Making a new shared snapshot
 

@@ -10,6 +10,11 @@ features. Both runs see the same answers for the same questions. Reported per
 feature source: first-pick acceptance (the first proposal was accepted) and
 interactions to acceptance (questions + proposals).
 
+The comparison favours the human features by design: the simulated user answers
+from them, so the human-feature engine plays against its own truth. The gap
+measures how far the AI features disagree with the raters in ways that change the
+recommendation, not which features recommend better.
+
 ResponseOracle's answer probabilities are fixed assumptions. They are what real
 user logs should calibrate once the app records them.
 """
@@ -87,7 +92,10 @@ def evaluate(runset, reference, policy, trials=None, seed=20261020) -> dict:
     lines = [f"{len(shared)} dishes, {len(targets)} targets, policy `{policy}`, simulated answers from the "
              "human features.",
              f"First pick: AI features lose {sum(h['first_pick'] and not a['first_pick'] for h, a in pairs)} and "
-             f"win {sum(a['first_pick'] and not h['first_pick'] for h, a in pairs)} targets against human features."]
+             f"win {sum(a['first_pick'] and not h['first_pick'] for h, a in pairs)} targets against human features.",
+             "The human features are the simulated user's truth, so they are favoured by design: the gap is how "
+             "much the AI features' disagreement with the raters changes recommendations, not which recommend "
+             "better."]
     return {"title": title, "lines": lines, "tables": [
         ("downstream.csv", "Per feature source",
          ["features", "sessions", "first-pick acceptance", f"accepted within {MAX_REJECTIONS} proposals",
