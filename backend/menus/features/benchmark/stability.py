@@ -6,7 +6,9 @@ Reported per condition (runs.py): `repeat` shows the model's own randomness,
 effect of the rubric's order. Per condition:
 - mean SD: standard deviation over runs of each (dish, feature) mean, averaged; also for stds
 - flips: cells whose mean was <= LOW in one run and >= HIGH in another
-and how far the conditions' averaged means are apart.
+and how far the conditions' averaged means are apart. Each dish counts all of its
+runs. An SD from two runs is noisy, so conditions with different run counts are
+not compared closely (the report says so).
 """
 
 from __future__ import annotations
@@ -20,16 +22,19 @@ def evaluate(runset) -> dict:
     repeats = {condition: dishes for condition, dishes in runset.repeats().items() if dishes}
     if not repeats:
         return {"title": "3. Stability", "skipped": "No dish was extracted twice under one condition."}
-    lines, by_feature, cells, averaged = [], [], [], {}
+    lines, by_feature, cells, averaged, run_counts = [], [], [], {}, {}
     for condition, dishes in sorted(repeats.items()):
         names = sorted(dishes)
-        runs = min(len(v) for v in dishes.values())
-        means = np.array([[dishes[n][i][0] for i in range(runs)] for n in names])  # dish x run x feature
-        stds = np.array([[dishes[n][i][1] for i in range(runs)] for n in names])
-        averaged[condition] = {n: means[i].mean(axis=0) for i, n in enumerate(names)}
-        sd, sd_std = means.std(axis=1, ddof=1), stds.std(axis=1, ddof=1)
-        low, high = means.min(axis=1), means.max(axis=1)
+        per_dish = [(np.array([m for m, _ in dishes[n]]), np.array([s for _, s in dishes[n]])) for n in names]
+        averaged[condition] = {n: means.mean(axis=0) for n, (means, _) in zip(names, per_dish)}
+        sd = np.array([means.std(axis=0, ddof=1) for means, _ in per_dish])  # dish x feature
+        sd_std = np.array([stds.std(axis=0, ddof=1) for _, stds in per_dish])
+        low = np.array([means.min(axis=0) for means, _ in per_dish])
+        high = np.array([means.max(axis=0) for means, _ in per_dish])
         flips = (low <= LOW) & (high >= HIGH)
+        counts = sorted({len(dishes[n]) for n in names})
+        run_counts[condition] = counts
+        runs = str(counts[0]) if len(counts) == 1 else f"{counts[0]}-{counts[-1]}"
         lines.append(f"`{condition}`: {len(names)} dishes x {runs} runs; mean SD of means {sd.mean():.3f} "
                      f"(largest {sd.max():.2f}), of stds {sd_std.mean():.3f}; flips {flips.mean():.2%}")
         for j, key in enumerate(runset.keys):
@@ -38,6 +43,10 @@ def evaluate(runset) -> dict:
         for i, j in zip(*np.nonzero(high - low >= 0.2)):
             cells.append([condition, names[i], runset.keys[j], float(low[i, j]), float(high[i, j]),
                           "flip" if flips[i, j] else ""])
+    if len({tuple(c) for c in run_counts.values()}) > 1:
+        lines.append("The conditions have different run counts (" + ", ".join(
+            f"{c} {'/'.join(map(str, n))}" for c, n in run_counts.items()) + "). An SD from two runs is noisy, so "
+            "small differences between conditions are not meaningful.")
     conditions = sorted(averaged)
     for a, first in enumerate(conditions):
         for second in conditions[a + 1:]:

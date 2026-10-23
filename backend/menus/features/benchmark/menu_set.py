@@ -8,8 +8,9 @@
 
 build() walks a menu history of many past days the way fetch_menus does: every
 line is resolved by menus/preprocess (catalog, cache, then the LLM), and the
-dishes of lines outside the catalog become the variant set. A dish that is also
-on a fixed board counts as invariant, because its features can be kept.
+dishes of lines outside the catalog become the variant set. A dish the catalog
+also has counts as invariant, because its features can be kept, whether or not its
+fixed board appears in the history (as segment() decides for one day).
 
     {"built_from": ["2026-09-15", "2026-10-13"], "days": 21,
      "invariant": [{"name": "핫치킨버거", "restaurants": ["버거운버거"]}],
@@ -65,7 +66,8 @@ def preprocessing_calls(n_lines: int, batch_size: int = 25) -> int:
 def build(records, mappings, catalog=None) -> dict:
     """The menu set of a history: `records` are siksha MenuRecords, `mappings` the
     mapper's {line key: Mapping} for their lines."""
-    catalog_keys = set(fixed.catalog_lines(catalog if catalog is not None else fixed.load_catalog()))
+    catalog = catalog if catalog is not None else fixed.load_catalog()
+    catalog_keys, catalog_names = set(fixed.catalog_lines(catalog)), catalog_dishes(catalog)
     invariant = defaultdict(set)
     variant = defaultdict(lambda: {"dates": set(), "restaurants": set(), "lines": [], "sources": set()})
     for record in records:
@@ -76,7 +78,7 @@ def build(records, mappings, catalog=None) -> dict:
         if not mapping.is_meal:
             continue
         for dish in mapping.dishes:
-            if key in catalog_keys:
+            if key in catalog_keys or dish in catalog_names:
                 invariant[dish].add(record.restaurant_name)
                 continue
             entry = variant[dish]

@@ -5,6 +5,7 @@
   database (stored) also carries meal_variety, so 33
 - bounds: 0 <= mean <= 1, 0 <= std <= 0.5, and std² <= mean * (1 - mean), the
   largest variance a measurement in [0, 1] with that mean can have
+- precision: at most two decimals, as the extractor asks
 
 Records that fail are listed and left out of every other section.
 """
@@ -33,6 +34,8 @@ def problems(record) -> list[str]:
             found.append(f"{key}: not a finite number")
         elif not (0 <= mean <= 1 and 0 <= std <= 0.5):
             found.append(f"{key}: mean {mean} or std {std} out of range")
+        elif any(abs(round(v, 2) - v) > TOLERANCE for v in (mean, std)):
+            found.append(f"{key}: mean {mean} or std {std} has more than two decimals")
         elif std * std > mean * (1 - mean) + TOLERANCE:
             found.append(f"{key}: std² {std * std:.4f} > mean(1-mean) {mean * (1 - mean):.4f}")
     return found
@@ -49,6 +52,6 @@ def evaluate(records) -> tuple[dict, list]:
     bad = len(records) - len(valid)
     lines = [f"{len(records)} records, {bad} with problems; those are left out of the other sections."]
     return {"title": "1. Integrity", "lines": lines,
-            "checks": [("records with 33/32 keys and bounded values", f"{len(valid)}/{len(records)}",
+            "checks": [("records with 33/32 keys and bounded two-decimal values", f"{len(valid)}/{len(records)}",
                         "all", bad == 0)],
             "tables": [("integrity_problems.csv", "Problems", ["run", "dish", "problem"], rows, 20)]}, valid
