@@ -5,6 +5,7 @@
   "menus": [
    "2026-10-20/LU"
   ],
+  "scenarios_sha256": "7b91ed735cd377d2410fae127bebffb4f85d8e55a07b9aa576458737aa5bb87a",
   "seed": 0,
   "max_questions": 20,
   "dt_policy": "preference",
