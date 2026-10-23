@@ -132,6 +132,11 @@ class IntegrityTests(SimpleTestCase):
         self.assertEqual(found[2], [])
 
 
+    def test_more_than_two_decimals(self):
+        record_ = runs.Record("repeat-0", "repeat", "menu", "짬뽕", *full(0.333, 0.1))
+        self.assertIn("more than two decimals", integrity.problems(record_)[0])
+
+
 class DistributionTests(SimpleTestCase):
     def test_histograms_and_collisions(self):
         result = distribution.evaluate(runset(record("짬뽕", means={"spicy": 0.9, "noodle": 1.0}),
@@ -213,6 +218,16 @@ class StabilityTests(SimpleTestCase):
     def test_skipped_without_repeats(self):
         self.assertIn("skipped", stability.evaluate(runset(record("짬뽕"))))
 
+    def test_every_run_of_a_dish_counts(self):
+        rs = runset(record("짬뽕", "repeat-0", means={"spicy": 0.2}), record("짬뽕", "repeat-1", means={"spicy": 0.2}),
+                    record("짬뽕", "repeat-2", means={"spicy": 0.8}),  # a third run another dish does not have
+                    record("라면", "repeat-0"), record("라면", "repeat-1"),
+                    record("라면", "shuffle_foods-0"), record("라면", "shuffle_foods-1"))
+        lines = stability.evaluate(rs)["lines"]
+        self.assertIn("`repeat`: 2 dishes x 2-3 runs", lines[0])
+        self.assertIn("flips 16.67%", lines[0])  # 짬뽕's spicy, 1 of 6 cells
+        self.assertIn("different run counts (repeat 2/3, shuffle_foods 2)", lines[2])
+
 
 class HumanTests(SimpleTestCase):
     def form(self, rows, name="kim.csv", header=None):
@@ -291,10 +306,22 @@ class HumanTests(SimpleTestCase):
         self.assertAlmostEqual(overall["llm"], 0.05)     # (0.1 + 0.1 + 0 + 0) / 4
         self.assertEqual(rows[0][4], 0.5)
         result = human.evaluate(rs, ratings)
-        self.assertIn("ratio 0.50", result["lines"][1])
+        self.assertIn("ratio 0.50", result["lines"][2])
         one = human.evaluate(rs, {"kim": ratings["kim"]})
-        self.assertIn("one rater", one["lines"][1])
+        self.assertIn("one rater", one["lines"][2])
         self.assertIn("skipped", human.evaluate(rs, None))
+
+    def test_raters_are_compared_on_the_dishes_in_the_runs(self):
+        rs = runset(record("짬뽕", means={"spicy": 0.6}))
+        rated = lambda value: {"mean": {"spicy": value}, "std": {}, "notes": ""}
+        ratings = {"kim": {"짬뽕": rated(0.5), "라면": rated(0.0)}, "lee": {"짬뽕": rated(0.7), "라면": rated(1.0)}}
+        _, overall = human.compare(rs, ratings, "mean")
+        self.assertAlmostEqual(overall["raters"], 0.2)  # 라면 is not in the runs, so its 1.0 gap is left out
+
+    def test_each_value_is_checked_even_without_its_pair(self):
+        for row, cell in (("짬뽕,kim,,2,,1,0", "spicy_mean"), ("짬뽕,kim,,,0.6,1,0", "spicy_std")):
+            with self.assertRaisesMessage(ValueError, f"line 2, {cell}"):
+                human.load([self.form([row])])
 
 
 class TripletTests(SimpleTestCase):
@@ -413,6 +440,28 @@ class CommandTests(IsolatedCatalog, TestCase):
                                                "--no-triplet-dishes"))
         self.assertEqual(again.prompts, [])
 
+    def test_a_run_from_another_model_or_prompt_is_not_continued(self):
+        self.collect(ExtractorFake(), "--repeats", "1", "--no-triplet-dishes")
+        with mock.patch.dict("os.environ", {"METCHU_MENU_MODEL": "openai:gpt-other"}), \
+                self.assertRaisesMessage(CommandError, "repeat-0은 다른 설정"):
+            self.collect(ExtractorFake(), "--repeats", "1", "--no-triplet-dishes")
+        with self.assertRaisesMessage(CommandError, "shuffle_features-0은 다른 설정"):
+            means, stds = full()
+            runs.append(self.runs_path, [runs.Record("shuffle_features-0", "shuffle_features", "variant", "짬뽕",
+                                                     means, stds, model=menu_llm.model_id(), prompt_hash="old")])
+            self.collect(ExtractorFake(), "--condition", "shuffle_features", "--repeats", "1", "--no-triplet-dishes")
+
+    def test_stored_runs_keep_a_file_of_their_own(self):
+        self.collect(ExtractorFake(), "--stored")
+        self.assertIn("건너뜁니다", self.collect(ExtractorFake(), "--stored"))
+        self.assertEqual(len(runs.load(self.runs_path)), 3)  # not copied twice
+        with self.assertRaisesMessage(CommandError, "--stored 기록"):
+            self.collect(ExtractorFake(), "--repeats", "1", "--no-triplet-dishes")
+        self.runs_path.unlink()
+        self.collect(ExtractorFake(), "--repeats", "1", "--no-triplet-dishes")
+        with self.assertRaisesMessage(CommandError, "LLM 추출 기록"):
+            self.collect(ExtractorFake(), "--stored")
+
     def test_dry_run_counts_triplet_dishes_without_calling(self):
         llm = ExtractorFake()
         output = self.collect(llm, "--dry-run")
@@ -479,7 +528,8 @@ class CommandTests(IsolatedCatalog, TestCase):
             folder = results / "trial"
             config = json.loads((folder / "config.json").read_text(encoding="utf-8"))
             self.assertEqual(config["conditions"], {"repeat": 2, "shuffle_features": 1})
-            self.assertEqual(config["extraction_model"], menu_llm.model_id())
+            self.assertEqual(config["extraction"]["model"], menu_llm.model_id())
+            extraction = config["extraction"]
             self.assertEqual({r.run for r in runs.load(folder / "runs" / "runs.jsonl")},
                              {"repeat-0", "repeat-1", "shuffle_features-0"})
             self.assertIn("## 3. Stability", (folder / "report.md").read_text(encoding="utf-8"))
@@ -492,7 +542,13 @@ class CommandTests(IsolatedCatalog, TestCase):
             self.assertEqual(len(llm.prompts), calls)
             config = json.loads((folder / "config.json").read_text(encoding="utf-8"))
             self.assertEqual(config["ratings"], [str(rating)])  # the ratings folder is read by default
+            self.assertEqual(config["extraction"], extraction)  # kept from the first extractions
             self.assertIn("rated by 1 rater(s): kim", (folder / "report.md").read_text(encoding="utf-8"))
+            call_command(*args[:-4], "--conditions", "shuffle_foods:1", *args[-2:], stdout=io.StringIO())
+            config = json.loads((folder / "config.json").read_text(encoding="utf-8"))
+            self.assertEqual(config["conditions"], {"repeat": 2, "shuffle_features": 1, "shuffle_foods": 1})
+            with self.assertRaisesMessage(CommandError, "추출 설정과 다릅니다 (batch_size, seed)"):
+                call_command(*args, "--seed", "1", "--batch-size", "10", stdout=io.StringIO())
         with self.assertRaisesMessage(CommandError, "condition:count"):
             call_command("run_feature_benchmark", "--name", "x", "--date", "2026-10-20", "--conditions", "repeat")
 
@@ -529,6 +585,12 @@ class MenuSetTests(IsolatedCatalog, TestCase):
         self.assertEqual(set(variant), {"마라탕", "돈까스", "카레우동"})
         self.assertEqual(variant["마라탕"]["lines"], ["즉석 마라탕", "마라탕"])
         self.assertEqual(variant["돈까스"]["dates"], [day(1).isoformat()])
+
+    def test_a_catalog_dish_is_invariant_without_its_fixed_board(self):
+        history = {0: {"두레미담": ["수제 핫치킨버거"]}}
+        key = menu_set.line_key("수제 핫치킨버거")[0]
+        result = menu_set.build(siksha.parse(payload(history)), {key: Mapping(True, ("핫치킨버거",), "llm")})
+        self.assertEqual((result["invariant"], result["variant"]), ([{"name": "핫치킨버거", "restaurants": ["두레미담"]}], []))
 
     def test_segment_by_catalog(self):
         dishes = menu_set.catalog_dishes()
