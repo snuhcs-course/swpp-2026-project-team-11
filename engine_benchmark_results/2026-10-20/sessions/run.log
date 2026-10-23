@@ -1,0 +1,94 @@
+== 2026-10-22T13:23:32.866600+00:00 2026-10-20
+시나리오 100개, 남은 세션 decision_tree 300 / llm 300 -> LLM 호출 약 11020번 (엔진 5100, 가상 사용자 5920; 세션당 질문 10·제안 4 가정, 캐시 제외 전)
+  20/600 세션
+  40/600 세션
+  60/600 세션
+  80/600 세션
+  100/600 세션
+  120/600 세션
+  140/600 세션
+  160/600 세션
+  180/600 세션
+  200/600 세션
+  220/600 세션
+  240/600 세션
+  260/600 세션
+  280/600 세션
+  300/600 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like something with tteokbokki or rice cake?" asks again about Q5 "Do you feel like rice?" -> Probably not
+LLM engine attempt 1/2 failed (timeout): OpenAITimeoutError: Request timed out.
+LLM engine attempt 1/2 failed (timeout): OpenAITimeoutError: Request timed out.
+LLM engine attempt 2/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 1/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 2/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 1/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 2/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 1/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 2/2 failed (error): OpenAIConnectionError: Connection error.
+  in_menu-012 llm#0: OpenAIConnectionError: Connection error.
+LLM engine attempt 1/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 2/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 1/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 2/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 1/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 2/2 failed (error): OpenAIConnectionError: Connection error.
+  in_menu-013 llm#0: OpenAIConnectionError: Connection error.
+LLM engine attempt 1/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 2/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 1/2 failed (error): OpenAIConnectionError: Connection error.
+LLM engine attempt 2/2 failed (error): OpenAIConnectionError: Connection error.
+  in_menu-014 llm#0: OpenAIConnectionError: Connection error.
+== 2026-10-22T16:25:22.719552+00:00 2026-10-20
+시나리오 100개, 남은 세션 decision_tree 0 / llm 289 -> LLM 호출 약 8719번 (엔진 4913, 가상 사용자 3806; 세션당 질문 10·제안 4 가정, 캐시 제외 전)
+오류로 끝난 세션 3개를 다시 실행합니다.
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like chicken?" asks again about Q7 "Do you feel like chicken?" -> Not sure
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like chicken in your dish?" asks again about Q7 "Do you feel like chicken?" -> Not sure
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having kalguksu?" asks again about Q7 "Do you feel like having kalguksu (knife-cut noodles)?" -> Not sure
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a burger?" asks again about Q6 "Do you feel like having a burger?" -> Doesn't matter
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a burger?" asks again about Q6 "Do you feel like having a burger?" -> Doesn't matter
+  20/289 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like something with blood sausage?" asks again about Q13 "Do you feel like something with sausage?" -> No
+LLM engine attempt 2/2 failed (invalid_output): InvalidTurn: "Do you feel like stir-fried blood sausage?" asks again about Q13 "Do you feel like something with sausage?" -> No
+  40/289 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having dumplings?" asks again about Q13 "Do you feel like having something with dumplings?" -> Not sure
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a burger?" asks again about Q7 "Do you feel like having a burger?" -> Doesn't matter
+  60/289 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like spicy seafood soup?" asks again about Q3 "Do you feel like a spicy soup?" -> No
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like spicy seafood soup?" asks again about Q3 "Do you feel like a spicy soup?" -> No
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a spicy sauce on your chicken burger?" asks again about Q4 "Do you feel like having something spicy?" -> No
+  80/289 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a salad?" asks again about Q8 "Do you feel like having a salad?" -> Not sure
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a salad?" asks again about Q8 "Do you feel like having a salad?" -> Not sure
+  100/289 세션
+  120/289 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a burger?" asks again about Q5 "Do you feel like having a burger?" -> Not sure
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a burger?" asks again about Q4 "Do you feel like having a burger?" -> No
+  140/289 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having meat soup or galbi?" asks again about Q5 "Do you feel like having soup?" -> No
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a burger or a set menu?" asks again about Q6 "Do you feel like having a burger?" -> No
+  160/289 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like stir-fried chicken?" asks again about Q7 "Do you feel like fried chicken?" -> No
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like a spicy chicken stew?" asks again about Q3 "Do you feel like something spicy?" -> Not sure
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like chicken-based dakdoritang or a similar spicy chicken stew?" asks again about Q3 "Do you feel like something spicy?" -> Not sure
+LLM engine attempt 2/2 failed (invalid_output): InvalidTurn: "Do you feel like chicken dumplings?" asks again about Q7 "Do you feel like dumplings?" -> Not sure
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like spicy chicken soup?" asks again about Q3 "Do you feel like something spicy?" -> Not sure
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like a burger or a sandwich?" asks again about Q1 "Do you feel like a burger?" -> Doesn't matter
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like a burger menu with sauce-coated chicken?" asks again about Q1 "Do you feel like a burger?" -> Doesn't matter
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a burger?" asks again about Q4 "Do you feel like having a burger?" -> Doesn't matter
+  180/289 세션
+  200/289 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a meat and rice dish?" asks again about Q2 "Do you feel like eating meat?" -> Doesn't matter
+  220/289 세션
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like stir-fried chicken?" asks again about Q7 "Do you feel like fried chicken?" -> No
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like stir-fried chicken?" asks again about Q10 "Do you feel like fried chicken?" -> No
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like stir-fried pork and vegetables?" asks again about Q6 "Do you feel like stir-fried pork?" -> No
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having pig trotters or bossam?" asks again about Q9 "Do you feel like having bossam?" -> No
+  240/289 세션
+LLM engine attempt 1/2 failed (timeout): OpenAITimeoutError: Request timed out.
+LLM engine attempt 1/2 failed (invalid_output): InvalidTurn: "Do you feel like having a burger?" asks again about Q9 "Do you feel like having a burger?" -> Not sure
+  260/289 세션
+  280/289 세션
+  289/289 세션
+저장 -> /private/tmp/claude-501/-Users-bonjaeku-projects-swpp-2026-project-team-11/e0e6a88f-2161-4be7-8cdb-5f148809d073/scratchpad/eng/engine_benchmark_results/2026-10-20/sessions/sessions.jsonl (가상 사용자 호출 2254번)
+세션 600개 -> /private/tmp/claude-501/-Users-bonjaeku-projects-swpp-2026-project-team-11/e0e6a88f-2161-4be7-8cdb-5f148809d073/scratchpad/eng/engine_benchmark_results/2026-10-20/report.md
+결과 -> /private/tmp/claude-501/-Users-bonjaeku-projects-swpp-2026-project-team-11/e0e6a88f-2161-4be7-8cdb-5f148809d073/scratchpad/eng/engine_benchmark_results/2026-10-20

@@ -1,0 +1,9 @@
+﻿situation,verdict,proposals,p10,p25,p50,p75,p90
+in_menu,rejected,566,0.749,0.785,0.840,0.882,0.931
+in_menu,accepted,159,0.960,1.000,1.000,1.000,1.000
+multiple,rejected,270,0.797,0.822,0.851,0.884,0.909
+multiple,accepted,82,0.900,0.930,0.989,1.000,1.000
+not_in_menu,rejected,535,0.749,0.798,0.851,0.889,0.910
+not_in_menu,accepted,17,0.866,0.876,0.905,0.926,0.947
+close_alternative,rejected,354,0.740,0.797,0.889,0.941,0.964
+close_alternative,accepted,66,1.000,1.000,1.000,1.000,1.000

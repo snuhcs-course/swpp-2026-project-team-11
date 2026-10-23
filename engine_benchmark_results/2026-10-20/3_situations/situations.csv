@@ -1,0 +1,9 @@
+﻿situation,engine,sessions,success,first pick,interactions,gave up,similarity,regret,rank
+in_menu,decision_tree,120,64.2%,40.0%,12.8,21.7%,0.992,0.008,0.993
+in_menu,llm,120,43.3%,26.7%,11.7,45.8%,0.990,0.010,0.990
+multiple,decision_tree,60,30.0%,31.7%,12.1,28.3%,0.950,0.050,0.880
+multiple,llm,60,38.3%,38.3%,10.8,35.0%,0.978,0.022,0.950
+not_in_menu,decision_tree,60,-,5.0%,19.5,88.3%,0.926,0.015,0.993
+not_in_menu,llm,60,-,8.3%,13.5,83.3%,0.888,0.053,0.894
+close_alternative,decision_tree,60,63.3%,26.7%,13.6,36.7%,1.000,0.000,0.998
+close_alternative,llm,60,46.7%,15.0%,11.5,53.3%,1.000,0.000,1.000
