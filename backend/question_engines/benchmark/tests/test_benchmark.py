@@ -15,7 +15,7 @@ from django.test import SimpleTestCase, TestCase
 
 from menus.features.schema import FEATURE_VERSION
 from menus.models import Food, MenuItem, Restaurant
-from question_engines.benchmark import cost, harness, metrics, report, scenarios, simulator, stats
+from question_engines.benchmark import cost, harness, metrics, plots, report, scenarios, simulator, stats
 from recommend.management.commands import play_engine_session
 
 from .helpers import CANDIDATES, MENU, OTHERS, FakeEngineLLM, FakeUserLLM, ScriptedUser
@@ -192,6 +192,18 @@ class PlayTests(SimpleTestCase):
                               ScriptedUser(accept=False))
         self.assertEqual((record["outcome"], record["guesses"]), ("gave_up", harness.MAX_REJECTIONS))
         self.assertFalse(record["first_guess_accepted"])
+        llm = FakeEngineLLM(questions=2)
+        record = harness.play(harness.EngineFactory("llm", MENU, llm), scenario("in_menu", "짬뽕"),
+                              ScriptedUser(accept=False), anytime=())
+        self.assertEqual(llm.calls, 2 + harness.MAX_REJECTIONS)  # no turn is asked for after the last rejection
+        self.assertEqual(len(record["step_ms"]), 2 + 2 + harness.MAX_REJECTIONS - 1)  # build, start, answers, feedback
+
+    def test_failed_sessions_are_not_drawn_as_giving_up(self):
+        outcome = lambda name, first="": plots._outcome({"outcome": name, "first_guess_accepted": first})
+        self.assertEqual([outcome("accepted", "True"), outcome("accepted", "False"), outcome("gave_up"),
+                          outcome("error"), outcome("unavailable")],
+                         ["first proposal accepted", "accepted later", "gave up (5 proposals rejected)",
+                          "error / unavailable", "error / unavailable"])
 
     def test_llm_session_takes_calls_tokens_and_cost_from_the_engine(self):
         llm = FakeEngineLLM(questions=3, pick="물냉면")
@@ -749,4 +761,11 @@ class CommandTests(TestCase):
         self.assertIn("1 testers", (folder / "report.md").read_text(encoding="utf-8"))
         self.assertEqual(json.loads((folder / "config.json").read_text(encoding="utf-8"))["collection"], collection)
         with self.settings(RECOMMEND_MAX_QUESTIONS=5), self.assertRaisesMessage(CommandError, "(max_questions)"):
+            call_command(*args, stdout=io.StringIO())
+        out = io.StringIO()
+        call_command(*args, "--dry-run", stdout=out)
+        self.assertIn("decision_tree 0 / llm 0", out.getvalue())  # the dry run sees the saved sessions
+        (folder / "scenarios.json").unlink()
+        MenuItem.objects.filter(raw_name="치즈돈까스").delete()  # the day's menu changed; same seed
+        with self.assertRaisesMessage(CommandError, "(scenarios_sha256)"):
             call_command(*args, stdout=io.StringIO())
