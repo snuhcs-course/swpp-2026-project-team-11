@@ -95,11 +95,15 @@ def load(paths) -> dict[str, dict[str, dict]]:
                     raise ValueError(f"{path.name}: unknown column {column!r}")
                 if text:
                     entry[field][key] = _number(text, f"{path.name} {where}, {column}")
+            for field, top in (("mean", 1), ("std", 0.5)):
+                for key, value in entry[field].items():
+                    if not 0 <= value <= top:
+                        raise ValueError(f"{path.name} {where}, {key}_{field}: {value} is outside 0..{top}")
             for key in entry["mean"].keys() & entry["std"].keys():
                 mean, std = entry["mean"][key], entry["std"][key]
-                if not (0 <= mean <= 1 and 0 <= std <= 0.5) or std * std > mean * (1 - mean) + 1e-9:
+                if std * std > mean * (1 - mean) + 1e-9:
                     raise ValueError(f"{path.name} {where}, {key}: mean {mean} / std {std} breaks "
-                                     "0 <= mean <= 1, 0 <= std <= 0.5 or std² <= mean(1 - mean)")
+                                     "std² <= mean(1 - mean)")
             ratings[rater][name] = entry
     return dict(ratings)
 
@@ -138,22 +142,24 @@ def _mean(values) -> float:
 
 
 def compare(runset, ratings, field) -> tuple[list, dict]:
-    """Per-feature rows and overall numbers for `field` ("mean" or "std")."""
+    """Per-feature rows and overall numbers for `field` ("mean" or "std"), over the rated dishes
+    in `runset`: the raters' agreement is measured on the same dishes as the LLM's."""
     raters = sorted(ratings)
     index = {key: i for i, key in enumerate(runset.keys)}
     llm = runset.mean if field == "mean" else runset.std
+    names = [n for n in sorted({n for r in raters for n in ratings[r]}) if llm(n) is not None]
     rows, pooled = [], defaultdict(list)
     for key in LLM_FEATURE_KEYS:
         if key not in index:
             continue
         between = [abs(ratings[a][n][field][key] - ratings[b][n][field][key]) for a, b in combinations(raters, 2)
-                   for n in ratings[a].keys() & ratings[b].keys()
-                   if key in ratings[a][n][field] and key in ratings[b][n][field]]
+                   for n in names if n in ratings[a] and n in ratings[b]
+                   and key in ratings[a][n][field] and key in ratings[b][n][field]]
         against, model, people = [], [], []
-        for name in sorted({n for r in raters for n in ratings[r]}):
+        for name in names:
             values = [ratings[r][name][field][key] for r in raters if key in ratings[r].get(name, {}).get(field, {})]
             vector = llm(name)
-            if values and vector is not None:
+            if values:
                 against += [abs(vector[index[key]] - v) for v in values]
                 model.append(float(vector[index[key]]))
                 people.append(float(np.mean(values)))
@@ -175,7 +181,10 @@ def evaluate(runset, ratings) -> dict:
     shared = sorted(n for n in rated if runset.mean(n) is not None)
     if not shared:
         return {"title": title, "skipped": "None of the rated dishes are in the runs file."}
-    lines = [f"{len(shared)} dishes rated by {len(ratings)} rater(s): {', '.join(sorted(ratings))}."]
+    lines = [f"{len(shared)} dishes rated by {len(ratings)} rater(s): {', '.join(sorted(ratings))}.",
+             "ratio: how far the LLM is from each rater over how far raters are from each other. About 1: the LLM "
+             "looks like one more rater. An LLM at the raters' true average would score about 0.7 (1/√2), "
+             "since each rater's own error remains."]
     tables = []
     for field in FIELDS:
         rows, overall = compare(runset, ratings, field)
