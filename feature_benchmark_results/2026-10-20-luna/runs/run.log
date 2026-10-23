@@ -21,7 +21,7 @@ variant 39개 + invariant 42개 + triplet용 57개 = 138개, repeat x 3회 -> LL
 100/138 처리
 125/138 처리
 138/138 처리
-저장 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna/runs.jsonl
+저장 -> feature_benchmark_results/2026-10-20-luna/runs.jsonl
 == shuffle_foods x 2
 variant 39개 + invariant 42개 + triplet용 57개 = 138개, shuffle_foods x 2회 -> LLM 호출 약 12번
 [shuffle_foods-0] 138개
@@ -39,7 +39,7 @@ variant 39개 + invariant 42개 + triplet용 57개 = 138개, shuffle_foods x 2�
 100/138 처리
 125/138 처리
 138/138 처리
-저장 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna/runs.jsonl
+저장 -> feature_benchmark_results/2026-10-20-luna/runs.jsonl
 == shuffle_features x 2
 variant 39개 + invariant 42개 + triplet용 57개 = 138개, shuffle_features x 2회 -> LLM 호출 약 12번
 [shuffle_features-0] 138개
@@ -56,7 +56,7 @@ variant 39개 + invariant 42개 + triplet용 57개 = 138개, shuffle_features x 
 100/138 처리
 125/138 처리
 138/138 처리
-저장 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna/runs.jsonl
+저장 -> feature_benchmark_results/2026-10-20-luna/runs.jsonl
 == report
 PASS     1. Integrity
 REPORTED 2. Distribution
@@ -70,6 +70,6 @@ SKIPPED  4. Human reference (variant)
 SKIPPED  4. Human reference (invariant)
 REPORTED 5. Triplets
 SKIPPED  6. Downstream impact
-리포트 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna/report/report.md
-결과 -> /Users/bonjaeku/projects/swpp-2026-project-team-11/feature_benchmark_results/2026-10-20-luna
+리포트 -> feature_benchmark_results/2026-10-20-luna/report/report.md
+결과 -> feature_benchmark_results/2026-10-20-luna
 exit 0

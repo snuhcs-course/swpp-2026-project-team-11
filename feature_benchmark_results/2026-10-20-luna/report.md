@@ -24,7 +24,7 @@ Only integrity passes or fails. The other sections are measurements to read; see
 ## 1. Integrity
 
 - 966 records, 0 with problems; those are left out of the other sections.
-- records with 33/32 keys and bounded values: 966/966 (expected all) pass
+- records with 33/32 keys and bounded two-decimal values: 966/966 (expected all) pass
 
 **Problems**: 0 rows in `1_integrity/integrity_problems.csv`
 
@@ -204,6 +204,7 @@ Only integrity passes or fails. The other sections are measurements to read; see
 - `repeat`: 138 dishes x 3 runs; mean SD of means 0.018 (largest 0.40), of stds 0.010; flips 0.14%
 - `shuffle_features`: 138 dishes x 2 runs; mean SD of means 0.015 (largest 0.49), of stds 0.008; flips 0.02%
 - `shuffle_foods`: 138 dishes x 2 runs; mean SD of means 0.020 (largest 0.60), of stds 0.011; flips 0.11%
+- The conditions have different run counts (repeat 3, shuffle_features 2, shuffle_foods 2). An SD from two runs is noisy, so small differences between conditions are not meaningful.
 - `repeat` vs `shuffle_features`: averaged means of 138 shared dishes differ by 0.017 per feature
 - `repeat` vs `shuffle_foods`: averaged means of 138 shared dishes differ by 0.020 per feature
 - `shuffle_features` vs `shuffle_foods`: averaged means of 138 shared dishes differ by 0.021 per feature
@@ -235,6 +236,7 @@ Only integrity passes or fails. The other sections are measurements to read; see
 - `repeat`: 39 dishes x 3 runs; mean SD of means 0.017 (largest 0.39), of stds 0.009; flips 0.16%
 - `shuffle_features`: 39 dishes x 2 runs; mean SD of means 0.016 (largest 0.49), of stds 0.008; flips 0.08%
 - `shuffle_foods`: 39 dishes x 2 runs; mean SD of means 0.020 (largest 0.32), of stds 0.010; flips 0.08%
+- The conditions have different run counts (repeat 3, shuffle_features 2, shuffle_foods 2). An SD from two runs is noisy, so small differences between conditions are not meaningful.
 - `repeat` vs `shuffle_features`: averaged means of 39 shared dishes differ by 0.016 per feature
 - `repeat` vs `shuffle_foods`: averaged means of 39 shared dishes differ by 0.019 per feature
 - `shuffle_features` vs `shuffle_foods`: averaged means of 39 shared dishes differ by 0.020 per feature
@@ -266,6 +268,7 @@ Only integrity passes or fails. The other sections are measurements to read; see
 - `repeat`: 55 dishes x 3 runs; mean SD of means 0.020 (largest 0.38), of stds 0.011; flips 0.11%
 - `shuffle_features`: 55 dishes x 2 runs; mean SD of means 0.017 (largest 0.32), of stds 0.009; flips 0.00%
 - `shuffle_foods`: 55 dishes x 2 runs; mean SD of means 0.022 (largest 0.53), of stds 0.012; flips 0.11%
+- The conditions have different run counts (repeat 3, shuffle_features 2, shuffle_foods 2). An SD from two runs is noisy, so small differences between conditions are not meaningful.
 - `repeat` vs `shuffle_features`: averaged means of 55 shared dishes differ by 0.020 per feature
 - `repeat` vs `shuffle_foods`: averaged means of 55 shared dishes differ by 0.023 per feature
 - `shuffle_features` vs `shuffle_foods`: averaged means of 55 shared dishes differ by 0.024 per feature
