@@ -37,7 +37,7 @@ NAME/
   config.json              collection (fixed): menus, question limit, DT policy, models, the LLM
                            engine's and the simulated user's prompts (text and id), git commit;
                            then counts, repeats and the report's git commit
-  scenarios.json           made once; delete it to make new scenarios
+  scenarios.json           made once; a new set needs a new name (the resume check compares its hash)
   sessions/                sessions.jsonl, simulator_cache.jsonl (readable), run.log
   report.md, summary.json  the sections below
   plots/                   one panel per situation (plots.py)
@@ -184,7 +184,10 @@ The sessions were played at `e1eeeae`, a commit from before this branch's histor
 reorganized. The code that plays sessions has only been refactored since: the engine and
 simulated-user prompt ids match this branch (`dbd8e5d890d8`, `45d1d4125724`), and the
 acceptance rule gives the same verdict on every scenario's candidates. The report and the
-plots are regenerated from the saved sessions by this branch's code.
+plots are regenerated from the saved sessions by this branch's code. One difference remains:
+those sessions asked the engine for one more turn after the fifth rejection, so the LLM
+engine's latency and cost include an unused decision in each session the user gave up on
+(158 sessions, about 1.2 s and $0.001 each; 4.3% of its latency and 4.4% of its cost).
 
 | Situation | First pick (exact), DT / LLM | Success, DT / LLM | Questions, DT / LLM | Latency p50, DT / LLM | LLM cost / session |
 |---|---|---|---|---|---|
