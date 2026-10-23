@@ -15,7 +15,10 @@ Run the question engine benchmark end to end and keep everything in one folder:
         9_user_study/simulator_check.jsonl   validate_simulator, read when present
 
 Running the same NAME again continues a stopped run without repeating finished
-sessions, then rewrites the report. --dry-run prints the LLM calls without making any.
+sessions, then rewrites the report. config.json's "collection" part (menus, question
+limit, DT policy, models, prompts) is written with the first sessions and kept: a
+rerun with other settings is refused, so one folder never mixes two setups; more
+repeats or a larger --limit are fine. --dry-run prints the LLM calls without making any.
 """
 
 from __future__ import annotations
@@ -31,7 +34,7 @@ import tempfile
 
 from django.conf import settings
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from question_engines.benchmark import scenarios, simulator
@@ -62,29 +65,46 @@ class Tee:
 
 
 def git_commit() -> str:
+    """The checked-out commit, with "-dirty" when the working tree has uncommitted changes."""
     try:
-        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
+        return subprocess.run(["git", "describe", "--always", "--dirty"], capture_output=True, text=True,
                               cwd=settings.BASE_DIR, check=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return ""
 
 
-def write_config(folder, data, counts, options) -> None:
+def collection_config(data) -> dict:
+    """What decides the sessions; a folder's sessions all share it."""
+    return {"menus": sorted(data["menus"]), "seed": data["seed"], "max_questions": settings.RECOMMEND_MAX_QUESTIONS,
+            "dt_policy": settings.RECOMMEND_DT_POLICY, "dt_policy_version": POLICY_VERSION,
+            "llm_model": os.environ.get("METCHU_LLM_MODEL") or DEFAULT_MODEL, "llm_engine_version": ENGINE_VERSION,
+            "llm_engine_prompt_id": hashlib.sha256(ENGINE_PROMPT.encode()).hexdigest()[:12],
+            "llm_engine_prompt": ENGINE_PROMPT, "simulator_model": simulator.MODEL.model_id(),
+            "simulator_prompt_id": simulator.PROMPT_ID, "simulator_prompts": simulator.PROMPTS}
+
+
+def checked_collection(folder, current) -> dict:
+    """The folder's collection settings: the saved ones when sessions exist and match `current`."""
+    config, sessions = folder / "config.json", folder / "sessions" / "sessions.jsonl"
+    if not (config.exists() and sessions.exists()):
+        return current | {"git_commit": git_commit()}
+    saved = json.loads(config.read_text(encoding="utf-8"))["collection"]
+    changed = [key for key in current if saved.get(key) != current[key]]
+    if changed:
+        raise CommandError(f"이 폴더의 세션과 설정이 다릅니다 ({', '.join(changed)}). 같은 설정으로 실행하거나 "
+                           "새 --name을 쓰세요.")
+    return saved
+
+
+def write_config(folder, data, counts, options, collection) -> None:
     """config.json: what this run played, with which models, prompts and code."""
     played = {s: sum(x["situation"] == s for x in data["scenarios"]) for s in counts}
     if options["limit"] is not None:
         played = {s: min(n, options["limit"]) for s, n in played.items()}
     (folder / "config.json").write_text(json.dumps({
-        "name": options["name"], "updated_at": timezone.now().isoformat(),
-        "menus": sorted(data["menus"]), "counts": played,
-        "seed": data["seed"], "repeats": options["repeats"],
-        "limit": options["limit"], "max_questions": settings.RECOMMEND_MAX_QUESTIONS,
-        "dt_policy": settings.RECOMMEND_DT_POLICY, "dt_policy_version": POLICY_VERSION,
-        "llm_model": os.environ.get("METCHU_LLM_MODEL") or DEFAULT_MODEL, "llm_engine_version": ENGINE_VERSION,
-        "llm_engine_prompt_id": hashlib.sha256(ENGINE_PROMPT.encode()).hexdigest()[:12],
-        "llm_engine_prompt": ENGINE_PROMPT,
-        "simulator_model": simulator.MODEL.model_id(), "simulator_prompt_id": simulator.PROMPT_ID,
-        "simulator_prompts": simulator.PROMPTS, "git_commit": git_commit(),
+        "name": options["name"], "updated_at": timezone.now().isoformat(), "collection": collection,
+        "counts": played, "repeats": options["repeats"], "limit": options["limit"],
+        "report_git_commit": git_commit(),
     }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
@@ -114,6 +134,8 @@ class Command(BaseCommand):
         play_options += ["--limit", str(options["limit"])] if options["limit"] is not None else []
 
         if options["dry_run"]:
+            if scenario_path.exists():
+                checked_collection(folder, collection_config(scenarios.load(scenario_path)))
             with tempfile.TemporaryDirectory() as scratch:
                 path = scenario_path if scenario_path.exists() else pathlib.Path(scratch) / "scenarios.json"
                 if not scenario_path.exists():
@@ -128,7 +150,8 @@ class Command(BaseCommand):
             self.stdout.write(f"기존 시나리오를 씁니다: {scenario_path}")
         else:
             scenarios.save(scenario_path, build(dates, meals, counts, options["seed"], warn))
-        write_config(folder, scenarios.load(scenario_path), counts, options)
+        data = scenarios.load(scenario_path)
+        write_config(folder, data, counts, options, checked_collection(folder, collection_config(data)))
         with open(folder / "sessions" / "run.log", "a", encoding="utf-8") as log:
             warnings = logging.StreamHandler(log)  # the engine's retries and fallbacks
             warnings.setLevel(logging.WARNING)

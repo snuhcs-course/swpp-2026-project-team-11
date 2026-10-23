@@ -17,7 +17,6 @@ import datetime
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from menus.features.schema import FEATURE_VERSION
 from menus.models import Food
 from menus.services import get_catalog
 from question_engines.benchmark import COUNTS, SITUATIONS, scenarios
@@ -59,8 +58,8 @@ def load_menus(dates, meals, write) -> dict:
 
 def build(dates, meals, counts, seed, write) -> dict:
     menus = load_menus(dates, meals, write)
-    others = list(Food.objects.filter(is_food=True, feature_version=FEATURE_VERSION)
-                  .values("name", "features", "food_group"))
+    version = next(iter(menus.values()))["feature_version"]  # load_menus checked that they share it
+    others = list(Food.objects.filter(is_food=True, feature_version=version).values("name", "features", "food_group"))
     try:
         return scenarios.build(menus, others, counts, seed)
     except ValueError as error:

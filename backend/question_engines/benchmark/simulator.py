@@ -15,8 +15,9 @@ its own questions too well.
                 only essentially the same dish (TAKE_PROMPT), so the LLM does not take any
                 decent meal; not served: a dish that satisfies the same craving (INSTEAD_PROMPT)
 
-Answers are cached by (persona, question or proposal, prompt), in memory and optionally
-in a file, so a rerun or a repeat asks nothing twice and a changed prompt asks again.
+Answers are cached by (model, persona, question or proposal, prompt), in memory and
+optionally in a file, so a rerun or a repeat asks nothing twice and a changed model or
+prompt asks again.
 `usage` counts the calls and tokens.
 
 Certainty: blur() changes a share of the answers after the LLM gave them, the same
@@ -125,8 +126,8 @@ def same_as_engine(engine_model: str) -> bool:
 
 
 class Simulator:
-    def __init__(self, llm, cache_path=None):
-        self.llm = llm
+    def __init__(self, llm, cache_path=None, model=None):
+        self.llm, self.model = llm, model or MODEL.model_id()
         self.cache_path = pathlib.Path(cache_path) if cache_path else None
         self.cache = {}
         self.usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
@@ -137,15 +138,16 @@ class Simulator:
                     self.cache[row["key"]] = row["value"]
 
     def _key(self, kind, persona, item) -> str:
-        return hashlib.sha256(json.dumps([kind, persona, item, PROMPT_ID], ensure_ascii=False).encode()).hexdigest()
+        return hashlib.sha256(json.dumps([kind, persona, item, PROMPT_ID, self.model],
+                                         ensure_ascii=False).encode()).hexdigest()
 
     def _remember(self, key, value, **readable):
         """Cache `value`; the file line also says what was asked, for reading it later."""
         self.cache[key] = value
         if self.cache_path:
             with open(self.cache_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps({"key": key, "value": value, **readable, "prompt_id": PROMPT_ID},
-                                   ensure_ascii=False) + "\n")
+                f.write(json.dumps({"key": key, "value": value, **readable, "prompt_id": PROMPT_ID,
+                                    "model": self.model}, ensure_ascii=False) + "\n")
 
     def _ask(self, model, text):
         from langchain_core.messages import HumanMessage, SystemMessage
