@@ -16,6 +16,7 @@ from django.test import SimpleTestCase, TestCase
 from menus.features.schema import FEATURE_VERSION
 from menus.models import Food, MenuItem, Restaurant
 from question_engines.benchmark import cost, harness, metrics, report, scenarios, simulator, stats
+from recommend.management.commands import play_engine_session
 
 from .helpers import CANDIDATES, MENU, OTHERS, FakeEngineLLM, FakeUserLLM, ScriptedUser
 
@@ -124,6 +125,15 @@ class SimulatorTests(SimpleTestCase):
             self.assertEqual(simulator.Simulator(again, path).answer("p", "Spicy?"), "yes")
             self.assertEqual(again.calls, [])
 
+    def test_another_model_asks_again(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = pathlib.Path(folder) / "cache.jsonl"
+            simulator.Simulator(FakeUserLLM(answer="yes"), path, model="google:a").answer("p", "Spicy?")
+            other = FakeUserLLM(answer="no")
+            self.assertEqual(simulator.Simulator(other, path, model="openai:b").answer("p", "Spicy?"), "no")
+            self.assertEqual(len(other.calls), 1)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8").splitlines()[-1])["model"], "openai:b")
+
     def test_persona_names_every_wanted_menu(self):
         self.assertEqual(simulator.describe(scenario("multiple", "짬뽕", "물냉면")),
                          "You would be happy with any one of these: 짬뽕, 물냉면.")
@@ -198,9 +208,34 @@ class PlayTests(SimpleTestCase):
         factory = harness.EngineFactory("llm", MENU, FakeEngineLLM())
         with mock.patch.object(factory, "build", side_effect=RuntimeError("boom")):
             record = harness.play(factory, scenario("in_menu", "짬뽕"), ScriptedUser())
-        self.assertEqual(record["outcome"], "error")
+        self.assertEqual((record["outcome"], record["error_source"]), ("error", "engine"))
         self.assertIn("boom", record["error"])
         self.assertIsNone(record["llm"])
+
+    def test_a_user_failure_keeps_the_question_count_and_says_so(self):
+        class FailingUser(ScriptedUser):
+            asked = 0
+
+            def answer(self, step, repeat):
+                self.asked += 1
+                if self.asked == 3:
+                    raise TimeoutError("simulator down")
+                return super().answer(step, repeat)
+        record = harness.play(harness.EngineFactory("llm", MENU, FakeEngineLLM(questions=5)),
+                              scenario("in_menu", "짬뽕"), FailingUser())
+        self.assertEqual((record["outcome"], record["error_source"], record["questions"]), ("error", "user", 2))
+
+    def test_recommend_now_is_also_taken_at_a_proposal(self):
+        record = harness.play(harness.EngineFactory("llm", MENU, FakeEngineLLM(questions=0)),
+                              scenario("in_menu", "짬뽕"), ScriptedUser(), anytime=(0,))
+        self.assertEqual(record["questions"], 0)
+        self.assertIn("0", record["anytime"])  # the no-question baseline of a session that proposes at once
+
+    def test_llm_calls_count_every_attempt(self):
+        call = {"attempts": 2, "input_tokens": 10, "output_tokens": 1, "cost_usd": 0.01, "fallback": None}
+        engine = SimpleNamespace(diagnostics=lambda: {"llm_calls": [call, call | {"attempts": 1}]})
+        self.assertEqual({k: harness.llm_use([engine])[k] for k in ("calls", "decisions")}, {"calls": 3, "decisions": 2})
+        self.assertEqual(metrics.llm_calls({"llm_calls": [call]}), 2)
 
     def test_both_engines_ask_the_simulated_user_one_question_at_a_time(self):
         item = scenario("not_in_menu", "마라탕")
@@ -356,6 +391,8 @@ class StatsTests(SimpleTestCase):
         self.assertEqual(stats.mcnemar(0, 0), 1.0)
 
     def test_wilcoxon(self):
+        self.assertEqual(stats.wilcoxon([0.3] * 3 + [0.7 - 0.4] * 3 + [-0.1, 0.5]),
+                         stats.wilcoxon([0.3] * 6 + [-0.1, 0.5]))  # 0.7 - 0.4 is 0.29999999999999993
         self.assertLess(stats.wilcoxon([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), 0.01)
         self.assertGreater(stats.wilcoxon([1, -1, 2, -2, 3, -3, 4, -4]), 0.9)
         self.assertTrue(stats.wilcoxon([1, 0, 0]) != stats.wilcoxon([1, 0, 0]))  # nan below 5 pairs
@@ -389,6 +426,12 @@ class ReportPieceTests(SimpleTestCase):
         self.assertEqual(table[("in_menu", "decision_tree", "no question")][5], "-")  # no ratio over a 0% baseline
         self.assertEqual({(s["situation"], s["engine"], s["baseline"]) for s in summary}, set(table))
 
+    def test_a_result_exactly_at_the_goal_meets_it(self):
+        sessions = [self.row(f"s{i}", "decision_tree", i < 7, random_pick=0.2) for i in range(20)]
+        rows, _ = report.baseline_rows(sessions)
+        row = next(r for r in rows if r[2] == "random dish")
+        self.assertEqual((row[6], row[9]), ("+15.0", "yes"))  # 0.35 - 0.2 is 0.14999999999999997
+
     def test_simulator_agreement(self):
         checks = [{"question": "q1", "human": "yes", "simulator": "probably_yes"},
                   {"question": "q2", "human": "no", "simulator": "no"},
@@ -412,6 +455,17 @@ class ReportPieceTests(SimpleTestCase):
         table = {row[1]: row for row in report.paired(rows, "in_menu")}
         self.assertEqual(table["success"][2:6], [1, "0.000", "0.500", "0.500"])
         self.assertEqual(table["questions"][5], "-1.000")
+
+
+    def test_yes_no_metrics_get_mcnemar_and_the_others_wilcoxon(self):
+        rows = [{"scenario": f"s{i}", "situation": "in_menu", "engine": engine, "success": engine == "llm" or i < 2,
+                 "questions": 4 + i if engine == "llm" else 2}
+                for i in range(8) for engine in ("decision_tree", "llm")]
+        table = {row[1]: row for row in report.paired(rows, "in_menu")}
+        self.assertEqual(table["success"][7], "-")  # 0/1 means are all tied: no Wilcoxon
+        self.assertNotEqual(table["success"][8], "-")
+        self.assertNotEqual(table["questions"][7], "-")
+        self.assertEqual(table["questions"][8], "-")
 
     def test_main_metrics_of_one_situation(self):
         base = {"engine": "llm", "questions": 3, "outcome": "accepted", "scenario": "a", "repeat": 0, "cost_usd": 0.01}
@@ -574,6 +628,9 @@ class CommandTests(TestCase):
         with open(folder / "proposals.csv", encoding="utf-8-sig") as f:
             self.assertIn("judged_by", next(csv.reader(f)))
         self.assertTrue((folder / "8_similarity" / "similarity.png").exists())
+        self.assertEqual(sorted(p.name for p in (folder / "plots").iterdir()),
+                         ["1_first_pick.png", "2_outcomes.png", "3_paired_differences.png",
+                          "4_questions_latency_cost.png", "5_first_pick_by_certainty.png"])
         summary = json.loads((folder / "summary.json").read_text(encoding="utf-8"))
         self.assertEqual(set(summary["1_main_metrics"]), set(COUNTS))
         self.assertEqual(set(summary["1_main_metrics"]["in_menu"]), {"decision_tree", "llm"})
@@ -592,7 +649,7 @@ class CommandTests(TestCase):
 
     def test_a_person_plays_blind_and_the_simulator_is_checked(self):
         self.build()
-        human = self.folder / "human.jsonl"
+        human = self.folder / "human" / "kim.jsonl"  # the folder is made on the first session
         out = self.play(human, tester="kim", engine="decision_tree")
         record = self.lines(human)[0]
         self.assertEqual((record["engine"], record["outcome"], record["satisfaction"]), ("decision_tree", "accepted", 4))
@@ -600,8 +657,15 @@ class CommandTests(TestCase):
         self.assertNotIn("decision_tree", out)
 
         check = self.folder / "check.jsonl"
-        with mock.patch("question_engines.benchmark.simulator.build_llm", return_value=FakeUserLLM(answer="yes")):
-            call_command("validate_simulator", "--human", str(human), "--output", str(check), stdout=io.StringIO())
+        user = FakeUserLLM(answer="yes")
+        with mock.patch("question_engines.benchmark.simulator.build_llm", return_value=user):
+            args = ["validate_simulator", "--human", str(human), "--output", str(check)]
+            call_command(*args, "--dry-run", stdout=io.StringIO())
+            self.assertEqual((user.calls, check.exists()), ([], False))
+            call_command(*args, stdout=io.StringIO())
+            calls = len(user.calls)
+            call_command(*args, stdout=io.StringIO())
+        self.assertEqual(len(user.calls), calls)  # cached next to --output
         rows = self.lines(check)
         self.assertEqual({(r["human"], r["simulator"]) for r in rows if "question" in r}, {("yes", "yes")})
         self.assertEqual([(r["human"], r["simulator"]) for r in rows if "proposal" in r],
@@ -617,6 +681,23 @@ class CommandTests(TestCase):
         self.assertIn("1 testers, 0 of them with 2 sessions on each engine", text)
         self.assertIn("same answer 100.0%", text)
         self.assertIn("same verdict 0.0% of the time", text)
+
+    def test_typed_dishes_none_of_them_served_are_not_in_menu(self):
+        served, gone = {"matches": [4]}, {"matches": []}
+        self.assertEqual([play_engine_session.situation_of(t) for t in ([gone, gone], [served, gone], [served], [gone])],
+                         ["not_in_menu", "multiple", "in_menu", "not_in_menu"])
+
+    def test_the_blind_order_balances_any_session_count(self):
+        with mock.patch.object(play_engine_session, "SESSIONS_PER_ENGINE", 3):
+            order = play_engine_session.blind_order("kim")
+        self.assertEqual(Counter(order), {"decision_tree": 3, "llm": 3})
+        self.assertEqual(order[:2], order[2:4][::-1])
+
+    def test_not_served_targets_share_the_menus_feature_version(self):
+        Food.objects.update(feature_version="v1")
+        data = self.build("not_in_menu:1")
+        self.assertEqual(data["menus"][MENU_ID]["feature_version"], "v1")
+        self.assertIn(data["scenarios"][0]["targets"][0]["name"], ("마라탕", "치즈볶음밥"))
 
     def test_each_tester_plays_two_sessions_per_engine_in_a_balanced_order(self):
         self.build()
@@ -646,10 +727,11 @@ class CommandTests(TestCase):
         call_command(*limited, stdout=io.StringIO())
         self.assertEqual(json.loads((results / "limited" / "config.json").read_text(encoding="utf-8"))["counts"],
                          {"in_menu": 1})  # played, not built
-        self.assertEqual(config["simulator_model"], "google:gemini-3.5-flash")
-        self.assertEqual((config["simulator_prompt_id"], config["simulator_prompts"]["system"]),
+        collection = config["collection"]
+        self.assertEqual(collection["simulator_model"], "google:gemini-3.5-flash")
+        self.assertEqual((collection["simulator_prompt_id"], collection["simulator_prompts"]["system"]),
                          (simulator.PROMPT_ID, simulator.SYSTEM_PROMPT))
-        self.assertIn("question engine", config["llm_engine_prompt"])
+        self.assertIn("question engine", collection["llm_engine_prompt"])
         log = (folder / "sessions" / "run.log").read_text(encoding="utf-8")
         self.assertIn("4/4 세션", log)
         self.assertIn("결과 ->", log)
@@ -665,3 +747,6 @@ class CommandTests(TestCase):
         call_command(*args, stdout=io.StringIO())  # continues: no new session, people's sessions read
         self.assertEqual(engine.calls, calls)
         self.assertIn("1 testers", (folder / "report.md").read_text(encoding="utf-8"))
+        self.assertEqual(json.loads((folder / "config.json").read_text(encoding="utf-8"))["collection"], collection)
+        with self.settings(RECOMMEND_MAX_QUESTIONS=5), self.assertRaisesMessage(CommandError, "(max_questions)"):
+            call_command(*args, stdout=io.StringIO())
