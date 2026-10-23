@@ -6,7 +6,7 @@ Run the question engine benchmark end to end and keep everything in one folder:
     engine_benchmark_results/NAME/
         config.json              what was run: menus, counts, repeats, models, the LLM engine's and the
                                  simulated user's prompts, DT policy, git commit
-        scenarios.json           build_engine_scenarios (made once; delete it to make new ones)
+        scenarios.json           build_engine_scenarios (made once; a new set needs a new NAME)
         sessions/                collect_engine_sessions: sessions.jsonl, the simulated answers cache, and
                                  run.log (the run's output and warnings, such as the engine's retries)
         report.md, summary.json, sessions.csv, questions.csv, proposals.csv,
@@ -75,7 +75,9 @@ def git_commit() -> str:
 
 def collection_config(data) -> dict:
     """What decides the sessions; a folder's sessions all share it."""
-    return {"menus": sorted(data["menus"]), "seed": data["seed"], "max_questions": settings.RECOMMEND_MAX_QUESTIONS,
+    scenarios_sha256 = hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    return {"menus": sorted(data["menus"]), "scenarios_sha256": scenarios_sha256, "seed": data["seed"],
+            "max_questions": settings.RECOMMEND_MAX_QUESTIONS,
             "dt_policy": settings.RECOMMEND_DT_POLICY, "dt_policy_version": POLICY_VERSION,
             "llm_model": os.environ.get("METCHU_LLM_MODEL") or DEFAULT_MODEL, "llm_engine_version": ENGINE_VERSION,
             "llm_engine_prompt_id": hashlib.sha256(ENGINE_PROMPT.encode()).hexdigest()[:12],
@@ -140,9 +142,10 @@ class Command(BaseCommand):
                 path = scenario_path if scenario_path.exists() else pathlib.Path(scratch) / "scenarios.json"
                 if not scenario_path.exists():
                     scenarios.save(path, build(dates, meals, counts, options["seed"], warn))
-                call_command("collect_engine_sessions", "--scenarios", str(path), "--output",
-                             str(pathlib.Path(scratch) / "sessions.jsonl"), *play_options, "--dry-run",
-                             stdout=self.stdout)
+                sessions = folder / "sessions" / "sessions.jsonl"  # read only: what is left to play
+                output = sessions if sessions.exists() else pathlib.Path(scratch) / "sessions.jsonl"
+                call_command("collect_engine_sessions", "--scenarios", str(path), "--output", str(output),
+                             *play_options, "--dry-run", stdout=self.stdout)
             return
 
         (folder / "sessions").mkdir(parents=True, exist_ok=True)

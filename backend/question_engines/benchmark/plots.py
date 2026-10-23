@@ -28,7 +28,7 @@ COLOR = {"decision_tree": "#4c72b0", "llm": "#dd8452"}
 LABEL = {"decision_tree": "decision tree", "llm": "LLM engine"}
 X = np.arange(len(ENGINES))
 OUTCOMES = {"first proposal accepted": "#55a868", "accepted later": "#a1d99b",
-            "gave up (5 proposals rejected)": "#c44e52"}
+            "gave up (5 proposals rejected)": "#c44e52", "error / unavailable": "#cccccc"}
 PAIRED = [("first_guess_accepted", "first pick accepted"), ("first_guess_exact", "first pick exact"),
           ("success", "ended on a wanted menu"), ("questions", "questions per session")]
 
@@ -87,9 +87,9 @@ def _missing(axis, group, situation) -> bool:
 
 
 def _outcome(row):
-    if _flag(row["first_guess_accepted"]):
-        return "first proposal accepted"
-    return "accepted later" if row["outcome"] == "accepted" else "gave up (5 proposals rejected)"
+    if row["outcome"] == "accepted":
+        return "first proposal accepted" if _flag(row["first_guess_accepted"]) else "accepted later"
+    return "gave up (5 proposals rejected)" if row["outcome"] == "gave_up" else "error / unavailable"
 
 
 def first_pick(group, path):
