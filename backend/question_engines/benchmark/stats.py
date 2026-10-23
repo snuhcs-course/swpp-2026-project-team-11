@@ -6,7 +6,8 @@ engine's repeats are averaged per scenario first, so a scenario counts once.
 
 - bootstrap_ci:  confidence interval of the mean difference, resampling scenarios
 - wilcoxon:      signed-rank test on the per-scenario differences (normal approximation
-                 with tie correction; zero differences are dropped)
+                 with tie correction; zero differences are dropped). Differences equal up to
+                 floating-point error count as ties. For continuous metrics only.
 - mcnemar:       exact test on binary outcomes (each engine by majority over its repeats)
 - weighted_kappa: agreement between people's and the simulated user's answers
 """
@@ -37,7 +38,7 @@ def _normal_two_sided(z) -> float:
 
 def wilcoxon(differences) -> float:
     """Two-sided p-value of the signed-rank test (nan with fewer than 5 nonzero pairs)."""
-    nonzero = [d for d in differences if d != 0]
+    nonzero = [d for d in (round(d, 9) for d in differences) if d != 0]
     n = len(nonzero)
     if n < 5:
         return float("nan")

@@ -4,7 +4,7 @@ sessions.csv, questions.csv and proposals.csv hold one row per session, question
 proposal, for finding what went wrong.
 
 Every figure is per situation: the situations measure different things (a served menu,
-a substitute), so a mean over them means nothing.
+a substitute), so a mean over them means nothing. plots.py draws them into plots/.
 
     1_main_metrics/    questions, first pick, latency and cost per session
     2_baselines/       first pick against proposing without a question, a random dish
@@ -36,6 +36,7 @@ from .simulator import ANSWER_IDS
 
 GOAL_FIRST_PICK = 0.5      # first-pick acceptance the app aims at
 GOAL_OVER_BASELINE = 0.15  # and how far above a baseline (checked as points and as a ratio)
+TOLERANCE = 1e-9  # a result exactly at a goal meets it despite floating-point error
 SESSIONS_PER_ENGINE = 2    # user study: sessions each tester plays on each engine
 TAUS = (0.70, 0.75, 0.80, 0.85, 0.90, 0.95)
 DIRECTION = {"yes": 2, "probably_yes": 2, "any": 1, "unknown": 1, "probably_no": 0, "no": 0}
@@ -154,8 +155,8 @@ def baseline_rows(sessions):
                 ours = statistics.fmean(mine[s] for s in shared)
                 theirs = statistics.fmean(values[s] for s in shared)
                 ratio = ours / theirs - 1 if theirs else None
-                points_met = ours - theirs >= GOAL_OVER_BASELINE
-                ratio_met = ratio is not None and ratio >= GOAL_OVER_BASELINE
+                points_met = ours - theirs >= GOAL_OVER_BASELINE - TOLERANCE
+                ratio_met = ratio is not None and ratio >= GOAL_OVER_BASELINE - TOLERANCE
                 low, high = stats.bootstrap_ci([mine[s] - values[s] for s in shared])
                 rows.append([situation, engine, name, len(shared), _fmt(ours, "rate"), _fmt(theirs, "rate"),
                              f"{(ours - theirs) * 100:+.1f}", f"[{low * 100:+.1f}, {high * 100:+.1f}]",
@@ -177,8 +178,8 @@ def section_baselines(sessions):
         "baseline is judged by the name rule only, so the engines are too.",
         "no question: the same engine's \"recommend now\" before any question; random dish: the chance "
         "that a dish picked at random is accepted; and the other engine.",
-        f"Each scenario counts once (each engine's repeats averaged). The goal is +{GOAL_OVER_BASELINE * 100:.0f} points "
-        f"or +{GOAL_OVER_BASELINE:.0%} relative; both are shown."],
+        "Each scenario counts once (each engine's repeats averaged). The goal is "
+        f"+{GOAL_OVER_BASELINE * 100:.0f} points or +{GOAL_OVER_BASELINE:.0%} relative; both are shown."],
         "tables": [("baselines.csv", "First pick vs baselines",
                     ["situation", "engine", "baseline", "scenarios", "first pick (exact)", "baseline",
                      "diff (points)", "95% CI", "relative", f"+{GOAL_OVER_BASELINE * 100:.0f} points",
@@ -235,14 +236,16 @@ def paired(sessions, situation):
             continue
         diffs = [llm - dt for dt, llm in pairs]
         low, high = stats.bootstrap_ci(diffs)
-        p_mcnemar = None
-        if binary:
+        p_wilcoxon = p_mcnemar = None
+        if binary:  # repeat means of a yes/no metric are heavily tied, so no Wilcoxon
             only_dt = sum(dt >= 0.5 and llm < 0.5 for dt, llm in pairs)
             only_llm = sum(llm >= 0.5 and dt < 0.5 for dt, llm in pairs)
             p_mcnemar = stats.mcnemar(only_dt, only_llm)
+        else:
+            p_wilcoxon = stats.wilcoxon(diffs)
         out.append([situation, metric, len(pairs), _fmt(statistics.fmean(p[0] for p in pairs)),
                     _fmt(statistics.fmean(p[1] for p in pairs)), _fmt(statistics.fmean(diffs)),
-                    f"[{_fmt(low)}, {_fmt(high)}]", _fmt(stats.wilcoxon(diffs)), _fmt(p_mcnemar)])
+                    f"[{_fmt(low)}, {_fmt(high)}]", _fmt(p_wilcoxon), _fmt(p_mcnemar)])
     return out
 
 
@@ -253,7 +256,7 @@ def section_paired(sessions):
         return {"title": title, "skipped": "No scenario was played by both engines."}
     return {"title": title, "lines": [
         "LLM - decision tree per scenario, each engine's mean over its repeats; positive = the LLM engine is "
-        "higher. 95% bootstrap interval, Wilcoxon signed-rank p, McNemar p for yes/no metrics."],
+        "higher. 95% bootstrap interval; McNemar p for yes/no metrics, Wilcoxon signed-rank p for the others."],
         "tables": [("paired.csv", "Paired comparison", ["situation", "metric", "pairs", "decision tree", "llm",
                                                         "diff", "95% CI", "Wilcoxon p", "McNemar p"], rows, 40)]}
 
@@ -264,19 +267,20 @@ def section_latency_cost(records):
     rows = [[situation, engine, f["sessions"], _fmt(f["session_ms_p50"]), _fmt(f["session_ms_p95"]),
              _fmt(f["step_ms_p50"]), _fmt(f["step_ms_p95"]), _fmt(f["llm_calls"]), _fmt(f["input_tokens"], "int"),
              _fmt(f["output_tokens"], "int"), _fmt(f["cost_usd"], "usd"), _fmt(f["cost_usd_p95"], "usd"),
-             _fmt(f["fallback_rate"], "rate"), _fmt(f["error_rate"], "rate"), f["recommend_now_calls"],
+             _fmt(f["fallback_rate"], "rate"), _fmt(f["error_rate"], "rate"), _fmt(f["user_error_rate"], "rate"),
+             f["recommend_now_calls"],
              _fmt(f["recommend_now_cost_usd"], "usd")]
             for situation, per_engine in figures.items() for engine, f in per_engine.items()]
     overhead = [[situation, engine, f["simulator_calls"], _fmt(f["simulator_input_tokens"], "int"),
                  _fmt(f["simulator_output_tokens"], "int")]
                 for situation, per_engine in figures.items() for engine, f in per_engine.items()]
     return {"title": "5. Latency and cost", "summary": figures, "lines": [
-        "Engine time only. LLM calls, tokens and cost are the engine's own, as OpenRouter reported them; "
-        "\"recommend now\" copies are benchmark overhead and counted apart (totals)."],
+        "Engine time only. LLM calls (every attempt, retries included), tokens and cost are the engine's own, "
+        "as OpenRouter reported them; \"recommend now\" copies are benchmark overhead and counted apart (totals)."],
         "tables": [("latency_cost.csv", "Per situation",
                     ["situation", "engine", "sessions", "session ms p50", "p95", "step ms p50", "p95", "LLM calls",
                      "input tokens", "output tokens", "cost / session", "cost p95", "sessions with a fallback",
-                     "errors", "recommend-now calls", "recommend-now cost"], rows, 10),
+                     "engine errors", "simulated-user errors", "recommend-now calls", "recommend-now cost"], rows, 10),
                    ("simulator_usage.csv", "Simulated user (benchmark overhead, totals)",
                     ["situation", "engine", "calls", "input tokens", "output tokens"], overhead, 10)]}
 
@@ -445,9 +449,10 @@ def write(scenario_data, records, output_dir, human=None, checks=None, plots=Tru
                section_recommend_now(points), section_similarity(sessions, proposals),
                section_user_study(human or [], checks or [], index)]
     engines = sorted({r["engine"] for r in records}, key=ENGINES.index)
+    per_engine = ", ".join(f"{e} {sum(r['engine'] == e for r in records)}" for e in engines)
     text = ["# Question engine benchmark: decision tree (MVP1) vs LLM engine (MVP2)", "",
             f"{len(scenarios)} scenarios on {len(scenario_data['menus'])} menus, {len(records)} sessions "
-            f"({', '.join(f'{e} {sum(r['engine'] == e for r in records)}' for e in engines)}).", ""]
+            f"({per_engine}).", ""]
     for result in results:
         text += [f"## {result['title']}", ""]
         if "skipped" in result:
@@ -471,6 +476,12 @@ def write(scenario_data, records, output_dir, human=None, checks=None, plots=Tru
                 writer = csv.DictWriter(f, fieldnames=list(rows[0]))
                 writer.writeheader()
                 writer.writerows(rows)
+    if plots:
+        from .plots import write as draw
+
+        draw(output)
+        text[2:2] = ["Plots by situation: `plots/` (first pick, outcomes, paired differences, questions / latency / "
+                     "cost, first pick by certainty).", ""]
     summary = {"scenarios": len(scenarios), "sessions": len(records),
                **{section_dir(r["title"]): r["summary"] for r in results if "summary" in r}}
     (output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1, default=str) + "\n",
