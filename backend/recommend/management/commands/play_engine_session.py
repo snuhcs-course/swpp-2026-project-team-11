@@ -3,7 +3,7 @@
 
 A person plays one session in the terminal, on a menu from the scenario file:
 the user study. With --engine blind (the default) the engine is hidden, and each
-tester plays SESSIONS_PER_ENGINE sessions on each engine in the order A B B A (A
+tester plays SESSIONS_PER_ENGINE sessions on each engine in pairs A B, B A, ... (A
 chosen from the tester's name), so neither engine always comes first. The tester
 first says what they want (or plays a scenario's wanted menu with --scenario),
 answers the questions, judges the proposals, and rates the result from 1 to 5.
@@ -51,6 +51,19 @@ class HumanUser:
                 return {"accepted": text == "y", "judged_by": "person"}
 
 
+def situation_of(targets) -> str:
+    if not any(target["matches"] for target in targets):
+        return "not_in_menu"
+    return "multiple" if len(targets) > 1 else "in_menu"
+
+
+def blind_order(tester) -> list[str]:
+    """SESSIONS_PER_ENGINE sessions on each engine, in pairs A B, B A, A B, ... (A from the tester's name)."""
+    first = list(ENGINES)
+    random.Random(hashlib.sha256(tester.encode()).hexdigest()).shuffle(first)
+    return [engine for i in range(SESSIONS_PER_ENGINE) for engine in (first if i % 2 == 0 else first[::-1])]
+
+
 def wanted(names, menu) -> list[dict]:
     """Targets for what a tester typed, with features from the menu or the database."""
     targets = []
@@ -78,6 +91,7 @@ class Command(BaseCommand):
         data = scenarios.load(options["scenarios"])
         ask, write = input, self.stdout.write
         output = pathlib.Path(options["output"])
+        output.parent.mkdir(parents=True, exist_ok=True)
         if options["scenario"]:
             scenario = next((s for s in data["scenarios"] if s["id"] == options["scenario"]), None)
             if scenario is None:
@@ -92,16 +106,14 @@ class Command(BaseCommand):
             if not names:
                 raise CommandError("먹고 싶은 메뉴를 하나 이상 적어 주세요.")
             targets = wanted(names, data["menus"][menu_key])
-            situation = ("multiple" if len(targets) > 1 else "in_menu" if targets[0]["matches"] else "not_in_menu")
+            situation = situation_of(targets)
             scenario = {"situation": situation, "certainty": "human", "menu": menu_key, "targets": targets}
 
         previous = read_lines([output]) if output.exists() else []
         mine = sum(r.get("tester") == options["tester"] for r in previous)
         engine = options["engine"]
         if engine == "blind":
-            first = list(ENGINES)
-            random.Random(hashlib.sha256(options["tester"].encode()).hexdigest()).shuffle(first)
-            order = first * (SESSIONS_PER_ENGINE // 2) + first[::-1] * (SESSIONS_PER_ENGINE // 2)
+            order = blind_order(options["tester"])
             engine = order[mine % len(order)]
             write(f"세션 {mine % len(order) + 1}/{len(order)}")
         scenario["id"] = f"human-{options['tester']}-{mine + 1:02d}"
