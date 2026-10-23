@@ -162,10 +162,10 @@ def play(factory, scenario, user, repeat=0, anytime=ANYTIME) -> dict:
                                         "group": (step.get("group") or {}).get("food_ids"),
                                         "label": proposal_text(step, "name"), **verdict,
                                         "state": explain(engine)})
-                step = clock(engine.feedback, step["guess_id"], accepted)
-                if not accepted and record["guesses"] >= MAX_REJECTIONS:
+                if not accepted and record["guesses"] >= MAX_REJECTIONS:  # no next turn is asked for
                     record["outcome"] = "gave_up"
                     break
+                step = clock(engine.feedback, step["guess_id"], accepted)
             elif step["type"] == "recommendation":
                 record["outcome"], record["final_food_id"] = "accepted", step["food"]["food_id"]
                 break
