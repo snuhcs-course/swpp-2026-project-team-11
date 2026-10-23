@@ -1,0 +1,9 @@
+﻿situation,engine,calls,input tokens,output tokens
+in_menu,decision_tree,703,"283,138","47,124"
+in_menu,llm,1025,"414,924","65,789"
+multiple,decision_tree,378,"160,111","34,955"
+multiple,llm,493,"206,818","45,883"
+not_in_menu,decision_tree,427,"171,244","26,696"
+not_in_menu,llm,508,"203,418","30,645"
+close_alternative,decision_tree,198,"77,202","13,231"
+close_alternative,llm,322,"125,864","24,196"

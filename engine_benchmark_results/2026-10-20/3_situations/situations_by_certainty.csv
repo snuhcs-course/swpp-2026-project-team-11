@@ -1,0 +1,25 @@
+﻿situation,certainty,engine,sessions,success,first pick,interactions,gave up,similarity,regret,rank
+in_menu,high,decision_tree,42,78.6%,71.4%,9.429,0.0%,0.995,0.005,0.994
+in_menu,high,llm,42,69.0%,42.9%,9.952,19.0%,0.995,0.005,0.995
+in_menu,medium,decision_tree,39,66.7%,30.8%,14.6,25.6%,0.991,0.009,0.993
+in_menu,medium,llm,39,41.0%,28.2%,11.8,48.7%,0.990,0.009,0.991
+in_menu,low,decision_tree,39,46.2%,15.4%,14.7,41.0%,0.987,0.013,0.989
+in_menu,low,llm,39,17.9%,7.7%,13.4,71.8%,0.973,0.027,0.974
+multiple,high,decision_tree,21,28.6%,42.9%,9.429,14.3%,0.934,0.066,0.843
+multiple,high,llm,21,47.6%,47.6%,10.5,28.6%,0.985,0.015,0.970
+multiple,medium,decision_tree,21,38.1%,23.8%,13.4,38.1%,0.979,0.021,0.957
+multiple,medium,llm,21,42.9%,23.8%,11.8,42.9%,0.989,0.011,0.974
+multiple,low,decision_tree,18,22.2%,27.8%,13.5,33.3%,0.943,0.057,0.852
+multiple,low,llm,18,22.2%,44.4%,10.2,33.3%,0.959,0.041,0.900
+not_in_menu,high,decision_tree,21,-,0.0%,21.6,100.0%,-,-,-
+not_in_menu,high,llm,21,-,14.3%,13.3,71.4%,0.885,0.053,0.880
+not_in_menu,medium,decision_tree,21,-,14.3%,18.0,66.7%,0.926,0.015,0.993
+not_in_menu,medium,llm,21,-,9.5%,13.1,81.0%,0.892,0.054,0.915
+not_in_menu,low,decision_tree,18,-,0.0%,18.7,100.0%,-,-,-
+not_in_menu,low,llm,18,-,0.0%,14.0,100.0%,-,-,-
+close_alternative,high,decision_tree,21,100.0%,42.9%,8.714,0.0%,1.000,0.000,0.999
+close_alternative,high,llm,21,76.2%,33.3%,9.905,23.8%,1.000,0.000,1.000
+close_alternative,medium,decision_tree,21,61.9%,28.6%,15.3,38.1%,1.000,0.000,0.998
+close_alternative,medium,llm,21,33.3%,0.0%,12.4,66.7%,1.000,0.000,0.999
+close_alternative,low,decision_tree,18,22.2%,5.6%,17.4,77.8%,1.000,0.000,1.000
+close_alternative,low,llm,18,27.8%,11.1%,12.3,72.2%,1.000,0.000,1.000

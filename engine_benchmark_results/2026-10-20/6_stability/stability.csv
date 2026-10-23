@@ -1,0 +1,9 @@
+﻿situation,engine,scenarios,repeats,same final menu,same outcome,questions SD
+in_menu,decision_tree,40,3,75.0%,77.5%,1.630
+in_menu,llm,40,3,60.0%,57.5%,1.475
+multiple,decision_tree,20,3,58.3%,55.0%,1.214
+multiple,llm,20,3,45.0%,45.0%,1.330
+not_in_menu,decision_tree,20,3,93.3%,95.0%,1.247
+not_in_menu,llm,20,3,90.0%,95.0%,1.774
+close_alternative,decision_tree,20,3,83.3%,75.0%,1.905
+close_alternative,llm,20,3,66.7%,50.0%,1.100

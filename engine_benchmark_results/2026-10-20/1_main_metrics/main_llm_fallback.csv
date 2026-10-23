@@ -1,0 +1,7 @@
+﻿situation,LLM sessions,sessions,questions / session,questions to accept,first pick,first pick (exact),latency p50 (ms),latency p95 (ms),cost / session
+in_menu,without,120,8.225,7.692,26.7%,20.8%,"16,204.1","24,128.3",$0.01266
+multiple,without,59,7.780,7.256,39.0%,22.0%,"14,996.5","25,677.4",$0.01193
+multiple,with a fallback,1,14.0,-,0.0%,0.0%,"27,773.8","27,773.8",$0.02209
+not_in_menu,without,59,8.847,9.400,8.5%,-,"18,590.8","27,322.5",$0.01479
+not_in_menu,with a fallback,1,13.0,-,0.0%,-,"30,047.4","30,047.4",$0.02344
+close_alternative,without,60,7.767,7.429,15.0%,15.0%,"15,888.4","21,678.0",$0.01235

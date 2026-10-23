@@ -1,0 +1,9 @@
+﻿situation,engine,sessions,questions / session,questions to accept,first pick,first pick (exact),latency p50 (ms),latency p95 (ms),cost / session,first pick >= 50%
+in_menu,decision_tree,120,10.2,9.074,40.0%,32.5%,36.1,106.6,$0.00000,no
+in_menu,llm,120,8.225,7.692,26.7%,20.8%,"16,204.1","24,128.3",$0.01266,no
+multiple,decision_tree,60,9.150,8.279,31.7%,6.7%,45.7,122.4,$0.00000,no
+multiple,llm,60,7.883,7.256,38.3%,21.7%,"15,027.3","27,776.5",$0.01210,no
+not_in_menu,decision_tree,60,14.8,10.0,5.0%,-,60.6,131.0,$0.00000,no
+not_in_menu,llm,60,8.917,9.400,8.3%,-,"18,759.0","28,378.0",$0.01494,no
+close_alternative,decision_tree,60,10.4,8.158,26.7%,26.7%,42.0,108.1,$0.00000,no
+close_alternative,llm,60,7.767,7.429,15.0%,15.0%,"15,888.4","21,678.0",$0.01235,no
