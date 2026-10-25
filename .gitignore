@@ -9,6 +9,10 @@ venv/
 .env
 backend/db.sqlite3
 
+# Ad-hoc feature extraction benchmark output (benchmark_features); feature_benchmark_results/ is shared
+feature_benchmark_report/
+# Excel lock files
+~$*
 # Ad-hoc question engine benchmark output (benchmark_engines); engine_benchmark_results/ is shared
 engine_benchmark_report/
 
