@@ -13,6 +13,8 @@ backend/db.sqlite3
 feature_benchmark_report/
 # Excel lock files
 ~$*
+# Ad-hoc question engine benchmark output (benchmark_engines); engine_benchmark_results/ is shared
+engine_benchmark_report/
 
 # Editors / OS
 .DS_Store

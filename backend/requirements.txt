@@ -4,6 +4,7 @@ langchain-google-genai==4.4.0
 langchain-openai==1.*
 matplotlib>=3.9,<4  # histograms in the benchmark_features report
 openpyxl==3.*  # the Excel rating form of the feature benchmark
+matplotlib>=3.9,<4  # plots in the benchmark reports
 pydantic==2.*
 python-dotenv==1.*
 # Tests: `pytest` from backend/ (settings in pytest.ini).

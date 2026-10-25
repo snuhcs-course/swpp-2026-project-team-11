@@ -1,0 +1,19 @@
+﻿situation,engine,baseline,scenarios,first pick (exact),baseline,diff (points),95% CI,relative,+15 points,+15%
+in_menu,decision_tree,no question,40,32.5%,0.0%,+32.5,"[+20.0, +45.8]",-,yes,no
+in_menu,decision_tree,random dish,40,32.5%,1.2%,+31.3,"[+18.8, +44.7]",+2635%,yes,yes
+in_menu,decision_tree,llm,40,32.5%,20.8%,+11.7,"[+0.0, +24.2]",+56%,no,yes
+in_menu,llm,no question,40,20.8%,0.8%,+20.0,"[+11.7, +29.2]",+2400%,yes,yes
+in_menu,llm,random dish,40,20.8%,1.2%,+19.6,"[+11.3, +28.7]",+1653%,yes,yes
+in_menu,llm,decision_tree,40,20.8%,32.5%,-11.7,"[-24.2, -0.0]",-36%,no,no
+multiple,decision_tree,no question,20,6.7%,10.0%,-3.3,"[-21.7, +11.7]",-33%,no,no
+multiple,decision_tree,random dish,20,6.7%,2.7%,+4.0,"[-2.7, +12.6]",+150%,no,yes
+multiple,decision_tree,llm,20,6.7%,21.7%,-15.0,"[-31.7, +1.7]",-69%,no,no
+multiple,llm,no question,20,21.7%,8.3%,+13.3,"[-3.3, +30.0]",+160%,no,yes
+multiple,llm,random dish,20,21.7%,2.7%,+19.0,"[+7.2, +32.5]",+712%,yes,yes
+multiple,llm,decision_tree,20,21.7%,6.7%,+15.0,"[-1.7, +31.7]",+225%,yes,yes
+close_alternative,decision_tree,no question,20,26.7%,5.0%,+21.7,"[+6.7, +38.3]",+433%,yes,yes
+close_alternative,decision_tree,random dish,20,26.7%,1.0%,+25.6,"[+9.0, +44.0]",+2518%,yes,yes
+close_alternative,decision_tree,llm,20,26.7%,15.0%,+11.7,"[-6.7, +31.7]",+78%,no,yes
+close_alternative,llm,no question,20,15.0%,3.3%,+11.7,"[-1.7, +28.3]",+350%,no,yes
+close_alternative,llm,random dish,20,15.0%,1.0%,+14.0,"[+2.4, +27.4]",+1373%,no,yes
+close_alternative,llm,decision_tree,20,15.0%,26.7%,-11.7,"[-31.7, +6.7]",-44%,no,no
