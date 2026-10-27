@@ -196,8 +196,9 @@ def test_apply_rebuilds_requests_verifies_and_does_not_repeat(project):
     assert client.apply(project.task, plan)['result'] == 'verified'
     assert client.apply(project.task, plan)['result'] == 'already_applied'
     assert client.request.call_count == 1
-    assert client.request.call_args.kwargs['json'] == {'valueInputOption': 'RAW', 'data': [
-        {'range': "'Renamed schedule'!D2", 'values': [[1]]}]}
+    request = client.request.call_args.kwargs['json']['requests'][0]['updateCells']
+    assert request['start'] == {'sheetId': 7, 'rowIndex': 1, 'columnIndex': 3}
+    assert request['fields'] == 'userEnteredValue' and request['rows'][0]['values'][0] == {'userEnteredValue': {'numberValue': 1}}
     plan['changes'][0]['after'] = 99
     client.snapshot.return_value, client.snapshot.side_effect = snapshot(), None
     with pytest.raises(ValueError): client.apply(project.task, plan)
@@ -278,3 +279,31 @@ def test_modern_codex_input_prompts(project):
              content=[dict(type='input_text', text='Actual input')]))
     result = worklog.input_prompts([source(project.root, 'codex', [e])])
     assert [p['text'] for p in result['prompts']] == ['Actual input']
+
+
+@pytest.mark.parametrize('before', ['', 1234567])
+def test_token_numeric_value_and_grouping_written_together(project, before):
+    project.task['usage'] = {'usage_records': 1, 'warnings': [], 'total_tokens': 1234567}
+    initial = snapshot()
+    initial['values'][1][5] = before
+    plan = sheets.make_plan(initial, project.task)
+    assert sheets.check_plan(initial, plan) == 'ready'
+    after = deepcopy(initial)
+    after['values'][1][5] = 1234567
+    after['number_formats'] = {'5': {'type': 'NUMBER', 'pattern': '#,##0'}}
+    client = sheets.GoogleSheet.__new__(sheets.GoogleSheet)
+    client.snapshot, client.request = Mock(side_effect=[initial, after, after]), Mock()
+    assert client.apply(project.task, plan)['result'] == 'verified'
+    assert client.apply(project.task, plan)['result'] == 'already_applied'
+    request = client.request.call_args.kwargs['json']['requests'][0]['updateCells']
+    assert request['rows'][0]['values'][0] == {'userEnteredValue': {'numberValue': 1234567},
+        'userEnteredFormat': {'numberFormat': {'type': 'NUMBER', 'pattern': '#,##0'}}}
+    assert request['fields'] == 'userEnteredValue,userEnteredFormat.numberFormat'
+    assert client.request.call_count == 1
+
+
+def test_existing_custom_token_format_is_preserved(project):
+    project.task['usage'] = {'usage_records': 1, 'warnings': [], 'total_tokens': 1234567}
+    s = snapshot()
+    s['number_formats'] = {'5': {'type': 'NUMBER', 'pattern': '#,##0.0'}}
+    assert 'number_format' not in sheets.make_plan(s, project.task)['changes'][0]
