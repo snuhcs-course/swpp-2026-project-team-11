@@ -47,14 +47,17 @@ Confirm session IDs, recorded `cwd` and event timestamps against the task; a fil
 alone does not prove attribution. Check child logs separately. For interleaved A/B/A
 work, attach A's two intervals separately, e.g. 13:00–13:20 and 14:00–14:30, omitting B.
 
-Codex uses cumulative-counter differences and the first reported last-call usage,
-excluding inherited totals. Cache reads and reasoning are already included. Claude
+Codex prefers per-response usage records, deduplicated by response ID. Older logs
+use cumulative-counter differences and the first last-call usage, excluding inherited
+totals. Cache reads and reasoning are already included. Claude
 adds uncached input, cache reads, cache creation and output once per request/message.
 Malformed records or counter resets produce warnings and hold tokens out of sheet
 updates. Missing measurements stay missing. These totals are not billing estimates.
-Recorded time unions complete Codex turns, including tool waits; Claude and partial
-turn time are not measured. Confirm agent hours separately. Running sessions may
-need recollection after their final usage event is saved.
+Recorded time unions Codex turn intervals, including tool waits and aborted turns,
+clipped to the assigned ranges. Open turns run provisionally to the cutoff; overlapping
+agents count once and gaps between turns are excluded. Divide seconds by 3600 for
+this wall-time convention; record the cutoff and method with the hours. Claude time
+is not measured. Running sessions need recollection after their final usage is saved.
 
 The private iteration bundle contains task evidence and unredacted input-prompt
 candidates. Review originals for missing prompts, generated wrappers and attachments.
