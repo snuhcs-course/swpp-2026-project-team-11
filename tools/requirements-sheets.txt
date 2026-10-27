@@ -1,0 +1,4 @@
+# Optional: direct Google Sheets access. Task records and usage need only Python 3.11+.
+google-auth>=2.35,<3
+google-auth-oauthlib>=1.2,<2
+requests>=2.32,<3
