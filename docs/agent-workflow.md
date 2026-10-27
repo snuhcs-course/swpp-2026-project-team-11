@@ -92,6 +92,8 @@ permissions where supported. Keep the client JSON out of Git too. The script
 discovers headers and validates dropdowns, dates and numbers. It updates only
 recorded hours, tokens, completion date, status and commit, using absolute values.
 Apply rereads the row, checks the saved preview, writes cells and verifies readback.
+Tokens stay numeric; cells without a number format receive `#,##0`. Existing
+custom formats are preserved. Value and format changes are applied in one batch.
 Repeated application is a no-op. Formula cells are never replaced. Checks and writes
 are not an atomic lock: coordinate same-row edits and read back after a timeout.
 
