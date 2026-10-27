@@ -139,15 +139,19 @@ def make_plan(snapshot, task):
         notice = validate_cell(snapshot, col, after)
         if notice:
             notices.append(f"{header}: {notice} (sheet uses a warning, not strict rejection)")
-        if before == after:
+        number_format = {"type": "NUMBER", "pattern": "#,##0"} if key == "tokens" and not snapshot.get("number_formats", {}).get(str(col)) else None
+        if before == after and number_format is None:
             continue
         cell = f"{column(col + 1)}{found['row_index'] + 1}"
         changes.append({"field": key, "cell": cell, "before": before, "after": after})
+        if number_format:
+            changes[-1]["number_format"] = number_format
     return {"task": task["id"], "contributor": task["owner"],
             "spreadsheet_id": snapshot["spreadsheet_id"], "sheet_id": snapshot["sheet_id"],
             "sheet_title": snapshot["sheet_title"], **found, "changes": changes,
             "task_fields": fields, "validation_rules": snapshot.get("validation_rules", {}),
             "allowed_values": snapshot.get("allowed_values", {}),
+            "number_formats": snapshot.get("number_formats", {}),
             "validation_notices": notices,
             "usage_notice": ("Usage with warnings is not copied to the sheet; resolve attribution/coverage first."
                              if usage and usage["warnings"] else None)}
@@ -163,13 +167,16 @@ def check_plan(snapshot, plan):
     for change in plan["changes"]:
         col = plan["headers"].index(FIELD_HEADERS[change["field"]])
         expected[col] = change["after"]
-    if found["row"] == expected:
+    formats_match = all(not c.get("number_format") or snapshot.get("number_formats", {}).get(
+        str(found["headers"].index(FIELD_HEADERS[c["field"]]))) == c["number_format"] for c in plan["changes"])
+    if found["row"] == expected and formats_match:
         return "already_applied"
     if found["row"] != plan["row"]:
         raise ValueError("The schedule row changed since preview; refresh the plan before writing.")
     if (snapshot.get("validation_rules", {}) != plan.get("validation_rules", {}) or
-        snapshot.get("allowed_values", {}) != plan.get("allowed_values", {})):
-        raise ValueError("Cell validation changed; refresh the plan before writing.")
+        snapshot.get("allowed_values", {}) != plan.get("allowed_values", {}) or
+        snapshot.get("number_formats", {}) != plan.get("number_formats", {})):
+        raise ValueError("Cell validation or number format changed; refresh the plan before writing.")
     return "ready"
 
 
@@ -237,15 +244,18 @@ class GoogleSheet:
             raise ValueError("Schedule exceeds the bounded read size; narrow the sheet before using this tool.")
         values = self.values(a1(props["title"], f"A1:{column(width)}{props['gridProperties']['rowCount']}"))
         snapshot = {"spreadsheet_id": self.spreadsheet_id, "sheet_id": props["sheetId"],
-                    "sheet_title": props["title"], "values": values, "allowed_values": {}, "validation_rules": {}}
+                    "sheet_title": props["title"], "values": values, "allowed_values": {}, "validation_rules": {}, "number_formats": {}}
         found = find_row(snapshot, identifier)
         row_number = found["row_index"] + 1
         details = self.request("GET", params={"ranges": a1(props["title"], f"A{row_number}:{column(width)}{row_number}"),
-            "includeGridData": "true", "fields": "sheets(data(startColumn,rowData(values(dataValidation))))"})
+            "includeGridData": "true", "fields": "sheets(data(startColumn,rowData(values(dataValidation,effectiveFormat(numberFormat)))))"})
         for sheet in details.get("sheets", []):
             for data in sheet.get("data", []):
                 for row in data.get("rowData", []):
                     for index, cell in enumerate(row.get("values", []), data.get("startColumn", 0)):
+                        number_format = cell.get("effectiveFormat", {}).get("numberFormat")
+                        if number_format:
+                            snapshot["number_formats"][str(index)] = number_format
                         if "dataValidation" not in cell:
                             continue
                         snapshot["validation_rules"][str(index)] = cell["dataValidation"]
@@ -268,9 +278,18 @@ class GoogleSheet:
             return {"result": "already_applied", "cells": 0}
         if fresh != plan:
             raise ValueError("Preview differs from the current task and sheet; refresh it before writing.")
-        data = [{"range": a1(snapshot["sheet_title"], c["cell"]), "values": [[c["after"]]]}
-                for c in fresh["changes"]]
-        self.request("POST", "/values:batchUpdate", json={"valueInputOption": "RAW", "data": data})
+        requests = []
+        for change in fresh["changes"]:
+            value = change["after"]
+            cell = {"userEnteredValue": {"numberValue": value} if isinstance(value, (int, float)) else {"stringValue": value}}
+            fields = "userEnteredValue"
+            if change.get("number_format"):
+                cell["userEnteredFormat"] = {"numberFormat": change["number_format"]}
+                fields += ",userEnteredFormat.numberFormat"
+            requests.append({"updateCells": {"start": {"sheetId": snapshot["sheet_id"],
+                "rowIndex": fresh["row_index"], "columnIndex": fresh["headers"].index(FIELD_HEADERS[change["field"]])},
+                "rows": [{"values": [cell]}], "fields": fields}})
+        self.request("POST", ":batchUpdate", json={"requests": requests})
         if check_plan(self.snapshot(plan["task"]), plan) != "already_applied":
             raise ValueError("Write readback differs from the plan; inspect the sheet before retrying.")
         return {"result": "verified", "cells": len(plan["changes"])}
