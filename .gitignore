@@ -7,6 +7,8 @@ venv/
 
 # Secrets and local data
 .env
+.env.harness
+.harness/
 backend/db.sqlite3
 
 # Ad-hoc feature extraction benchmark output (benchmark_features); feature_benchmark_results/ is shared

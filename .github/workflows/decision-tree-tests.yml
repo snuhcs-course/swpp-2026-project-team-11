@@ -2,7 +2,7 @@ name: Decision-tree engine tests
 
 on:
   pull_request:
-    branches: [MVP, "feat/i2-*"]
+    branches: [MVP, "feat/i*-*"]
     paths: ["backend/**", ".github/workflows/decision-tree-tests.yml"]
   workflow_dispatch:
 
