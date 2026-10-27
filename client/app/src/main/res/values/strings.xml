@@ -45,6 +45,7 @@
 
     <!-- recommendation -->
     <string name="result_where">Where to get it</string>
+    <string name="result_map">Map of the cafeteria</string>
     <string name="offer_line">%1$s · %2$s · %3$s</string>
     <string name="offer_none">No cafeteria listed</string>
     <string name="price_won">%1$s won</string>

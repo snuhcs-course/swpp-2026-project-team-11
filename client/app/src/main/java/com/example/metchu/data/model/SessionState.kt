@@ -63,7 +63,14 @@ data class Food(
     val offers: List<Offer>
 )
 
-data class Offer(val restaurant: String, val meal: String, val price: Int?)
+/** [lat] and [lng] locate the cafeteria; both are null when the menu source has no location. */
+data class Offer(
+    val restaurant: String,
+    val meal: String,
+    val price: Int?,
+    val lat: Double?,
+    val lng: Double?
+)
 
 /** Present when a guess names a whole group; [Step.food] is then one example from it. */
 data class FoodGroup(

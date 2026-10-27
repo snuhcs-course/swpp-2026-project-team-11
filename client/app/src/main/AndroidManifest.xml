@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Shows the user's own position next to the recommended cafeteria. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- usesCleartextTraffic: the development server is plain http on the LAN.
          A Cloudflare Tunnel address (manage.py serve_public) is https. -->
@@ -15,6 +18,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Metchu"
         android:usesCleartextTraffic="true">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${mapsApiKey}" />
 
         <activity
             android:name=".ui.main.MainActivity"

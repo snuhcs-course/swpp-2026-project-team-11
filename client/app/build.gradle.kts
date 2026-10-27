@@ -29,6 +29,12 @@ android {
         // https address printed by `manage.py serve_public` (which can write it here).
         val baseUrl = localProperties.getProperty("metchu.baseUrl") ?: "http://10.0.2.2:8000/"
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+
+        // A Google Maps key with "Maps SDK for Android" enabled. Without one the
+        // result screen leaves the map out.
+        val mapsApiKey = localProperties.getProperty("metchu.mapsApiKey").orEmpty()
+        manifestPlaceholders["mapsApiKey"] = mapsApiKey
+        buildConfigField("boolean", "HAS_MAPS_KEY", mapsApiKey.isNotBlank().toString())
     }
 
     buildTypes {
@@ -77,6 +83,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.play.services.maps)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
