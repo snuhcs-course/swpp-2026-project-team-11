@@ -124,6 +124,24 @@ METCHU_PUBLIC_URL=https://metchu.example.com
 built once with `metchu.baseUrl=https://metchu.example.com/`. The token is a
 secret like the API key: keep it in `.env` only.
 
+### Cafeteria map (Google Maps key)
+
+The result screen shows the cafeterias serving the dish on a Google Map. It
+needs a Google Maps API key with **Maps SDK for Android** enabled (Google Cloud
+Console > APIs & Services). Put it in the untracked `client/local.properties`
+and rebuild:
+
+```properties
+metchu.mapsApiKey=AIza...
+```
+
+Without the key the app works as before and leaves the map out. The key ends up
+inside the APK, so restrict it to Android apps (package `com.example.metchu` and
+your signing certificate's SHA-1) in the console; never commit it. The map asks
+for location permission the first time it appears, to show the user's own
+position; if the user declines, it shows only the cafeterias. On the emulator,
+set a position under Extended controls > Location.
+
 ## Screens
 
 | Engine step | What the app shows | Actions |
@@ -131,7 +149,7 @@ secret like the API key: keep it in `.env` only.
 | no session | Start screen with a meal selector and an engine selector (Decision tree / LLM) | Start |
 | `question` | Progress, question text, one button per answer option | answer, Back, Just recommend something |
 | `guess` | The proposed dish with its cafeterias and prices. A group guess shows the group name, one example dish and the other dishes in the group | yes, no, Back |
-| `recommendation` | The accepted dish and where to get it | Start over |
+| `recommendation` | The accepted dish, where to get it and, with a Maps key, a map of those cafeterias | Start over |
 | `unavailable` | Why nothing can be recommended | Start over |
 
 A tapped button gives a light haptic tick, sinks slightly and stays highlighted
@@ -159,6 +177,7 @@ data/network/RetrofitInstance.kt    server address and HTTP client
 data/repository/RecommendRepository.kt   the only class that calls Retrofit
 ui/main/RecommendViewModel.kt       session state, loading and error LiveData
 ui/main/MainActivity.kt             draws the current step, forwards taps
+ui/main/CafeteriaPin.kt             which cafeterias the result map marks
 ```
 
 ## REST contract (`backend/recommend`)
@@ -195,6 +214,9 @@ change: a group's `food_ids` is replaced by `members`, a list of
 `{"food_id", "display_name"}`. The
 [LLM engine](../backend/question_engines/llm/README.md) returns the same step
 shapes; its `question_id` is `q:llm-<n>` and it never sends a `group`.
+Each of a food's `offers` is `{"restaurant", "meal", "price", "lat", "lng"}`;
+`price` is null when the menu lists none, and `lat`/`lng` are null together
+when the cafeteria has no location.
 
 Errors are `{"error": {"code", "message"}}`:
 
