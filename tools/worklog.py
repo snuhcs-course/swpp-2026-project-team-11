@@ -176,23 +176,37 @@ def numeric(values, key):
 
 def codex(source, samples, spans, warnings):
     start, end = timestamp(source["since"]), timestamp(source["until"])
-    previous = None
+    previous, pending = None, None
+    native, legacy, legacy_warnings = {}, {}, set()
     for event in events(source["path"], warnings):
+        payload = event.get("payload", {})
+        if event.get("type") == "token_usage_record":
+            if start <= timestamp(event["timestamp"]) < end:
+                if payload.get("response_id") and payload.get("usage"):
+                    native[("codex-response", payload["response_id"])] = {
+                        k: numeric(payload["usage"], k) for k in KEYS}
+                else:
+                    warnings.add("A per-response Codex usage record is incomplete; excluded.")
+            continue
         if event.get("type") != "event_msg":
             continue
-        payload = event.get("payload", {})
         kind = payload.get("type")
-        if kind not in ("token_count", "task_complete"):
+        if kind not in ("token_count", "task_started", "task_complete", "turn_aborted"):
             continue
         if not event.get("timestamp"):
             warnings.add("A Codex event has no timestamp; excluded.")
             continue
         t = timestamp(event["timestamp"])
-        if kind == "task_complete":
-            if start <= t < end and payload.get("started_at") is not None and payload.get("completed_at") is not None:
+        if kind == "task_started":
+            pending = (payload.get("turn_id"), timestamp(payload.get("started_at", event["timestamp"])))
+            continue
+        if kind in ("task_complete", "turn_aborted"):
+            if payload.get("started_at") is not None and payload.get("completed_at") is not None:
                 a, b = timestamp(payload["started_at"]), timestamp(payload["completed_at"])
-                if start <= a <= b <= end:
-                    spans.append((a, b))
+                if max(start, a) < min(end, b):
+                    spans.append((max(start, a), min(end, b)))
+            if pending and pending[0] == payload.get("turn_id"):
+                pending = None
             continue
         info = payload.get("info") or {}
         total, last = info.get("total_token_usage"), info.get("last_token_usage")
@@ -204,19 +218,26 @@ def codex(source, samples, spans, warnings):
         elif any(current[k] < previous[k] for k in KEYS):
             delta = {k: numeric(last, k) for k in KEYS} if last else None
             if start <= t < end:
-                warnings.add("Codex cumulative counters reset; only the reported last call was included.")
+                legacy_warnings.add("Codex cumulative counters reset; only the reported last call was included.")
         else:
             delta = {k: current[k] - previous[k] for k in KEYS}
         previous = current
         if not start <= t < end:
             continue
         if delta is None:
-            warnings.add("Codex's first counter has no last-call baseline; it was excluded.")
+            legacy_warnings.add("Codex's first counter has no last-call baseline; it was excluded.")
             continue
         # Repeated cumulative snapshots contribute zero; reasoning/cache reads are subsets.
         key = ("codex", source["session_id"], event["timestamp"], tuple(current.values()))
         if sum(delta.values()):
-            samples[key] = delta
+            legacy[key] = delta
+    samples.update(native or legacy)
+    if not native:
+        warnings.update(legacy_warnings)
+    if pending and max(start, pending[1]) < end:
+        spans.append((max(start, pending[1]), end))
+        return 1
+    return 0
 
 
 def claude(source, samples, spans, warnings):
@@ -257,17 +278,17 @@ def union_seconds(spans):
 def collect(sources):
     if not sources:
         raise ValueError("Attach an explicitly attributed session interval with usage --file <path> --tool <tool> first.")
-    samples, spans, warnings = {}, [], set()
+    samples, spans, warnings, open_turns = {}, [], set(), 0
     for source in sources:
         if source_identity(source["path"], source["tool"]) != source["session_id"]:
             raise ValueError("A source file's session identity changed; reattach the correct file.")
-        (codex if source["tool"] == "codex" else claude)(source, samples, spans, warnings)
+        open_turns += (codex if source["tool"] == "codex" else claude)(source, samples, spans, warnings) or 0
     totals = {k: sum(s[k] for s in samples.values()) for k in KEYS}
     return {**totals, "total_tokens": totals["input_tokens"] + totals["output_tokens"],
             "usage_records": len(samples), "collected_at": now(),
-            "turn_wall_seconds": union_seconds(spans), "warnings": sorted(warnings),
-            "time_scope": "Complete Codex turns within the intervals, unioned across overlap; includes tool waits. "
-                          "Claude turn time and partial turns are not measured. Do not treat this as human effort.",
+            "turn_wall_seconds": union_seconds(spans), "open_turns": open_turns, "warnings": sorted(warnings),
+            "time_scope": "Codex turn intervals clipped to the selected ranges and unioned across overlap, including tool waits. "
+                          "Open turns extend provisionally to the interval end. Claude time is not measured; this is not human effort.",
             "scope": "Only explicitly attached intervals; no billing or human-effort estimate."}
 
 
@@ -276,6 +297,7 @@ def input_prompts(sources):
     result, warnings = {}, set()
     for source in sources:
         start, end = timestamp(source["since"]), timestamp(source["until"])
+        candidates, fallback = {}, {}
         for event in events(source["path"], warnings):
             if not event.get("timestamp") or not start <= timestamp(event["timestamp"]) < end:
                 continue
@@ -284,6 +306,11 @@ def input_prompts(sources):
                 payload = event.get("payload", {})
                 if payload.get("type") == "user_message":
                     text = payload.get("message")
+            elif source["tool"] == "codex" and event.get("type") == "response_item":
+                payload = event.get("payload", {})
+                if payload.get("type") == "message" and payload.get("role") == "user":
+                    text = "\n".join(c.get("text", "") for c in payload.get("content", [])
+                                     if c.get("type") in ("text", "input_text"))
             elif source["tool"] == "claude" and event.get("type") == "user" and not (event.get("isMeta") or event.get("isCompactSummary")):
                 content = (event.get("message") or {}).get("content")
                 if isinstance(content, str):
@@ -296,8 +323,10 @@ def input_prompts(sources):
                 continue
             digest = hashlib.sha256(text.encode()).hexdigest()
             key = (source["tool"], source["session_id"], event["timestamp"], digest)
-            result[key] = {"tool": source["tool"], "session_id": source["session_id"],
+            target = fallback if event.get("type") == "response_item" else candidates
+            target[key] = {"tool": source["tool"], "session_id": source["session_id"],
                            "timestamp": event["timestamp"], "text": text}
+        result.update(candidates or fallback)
     return {"prompts": sorted(result.values(), key=lambda r: r["timestamp"]), "warnings": sorted(warnings),
             "review_required": "Private, unredacted candidates. Check missing prompts, generated wrappers, "
                                "attachments and secrets against the original interaction history before publication."}
