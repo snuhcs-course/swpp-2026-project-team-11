@@ -199,7 +199,14 @@ cd client && ./gradlew connectedDebugAndroidTest                    # 34 UI test
 - The API has no login. It is meant for a local demo, not a public server.
 - We have not yet measured how often people accept the first proposal.
 
-## More detail
+## Agent workflow
+
+Codex and Claude Code share [AGENTS.md](AGENTS.md). The
+[agent workflow](docs/agent-workflow.md) describes the local task and usage records,
+Google Sheets setup, PR/wiki handoff and iteration reports. Start with
+`python tools/harness.py --help`; local records and credentials stay out of Git.
+
+## Component guides
 
 - [Android client and REST contract](client/README.md)
 - [Menu database and feature extraction](backend/README.md)
