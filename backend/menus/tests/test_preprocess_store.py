@@ -15,9 +15,9 @@ from menus.tests.utils import without_committed_rules
 DAY = datetime.date(2026, 10, 13)
 
 
-def record(raw_name, restaurant="220동식당", meal="LU", price=6500):
+def record(raw_name, restaurant="220동식당", meal="LU", price=6500, lat=None, lng=None):
     return MenuRecord(date=DAY, meal=meal, restaurant_code=restaurant, restaurant_name=restaurant,
-                      lat=None, lng=None, raw_name=raw_name, price=price, no_meat=False)
+                      lat=lat, lng=lng, raw_name=raw_name, price=price, no_meat=False)
 
 
 def run(records):
@@ -74,11 +74,11 @@ class CachedMappingTests(TestCase):
         self.assertEqual(set(candidates), {"돈까스", "카레우동", "마라탕"})
         for name in ("돈까스", "카레우동"):
             self.assertEqual(candidates[name]["offers"],
-                             [{"restaurant": "220동식당", "meal": "LU", "price": 6500}])
+                             [{"restaurant": "220동식당", "meal": "LU", "price": 6500, "lat": None, "lng": None}])
         for candidate in candidates.values():
             self.assertEqual(set(candidate),
                              {"food_id", "name", "display_name", "food_group", "features", "offers"})
-            self.assertTrue(all(set(o) == {"restaurant", "meal", "price"} for o in candidate["offers"]))
+            self.assertTrue(all(set(o) == {"restaurant", "meal", "price", "lat", "lng"} for o in candidate["offers"]))
 
     def test_a_merged_dish_lists_every_cafeteria(self):
         seed_llm("즉석 마라탕", ["마라탕"])
@@ -89,6 +89,14 @@ class CachedMappingTests(TestCase):
         self.assertEqual(sorted(mala.menu_items.values_list("restaurant__name", flat=True)),
                          ["75-1동 4층 푸드코트", "공대간이식당"])
 
+    def test_offers_carry_the_cafeteria_coordinates(self):
+        run([record("마라탕", "공대간이식당", price=7700, lat=37.45727, lng=126.95079),
+             record("마라탕", "220동식당")])
+        tag("마라탕")
+        [mala] = services.get_candidates(DAY, "LU", feature_version=FEATURE_VERSION)
+        self.assertEqual({o["restaurant"]: (o["lat"], o["lng"]) for o in mala["offers"]},
+                         {"공대간이식당": (37.45727, 126.95079), "220동식당": (None, None)})
+
     def test_two_lines_of_one_cafeteria_merged_into_one_dish_offer_it_once(self):
         seed_llm("눈꽃치즈 돈까스", ["치즈돈까스"])
         seed_llm("치즈돈까스", ["치즈돈까스"])
@@ -96,8 +104,9 @@ class CachedMappingTests(TestCase):
              record("치즈돈까스", meal="DN", price=7900)])
         tag("치즈돈까스")
         [candidate] = services.get_candidates(DAY, feature_version=FEATURE_VERSION)
-        self.assertEqual(candidate["offers"], [{"restaurant": "220동식당", "meal": "LU", "price": 7900},
-                                               {"restaurant": "220동식당", "meal": "DN", "price": 7900}])
+        self.assertEqual(candidate["offers"],
+                         [{"restaurant": "220동식당", "meal": "LU", "price": 7900, "lat": None, "lng": None},
+                          {"restaurant": "220동식당", "meal": "DN", "price": 7900, "lat": None, "lng": None}])
 
     def test_lines_that_are_not_meals_are_not_stored(self):
         seed_llm("공기밥", [], is_meal=False)

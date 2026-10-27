@@ -1,5 +1,6 @@
 package com.example.metchu
 
+import android.Manifest
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
@@ -51,6 +52,11 @@ class MainActivityTest {
     @Before
     fun setUp() {
         AppContainer.repository = RecommendRepository(api)
+        // With a Maps key the result asks for location; a system dialog would cover the screen.
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        for (permission in listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) {
+            instrumentation.uiAutomation.grantRuntimePermission(instrumentation.targetContext.packageName, permission)
+        }
         scenario = ActivityScenario.launch(MainActivity::class.java)
     }
 
@@ -356,6 +362,21 @@ class MainActivityTest {
         assertOnlyPanel(R.id.panelStart)
         assertGone(R.id.btnStartOver)
         assertEquals("Start over must not call the server", emptyList<String>(), api.calls.toList())
+    }
+
+    @Test
+    fun theResultMapsTheCafeteriaWhenTheAppHasAMapsKey() {
+        startWith(recommendation)
+        val expected = if (BuildConfig.HAS_MAPS_KEY) Visibility.VISIBLE else Visibility.GONE
+        onView(withId(R.id.mapResult)).check(matches(withEffectiveVisibility(expected)))
+    }
+
+    @Test
+    fun aCafeteriaWithoutALocationLeavesTheMapOut() {
+        val food = recommendation.step.food!!
+        val offers = food.offers.map { it.copy(lat = null, lng = null) }
+        startWith(recommendation.copy(step = recommendation.step.copy(food = food.copy(offers = offers))))
+        assertGone(R.id.mapResult)
     }
 
     @Test
