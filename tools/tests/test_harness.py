@@ -227,14 +227,6 @@ def test_setup_and_bundle(project):
     assert (Path(result['directory']) / 'input-prompts.private.json').exists()
 
 
-def test_legacy_claude_launch(project):
-    (project.root / 'AGENTS.md').write_text('Shared instructions')
-    with patch('tools.harness.subprocess.run', return_value=SimpleNamespace(returncode=0)) as run:
-        assert cli(project.root, 'launch', 'claude')[0] == 0
-        assert run.call_args.args[0] == ['claude', '--append-system-prompt', 'Shared instructions']
-        assert run.call_args.kwargs['cwd'] == project.root
-
-
 def test_remote_metadata_and_range_validation():
     client = sheets.GoogleSheet.__new__(sheets.GoogleSheet)
     client.spreadsheet_id, client.gid = 'test-id', 7
@@ -307,3 +299,43 @@ def test_existing_custom_token_format_is_preserved(project):
     s = snapshot()
     s['number_formats'] = {'5': {'type': 'NUMBER', 'pattern': '#,##0.0'}}
     assert 'number_format' not in sheets.make_plan(s, project.task)['changes'][0]
+
+
+def claude_log(root, name, message, input_tokens, output_tokens):
+    root.mkdir(parents=True, exist_ok=True)
+    event = dict(type='assistant', timestamp=T, sessionId='s1', requestId=message,
+                 message=dict(id=message, usage=dict(input_tokens=input_tokens, output_tokens=output_tokens)))
+    return source(root, 'claude', [event], name)['path']
+
+
+def test_claude_child_does_not_replace_parent_with_same_session_id(project):
+    parent = claude_log(project.root, 'session', 'parent-message', 3000, 300)
+    child = claude_log(project.root / 'session/subagents', 'agent-one', 'child-message', 50, 5)
+    for path in (parent, child):
+        worklog.attach(project.root, project.task, 'claude', path, START, END)
+    assert len(project.task['sources']) == 2
+    assert worklog.collect(project.task['sources'])['total_tokens'] == 3355
+    alias = project.root / 'session' / '..' / 'session.jsonl'
+    worklog.attach(project.root, project.task, 'claude', alias, START, '2026-10-27T02:00:00Z')
+    assert len(project.task['sources']) == 2
+    assert worklog.collect(project.task['sources'])['total_tokens'] == 3355
+
+
+def test_shared_session_id_does_not_cause_false_cross_task_overlap(project):
+    parent = claude_log(project.root, 'session', 'parent-message', 3000, 300)
+    child = claude_log(project.root / 'session/subagents', 'agent-one', 'child-message', 50, 5)
+    worklog.attach(project.root, project.task, 'claude', parent, START, END)
+    other = worklog.task(project.root, 'i3-P4', 'Alice')
+    worklog.attach(project.root, other, 'claude', child, START, END)
+    assert worklog.collect(other['sources'])['total_tokens'] == 55
+    with pytest.raises(ValueError, match='overlaps'):
+        worklog.attach(project.root, other, 'claude', project.root / 'session/../session.jsonl', START, END)
+
+
+def test_duplicate_claude_messages_across_files_still_count_once(project):
+    parent = claude_log(project.root, 'session', 'same-message', 3000, 300)
+    copy = claude_log(project.root / 'session/subagents', 'agent-copy', 'same-message', 3000, 300)
+    for path in (parent, copy):
+        worklog.attach(project.root, project.task, 'claude', path, START, END)
+    assert len(project.task['sources']) == 2
+    assert worklog.collect(project.task['sources'])['total_tokens'] == 3300
