@@ -255,3 +255,26 @@ def test_numeric_warning_and_strict_rule(project):
     assert len(sheets.make_plan(s, project.task)['validation_notices']) == 1
     s['validation_rules']['3']['strict'] = True
     with pytest.raises(ValueError, match='numeric'): sheets.make_plan(s, project.task)
+
+
+def test_native_codex_usage_preferred_and_deduplicated(project):
+    native = dict(type='token_usage_record', timestamp=T, payload=dict(response_id='response-1', usage=counts(100, 10, 80)))
+    s = source(project.root, 'codex', [token(counts(999999, 1000), counts(9000, 1000)), native, native])
+    result = worklog.collect([s, s])
+    assert (result['total_tokens'], result['cached_input_tokens'], result['usage_records']) == (110, 80, 1)
+
+
+def test_aborted_and_open_turns_exclude_gaps(project):
+    events = [dict(type='event_msg', timestamp=T, payload=dict(type=kind, turn_id=turn, **data)) for kind, turn, data in [
+        ('task_started', 'a', {'started_at': '2026-10-27T00:01:00Z'}),
+        ('turn_aborted', 'a', {'started_at': '2026-10-27T00:01:00Z', 'completed_at': '2026-10-27T00:03:00Z'}),
+        ('task_started', 'b', {'started_at': '2026-10-27T00:10:00Z'})]]
+    result = worklog.collect([source(project.root, 'codex', events)])
+    assert result['turn_wall_seconds'] == 3120 and result['open_turns'] == 1
+
+
+def test_modern_codex_input_prompts(project):
+    e = dict(type='response_item', timestamp=T, payload=dict(type='message', role='user',
+             content=[dict(type='input_text', text='Actual input')]))
+    result = worklog.input_prompts([source(project.root, 'codex', [e])])
+    assert [p['text'] for p in result['prompts']] == ['Actual input']
