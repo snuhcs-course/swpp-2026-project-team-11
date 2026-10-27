@@ -91,7 +91,9 @@ def get_candidates(date: datetime.date | None = None, meal: str | None = None, *
         })
         if include_std and feature_version == FEATURE_VERSION:
             candidate["feature_std"] = food.feature_std
-        offer = {"restaurant": item.restaurant.name, "meal": item.meal, "price": item.price}
+        restaurant = item.restaurant
+        offer = {"restaurant": restaurant.name, "meal": item.meal, "price": item.price,
+                 "lat": restaurant.lat, "lng": restaurant.lng}
         # Two lines of one cafeteria can become the same dish ("눈꽃치즈 돈까스" and
         # "치즈돈까스"); list that cafeteria, meal and price once.
         if offer not in candidate["offers"]:
