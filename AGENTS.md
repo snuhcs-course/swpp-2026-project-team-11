@@ -3,8 +3,8 @@
 Rules for AI coding agents in this repository. People start from [README.md](README.md).
 When a convention changes, change it here in the same PR.
 
-These instructions are shared by Codex and Claude Code. Older Claude Code versions
-can start with `python tools/harness.py launch claude` to load this file explicitly.
+These instructions are shared by Codex and Claude Code. `CLAUDE.md` imports this
+file so the ordinary Claude CLI and editor integrations use the same rules.
 
 ## Start and finish a task
 
@@ -22,8 +22,8 @@ can start with `python tools/harness.py launch claude` to load this file explici
   need no wiki update; explain that in the PR. Do not update the wiki every commit.
 - Preview schedule edits with `sheet`; apply verified, authorized
   changes with `sheet --apply`, then check readback. Do not invent hours, tokens,
-  human edits or review. Missing data stays missing. Existing authorization carries
-  forward; do not ask again for routine work within its scope.
+  human edits or review. Missing data stays missing. Shared writes follow the
+  authorization requirements below.
 - At iteration close, use `bundle <n>` to collect local evidence. Review
   every contributor's interaction history before writing the team report. The
   bundle alone is neither the report nor proof that all contributors are covered.
@@ -77,10 +77,15 @@ cd client && ./gradlew testDebugUnitTest         # JDK 21; the build fails on JD
 
 ## Ask before you
 
+The following actions require explicit user authorization. Existing authorization
+applies only to the same target and action within the approved scope. Otherwise,
+ask before proceeding. Permission to read or preview does not authorize a write.
+
 - Call Gemini or another paid API for real (`extract_features`, `demo_llm_engine`,
   LLM sessions on a server with a key, menu preprocessing). Say how many calls first;
   use `--dry-run` where it exists.
 - Write to the shared database (`DATABASE_URL` pointing at the team's Supabase).
+- Write to the shared schedule (`sheet --apply` or connected Sheets tools).
 - Push, open or merge a PR, tag, or delete branches.
 - Expose the server publicly (a tunnel).
 

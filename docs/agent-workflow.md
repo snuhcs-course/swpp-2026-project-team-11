@@ -37,7 +37,10 @@ python tools/harness.py bundle 3
 
 Use `--tool claude` for Claude Code. Intervals include the start and exclude the
 end; defaults are task creation and attachment time. Reattach to extend an interval.
-Collection recomputes totals and rejects attribution overlapping another local task.
+Collection recomputes totals and rejects overlapping attribution of the same file
+to another local task. Sources use resolved file paths: Claude child logs may share
+the parent's session ID. Reattaching one file does not replace another file.
+If an older version replaced a parent entry, reattach that parent log to restore it.
 Attach child sessions explicitly; do not charge both aggregate and child usage.
 
 Find logs on the machine that ran the agent: Codex uses `$CODEX_HOME/sessions`
@@ -74,7 +77,8 @@ Keep the URL's `gid` when available. The local config, records and credentials a
 ignored by Git; application `.env` is not loaded.
 
 Agents with authenticated Sheets tools can use them directly: read metadata and
-headers, locate one `Iter`/`ID` row, check its assignee, reread before writing,
+headers, locate one `Iter`/`ID` row, check its assignee, obtain explicit authorization
+for the target and write scope, reread before writing,
 preserve formulas and unrelated fields, and verify readback. No snapshot conversion
 or shared OAuth token is needed. Each agent environment needs its own connection.
 
@@ -91,7 +95,9 @@ Login is explicit; tokens stay in `.harness/google-token.json` with restrictive
 permissions where supported. Keep the client JSON out of Git too. The script
 discovers headers and validates dropdowns, dates and numbers. It updates only
 recorded hours, tokens, completion date, status and commit, using absolute values.
-Apply rereads the row, checks the saved preview, writes cells and verifies readback.
+`--apply` requires explicit authorization for the target and write scope, as do
+connected-tool edits. A preview is not permission to write. Apply rereads the row,
+checks the saved preview, writes cells and verifies readback.
 Tokens stay numeric; cells without a number format receive `#,##0`. Existing
 custom formats are preserved. Value and format changes are applied in one batch.
 Repeated application is a no-op. Formula cells are never replaced. Checks and writes
@@ -125,9 +131,9 @@ when supplied. The harness prepares evidence and does not submit to eTL.
 
 ## Compatibility and tests
 
-Older Claude Code can use `python tools/harness.py launch claude` to load AGENTS.md
-explicitly; `launch codex` starts Codex at the repo root. Check instruction loading
-in either CLI or GUI. The launcher does not change permissions or install models.
+Start Codex or Claude from the repository root, or open it in the editor. Codex
+reads `AGENTS.md`; the small `CLAUDE.md` import gives Claude the same instructions
+without a custom launcher. Check instruction loading in the CLI or editor.
 
 Run `python -m pytest tools/tests`, `python -m pytest backend`, and `git diff --check`.
 Harness tests use synthetic sessions, temporary Git repositories and mocked Sheets;
