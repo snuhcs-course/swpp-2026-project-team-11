@@ -153,14 +153,15 @@ def attach(root, task, tool, path, since=None, until=None):
         if other["id"] == task["id"]:
             continue
         for source in other["sources"]:
-            if (source["tool"], source["session_id"]) == (tool, identity):
+            if (source["tool"], source["path"]) == (tool, path):
                 if start < timestamp(source["until"]) and timestamp(source["since"]) < end:
                     raise ValueError(f"This session interval overlaps {other['id']}; resolve attribution first.")
     source = {"tool": tool, "path": path, "session_id": identity,
               "since": start.isoformat(), "until": end.isoformat()}
-    # Reattaching extends/replaces the same interval; collection never adds saved totals.
+    # Claude children can share the parent's sessionId; each log file is a source.
+    # Reattaching the same file/start replaces its interval, not another agent's log.
     task["sources"] = [s for s in task["sources"] if
-                       (s["tool"], s["session_id"], s["since"]) != (tool, identity, source["since"])]
+                       (s["tool"], s["path"], s["since"]) != (tool, path, source["since"])]
     task["sources"].append(source)
     task.pop("usage", None)
     save_task(root, task)

@@ -38,17 +38,10 @@ def parser():
     sheet.add_argument("--apply", action="store_true")
     sheet.add_argument("--login", metavar="CLIENT_JSON", help="Explicitly authorize with a local Desktop OAuth client.")
     groups.add_parser("bundle", help="Collect private iteration evidence and input prompts.").add_argument("iteration", type=int)
-    launch = groups.add_parser("launch", help="Launch a CLI in the repo with shared instructions.")
-    launch.add_argument("tool", choices=("codex", "claude"))
-    launch.add_argument("arguments", nargs=argparse.REMAINDER)
     return p
 
 
 def run(args, root=ROOT):
-    if args.command == "launch":
-        tail = args.arguments[1:] if args.arguments[:1] == ["--"] else args.arguments
-        command = ["claude", "--append-system-prompt", (Path(root) / "AGENTS.md").read_text(), *tail] if args.tool == "claude" else ["codex", "-C", str(root), *tail]
-        return {"exit_code": subprocess.run(command, cwd=root).returncode}
     if args.command == "bundle":
         return worklog.bundle(root, args.iteration)
     if args.command == "task":
