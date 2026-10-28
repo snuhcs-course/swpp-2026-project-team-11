@@ -26,8 +26,8 @@ class CafeteriaPinTest {
     @Test
     fun offersWithoutALocationAreLeftOut() {
         val offers = listOf(
-            Offer("301동식당>교직원전용식당", "LU", 6000, null, null),
-            Offer("학생회관식당", "LU", 5000, 37.45932, 126.95058)
+            Offer("301동식당>교직원전용식당", "LU", 6000, null, null, null),
+            Offer("학생회관식당", "LU", 5000, 37.45932, 126.95058, null)
         )
         assertEquals(listOf("학생회관식당"), cafeteriaPins(food.copy(offers = offers)).map { it.name })
         assertEquals(emptyList<CafeteriaPin>(), cafeteriaPins(food.copy(offers = offers.take(1))))

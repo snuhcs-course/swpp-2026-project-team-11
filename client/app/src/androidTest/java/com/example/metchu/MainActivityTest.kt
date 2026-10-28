@@ -19,7 +19,9 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.SessionState
+import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.MainActivity
@@ -40,6 +42,7 @@ import java.io.IOException
 class MainActivityTest {
 
     private val api = FakeApi()
+    private var location: UserLocation? = null
     private lateinit var scenario: ActivityScenario<MainActivity>
 
     private val question = Fixtures.state("question")
@@ -52,6 +55,7 @@ class MainActivityTest {
     @Before
     fun setUp() {
         AppContainer.repository = RecommendRepository(api)
+        AppContainer.locationSource = LocationSource { location }
         // With a Maps key the result asks for location; a system dialog would cover the screen.
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         for (permission in listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) {
@@ -121,6 +125,14 @@ class MainActivityTest {
             assertEquals("create $meal decision_tree", api.calls.last())
             onView(withId(R.id.btnQuit)).perform(click())
         }
+    }
+
+    @Test
+    fun startSendsWhereTheUserIs() {
+        location = UserLocation(37.45932, 126.95058)
+        api.reply(question)
+        onView(withId(R.id.btnStart)).perform(click())
+        assertEquals("create LU decision_tree @37.45932,126.95058", api.calls.last())
     }
 
     @Test
@@ -331,6 +343,14 @@ class MainActivityTest {
             api.calls.toList()
         )
         assertOnlyPanel(R.id.panelResult)
+    }
+
+    @Test
+    fun aKnownDistanceIsAddedToTheCafeteriaLine() {
+        val food = guess.step.food!!
+        val offers = listOf(food.offers.single().copy(distanceM = 1250))
+        startWith(guess.copy(step = guess.step.copy(food = food.copy(offers = offers))))
+        onView(withId(R.id.tvGuessOffers)).check(matches(withText("220동식당 · Lunch · 5,900 won · 1,250 m")))
     }
 
     @Test
