@@ -1,8 +1,6 @@
 package com.example.metchu.ui.main
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
@@ -10,11 +8,14 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
+import com.example.metchu.data.location.FusedLocationSource
+import com.example.metchu.data.location.LOCATION_PERMISSIONS
+import com.example.metchu.data.location.hasLocationPermission
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Food
 import com.example.metchu.data.model.SessionState
@@ -28,6 +29,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -39,8 +41,9 @@ import java.util.Locale
  *
  * Question text, answer labels and guess text come from the server as they are.
  * The start screen picks which question engine runs the session, so the two can be
- * compared; the screens are the same for both. The result maps the cafeterias that
- * serve the dish and, once location is allowed, the user's own position.
+ * compared; the screens are the same for both. A session starts with the user's
+ * location when it is allowed, so the server can give each cafeteria's distance. The
+ * result maps the cafeterias that serve the dish and the user's own position.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -56,11 +59,16 @@ class MainActivity : AppCompatActivity() {
     /** The cafeterias on the result map; empty when no map is shown. */
     private var pins: List<CafeteriaPin> = emptyList()
 
-    /** Ask for location once per screen, not after every recommendation. */
+    private val locationSource by lazy {
+        AppContainer.locationSource ?: FusedLocationSource(applicationContext)
+    }
+
+    /** Ask for location once per screen, not before every session. */
     private var askedForLocation = false
+    private var afterLocationAnswer: () -> Unit = {}
 
     private val requestLocation =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { showMap() }
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { afterLocationAnswer() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.root.padForSystemBars()
 
-        binding.btnStart.onTap { viewModel.start(selectedMeal(), selectedEngine()) }
+        binding.btnStart.onTap { start(selectedMeal(), selectedEngine()) }
         binding.btnAccept.onTap { viewModel.feedback(accepted = true) }
         binding.btnReject.onTap { viewModel.feedback(accepted = false) }
         binding.btnUndo.onTap { viewModel.undo() }
@@ -112,6 +120,18 @@ class MainActivity : AppCompatActivity() {
         tapped = view
         view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
         action()
+    }
+
+    private fun start(meal: String?, engine: String) = withLocationAsked {
+        lifecycleScope.launch { viewModel.start(meal, engine, locationSource.current()) }
+    }
+
+    /** Runs [then] after asking for location, the first time it is useful on this screen. */
+    private fun withLocationAsked(then: () -> Unit) {
+        if (hasLocationPermission() || askedForLocation) return then()
+        askedForLocation = true
+        afterLocationAnswer = then
+        requestLocation.launch(LOCATION_PERMISSIONS)
     }
 
     private fun selectedMeal(): String? = when (binding.mealToggle.checkedButtonId) {
@@ -226,14 +246,7 @@ class MainActivity : AppCompatActivity() {
 
         pins = if (BuildConfig.HAS_MAPS_KEY) cafeteriaPins(food) else emptyList()
         binding.mapResult.isVisible = pins.isNotEmpty()
-        if (pins.isEmpty()) return
-        if (!hasLocationPermission() && !askedForLocation) {
-            askedForLocation = true
-            requestLocation.launch(
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-            )
-        }
-        showMap()
+        if (pins.isNotEmpty()) withLocationAsked(::showMap)
     }
 
     @SuppressLint("MissingPermission") // checked by hasLocationPermission()
@@ -265,18 +278,16 @@ class MainActivity : AppCompatActivity() {
                 supportFragmentManager.beginTransaction().replace(R.id.mapResult, it).commitNow()
             }
 
-    private fun hasLocationPermission(): Boolean =
-        listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION).any {
-            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
-        }
-
     private fun offersText(food: Food): String =
         if (food.offers.isEmpty()) getString(R.string.offer_none)
         else food.offers.joinToString("\n") { offer ->
             val price = offer.price?.let {
                 getString(R.string.price_won, NumberFormat.getIntegerInstance(Locale.US).format(it))
             } ?: getString(R.string.price_unknown)
-            getString(R.string.offer_line, offer.restaurant, mealLabel(offer.meal), price)
+            val line = getString(R.string.offer_line, offer.restaurant, mealLabel(offer.meal), price)
+            offer.distanceM?.let {
+                getString(R.string.offer_distance, line, NumberFormat.getIntegerInstance(Locale.US).format(it))
+            } ?: line
         }
 
     private fun mealLabel(meal: String?): String = getString(

@@ -8,6 +8,7 @@ import com.example.metchu.data.network.ApiService
 import com.example.metchu.data.network.CreateSessionRequest
 import com.example.metchu.data.network.FeedbackRequest
 import com.example.metchu.data.network.RetrofitInstance
+import com.example.metchu.data.network.UserLocation
 import retrofit2.HttpException
 
 /**
@@ -16,8 +17,8 @@ import retrofit2.HttpException
  */
 class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
 
-    suspend fun createSession(meal: String?, engine: String? = null): SessionState =
-        api.createSession(CreateSessionRequest(meal, engine)).checked()
+    suspend fun createSession(meal: String?, engine: String? = null, location: UserLocation? = null): SessionState =
+        api.createSession(CreateSessionRequest(meal, engine, location)).checked()
 
     suspend fun answer(sessionId: String, questionId: String, answerId: String): SessionState =
         api.answer(sessionId, AnswerRequest(questionId, answerId)).checked()
