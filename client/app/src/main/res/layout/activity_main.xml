@@ -416,6 +416,14 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:textColor="@color/ink" />
+
+                    <androidx.fragment.app.FragmentContainerView
+                        android:id="@+id/mapResult"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:layout_marginTop="16dp"
+                        android:contentDescription="@string/result_map"
+                        android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>
 

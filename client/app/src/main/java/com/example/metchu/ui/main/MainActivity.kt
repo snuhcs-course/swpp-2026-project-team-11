@@ -1,12 +1,19 @@
 package com.example.metchu.ui.main
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
+import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Food
@@ -16,6 +23,11 @@ import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.databinding.ActivityMainBinding
 import com.example.metchu.databinding.ItemAnswerBinding
 import com.example.metchu.util.padForSystemBars
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.MarkerOptions
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -27,7 +39,8 @@ import java.util.Locale
  *
  * Question text, answer labels and guess text come from the server as they are.
  * The start screen picks which question engine runs the session, so the two can be
- * compared; the screens are the same for both.
+ * compared; the screens are the same for both. The result maps the cafeterias that
+ * serve the dish and, once location is allowed, the user's own position.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -39,6 +52,15 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: RecommendViewModel by viewModels {
         RecommendViewModelFactory(AppContainer.repository)
     }
+
+    /** The cafeterias on the result map; empty when no map is shown. */
+    private var pins: List<CafeteriaPin> = emptyList()
+
+    /** Ask for location once per screen, not after every recommendation. */
+    private var askedForLocation = false
+
+    private val requestLocation =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { showMap() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -201,7 +223,52 @@ class MainActivity : AppCompatActivity() {
         binding.tvResultFullName.isVisible = food.name != food.displayName
         binding.tvResultFullName.text = food.name
         binding.tvResultOffers.text = offersText(food)
+
+        pins = if (BuildConfig.HAS_MAPS_KEY) cafeteriaPins(food) else emptyList()
+        binding.mapResult.isVisible = pins.isNotEmpty()
+        if (pins.isEmpty()) return
+        if (!hasLocationPermission() && !askedForLocation) {
+            askedForLocation = true
+            requestLocation.launch(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            )
+        }
+        showMap()
     }
+
+    @SuppressLint("MissingPermission") // checked by hasLocationPermission()
+    private fun showMap() {
+        val pins = pins
+        if (pins.isEmpty()) return
+        mapFragment().getMapAsync { map ->
+            map.clear()
+            val points = pins.map { pin ->
+                LatLng(pin.lat, pin.lng).also { map.addMarker(MarkerOptions().position(it).title(pin.name)) }
+            }
+            map.isMyLocationEnabled = hasLocationPermission()
+            if (points.size == 1) {
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(points.single(), MAP_ZOOM))
+            } else {
+                val bounds = LatLngBounds.builder().apply { points.forEach(::include) }.build()
+                // Fitting bounds needs the map's size, which a just-shown map does not have yet.
+                binding.mapResult.doOnLayout {
+                    map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, boundsPadding(it.width, it.height)))
+                }
+            }
+        }
+    }
+
+    /** The map is added on first use, so a build without a Maps key never creates one. */
+    private fun mapFragment(): SupportMapFragment =
+        supportFragmentManager.findFragmentById(R.id.mapResult) as? SupportMapFragment
+            ?: SupportMapFragment.newInstance().also {
+                supportFragmentManager.beginTransaction().replace(R.id.mapResult, it).commitNow()
+            }
+
+    private fun hasLocationPermission(): Boolean =
+        listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION).any {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
 
     private fun offersText(food: Food): String =
         if (food.offers.isEmpty()) getString(R.string.offer_none)
@@ -230,5 +297,7 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         const val MEMBER_PREVIEW = 5
+        /** Street level: the cafeteria's building and the paths around it. */
+        const val MAP_ZOOM = 16f
     }
 }

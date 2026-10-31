@@ -3,6 +3,8 @@ import json
 
 from django.test import TestCase, override_settings
 
+from menus.models import Restaurant
+
 DAY = "2026-09-29"
 
 
@@ -88,6 +90,15 @@ class SessionApiTests(TestCase):
         self.assertTrue(final["step"]["food"]["offers"])
         # The session has ended; a late tap redraws rather than fails.
         self.assertEqual(self.post(url + "recommend-now/").json(), final)
+
+    def test_recommendation_offers_locate_the_cafeteria(self):
+        state = self.start()
+        url = f"/api/sessions/{state['session_id']}/"
+        guess = self.post(url + "recommend-now/").json()["step"]
+        final = self.post(url + "feedback/", {"guess_id": guess["guess_id"], "accepted": True}).json()
+        coordinates = {r.name: (r.lat, r.lng) for r in Restaurant.objects.all()}
+        for offer in final["step"]["food"]["offers"]:
+            self.assertEqual((offer["lat"], offer["lng"]), coordinates[offer["restaurant"]])
 
     @override_settings(RECOMMEND_MAX_QUESTIONS=3)
     def test_question_cap_forces_a_guess_with_named_group_members(self):

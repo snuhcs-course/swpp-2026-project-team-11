@@ -81,6 +81,8 @@ class ContractJsonTest {
         assertTrue(offer.restaurant.isNotBlank())
         assertEquals("LU", offer.meal)
         assertNotNull(offer.price)
+        assertEquals(37.46451, offer.lat!!, 0.0)
+        assertEquals(126.95424, offer.lng!!, 0.0)
     }
 
     @Test
@@ -137,13 +139,17 @@ class ContractJsonTest {
     }
 
     @Test
-    fun nullPriceAndNoCapDecode() {
+    fun nullPriceLocationAndNoCapDecode() {
         val json = Fixtures.json("guess_food")
             .replace(Regex("\"price\": \\d+"), "\"price\": null")
+            .replace(Regex("\"(lat|lng)\": [\\d.]+"), "\"$1\": null")
             .replace("\"max_questions\": 10", "\"max_questions\": null")
         val state = parse(json).checked()
         assertNull(state.maxQuestions)
-        assertNull(state.step.food!!.offers.single().price)
+        val offer = state.step.food!!.offers.single()
+        assertNull(offer.price)
+        assertNull(offer.lat)
+        assertNull(offer.lng)
     }
 
     @Test

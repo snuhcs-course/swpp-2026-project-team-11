@@ -282,7 +282,8 @@ services.get_feature_schema()
 services.get_candidates(datetime.date(2026, 9, 29), meal="LU")   # meal=None: whole day, date=None: today
 # [{"food_id", "name", "display_name", "food_group",
 #   "features": {"spicy": 0.9, "soupy": 1.0, ...},
-#   "offers": [{"restaurant": "학생회관식당", "meal": "LU", "price": 3000}, ...]}, ...]
+#   "offers": [{"restaurant": "학생회관식당", "meal": "LU", "price": 3000,
+#               "lat": 37.45932, "lng": 126.95058}, ...]}, ...]
 
 # New sessions load one matching version of candidates and questions together:
 candidates, schema, version = services.get_catalog(datetime.date(2026, 10, 13), meal="LU")
@@ -486,7 +487,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 
 | Model | One row per | Notes |
 |---|---|---|
-| `Restaurant` | cafeteria | `code` is the Siksha id, e.g. `220동식당` |
+| `Restaurant` | cafeteria | `code` is the Siksha id, e.g. `220동식당`; `lat`/`lng` come from Siksha and are null when it has none |
 | `Food` | distinct (dish name, set status) | recommendation unit; holds mean `features`, `feature_std`, preprocessing `is_food`, `display_name`, `food_group` |
 | `MenuItem` | dish x restaurant x meal x day | `meal` is `BR` / `LU` / `DN`; `price` in won. A combo line has one row per dish |
 | `MenuLine` | distinct menu line (`dish_key`) | cache of the dishes a line stands for (`is_meal`, `dishes`, `source`) |
