@@ -12,3 +12,9 @@ fun cafeteriaPins(food: Food): List<CafeteriaPin> =
         val lng = offer.lng ?: return@mapNotNull null
         CafeteriaPin(offer.restaurant, lat, lng)
     }.distinct()
+
+/**
+ * Space kept on each side around the pins of a [width] x [height] map, in pixels: a fifth of the
+ * shorter side, so the pins keep the middle three fifths on any screen density.
+ */
+fun boundsPadding(width: Int, height: Int): Int = minOf(width, height) / 5
