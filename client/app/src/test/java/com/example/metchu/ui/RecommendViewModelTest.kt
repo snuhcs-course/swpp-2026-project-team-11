@@ -7,6 +7,7 @@ import com.example.metchu.R
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
+import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.RecommendViewModel
 import com.example.metchu.ui.main.UiError
@@ -106,6 +107,13 @@ class RecommendViewModelTest {
         viewModel.answer("probably_yes")
         assertEquals("answer ${llmQuestion.sessionId} q:llm-0 probably_yes", api.calls.last())
         assertIdle(guess)
+    }
+
+    @Test
+    fun startSendsTheUsersLocationWhenThereIsOne() {
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE, UserLocation(37.45932, 126.95058))
+        assertEquals(listOf("create LU decision_tree @37.45932,126.95058"), api.calls)
     }
 
     @Test

@@ -63,13 +63,18 @@ data class Food(
     val offers: List<Offer>
 )
 
-/** [lat] and [lng] locate the cafeteria; both are null when the menu source has no location. */
+/**
+ * [lat] and [lng] locate the cafeteria; both are null when the menu source has no location.
+ * [distanceM] is its straight-line distance from the user, null unless the session was
+ * started with a location.
+ */
 data class Offer(
     val restaurant: String,
     val meal: String,
     val price: Int?,
     val lat: Double?,
-    val lng: Double?
+    val lng: Double?,
+    @SerializedName("distance_m") val distanceM: Int?
 )
 
 /** Present when a guess names a whole group; [Step.food] is then one example from it. */

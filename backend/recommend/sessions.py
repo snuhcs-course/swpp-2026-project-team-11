@@ -1,6 +1,6 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal, engine) -> RecommendSession
+    create(date, meal, engine, location) -> RecommendSession
     get(session_id)            -> RecommendSession | None
     session.public_state()     -> what the phone is allowed to see
 
@@ -14,6 +14,10 @@ The engine is one session per instance and is not safe to mutate from two
 requests at once, so every session carries its own lock. The candidate list is
 read once at creation and stays with the engine: a later `fetch_menus` run does
 not change a session that is already in progress.
+
+`location` is the user's (lat, lng), if the phone sent one. Each offer then
+carries its `distance_m`, and with RECOMMEND_MAX_DISTANCE_M set, cafeterias
+farther than that are left out before the engine sees the candidates.
 
 Sessions live in this process only. `runserver` restarts and multi-worker
 deployments lose them; persisting `engine.snapshot()` is the planned replacement.
@@ -30,6 +34,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from menus.services import get_catalog
+from recommend.distance import with_distances
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.llm import LLMConfigError, LLMEngine
 
@@ -46,13 +51,15 @@ class EngineUnavailable(Exception):
 
 
 class RecommendSession:
-    def __init__(self, date: datetime.date, meal: str | None, engine: str):
+    def __init__(self, date: datetime.date, meal: str | None, engine: str,
+                 location: tuple[float, float] | None):
         self.session_id = uuid.uuid4().hex
         self.engine_name = engine
         self.date = date
         self.meal = meal
         self.lock = threading.Lock()
         candidates, schema, version = get_catalog(date, meal)
+        candidates = with_distances(candidates, location, settings.RECOMMEND_MAX_DISTANCE_M)
         self.feature_version = version
         self.candidate_count = len(candidates)
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
@@ -120,10 +127,10 @@ _sessions_lock = threading.Lock()
 
 
 def create(date: datetime.date | None = None, meal: str | None = None,
-           engine: str | None = None) -> RecommendSession:
+           engine: str | None = None, location: tuple[float, float] | None = None) -> RecommendSession:
     """Raises EngineUnavailable when `engine` is "llm" and the server has no API key."""
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine or settings.RECOMMEND_DEFAULT_ENGINE)
+                               meal, engine or settings.RECOMMEND_DEFAULT_ENGINE, location)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:

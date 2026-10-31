@@ -83,6 +83,9 @@ class ContractJsonTest {
         assertNotNull(offer.price)
         assertEquals(37.46451, offer.lat!!, 0.0)
         assertEquals(126.95424, offer.lng!!, 0.0)
+        assertNull("captured without a location", offer.distanceM)
+        val located = parse(Fixtures.json("guess_food").replace("\"distance_m\": null", "\"distance_m\": 661"))
+        assertEquals(661, located.checked().step.food!!.offers.single().distanceM)
     }
 
     @Test
