@@ -220,8 +220,8 @@ change: a group's `food_ids` is replaced by `members`, a list of
 [LLM engine](../backend/question_engines/llm/README.md) returns the same step
 shapes; its `question_id` is `q:llm-<n>` and it never sends a `group`.
 Each of a food's `offers` is `{"restaurant", "meal", "price", "lat", "lng", "distance_m"}`;
-`price` is null when the menu lists none, `lat`/`lng` are null together when the
-cafeteria has no location, and `distance_m` is the straight-line distance in meters
+`price` is null when the menu lists none, `lat` or `lng` is null when the cafeteria's
+location is not known (the app then leaves it off the map), and `distance_m` is the straight-line distance in meters
 from the session's `location`, null when either is unknown.
 
 Errors are `{"error": {"code", "message"}}`:
