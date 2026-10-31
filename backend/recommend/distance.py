@@ -28,7 +28,7 @@ def with_distances(candidates: list[dict], location: tuple[float, float] | None,
     located = []
     for candidate in candidates:
         for offer in candidate["offers"]:
-            known = location is not None and offer["lat"] is not None
+            known = location is not None and offer["lat"] is not None and offer["lng"] is not None
             offer["distance_m"] = distance_m(*location, offer["lat"], offer["lng"]) if known else None
         if max_distance_m is not None:
             candidate["offers"] = [offer for offer in candidate["offers"]
