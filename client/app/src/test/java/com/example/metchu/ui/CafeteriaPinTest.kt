@@ -3,6 +3,7 @@ package com.example.metchu.ui
 import com.example.metchu.Fixtures
 import com.example.metchu.data.model.Offer
 import com.example.metchu.ui.main.CafeteriaPin
+import com.example.metchu.ui.main.boundsPadding
 import com.example.metchu.ui.main.cafeteriaPins
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -31,5 +32,12 @@ class CafeteriaPinTest {
         )
         assertEquals(listOf("학생회관식당"), cafeteriaPins(food.copy(offers = offers)).map { it.name })
         assertEquals(emptyList<CafeteriaPin>(), cafeteriaPins(food.copy(offers = offers.take(1))))
+    }
+
+    @Test
+    fun theBoundsPaddingLeavesRoomForThePinsOnTheShortSide() {
+        // The 200dp map on an mdpi phone, and on an xxhdpi phone.
+        assertEquals(40, boundsPadding(width = 360, height = 200))
+        assertEquals(105, boundsPadding(width = 1080, height = 525))
     }
 }
