@@ -392,6 +392,15 @@ class MainActivityTest {
     }
 
     @Test
+    fun theResultMapsEveryCafeteriaServingTheDish() {
+        val food = recommendation.step.food!!
+        val offers = food.offers + food.offers.single().copy(restaurant = "학생회관식당", lat = 37.45932, lng = 126.95058)
+        startWith(recommendation.copy(step = recommendation.step.copy(food = food.copy(offers = offers))))
+        val expected = if (BuildConfig.HAS_MAPS_KEY) Visibility.VISIBLE else Visibility.GONE
+        onView(withId(R.id.mapResult)).check(matches(withEffectiveVisibility(expected)))
+    }
+
+    @Test
     fun aCafeteriaWithoutALocationLeavesTheMapOut() {
         val food = recommendation.step.food!!
         val offers = food.offers.map { it.copy(lat = null, lng = null) }

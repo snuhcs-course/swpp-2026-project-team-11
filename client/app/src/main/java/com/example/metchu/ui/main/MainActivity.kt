@@ -265,7 +265,7 @@ class MainActivity : AppCompatActivity() {
                 val bounds = LatLngBounds.builder().apply { points.forEach(::include) }.build()
                 // Fitting bounds needs the map's size, which a just-shown map does not have yet.
                 binding.mapResult.doOnLayout {
-                    map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, MAP_PADDING_PX))
+                    map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, boundsPadding(it.width, it.height)))
                 }
             }
         }
@@ -310,6 +310,5 @@ class MainActivity : AppCompatActivity() {
         const val MEMBER_PREVIEW = 5
         /** Street level: the cafeteria's building and the paths around it. */
         const val MAP_ZOOM = 16f
-        const val MAP_PADDING_PX = 120
     }
 }
