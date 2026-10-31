@@ -63,15 +63,34 @@ class MainActivity : AppCompatActivity() {
         AppContainer.locationSource ?: FusedLocationSource(applicationContext)
     }
 
-    /** Ask for location once per screen, not before every session. */
+    /**
+     * Location is asked for once per screen, not before every session. The answer can come
+     * after the screen is recreated, so both survive in the saved state.
+     */
     private var askedForLocation = false
-    private var afterLocationAnswer: () -> Unit = {}
 
-    private val requestLocation =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { afterLocationAnswer() }
+    /** The Start waiting for the location answer; without one, the result map is waiting. */
+    private var pendingStart: PendingStart? = null
+
+    private data class PendingStart(val meal: String?, val engine: String)
+
+    private val requestLocation = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+        AppContainer.resultRegistry ?: activityResultRegistry
+    ) {
+        val start = pendingStart
+        pendingStart = null
+        if (start != null) startSession(start.meal, start.engine) else showMap()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState != null) {
+            askedForLocation = savedInstanceState.getBoolean(KEY_ASKED_FOR_LOCATION)
+            pendingStart = savedInstanceState.getString(KEY_START_ENGINE)?.let {
+                PendingStart(savedInstanceState.getString(KEY_START_MEAL), it)
+            }
+        }
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.root.padForSystemBars()
@@ -115,6 +134,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_ASKED_FOR_LOCATION, askedForLocation)
+        pendingStart?.let {
+            outState.putString(KEY_START_MEAL, it.meal)
+            outState.putString(KEY_START_ENGINE, it.engine)
+        }
+    }
+
     /** A click that also gives a light haptic tick and remembers which button it was. */
     private fun View.onTap(action: () -> Unit) = setOnClickListener { view ->
         tapped = view
@@ -122,15 +150,19 @@ class MainActivity : AppCompatActivity() {
         action()
     }
 
-    private fun start(meal: String?, engine: String) = withLocationAsked {
+    private fun start(meal: String?, engine: String) {
+        if (askedForLocation) return startSession(meal, engine)
+        pendingStart = PendingStart(meal, engine)
+        askForLocation()
+    }
+
+    private fun startSession(meal: String?, engine: String) {
         lifecycleScope.launch { viewModel.start(meal, engine, locationSource.current()) }
     }
 
-    /** Runs [then] after asking for location, the first time it is useful on this screen. */
-    private fun withLocationAsked(then: () -> Unit) {
-        if (hasLocationPermission() || askedForLocation) return then()
+    /** With the permission already granted, the answer comes at once and no dialog is shown. */
+    private fun askForLocation() {
         askedForLocation = true
-        afterLocationAnswer = then
         requestLocation.launch(LOCATION_PERMISSIONS)
     }
 
@@ -246,7 +278,7 @@ class MainActivity : AppCompatActivity() {
 
         pins = if (BuildConfig.HAS_MAPS_KEY) cafeteriaPins(food) else emptyList()
         binding.mapResult.isVisible = pins.isNotEmpty()
-        if (pins.isNotEmpty()) withLocationAsked(::showMap)
+        if (pins.isNotEmpty()) if (askedForLocation) showMap() else askForLocation()
     }
 
     @SuppressLint("MissingPermission") // checked by hasLocationPermission()
@@ -310,5 +342,8 @@ class MainActivity : AppCompatActivity() {
         const val MEMBER_PREVIEW = 5
         /** Street level: the cafeteria's building and the paths around it. */
         const val MAP_ZOOM = 16f
+        const val KEY_ASKED_FOR_LOCATION = "askedForLocation"
+        const val KEY_START_MEAL = "pendingStartMeal"
+        const val KEY_START_ENGINE = "pendingStartEngine"
     }
 }
