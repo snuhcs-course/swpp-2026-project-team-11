@@ -2,6 +2,7 @@ import json
 
 from django.test import SimpleTestCase, TestCase, override_settings
 
+from menus.models import Restaurant
 from recommend.distance import distance_m, with_distances
 
 DAY = "2026-09-29"
@@ -32,6 +33,11 @@ class DistanceTests(SimpleTestCase):
         self.assertEqual([[(o["restaurant"], o["distance_m"]) for o in c["offers"]] for c in located],
                          [[("Near", 0)], [("Unknown", None)]])
 
+    def test_a_cafeteria_missing_either_coordinate_has_no_distance(self):
+        [located] = with_distances([candidate(("No lng", 37.46451, None), ("No lat", None, 126.95424))],
+                                   STUDENT_CENTER, max_distance_m=100)
+        self.assertEqual([o["distance_m"] for o in located["offers"]], [None, None])
+
     def test_without_a_cutoff_every_offer_stays(self):
         located = with_distances([candidate(("Far", 37.46451, 126.95424))], STUDENT_CENTER)
         self.assertEqual(located[0]["offers"][0]["distance_m"], 661)
@@ -55,6 +61,11 @@ class SessionDistanceTests(TestCase):
 
     def test_without_a_location_distances_are_null(self):
         self.assertTrue(all(o["distance_m"] is None for o in self.offers(self.start().json())))
+
+    def test_a_cafeteria_with_half_a_location_does_not_break_the_session(self):
+        Restaurant.objects.filter(name="학생회관식당").update(lng=None)
+        response = self.start(location={"lat": STUDENT_CENTER[0], "lng": STUDENT_CENTER[1]})
+        self.assertEqual(response.status_code, 201)
 
     @override_settings(RECOMMEND_MAX_DISTANCE_M=300)
     def test_the_cutoff_leaves_out_far_cafeterias(self):

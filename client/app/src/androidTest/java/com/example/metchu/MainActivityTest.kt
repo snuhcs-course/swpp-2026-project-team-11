@@ -1,6 +1,9 @@
 package com.example.metchu
 
 import android.Manifest
+import androidx.activity.result.ActivityResultRegistry
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.core.app.ActivityOptionsCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
@@ -56,6 +59,7 @@ class MainActivityTest {
     fun setUp() {
         AppContainer.repository = RecommendRepository(api)
         AppContainer.locationSource = LocationSource { location }
+        AppContainer.resultRegistry = null
         // With a Maps key the result asks for location; a system dialog would cover the screen.
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         for (permission in listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) {
@@ -133,6 +137,38 @@ class MainActivityTest {
         api.reply(question)
         onView(withId(R.id.btnStart)).perform(click())
         assertEquals("create LU decision_tree @37.45932,126.95058", api.calls.last())
+    }
+
+    /** Holds the location request until the test answers it, as the permission dialog would. */
+    private class HeldRequest : ActivityResultRegistry() {
+        var requestCode: Int? = null
+
+        override fun <I, O> onLaunch(
+            requestCode: Int, contract: ActivityResultContract<I, O>, input: I, options: ActivityOptionsCompat?
+        ) {
+            this.requestCode = requestCode
+        }
+    }
+
+    @Test
+    fun aStartWaitingForTheLocationAnswerSurvivesRecreation() {
+        val request = HeldRequest()
+        AppContainer.resultRegistry = request
+        scenario.close()
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+        onView(withId(R.id.btnMealDinner)).perform(scrollTo(), click())
+        onView(withId(R.id.btnEngineLlm)).perform(scrollTo(), click())
+        api.reply(llmQuestion)
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
+        assertEquals("Start waits for the answer", emptyList<String>(), api.calls.toList())
+
+        scenario.recreate()
+        location = UserLocation(37.45932, 126.95058)
+        scenario.onActivity {
+            request.dispatchResult(request.requestCode!!, mapOf(Manifest.permission.ACCESS_FINE_LOCATION to true))
+        }
+        assertOnlyPanel(R.id.panelQuestion)
+        assertEquals(listOf("create DN llm @37.45932,126.95058"), api.calls.toList())
     }
 
     @Test
