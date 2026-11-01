@@ -17,6 +17,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -92,6 +93,9 @@ import kotlinx.coroutines.launch
 
 /** The answer line under the current question: 12 dp gap and one 39 dp line. */
 private val AnswerLineHeight = 51.dp
+
+/** The width of the prototype's answer row: 353 plus 2.5 on each side. */
+private val ScaleRowWidth = 358.dp
 
 /** How long the answer takes to fade before the next question comes in. */
 private const val ANSWER_FADE_MILLIS = 250L
@@ -212,7 +216,7 @@ fun QuestionScreen(
                 }
             }
 
-            AnswerScale(offered, active, loading, pick, press)
+            AnswerScale(offered, active, pressing, loading, pick, press)
             ProgressBlock(session)
         }
         Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
@@ -294,49 +298,58 @@ private fun QuestionItem(
 private fun AnswerScale(
     offered: Set<String>,
     active: String?,
+    pressing: String?,
     loading: Boolean,
     onPick: (String) -> Unit,
     onPress: (String?) -> Unit
 ) {
-    Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp)) {
-        val unsure = stringResource(R.string.answer_unknown)
-        Box(Modifier.fillMaxWidth().height(32.dp).offset(y = 10.dp), contentAlignment = Alignment.Center) {
-            if (AnswerId.UNKNOWN in offered) {
-                Text(
-                    unsure,
-                    Modifier
-                        .heightIn(min = 32.dp)
-                        .pressPreview(AnswerId.UNKNOWN, loading, onPick, onPress)
-                        .semantics { role = Role.Button; contentDescription = unsure; onClick { onPick(AnswerId.UNKNOWN); true } }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                        .testTag("answer_${AnswerId.UNKNOWN}"),
-                    style = MetchuType.Caption.copy(textDecoration = TextDecoration.Underline),
-                    color = MetchuColors.Grey600
-                )
+    // The prototype's row is 358 wide (353 + 2.5 on each side) on a 393 screen; circles,
+    // icons and captions scale with the row so narrower phones keep the same gaps.
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 17.5.dp, end = 17.5.dp, bottom = 20.dp)) {
+        val scale = (maxWidth / ScaleRowWidth).coerceAtMost(1.15f)
+        Column(Modifier.fillMaxWidth()) {
+            val unsure = stringResource(R.string.answer_unknown)
+            Box(Modifier.fillMaxWidth().height(32.dp).offset(y = 10.dp), contentAlignment = Alignment.Center) {
+                if (AnswerId.UNKNOWN in offered) {
+                    Text(
+                        unsure,
+                        Modifier
+                            .heightIn(min = 32.dp)
+                            .pressPreview(AnswerId.UNKNOWN, loading, onPick, onPress)
+                            .semantics { role = Role.Button; contentDescription = unsure; onClick { onPick(AnswerId.UNKNOWN); true } }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .testTag("answer_${AnswerId.UNKNOWN}"),
+                        style = MetchuType.Caption.copy(textDecoration = TextDecoration.Underline),
+                        color = MetchuColors.Grey600
+                    )
+                }
             }
-        }
-        Spacer(Modifier.height(4.dp))
-        Row(
-            Modifier.fillMaxWidth().height(76.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Levels.forEach { level ->
-                ScaleCircle(level, enabled = level.id in offered, filled = active == level.id, loading, onPick, onPress)
+            Spacer(Modifier.height(4.dp))
+            Row(
+                Modifier.fillMaxWidth().height(76.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Levels.forEach { level ->
+                    ScaleCircle(
+                        level, scale, enabled = level.id in offered, filled = active == level.id,
+                        pressed = pressing == level.id, loading, onPick, onPress
+                    )
+                }
             }
-        }
-        Spacer(Modifier.height(4.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Caption(R.string.answer_no, MetchuColors.Grey700)
-            Caption(R.string.answer_any, MetchuColors.Grey600)
-            Caption(R.string.answer_yes, MetchuColors.Primary)
+            Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Caption(R.string.answer_no, MetchuColors.Grey700, scale)
+                Caption(R.string.answer_any, MetchuColors.Grey600, scale)
+                Caption(R.string.answer_yes, MetchuColors.Primary, scale)
+            }
         }
     }
 }
 
 @Composable
-private fun Caption(@StringRes text: Int, color: Color) {
-    Text(stringResource(text), Modifier.width(70.dp), style = MetchuType.Label, color = color, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
+private fun Caption(@StringRes text: Int, color: Color, scale: Float) {
+    Text(stringResource(text), Modifier.width(70.dp * scale), style = MetchuType.Label, color = color, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
 }
 
 /** Shows the answer while held, picks it on release. */
@@ -356,18 +369,20 @@ private fun Modifier.pressPreview(id: String, loading: Boolean, onPick: (String)
 @Composable
 private fun ScaleCircle(
     level: Level,
+    rowScale: Float,
     enabled: Boolean,
     filled: Boolean,
+    pressed: Boolean,
     loading: Boolean,
     onPick: (String) -> Unit,
     onPress: (String?) -> Unit
 ) {
     val fill by animateColorAsState(if (filled) level.color else Color.Transparent, tween(120), label = "fill")
-    val scale by animateFloatAsState(if (filled) 0.9f else 1f, tween(120), label = "press")
+    val scale by animateFloatAsState(if (pressed) 0.9f else 1f, tween(120), label = "press")
     val description = stringResource(level.label)
     Box(
         Modifier
-            .size(level.size)
+            .size(level.size * rowScale)
             .scale(scale)
             .alpha(if (enabled) 1f else 0.3f)
             .clip(CircleShape)
@@ -388,7 +403,7 @@ private fun ScaleCircle(
         if (level.icon != null) {
             Image(
                 level.icon, null,
-                Modifier.size(if (level.icon == Icons.Check) 28.dp else 26.dp),
+                Modifier.size((if (level.icon == Icons.Check) 28.dp else 26.dp) * rowScale),
                 colorFilter = ColorFilter.tint(if (filled) Color.White else level.color)
             )
         }
