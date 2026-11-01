@@ -32,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -52,6 +51,7 @@ import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.PickerOption
 import com.example.metchu.ui.common.Wordmark
+import com.example.metchu.ui.common.cssShadow
 import com.example.metchu.ui.common.pressScale
 import com.example.metchu.ui.common.rememberLocationPermission
 import com.example.metchu.ui.common.rememberUserPoint
@@ -116,17 +116,21 @@ fun StartScreen(
             Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
                 val title = MetchuType.Title
                 Text(stringResource(R.string.start_line1), style = title)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Every line keeps the title's 39 dp, also the lines holding a choice.
+                Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
                     Token(stringResource(meal.label).let { if (english) it.uppercase() else it }, stringResource(R.string.start_meal_change), "mealToken") {
                         sheet = Sheet.MEAL
                     }
                     Text(stringResource(R.string.start_meal_particle), style = title)
                 }
-                Token(
-                    stringResource(if (place == Place.NEAR) R.string.place_near else R.string.place_any).let { if (english) it.uppercase() else it },
-                    stringResource(R.string.start_place_change), "placeToken"
-                ) { sheet = Sheet.PLACE }
+                Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
+                    Token(
+                        stringResource(if (place == Place.NEAR) R.string.place_near else R.string.place_any).let { if (english) it.uppercase() else it },
+                        stringResource(R.string.start_place_change), "placeToken"
+                    ) { sheet = Sheet.PLACE }
+                }
                 Text(stringResource(R.string.start_line4), style = title)
+                Text(stringResource(R.string.start_sub), Modifier.padding(top = 16.dp), style = MetchuType.Lead)
             }
         }
 
@@ -164,6 +168,7 @@ fun StartScreen(
 }
 
 private val StartButtonSize = 140.dp
+private val TitleLine = 39.dp
 
 @Composable
 private fun StartButton(loading: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -172,7 +177,7 @@ private fun StartButton(loading: Boolean, onClick: () -> Unit, modifier: Modifie
         modifier
             .size(StartButtonSize)
             .pressScale(interaction)
-            .shadow(14.dp, CircleShape, ambientColor = MetchuColors.Shadow.copy(alpha = 0.2f), spotColor = MetchuColors.Shadow.copy(alpha = 0.2f))
+            .cssShadow(CircleShape, 6.dp, 20.dp, 0.2f)
             .clip(CircleShape)
             .background(MetchuColors.Primary)
             .clickable(interaction, indication = null, enabled = !loading, role = Role.Button, onClick = onClick)

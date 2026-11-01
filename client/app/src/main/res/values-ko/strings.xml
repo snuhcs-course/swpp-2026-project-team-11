@@ -8,6 +8,7 @@
     <string name="start_line1">오늘</string>
     <string name="start_meal_particle">은</string>
     <string name="start_line4">먹을래요</string>
+    <string name="start_sub">질문 몇 개로 메뉴를 골라드려요.</string>
     <string name="start_button">메뉴 추천받기</string>
     <string name="start_meal_sheet">언제 먹을지 골라 주세요</string>
     <string name="start_place_sheet">어디까지 갈지 골라 주세요</string>

@@ -13,6 +13,7 @@
     <string name="start_line1">Let’s find your</string>
     <string name="start_meal_particle"></string>
     <string name="start_line4">today</string>
+    <string name="start_sub">A few questions, and we’ll pick a dish.</string>
     <string name="start_button">Start</string>
     <string name="start_meal_sheet">Pick a meal</string>
     <string name="start_place_sheet">Pick how far to go</string>
