@@ -140,7 +140,8 @@ metchu.mapsApiKey=AIza...
 Without the key the app works and leaves both maps out (a plain grey area on
 the result screen). The key ends up inside the APK, so restrict it to Android
 apps (package `com.example.metchu` and your signing certificate's SHA-1) in the
-console; never commit it.
+console; never commit it. The Maps terms require Google's logo to stay visible; the
+result map keeps it just above the sheet with map padding.
 
 The start screen asks for location once. With it, the start map centers on the
 user, the result map shows the user's position, and the cafeteria list shows
@@ -155,7 +156,7 @@ under Extended controls > Location (for example 37.4600, 126.9520).
 | first launch | Settings: one chip per allergen, a note that the tags are AI estimates, the engine (decision tree or LLM) | Back keeps the choices; there is no save button |
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
 | `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" |
-| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet listing them | "Find another" turns it down and asks on; ‹ undoes; "Start over"; chips switch between the dishes shown so far; a cafeteria row moves the map to it |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet listing them | "Find another" turns it down and asks on; ‹ undoes; "Start over"; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it; the sheet's handle drags or taps it between low, middle and high |
 | `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them | Start over |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
