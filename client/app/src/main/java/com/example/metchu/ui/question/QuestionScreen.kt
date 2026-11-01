@@ -1,0 +1,391 @@
+package com.example.metchu.ui.question
+
+import androidx.annotation.StringRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.example.metchu.R
+import com.example.metchu.data.model.AnswerId
+import com.example.metchu.data.model.SessionState
+import com.example.metchu.ui.common.CircleIconButton
+import com.example.metchu.ui.common.Icons
+import com.example.metchu.ui.common.Pill
+import com.example.metchu.ui.common.PillSegment
+import com.example.metchu.ui.common.SheetEasing
+import com.example.metchu.ui.common.Wordmark
+import com.example.metchu.ui.common.fadeEdges
+import com.example.metchu.ui.main.AnsweredQuestion
+import com.example.metchu.ui.theme.MetchuColors
+import com.example.metchu.ui.theme.MetchuType
+import com.example.metchu.ui.theme.screenBackground
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+/** One circle of the five-step scale, left (no) to right (yes). */
+private class Level(val id: String, val size: Dp, val color: Color, @StringRes val label: Int, val icon: ImageVector?)
+
+private val Levels = listOf(
+    Level(AnswerId.NO, 70.dp, MetchuColors.Grey700, R.string.level_no, Icons.Cross),
+    Level(AnswerId.PROBABLY_NO, 58.dp, MetchuColors.Grey700, R.string.level_probably_no, null),
+    Level(AnswerId.ANY, 58.dp, MetchuColors.Grey400, R.string.level_any, null),
+    Level(AnswerId.PROBABLY_YES, 58.dp, MetchuColors.Primary, R.string.level_probably_yes, null),
+    Level(AnswerId.YES, 70.dp, MetchuColors.Primary, R.string.level_yes, Icons.Check)
+)
+
+/** The color a past question keeps: the color of its answer. */
+fun answerColor(answerId: String): Color = Levels.firstOrNull { it.id == answerId }?.color ?: MetchuColors.Grey600
+
+@StringRes
+private fun answerLabel(answerId: String): Int =
+    Levels.firstOrNull { it.id == answerId }?.label ?: R.string.answer_unknown
+
+/**
+ * The current question at the bottom of a list of past ones, the scale below it and
+ * a progress bar. Past questions fade, blur and keep their answer's color; tapping one
+ * goes back to it. Pressing a circle previews its answer under the question.
+ */
+@Composable
+fun QuestionScreen(
+    session: SessionState,
+    history: List<AnsweredQuestion>,
+    loading: Boolean,
+    onAnswer: (String) -> Unit,
+    onBack: () -> Unit,
+    onRecommendNow: () -> Unit,
+    onRevisit: (Int) -> Unit
+) {
+    val step = session.step
+    val count = step.questionCount
+    val offered = step.options.orEmpty().map { it.id }.toSet()
+    // What the user is pressing or has picked on this question; the answer line shows it.
+    var pressing by remember(step.questionId, count) { mutableStateOf<String?>(null) }
+    var chosen by remember(step.questionId, count) { mutableStateOf<String?>(null) }
+    var lastShown by remember(step.questionId, count) { mutableStateOf<String?>(null) }
+    LaunchedEffect(loading) { if (!loading) chosen = null }
+    val active = chosen ?: pressing
+    if (active != null) lastShown = active
+
+    val list = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(count) { list.scrollToItem(0) }
+    val pick = { id: String ->
+        if (!loading && chosen == null) {
+            chosen = id
+            onAnswer(id)
+        }
+    }
+    val press = { id: String? ->
+        pressing = id
+        if (id != null) scope.launch { list.animateScrollToItem(0) }
+    }
+
+    Box(Modifier.fillMaxSize().screenBackground()) {
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+            Row(
+                Modifier.fillMaxWidth().height(56.dp).padding(start = 20.dp, end = 20.dp, top = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
+                if (count > 0) Pill(Modifier.testTag("recommendNow")) { PillSegment(stringResource(R.string.recommend_now), onRecommendNow) }
+            }
+
+            LazyColumn(
+                Modifier.weight(1f).fillMaxWidth().fadeEdges(top = list.canScrollForward, bottom = list.canScrollBackward),
+                state = list,
+                reverseLayout = true,
+                verticalArrangement = Arrangement.Top,
+                contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 8.dp)
+            ) {
+                item(key = "q$count") {
+                    QuestionItem(
+                        text = step.text,
+                        current = true,
+                        color = MetchuColors.Grey900,
+                        answer = lastShown,
+                        answerVisible = active != null,
+                        onRevisit = null,
+                        modifier = Modifier.animateItem(fadeInSpec = tween(300), placementSpec = null, fadeOutSpec = tween(300))
+                    )
+                }
+                history.indices.reversed().forEach { index ->
+                    item(key = "q$index") {
+                        QuestionItem(
+                            text = history[index].text,
+                            current = false,
+                            color = answerColor(history[index].answerId),
+                            answer = null,
+                            answerVisible = false,
+                            onRevisit = { if (!loading) onRevisit(index) },
+                            modifier = Modifier.animateItem(fadeInSpec = tween(300), placementSpec = null, fadeOutSpec = tween(300))
+                        )
+                    }
+                }
+            }
+
+            AnswerScale(offered, active, loading, pick, press)
+            ProgressBlock(session, loading)
+        }
+        Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
+    }
+}
+
+@Composable
+private fun QuestionItem(
+    text: String,
+    current: Boolean,
+    color: Color,
+    answer: String?,
+    answerVisible: Boolean,
+    onRevisit: (() -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    // A past question lights up while pressed, then the screen goes back to it.
+    var held by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val lit = held || (!current && onRevisit != null && pressed)
+    val alpha by animateFloatAsState(if (current || lit) 1f else 0.35f, tween(300), label = "alpha")
+    val blur by animateDpAsState(if (current || lit) 0.dp else 2.dp, tween(300), label = "blur")
+    val ink by animateColorAsState(color, tween(300), label = "ink")
+    val background by animateColorAsState(if (lit) MetchuColors.Grey100 else Color.Transparent, tween(if (lit) 150 else 0), label = "bg")
+    val scale by animateFloatAsState(if (lit) 353f / 373f else 1f, tween(150), label = "scale")
+    val revisit = stringResource(R.string.revisit)
+
+    Column(
+        modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clip(RoundedCornerShape(12.dp))
+            .background(background)
+            .then(
+                if (onRevisit != null) Modifier.clickable(interaction, indication = null, onClickLabel = revisit, role = Role.Button) {
+                    held = true
+                    scope.launch {
+                        delay(220)
+                        held = false
+                        onRevisit()
+                    }
+                } else Modifier
+            )
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .alpha(alpha)
+            .blur(blur, BlurredEdgeTreatment.Unbounded)
+    ) {
+        Text(text, style = MetchuType.Title, color = ink, modifier = if (current) Modifier.testTag("question") else Modifier)
+        if (current) {
+            val shown by animateFloatAsState(if (answerVisible) 1f else 0f, tween(300), label = "answer")
+            Box(Modifier.padding(top = 12.dp).fillMaxWidth().height(39.dp).alpha(shown)) {
+                Box(Modifier.offset(y = 19.dp).width(22.dp).height(1.5.dp).background(MetchuColors.Grey300))
+                if (answer != null) {
+                    Text(
+                        stringResource(answerLabel(answer)),
+                        Modifier.padding(start = 32.dp).semantics { liveRegion = LiveRegionMode.Polite },
+                        style = MetchuType.Title,
+                        color = answerColor(answer),
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** "I'm not sure", the five circles and their three captions. */
+@Composable
+private fun AnswerScale(
+    offered: Set<String>,
+    active: String?,
+    loading: Boolean,
+    onPick: (String) -> Unit,
+    onPress: (String?) -> Unit
+) {
+    Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp)) {
+        val unsure = stringResource(R.string.answer_unknown)
+        Box(Modifier.fillMaxWidth().height(32.dp).offset(y = 10.dp), contentAlignment = Alignment.Center) {
+            if (AnswerId.UNKNOWN in offered) {
+                Text(
+                    unsure,
+                    Modifier
+                        .heightIn(min = 32.dp)
+                        .pressPreview(AnswerId.UNKNOWN, loading, onPick, onPress)
+                        .semantics { role = Role.Button; contentDescription = unsure; onClick { onPick(AnswerId.UNKNOWN); true } }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .testTag("answer_${AnswerId.UNKNOWN}"),
+                    style = MetchuType.Caption.copy(textDecoration = TextDecoration.Underline),
+                    color = MetchuColors.Grey600
+                )
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Row(
+            Modifier.fillMaxWidth().height(76.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Levels.forEach { level ->
+                ScaleCircle(level, enabled = level.id in offered, filled = active == level.id, loading, onPick, onPress)
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Caption(R.string.answer_no, MetchuColors.Grey700)
+            Caption(R.string.answer_any, MetchuColors.Grey600)
+            Caption(R.string.answer_yes, MetchuColors.Primary)
+        }
+    }
+}
+
+@Composable
+private fun Caption(@StringRes text: Int, color: Color) {
+    Text(stringResource(text), Modifier.width(70.dp), style = MetchuType.Label, color = color, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
+}
+
+/** Shows the answer while held, picks it on release. */
+private fun Modifier.pressPreview(id: String, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit) =
+    pointerInput(id, loading) {
+        if (loading) return@pointerInput
+        detectTapGestures(
+            onPress = {
+                onPress(id)
+                tryAwaitRelease()
+                onPress(null)
+            },
+            onTap = { onPick(id) }
+        )
+    }
+
+@Composable
+private fun ScaleCircle(
+    level: Level,
+    enabled: Boolean,
+    filled: Boolean,
+    loading: Boolean,
+    onPick: (String) -> Unit,
+    onPress: (String?) -> Unit
+) {
+    val fill by animateColorAsState(if (filled) level.color else Color.Transparent, tween(120), label = "fill")
+    val scale by animateFloatAsState(if (filled) 0.9f else 1f, tween(120), label = "press")
+    val description = stringResource(level.label)
+    Box(
+        Modifier
+            .size(level.size)
+            .scale(scale)
+            .alpha(if (enabled) 1f else 0.3f)
+            .clip(CircleShape)
+            .background(fill)
+            .drawBehind {
+                val width = 2.5.dp.toPx()
+                drawCircle(level.color, radius = (size.minDimension - width) / 2, style = Stroke(width))
+            }
+            .then(if (enabled) Modifier.pressPreview(level.id, loading, onPick, onPress) else Modifier)
+            .semantics {
+                role = Role.Button
+                contentDescription = description
+                if (enabled) onClick { onPick(level.id); true }
+            }
+            .testTag("answer_${level.id}"),
+        contentAlignment = Alignment.Center
+    ) {
+        if (level.icon != null) {
+            Image(
+                level.icon, null,
+                Modifier.size(if (level.icon == Icons.Check) 28.dp else 26.dp),
+                colorFilter = ColorFilter.tint(if (filled) Color.White else level.color)
+            )
+        }
+    }
+}
+
+/** The grey bar and the phase under it; it fills fast at first and slower later. */
+@Composable
+private fun ProgressBlock(session: SessionState, loading: Boolean) {
+    val fill = progressFill(session.step.questionCount, session.maxQuestions)
+    val width by animateFloatAsState(fill, tween(450, easing = SheetEasing), label = "progress")
+    val label = stringResource(R.string.progress)
+    Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 90.dp)) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(CircleShape)
+                .background(MetchuColors.Grey300)
+                .semantics {
+                    contentDescription = label
+                    progressBarRangeInfo = ProgressBarRangeInfo(fill, 0f..1f)
+                }
+        ) {
+            Box(Modifier.fillMaxHeight().fillMaxWidth(width).background(MetchuColors.Grey400))
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            stringResource(if (loading) R.string.phase_thinking else phaseText(fill)),
+            Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("phase"),
+            style = MetchuType.Caption
+        )
+    }
+}
