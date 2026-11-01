@@ -42,7 +42,6 @@ import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
-import com.example.metchu.ui.common.Wordmark
 import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -81,7 +80,6 @@ fun SettingsScreen(
             }
             Box(Modifier.navigationBarsPadding().height(96.dp))
         }
-        Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
     }
 }
 
