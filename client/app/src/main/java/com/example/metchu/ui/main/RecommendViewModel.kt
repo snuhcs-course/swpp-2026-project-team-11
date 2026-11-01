@@ -10,7 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.metchu.R
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.ApiError
-import com.example.metchu.data.network.UserLocation
+import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.repository.RecommendRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -44,10 +44,11 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
 
     /**
      * [meal] is "BR", "LU", "DN" or null for the whole day. [engine] is one of the
-     * Engine IDs, or null for the server's default. [location] is where the user is, if known.
+     * Engine IDs, or null for the server's default. [location] says where the user is; finding
+     * that can take a few seconds, so it is part of the request and shows as [loading].
      */
-    fun start(meal: String?, engine: String? = null, location: UserLocation? = null) =
-        request { repository.createSession(meal, engine, location) }
+    fun start(meal: String?, engine: String? = null, location: LocationSource? = null) =
+        request { repository.createSession(meal, engine, location?.current()) }
 
     fun answer(answerId: String) {
         val current = _session.value ?: return

@@ -10,7 +10,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
-import androidx.lifecycle.lifecycleScope
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.location.FusedLocationSource
@@ -29,7 +28,6 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -156,9 +154,7 @@ class MainActivity : AppCompatActivity() {
         askForLocation()
     }
 
-    private fun startSession(meal: String?, engine: String) {
-        lifecycleScope.launch { viewModel.start(meal, engine, locationSource.current()) }
-    }
+    private fun startSession(meal: String?, engine: String) = viewModel.start(meal, engine, locationSource)
 
     /** With the permission already granted, the answer comes at once and no dialog is shown. */
     private fun askForLocation() {
