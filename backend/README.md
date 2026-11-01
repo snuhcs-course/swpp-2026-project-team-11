@@ -90,7 +90,8 @@ python manage.py run_daily_pipeline --review review.csv
 ```
 
 It runs `fetch_menus` (download, split combos, merge duplicates, store), `extract_features`
-(tag the new dishes) and, with `--review`, writes the CSV for a person to check
+(tag the new dishes), `extract_allergens` (tag their allergens, [Allergens](#allergens-i3-a1))
+and, with `--review`, writes the CSV for a person to check
 ([Daily menu preprocessing](#daily-menu-preprocessing-p7)). A specific day: `--date 2026-09-30`.
 Siksha usually has the whole week's menu in advance.
 
@@ -99,12 +100,13 @@ The steps can also run one by one:
 ```bash
 python manage.py fetch_menus --date 2026-09-30        # without a key: --no-llm, each new line stays one dish
 python manage.py extract_features --date 2026-09-30
+python manage.py extract_allergens --date 2026-09-30
 ```
 
 - Try a small batch first: `python manage.py extract_features --limit 25 --dry-run` prints tags without saving.
 - On days with no menu (weekends, holidays), `fetch_menus` prints `오늘 운영 메뉴 없음` and exits.
 - `fetch_menus` is safe to re-run; it replaces that day's menu items.
-- `extract_features` skips dishes that are already tagged. Use `--force` to re-tag them.
+- `extract_features` and `extract_allergens` skip dishes that are already tagged. Use `--force` to re-tag them.
 
 ### 3) Cost and consistency
 
@@ -297,6 +299,26 @@ coverage is partial. Candidates and questions always have the same version; lega
 meanings are never mixed and missing std is never invented. The 9/29 fixture and its
 23 legacy scores remain unchanged.
 
+### Allergens (i3-A1)
+
+A user's allergies are a hard rule. `POST /api/sessions/` takes `"allergies"`, a list of
+keys from `menus/allergens.py` (the 19 allergens Korean food labels must declare: `egg`,
+`milk`, `buckwheat`, `peanut`, `soybean`, `wheat`, `mackerel`, `crab`, `shrimp`, `pork`,
+`peach`, `tomato`, `sulfite`, `walnut`, `chicken`, `beef`, `squid`, `shellfish`, `pine_nut`).
+`get_catalog(date, meal, allergies)` then drops every dish tagged with one of them **and every
+dish without current tags**, before either engine sees the candidates. Without allergies
+nothing changes. The phone keeps the allergies; the server stores nothing about the user.
+
+`extract_allergens` asks the menu model which allergens each dish name may contain, sauces,
+broths and batters included; the prompt tells it to leave a key out only when it is sure.
+It runs once per name (about one call per 25 new names) and stores `Food.allergens` with
+`Food.allergen_version`. Changing the list or the prompt bumps `ALLERGEN_VERSION`, after
+which every food counts as untagged until it is tagged again. The tags are an estimate from
+names, not cafeteria data, and the app says so.
+
+The 2026-09-29 snapshot has no allergen tags yet, so on it a session with any allergy has
+no candidates.
+
 ### Feature extraction v2 (P11)
 
 `schema.py` declares 33 features: 32 name-based measurements and deterministic
@@ -469,6 +491,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `run_daily_pipeline [--date] [--review PATH]` | fetch + preprocess + tag a day (+ review CSV); runs daily on GitHub Actions | **yes** |
 | `fetch_menus [--date] [--no-llm]` | fetch, preprocess and store a day's menu | for new lines |
 | `extract_features [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
+| `extract_allergens [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with the allergens they may contain | **yes** |
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
 | `export_preprocess_review [--date] --output PATH` | the day's results as a review CSV | no |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |
@@ -488,7 +511,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | Model | One row per | Notes |
 |---|---|---|
 | `Restaurant` | cafeteria | `code` is the Siksha id, e.g. `220동식당`; `lat`/`lng` come from Siksha and are null when it has none |
-| `Food` | distinct (dish name, set status) | recommendation unit; holds mean `features`, `feature_std`, preprocessing `is_food`, `display_name`, `food_group` |
+| `Food` | distinct (dish name, set status) | recommendation unit; holds mean `features`, `feature_std`, preprocessing `is_food`, `display_name`, `food_group`, `allergens` |
 | `MenuItem` | dish x restaurant x meal x day | `meal` is `BR` / `LU` / `DN`; `price` in won. A combo line has one row per dish |
 | `MenuLine` | distinct menu line (`dish_key`) | cache of the dishes a line stands for (`is_meal`, `dishes`, `source`) |
 

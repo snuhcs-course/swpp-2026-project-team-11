@@ -68,6 +68,9 @@ cd client && ./gradlew testDebugUnitTest         # JDK 21; the build fails on JD
 - **Menu preprocessing prompt** (`menus/preprocess/prompt.py`): a change bumps
   `PREPROCESS_VERSION` and updates `PROMPT_SHA256` (`menus/preprocess/mapper.py`; a test
   checks the pair), so cached `MenuLine` answers are resolved again.
+- **Allergens** (`menus/allergens.py`): a change to the list or the prompt bumps
+  `ALLERGEN_VERSION`, which re-tags every food. The keys must match the client's
+  `data/model/Allergen.kt`.
 - **Snapshots**: if what a saved session means changes, bump `POLICY_VERSION`
   (`decision_tree/planning.py`) or `ENGINE_VERSION` (`llm/engine.py`).
 - **Shared data**: rebuild `menus/fixtures/menus_2026-09-29.json` only as backend/README.md,
