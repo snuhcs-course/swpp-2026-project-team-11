@@ -147,7 +147,8 @@ fun ResultScreen(
                 CafeteriaMap(
                     cafeterias.cafeterias, selected, permission.granted,
                     start = cafeterias.cafeterias.firstNotNullOfOrNull { it.point } ?: user ?: CampusCenter,
-                    bottomInset = height * (1f - stop.fraction)
+                    // Above the dish chips when they are shown, so they never cover the logo.
+                    bottomInset = height * (1f - stop.fraction) + if (shown.size > 1 && stop != SheetStop.HIGH) ChipRowHeight else 0.dp
                 ) { selected = it }
             }
         }
@@ -395,8 +396,8 @@ private fun distanceText(meters: Int): String =
 /**
  * Google's own map style, with a label pill over each cafeteria. The chosen one is orange.
  * The camera opens at street level over [start] and then fits the cafeterias, keeping
- * them clear of the sheet, [bottomInset] high. Google's logo stays visible just above the
- * sheet, as the Maps terms require.
+ * them clear of the sheet, [bottomInset] high. Google's logo stays visible and unchanged
+ * just above the sheet, as the Maps terms require; the SDK offers no way to recolor it.
  */
 @Composable
 private fun CafeteriaMap(
@@ -413,7 +414,8 @@ private fun CafeteriaMap(
     var loaded by remember { mutableStateOf(false) }
     val points = cafeterias.mapNotNull { it.point?.let { p -> LatLng(p.lat, p.lng) } }
     val density = LocalDensity.current
-    val padding = PaddingValues(top = 120.dp, bottom = bottomInset)
+    // The SDK draws Google's logo in the padded corner, a few dp in; this lines it up with the 20 dp screen margin.
+    val padding = PaddingValues(start = 14.dp, top = 120.dp, bottom = bottomInset + 6.dp)
 
     LaunchedEffect(loaded, points) {
         if (!loaded || points.isEmpty()) return@LaunchedEffect
