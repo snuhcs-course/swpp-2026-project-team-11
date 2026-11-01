@@ -1,11 +1,14 @@
 package com.example.metchu.ui.question
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,7 +18,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -29,15 +31,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,7 +50,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
@@ -88,14 +90,11 @@ import com.example.metchu.ui.theme.screenBackground
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/** A line of the question list, newest first; [index] counts answered questions before it. */
-private class Row(val index: Int, val text: String, val answerId: String)
-
-private fun rows(count: Int, history: List<AnsweredQuestion>): List<Row> =
-    listOf(Row(count, "", "")) + history.indices.reversed().map { Row(it, history[it].text, history[it].answerId) }
-
 /** The answer line under the current question: 12 dp gap and one 39 dp line. */
 private val AnswerLineHeight = 51.dp
+
+/** How long the answer takes to fade before the next question comes in. */
+private const val ANSWER_FADE_MILLIS = 250L
 
 /** How long a picked answer stays before it is sent and the next question can appear. */
 private const val ANSWER_HOLD_MILLIS = 450L
@@ -144,9 +143,16 @@ fun QuestionScreen(
     val active = chosen ?: pressing
     if (active != null) lastShown = active
 
-    val list = rememberLazyListState()
+    // Scrolled from the bottom: 0 shows the current question, and new content keeps it in view.
+    val list = rememberScrollState()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(count) { list.animateScrollToItem(0) }
+    // After an answer the old line fades first; only then does the new question take its place.
+    var settled by remember { mutableIntStateOf(count) }
+    LaunchedEffect(count) {
+        if (count == settled + 1) delay(ANSWER_FADE_MILLIS)
+        settled = count
+        list.animateScrollTo(0)
+    }
     // The picked answer stays on screen a moment before the next question replaces it.
     val pick = { id: String ->
         if (!loading && chosen == null) {
@@ -159,7 +165,7 @@ fun QuestionScreen(
     }
     val press = { id: String? ->
         pressing = id
-        if (id != null) scope.launch { list.animateScrollToItem(0) }
+        if (id != null) scope.launch { list.animateScrollTo(0) }
     }
 
     Box(Modifier.fillMaxSize().screenBackground()) {
@@ -172,29 +178,37 @@ fun QuestionScreen(
                 if (count > 0) Pill(Modifier.testTag("recommendNow")) { PillSegment(stringResource(R.string.recommend_now), onRecommendNow) }
             }
 
-            LazyColumn(
-                Modifier.weight(1f).fillMaxWidth().fadeEdges(top = list.canScrollForward, bottom = list.canScrollBackward),
-                state = list,
-                reverseLayout = true,
-                verticalArrangement = Arrangement.Top,
-                contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 8.dp)
+            Column(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .fadeEdges(top = list.canScrollForward, bottom = list.canScrollBackward)
+                    .verticalScroll(list, reverseScrolling = true)
+                    .padding(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 8.dp)
             ) {
-                // One call site for current and past questions, so a question keeps its state
-                // (and animates) when it moves from current to past.
-                items(rows(count, history), key = { "q${it.index}" }) { row ->
-                    val current = row.index == count
-                    QuestionItem(
-                        text = if (current) step.text else row.text,
-                        current = current,
-                        color = if (current) MetchuColors.Grey900 else answerColor(row.answerId),
-                        // The question just answered keeps its answer line while it fades and folds away.
-                        answer = if (current) lastShown else row.answerId.takeIf { row.index == history.lastIndex },
-                        answerVisible = current && active != null,
-                        answerOpen = current,
-                        onRevisit = if (current) null else ({ if (!loading) onRevisit(row.index) }),
-                        // A new question fades in once the previous answer has faded out.
-                        modifier = Modifier.animateItem(fadeInSpec = tween(300, delayMillis = 200), placementSpec = null, fadeOutSpec = tween(300))
-                    )
+                // One call site for current and past questions, keyed by position, so a question
+                // keeps its state (and animates) when it moves from current to past.
+                for (index in 0..count) {
+                    val current = index == count
+                    val past = history.getOrNull(index)
+                    if (!current && past == null) continue
+                    key(index) {
+                        AnimatedVisibility(
+                            visible = !current || settled == count,
+                            enter = fadeIn(tween(300)) + expandVertically(tween(300, easing = SheetEasing), expandFrom = Alignment.Top)
+                        ) {
+                            QuestionItem(
+                                text = if (current) step.text else past!!.text,
+                                current = current,
+                                color = if (current) MetchuColors.Grey900 else answerColor(past!!.answerId),
+                                answer = if (current) lastShown else past!!.answerId,
+                                answerVisible = current && active != null,
+                                // The question just answered keeps its line until the next one comes in.
+                                answerOpen = current || index >= settled,
+                                onRevisit = if (current) null else ({ if (!loading) onRevisit(index) })
+                            )
+                        }
+                    }
                 }
             }
 
@@ -250,15 +264,14 @@ private fun QuestionItem(
             .blur(blur, BlurredEdgeTreatment.Unbounded)
     ) {
         Text(text, style = MetchuType.Title, color = ink, modifier = if (current) Modifier.testTag("question") else Modifier)
-        // The answer line: its text fades first, then the empty line goes away at once.
-        val shown by animateFloatAsState(if (answerVisible) 1f else 0f, tween(250), label = "answer")
-        val lineHeight by animateDpAsState(
-            if (answerOpen) AnswerLineHeight else 0.dp,
-            if (answerOpen) snap() else snap(delayMillis = 250),
-            label = "answerLine"
-        )
-        if (lineHeight > 0.dp) {
-            Box(Modifier.fillMaxWidth().height(lineHeight).clipToBounds()) {
+        // The answer line: its text fades first; the empty line closes as the next question opens.
+        val shown by animateFloatAsState(if (answerVisible) 1f else 0f, tween(ANSWER_FADE_MILLIS.toInt()), label = "answer")
+        AnimatedVisibility(
+            visible = answerOpen,
+            enter = expandVertically(tween(300, easing = SheetEasing), expandFrom = Alignment.Top),
+            exit = shrinkVertically(tween(300, easing = SheetEasing), shrinkTowards = Alignment.Top)
+        ) {
+            Box(Modifier.fillMaxWidth().height(AnswerLineHeight)) {
                 Box(Modifier.padding(top = 12.dp).fillMaxWidth().height(39.dp).alpha(shown)) {
                     Box(Modifier.offset(y = 19.dp).width(22.dp).height(1.5.dp).background(MetchuColors.Grey300))
                     if (answer != null) {
