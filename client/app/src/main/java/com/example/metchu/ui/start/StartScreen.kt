@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -107,7 +108,7 @@ fun StartScreen(
     val user = rememberUserPoint(permission.granted)
 
     Box(Modifier.fillMaxSize().screenBackground()) {
-        if (BuildConfig.HAS_MAPS_KEY) StartMap(user ?: CampusCenter, Modifier.align(Alignment.BottomCenter))
+        if (BuildConfig.HAS_MAPS_KEY) StartMap(user ?: CampusCenter)
 
         Column(Modifier.statusBarsPadding()) {
             Row(
@@ -172,7 +173,8 @@ fun StartScreen(
 }
 
 private val StartButtonSize = 140.dp
-private val MapHeight = 440.dp
+/** The screen gradient's color where the map starts to show (48 % down). */
+private val MapFadeColor = Color(0xFFFCFCFD)
 private val WordmarkBottom = 34.dp
 private val WordmarkHeight = 20.dp
 private val TitleLine = 39.dp
@@ -213,9 +215,12 @@ private fun Token(text: String, description: String, tag: String, onClick: () ->
     }
 }
 
-/** The lower part of the screen: a still map around the user, faded in from the background. */
+/**
+ * A still map around the user behind the whole screen, hidden under the background in the
+ * upper half and showing through toward the bottom, so it has no edge.
+ */
 @Composable
-private fun StartMap(center: Point, modifier: Modifier = Modifier) {
+private fun StartMap(center: Point) {
     val camera = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f)
     }
@@ -224,8 +229,8 @@ private fun StartMap(center: Point, modifier: Modifier = Modifier) {
     // itself). The top padding then puts the user's position under the start button's center.
     val navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottom = navigation + WordmarkBottom + WordmarkHeight + 8.dp - 6.dp
-    val top = MapHeight + bottom - (ActionCenterFromBottom + navigation) * 2
-    Box(modifier.fillMaxWidth().height(MapHeight)) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val top = maxHeight + bottom - (ActionCenterFromBottom + navigation) * 2
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = camera,
@@ -236,9 +241,12 @@ private fun StartMap(center: Point, modifier: Modifier = Modifier) {
                 zoomControlsEnabled = false, zoomGesturesEnabled = false, indoorLevelPickerEnabled = false
             )
         )
+        // The screen's own gradient over the top half, then fading out where the button sits.
         Box(
             Modifier.fillMaxSize().background(
-                Brush.verticalGradient(0f to Color(0xFFF9FAFB), 0.7f to Color(0x00F9FAFB))
+                Brush.verticalGradient(
+                    0f to Color.White, 0.45f to Color.White, 0.48f to MapFadeColor, 0.85f to MapFadeColor.copy(alpha = 0f)
+                )
             )
         )
     }
