@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
@@ -84,6 +85,9 @@ import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.screenBackground
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** The answer line under the current question: 12 dp gap and one 39 dp line. */
+private val AnswerLineHeight = 51.dp
 
 /** How long a picked answer stays before it is sent and the next question can appear. */
 private const val ANSWER_HOLD_MILLIS = 450L
@@ -134,7 +138,7 @@ fun QuestionScreen(
 
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(count) { list.scrollToItem(0) }
+    LaunchedEffect(count) { list.animateScrollToItem(0) }
     // The picked answer stays on screen a moment before the next question replaces it.
     val pick = { id: String ->
         if (!loading && chosen == null) {
@@ -174,8 +178,10 @@ fun QuestionScreen(
                         color = MetchuColors.Grey900,
                         answer = lastShown,
                         answerVisible = active != null,
+                        answerOpen = true,
                         onRevisit = null,
-                        modifier = Modifier.animateItem(fadeInSpec = tween(300), placementSpec = null, fadeOutSpec = tween(300))
+                        // A new question fades in once the previous answer has faded out.
+                        modifier = Modifier.animateItem(fadeInSpec = tween(300, delayMillis = 200), placementSpec = null, fadeOutSpec = tween(300))
                     )
                 }
                 history.indices.reversed().forEach { index ->
@@ -184,8 +190,10 @@ fun QuestionScreen(
                             text = history[index].text,
                             current = false,
                             color = answerColor(history[index].answerId),
-                            answer = null,
+                            // The question just answered keeps its answer line while it fades and folds away.
+                            answer = history[index].answerId.takeIf { index == history.lastIndex },
                             answerVisible = false,
+                            answerOpen = false,
                             onRevisit = { if (!loading) onRevisit(index) },
                             modifier = Modifier.animateItem(fadeInSpec = tween(300), placementSpec = null, fadeOutSpec = tween(300))
                         )
@@ -207,6 +215,7 @@ private fun QuestionItem(
     color: Color,
     answer: String?,
     answerVisible: Boolean,
+    answerOpen: Boolean,
     onRevisit: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
@@ -244,18 +253,26 @@ private fun QuestionItem(
             .blur(blur, BlurredEdgeTreatment.Unbounded)
     ) {
         Text(text, style = MetchuType.Title, color = ink, modifier = if (current) Modifier.testTag("question") else Modifier)
-        if (current) {
-            val shown by animateFloatAsState(if (answerVisible) 1f else 0f, tween(300), label = "answer")
-            Box(Modifier.padding(top = 12.dp).fillMaxWidth().height(39.dp).alpha(shown)) {
-                Box(Modifier.offset(y = 19.dp).width(22.dp).height(1.5.dp).background(MetchuColors.Grey300))
-                if (answer != null) {
-                    Text(
-                        stringResource(answerLabel(answer)),
-                        Modifier.padding(start = 32.dp).semantics { liveRegion = LiveRegionMode.Polite },
-                        style = MetchuType.Title,
-                        color = answerColor(answer),
-                        maxLines = 1
-                    )
+        // The answer line: its text fades first, then the line folds shut.
+        val shown by animateFloatAsState(if (answerVisible) 1f else 0f, tween(250), label = "answer")
+        val lineHeight by animateDpAsState(
+            if (answerOpen) AnswerLineHeight else 0.dp,
+            tween(300, delayMillis = if (answerOpen) 0 else 250, easing = SheetEasing),
+            label = "answerLine"
+        )
+        if (lineHeight > 0.dp) {
+            Box(Modifier.fillMaxWidth().height(lineHeight).clipToBounds()) {
+                Box(Modifier.padding(top = 12.dp).fillMaxWidth().height(39.dp).alpha(shown)) {
+                    Box(Modifier.offset(y = 19.dp).width(22.dp).height(1.5.dp).background(MetchuColors.Grey300))
+                    if (answer != null) {
+                        Text(
+                            stringResource(answerLabel(answer)),
+                            Modifier.padding(start = 32.dp).semantics { liveRegion = LiveRegionMode.Polite },
+                            style = MetchuType.Title,
+                            color = answerColor(answer),
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
