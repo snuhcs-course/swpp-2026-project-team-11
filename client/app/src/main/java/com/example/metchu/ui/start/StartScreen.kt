@@ -7,6 +7,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -140,7 +144,7 @@ fun StartScreen(
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2)
         )
-        Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
+        Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = WordmarkBottom))
 
         BottomSheetPicker(
             visible = sheet != null,
@@ -168,6 +172,9 @@ fun StartScreen(
 }
 
 private val StartButtonSize = 140.dp
+private val MapHeight = 440.dp
+private val WordmarkBottom = 34.dp
+private val WordmarkHeight = 20.dp
 private val TitleLine = 39.dp
 
 @Composable
@@ -213,10 +220,16 @@ private fun StartMap(center: Point, modifier: Modifier = Modifier) {
         position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f)
     }
     LaunchedEffect(center) { camera.position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f) }
-    Box(modifier.fillMaxWidth().height(440.dp)) {
+    // Google's logo goes above the wordmark, 20 dp in like everything else (the SDK adds ~6 dp
+    // itself). The top padding then puts the user's position under the start button's center.
+    val navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val bottom = navigation + WordmarkBottom + WordmarkHeight + 8.dp - 6.dp
+    val top = MapHeight + bottom - (ActionCenterFromBottom + navigation) * 2
+    Box(modifier.fillMaxWidth().height(MapHeight)) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = camera,
+            contentPadding = PaddingValues(start = 14.dp, top = top.coerceAtLeast(0.dp), bottom = bottom),
             uiSettings = MapUiSettings(
                 compassEnabled = false, mapToolbarEnabled = false, myLocationButtonEnabled = false,
                 rotationGesturesEnabled = false, scrollGesturesEnabled = false, tiltGesturesEnabled = false,
