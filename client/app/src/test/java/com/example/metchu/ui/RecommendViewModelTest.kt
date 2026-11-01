@@ -9,6 +9,7 @@ import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.RecommendRepository
+import com.example.metchu.ui.main.AnsweredQuestion
 import com.example.metchu.ui.main.RecommendViewModel
 import com.example.metchu.ui.main.UiError
 import kotlinx.coroutines.CompletableDeferred
@@ -482,5 +483,126 @@ class RecommendViewModelTest {
         viewModel.retry()
         assertEquals(emptyList<String>(), api.calls)
         assertIdle(null)
+    }
+
+    // --- question history and shown dishes ---
+
+    /** [question] after [answered] answers, with its own ID and text. */
+    private fun questionAt(answered: Int) = question.copy(
+        canUndo = answered > 0,
+        step = question.step.copy(questionId = "q:$answered", questionCount = answered, text = "Question $answered?")
+    )
+
+    private fun answerTo(next: SessionState, answerId: String = "yes") {
+        api.reply(next)
+        viewModel.answer(answerId)
+    }
+
+    @Test
+    fun eachAnswerJoinsTheHistoryWithItsQuestionText() {
+        startWith(questionAt(0))
+        answerTo(questionAt(1), "no")
+        answerTo(questionAt(2), "probably_yes")
+        assertEquals(
+            listOf(AnsweredQuestion("Question 0?", "no"), AnsweredQuestion("Question 1?", "probably_yes")),
+            viewModel.history.value
+        )
+    }
+
+    @Test
+    fun undoDropsTheLastAnsweredQuestion() {
+        startWith(questionAt(0))
+        answerTo(questionAt(1))
+        answerTo(questionAt(2))
+        api.reply(questionAt(1))
+        viewModel.undo()
+        assertEquals(listOf(AnsweredQuestion("Question 0?", "yes")), viewModel.history.value)
+    }
+
+    @Test
+    fun theHistoryNeverOutgrowsTheServersQuestionCount() {
+        startWith(questionAt(0))
+        // The server says it is still on the first question, for example after a stale step.
+        answerTo(questionAt(0))
+        assertEquals(emptyList<AnsweredQuestion>(), viewModel.history.value)
+    }
+
+    @Test
+    fun aRetriedAnswerStillJoinsTheHistory() {
+        startWith(questionAt(0))
+        api.fail(IOException("timeout"))
+        viewModel.answer("no")
+        api.reply(questionAt(1))
+        viewModel.retry()
+        assertEquals(listOf(AnsweredQuestion("Question 0?", "no")), viewModel.history.value)
+    }
+
+    @Test
+    fun revisitUndoesUntilTheServerIsOnThatQuestion() {
+        startWith(questionAt(0))
+        answerTo(questionAt(1))
+        answerTo(questionAt(2))
+        answerTo(guess.copy(step = guess.step.copy(questionCount = 3)))
+        api.calls.clear()
+        api.reply(questionAt(2))
+        api.reply(questionAt(1))
+        viewModel.revisit(1)
+        assertEquals(listOf("undo ${question.sessionId}", "undo ${question.sessionId}"), api.calls.toList())
+        assertEquals(questionAt(1), viewModel.session.value)
+        assertEquals(listOf(AnsweredQuestion("Question 0?", "yes")), viewModel.history.value)
+    }
+
+    @Test
+    fun revisitStopsWhenThereIsNothingLeftToUndo() {
+        startWith(questionAt(1))
+        api.reply(questionAt(0))
+        viewModel.revisit(0)
+        assertEquals(listOf("undo ${question.sessionId}"), api.calls.toList())
+        assertEquals(questionAt(0), viewModel.session.value)
+    }
+
+    @Test
+    fun aRetriedRevisitReadsTheServerBeforeUndoingAgain() {
+        startWith(questionAt(0))
+        answerTo(questionAt(1))
+        answerTo(questionAt(2))
+        api.calls.clear()
+        api.fail(IOException("timeout"))
+        viewModel.revisit(0)
+        // The undo may have arrived: the server is already on question 1.
+        api.reply(questionAt(1))
+        api.reply(questionAt(0))
+        viewModel.retry()
+        assertEquals(
+            listOf("undo ${question.sessionId}", "state ${question.sessionId}", "undo ${question.sessionId}"),
+            api.calls.toList()
+        )
+        assertEquals(questionAt(0), viewModel.session.value)
+    }
+
+    @Test
+    fun eachGuessIsShownOnceAndANewSessionForgetsThem() {
+        startWith(guess)
+        api.reply(questionAt(1))
+        viewModel.feedback(accepted = false)
+        api.reply(groupGuess)
+        viewModel.answer("yes")
+        api.reply(groupGuess)
+        viewModel.recommendNow()
+        assertEquals(listOf(guess.step, groupGuess.step), viewModel.shown.value)
+
+        api.reply(question)
+        viewModel.start("LU")
+        assertEquals(emptyList<Step>(), viewModel.shown.value)
+        assertEquals(emptyList<AnsweredQuestion>(), viewModel.history.value)
+    }
+
+    @Test
+    fun startOverForgetsTheHistory() {
+        startWith(questionAt(0))
+        answerTo(questionAt(1))
+        viewModel.startOver()
+        assertEquals(emptyList<AnsweredQuestion>(), viewModel.history.value)
+        assertEquals(emptyList<Step>(), viewModel.shown.value)
     }
 }
