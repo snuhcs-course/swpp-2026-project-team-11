@@ -33,6 +33,10 @@ class Food(models.Model):
     feature_version = models.CharField(max_length=10, blank=True)
     extraction_model = models.CharField(max_length=50, blank=True)
     extracted_at = models.DateTimeField(null=True, blank=True)
+    # Allergen keys (menus/allergens.py) the usual recipe may contain; untagged unless
+    # allergen_version is current.
+    allergens = models.JSONField(default=list, blank=True)
+    allergen_version = models.CharField(max_length=10, blank=True)
 
     class Meta:
         constraints = [models.UniqueConstraint(

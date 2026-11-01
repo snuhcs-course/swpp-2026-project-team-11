@@ -50,9 +50,11 @@ def build_llm():
     """The configured model (menus/llm.py). Replace this in tests."""
     return llm.build(FoodBatch)
 
-def extract_batch(names: list[str], llm, system_prompt: str = SYSTEM_PROMPT) -> dict[str, FoodAnnotation]:
+def extract_batch(names: list[str], llm, system_prompt: str = SYSTEM_PROMPT,
+                  batch_model=FoodBatch) -> dict[str, FoodAnnotation]:
+    """One call for `names`; `batch_model` is the answer's shape (menus/allergens.py passes its own)."""
     from langchain_core.messages import HumanMessage, SystemMessage
-    batch = FoodBatch.model_validate(llm.invoke([
+    batch = batch_model.model_validate(llm.invoke([
         SystemMessage(content=system_prompt), HumanMessage(content=build_user_message(names)),
     ]))
     wanted = set(names)
@@ -65,7 +67,7 @@ def extract_batch(names: list[str], llm, system_prompt: str = SYSTEM_PROMPT) -> 
     return {name: item for name, item in found.items() if name not in duplicates}
 
 def extract(names: list[str], llm, batch_size: int = 25, on_progress=None,
-            system_prompt: str = SYSTEM_PROMPT) -> tuple[dict, list]:
+            system_prompt: str = SYSTEM_PROMPT, batch_model=FoodBatch) -> tuple[dict, list]:
     if batch_size < 1:
         raise ValueError("batch_size must be positive")
     names = list(dict.fromkeys(names))
@@ -73,7 +75,7 @@ def extract(names: list[str], llm, batch_size: int = 25, on_progress=None,
     for start in range(0, len(names), batch_size):
         chunk = names[start:start + batch_size]
         try:
-            results.update(extract_batch(chunk, llm, system_prompt))
+            results.update(extract_batch(chunk, llm, system_prompt, batch_model))
         except Exception as error:
             if on_progress:
                 on_progress(f"배치 실패, 하나씩 재시도: {type(error).__name__}")
@@ -81,7 +83,7 @@ def extract(names: list[str], llm, batch_size: int = 25, on_progress=None,
             if name in results:
                 continue
             try:
-                results.update(extract_batch([name], llm, system_prompt))
+                results.update(extract_batch([name], llm, system_prompt, batch_model))
             except Exception as error:
                 if on_progress:
                     on_progress(f"실패: {name} ({type(error).__name__})")
