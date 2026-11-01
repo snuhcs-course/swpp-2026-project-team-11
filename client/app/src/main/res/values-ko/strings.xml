@@ -1,0 +1,102 @@
+<resources>
+    <string name="app_name">멧츄</string>
+
+    <string name="back">뒤로</string>
+    <string name="language">언어</string>
+    <string name="settings">설정</string>
+
+    <string name="start_line1">오늘</string>
+    <string name="start_meal_particle">은</string>
+    <string name="start_line4">먹을래요</string>
+    <string name="start_button">메뉴 추천받기</string>
+    <string name="start_meal_sheet">언제 먹을지 골라 주세요</string>
+    <string name="start_place_sheet">어디까지 갈지 골라 주세요</string>
+    <string name="start_meal_change">식사 바꾸기</string>
+    <string name="start_place_change">식당 범위 바꾸기</string>
+    <string name="meal_now">지금</string>
+    <string name="place_near">가까운 식당에서</string>
+    <string name="place_any">어느 식당에서든</string>
+    <string name="place_near_option">가까운 식당</string>
+    <string name="place_any_option">어느 식당이든</string>
+    <string name="place_near_note">걸어서 10분 안쪽</string>
+    <string name="place_any_note">모든 식당</string>
+
+    <string name="meal_breakfast">아침</string>
+    <string name="meal_lunch">점심</string>
+    <string name="meal_dinner">저녁</string>
+    <string name="meal_any">하루 종일</string>
+
+    <string name="settings_allergies">알러지</string>
+    <string name="allergies_body">고른 재료가 없는 메뉴만 추천해요.</string>
+    <string name="allergies_disclaimer">알러지 정보는 메뉴 이름을 보고 AI가 추정했어요. 알러지가 심하다면 식당에서 한 번 더 확인해 주세요.</string>
+    <string name="settings_engine">질문 방식 · 개발용</string>
+    <string name="engine_decision_tree">결정 트리</string>
+    <string name="engine_llm">LLM</string>
+    <string name="engine_decision_tree_hint">메뉴 특징으로 질문을 골라요. 바로 답해요.</string>
+    <string name="engine_llm_hint">Gemini가 질문을 만들어요. 몇 초 걸릴 수 있어요.</string>
+    <string name="allergen_egg">달걀</string>
+    <string name="allergen_milk">우유</string>
+    <string name="allergen_buckwheat">메밀</string>
+    <string name="allergen_peanut">땅콩</string>
+    <string name="allergen_soybean">대두</string>
+    <string name="allergen_wheat">밀</string>
+    <string name="allergen_mackerel">고등어</string>
+    <string name="allergen_crab">게</string>
+    <string name="allergen_shrimp">새우</string>
+    <string name="allergen_pork">돼지고기</string>
+    <string name="allergen_peach">복숭아</string>
+    <string name="allergen_tomato">토마토</string>
+    <string name="allergen_sulfite">아황산류</string>
+    <string name="allergen_walnut">호두</string>
+    <string name="allergen_chicken">닭고기</string>
+    <string name="allergen_beef">쇠고기</string>
+    <string name="allergen_squid">오징어</string>
+    <string name="allergen_shellfish">조개류(굴·전복·홍합)</string>
+    <string name="allergen_pine_nut">잣</string>
+
+    <string name="recommend_now">바로 추천받기</string>
+    <string name="revisit">이 질문으로 돌아가기</string>
+    <string name="answer_yes">그래요</string>
+    <string name="answer_any">상관없어요</string>
+    <string name="answer_no">아니에요</string>
+    <string name="answer_unknown">잘 모르겠어요</string>
+    <string name="level_yes">매우 그래요</string>
+    <string name="level_probably_yes">조금 그래요</string>
+    <string name="level_any">상관없어요</string>
+    <string name="level_probably_no">조금 아니에요</string>
+    <string name="level_no">전혀 아니에요</string>
+    <string name="progress">메뉴까지 남은 정도</string>
+    <string name="phase_start">취향을 알아보고 있어요</string>
+    <string name="phase_narrowing">후보를 좁히고 있어요</string>
+    <string name="phase_almost">거의 다 왔어요</string>
+    <string name="phase_found">메뉴를 찾았어요</string>
+    <string name="phase_thinking">다음 질문을 고르고 있어요…</string>
+
+    <string name="result_caption_breakfast">아침 추천 메뉴</string>
+    <string name="result_caption_lunch">점심 추천 메뉴</string>
+    <string name="result_caption_dinner">저녁 추천 메뉴</string>
+    <string name="result_caption_any">오늘의 추천 메뉴</string>
+    <string name="result_home">처음으로</string>
+    <string name="result_more">메뉴 더 찾기</string>
+    <string name="result_nearby">가까운 식당</string>
+    <string name="result_all">이 메뉴가 있는 식당</string>
+    <string name="result_none_near">걸어서 10분 안에는 없어서 모든 식당을 보여드려요.</string>
+    <string name="result_group_example">예를 들면 %1$s</string>
+    <string name="result_group_members">%1$s도 있어요</string>
+    <string name="result_sheet_toggle">식당 목록 펼치거나 접기</string>
+    <string name="result_map">식당 지도</string>
+    <string name="price_won">%1$s원</string>
+    <string name="price_unknown">가격 정보 없음</string>
+    <string name="walk_minutes">걸어서 %1$d분</string>
+    <string name="offer_none">이 메뉴를 파는 식당 정보가 없어요</string>
+
+    <string name="unavailable_no_menu">%2$s %1$s 메뉴가 아직 없어요. 다른 식사로 추천받을 수 있어요.</string>
+    <string name="unavailable_no_safe_menu">%2$s %1$s 메뉴 중에 알러지 재료가 없다고 확인된 메뉴가 없어요. 다른 식사로 추천받을 수 있어요.</string>
+    <string name="unavailable_exhausted">오늘 메뉴를 모두 살펴봤어요. 처음부터 다시 볼 수 있어요.</string>
+
+    <string name="retry">다시 시도</string>
+    <string name="error_no_server">서버에 연결되면 다시 시도할 수 있어요.</string>
+    <string name="error_server">서버가 요청을 처리하지 못했어요. 다시 시도할 수 있어요.</string>
+    <string name="error_engine_unavailable">이 서버에는 LLM 질문 방식이 준비되지 않았어요. 설정에서 결정 트리를 고를 수 있어요.</string>
+    <string name="error_session_lost">서버에서 추천이 끝났어요. 처음부터 다시 시작할 수 있어요.</string>
+</resources>

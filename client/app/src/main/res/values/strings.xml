@@ -1,20 +1,45 @@
 <resources>
     <string name="app_name">Metchu</string>
+    <string name="wordmark" translatable="false">metchu</string>
 
-    <!-- start -->
-    <string name="start_title">Not sure what to eat?</string>
-    <string name="start_body">Answer a few quick questions and Metchu will pick a dish from the SNU cafeterias.</string>
-    <string name="start_meal_label">Which meal?</string>
+    <!-- shared -->
+    <string name="back">Back</string>
+    <string name="language">Language</string>
+    <string name="settings">Settings</string>
+    <string name="language_ko" translatable="false">한국어</string>
+    <string name="language_en" translatable="false">English</string>
+
+    <!-- start: "Let's find your [LUNCH] [NEARBY] today" -->
+    <string name="start_line1">Let’s find your</string>
+    <string name="start_meal_particle"></string>
+    <string name="start_line4">today</string>
     <string name="start_button">Start</string>
-    <string name="start_allergies_label">Allergies to avoid</string>
-    <string name="allergies_none">None</string>
-    <string name="allergies_edit">Edit</string>
+    <string name="start_meal_sheet">Pick a meal</string>
+    <string name="start_place_sheet">Pick how far to go</string>
+    <string name="start_meal_change">Change meal</string>
+    <string name="start_place_change">Change distance</string>
+    <string name="meal_now">Now</string>
+    <string name="place_near">nearby</string>
+    <string name="place_any">anywhere</string>
+    <string name="place_near_option">Nearby</string>
+    <string name="place_any_option">Anywhere</string>
+    <string name="place_near_note">Within a 10-minute walk</string>
+    <string name="place_any_note">All cafeterias</string>
 
-    <!-- allergies: first launch, and Edit on the start screen -->
-    <string name="allergies_title">Any food allergies?</string>
-    <string name="allergies_body">Metchu will never suggest a dish that may contain what you pick. Leave everything unselected if you have none.</string>
-    <string name="allergies_disclaimer">Allergens are estimated by AI from dish names, not taken from the cafeterias. If an allergy is severe, check with the cafeteria too.</string>
-    <string name="allergies_save">Save</string>
+    <string name="meal_breakfast">Breakfast</string>
+    <string name="meal_lunch">Lunch</string>
+    <string name="meal_dinner">Dinner</string>
+    <string name="meal_any">All day</string>
+
+    <!-- settings -->
+    <string name="settings_allergies">Allergies</string>
+    <string name="allergies_body">We only suggest dishes without what you pick.</string>
+    <string name="allergies_disclaimer">AI estimates allergens from dish names. If an allergy is severe, check with the cafeteria too.</string>
+    <string name="settings_engine">Question engine · For development</string>
+    <string name="engine_decision_tree">Decision tree</string>
+    <string name="engine_llm">LLM</string>
+    <string name="engine_decision_tree_hint">Picks questions from dish features. Answers instantly.</string>
+    <string name="engine_llm_hint">Gemini writes each question. A step can take a few seconds.</string>
     <string name="allergen_egg">Eggs</string>
     <string name="allergen_milk">Milk</string>
     <string name="allergen_buckwheat">Buckwheat</string>
@@ -35,60 +60,57 @@
     <string name="allergen_shellfish">Shellfish (incl. oysters, abalone, mussels)</string>
     <string name="allergen_pine_nut">Pine nuts</string>
 
-    <!-- which question engine runs the session -->
-    <string name="start_engine_label">Who asks the questions?</string>
-    <string name="engine_decision_tree">Decision tree</string>
-    <string name="engine_llm">LLM</string>
-    <string name="engine_decision_tree_hint">Picks each question from the dishes\' features. Answers instantly.</string>
-    <string name="engine_llm_hint">Gemini writes each question from the dish names. A step can take a few seconds.</string>
-
-    <string name="meal_breakfast">Breakfast</string>
-    <string name="meal_lunch">Lunch</string>
-    <string name="meal_dinner">Dinner</string>
-    <string name="meal_any">All day</string>
-
-    <!-- session header: date · meal · number of dishes · engine -->
-    <string name="session_context">%1$s · %2$s · %3$s · %4$s</string>
-    <plurals name="dishes">
-        <item quantity="one">%d dish</item>
-        <item quantity="other">%d dishes</item>
-    </plurals>
-    <string name="start_over">Start over</string>
-
     <!-- question -->
-    <string name="question_progress">Question %1$d</string>
-    <string name="question_progress_capped">Question %1$d of up to %2$d</string>
-    <string name="undo">Back</string>
-    <string name="recommend_now">Just recommend something</string>
+    <string name="recommend_now">Recommend now</string>
+    <string name="revisit">Go back to this question</string>
+    <string name="answer_yes">Yes</string>
+    <string name="answer_any">Doesn’t matter</string>
+    <string name="answer_no">No</string>
+    <string name="answer_unknown">I’m not sure</string>
+    <string name="level_yes">Very much</string>
+    <string name="level_probably_yes">A little</string>
+    <string name="level_any">Doesn’t matter</string>
+    <string name="level_probably_no">Not really</string>
+    <string name="level_no">Not at all</string>
+    <string name="progress">Progress to your dish</string>
+    <string name="phase_start">Getting to know your taste</string>
+    <string name="phase_narrowing">Narrowing it down</string>
+    <string name="phase_almost">Almost there</string>
+    <string name="phase_found">Found your dish</string>
+    <string name="phase_thinking">Picking the next question…</string>
 
-    <!-- guess -->
-    <string name="guess_kind_food">Dish</string>
-    <string name="guess_kind_group">Kind of dish</string>
-    <string name="guess_example_label">For example</string>
-    <string name="guess_members">Also on the menu: %1$s</string>
-    <string name="guess_members_more">Also on the menu: %1$s and %2$d more</string>
-    <string name="accept_food">Yes, I\'ll have this</string>
-    <string name="accept_group">Yes, I\'ll have this one</string>
-    <string name="reject">No, something else</string>
-
-    <!-- recommendation -->
-    <string name="result_where">Where to get it</string>
-    <string name="result_map">Map of the cafeteria</string>
-    <string name="offer_line">%1$s · %2$s · %3$s</string>
-    <string name="offer_none">No cafeteria listed</string>
+    <!-- result -->
+    <string name="result_caption_breakfast">Breakfast pick</string>
+    <string name="result_caption_lunch">Lunch pick</string>
+    <string name="result_caption_dinner">Dinner pick</string>
+    <string name="result_caption_any">Today’s pick</string>
+    <string name="result_home">Start over</string>
+    <string name="result_more">Find another</string>
+    <string name="result_nearby">Nearby cafeterias</string>
+    <string name="result_all">Cafeterias serving it</string>
+    <string name="result_none_near">None within a 10-minute walk, so all are listed.</string>
+    <string name="result_group_example">For example %1$s</string>
+    <string name="result_group_members">Also %1$s</string>
+    <string name="result_sheet_toggle">Show more or fewer cafeterias</string>
+    <string name="result_map">Map of the cafeterias</string>
+    <string name="result_pick_aria">%1$s, %2$s</string>
     <string name="price_won">%1$s won</string>
-    <string name="price_unknown">price not listed</string>
+    <string name="price_unknown">Price not listed</string>
+    <string name="offer_meta">%1$s · %2$s</string>
+    <string name="distance_m">%1$d m</string>
+    <string name="distance_km">%1$.1f km</string>
+    <string name="walk_minutes">%1$d min walk</string>
+    <string name="offer_none">No cafeteria listed</string>
 
     <!-- unavailable -->
-    <string name="unavailable_title">Nothing to recommend</string>
-    <string name="unavailable_no_menu">There is no menu for %1$s (%2$s). Try another meal.</string>
-    <string name="unavailable_no_safe_menu">No dish on the menu for %1$s (%2$s) is known to be free of your allergies. Try another meal.</string>
-    <string name="unavailable_exhausted">You have turned down every dish on today\'s menu. Start over to see them again.</string>
+    <string name="unavailable_no_menu">There is no %1$s menu for %2$s yet. Try another meal.</string>
+    <string name="unavailable_no_safe_menu">No %1$s dish for %2$s is known to be free of your allergies. Try another meal.</string>
+    <string name="unavailable_exhausted">You’ve seen every dish on today’s menu. Start over to see them again.</string>
 
     <!-- errors -->
     <string name="retry">Try again</string>
-    <string name="error_no_server">Could not reach the server. Check that it is running and that this device can reach it.</string>
-    <string name="error_server">The server could not handle that request.</string>
-    <string name="error_engine_unavailable">The LLM engine is not set up on this server (it needs GOOGLE_API_KEY). Choose the decision tree, or add the key and restart the server.</string>
-    <string name="error_session_lost">Your session ended on the server. Please start again.</string>
+    <string name="error_no_server">You can try again once the server is reachable.</string>
+    <string name="error_server">The server couldn’t handle that. You can try again.</string>
+    <string name="error_engine_unavailable">The LLM engine isn’t set up on this server. You can use the decision tree in Settings.</string>
+    <string name="error_session_lost">The session ended on the server. You can start again.</string>
 </resources>
