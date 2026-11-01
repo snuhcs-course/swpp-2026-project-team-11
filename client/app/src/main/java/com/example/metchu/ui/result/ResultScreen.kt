@@ -24,7 +24,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -147,7 +148,7 @@ fun ResultScreen(
                     cafeterias.cafeterias, selected, permission.granted,
                     start = cafeterias.cafeterias.firstNotNullOfOrNull { it.point } ?: user ?: CampusCenter,
                     // Above the dish chips when they are shown, so they never cover the logo.
-                    bottomInset = height * (1f - stop.fraction) + if (shown.size > 1 && stop != SheetStop.HIGH) ChipRowHeight else 0.dp
+                    bottomInset = height * (1f - stop.fraction) + if (shown.size > 1) ChipRowHeight else 0.dp
                 ) { selected = it }
             }
         }
@@ -171,9 +172,8 @@ fun ResultScreen(
         }
 
         // The dishes shown so far ride just above the sheet.
-        val chipsIn by animateFloatAsState(if (shown.size > 1 && stop != SheetStop.HIGH) topIn else 0f, label = "chips")
         if (shown.size > 1) {
-            ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight).alpha(chipsIn)) { viewing = it }
+            ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight).alpha(topIn)) { viewing = it }
         }
 
         ResultSheet(
@@ -216,14 +216,19 @@ private enum class SheetStop(val fraction: Float) {
 /** 36 dp chips with room for their shadow above and below. */
 private val ChipRowHeight = 60.dp
 
+/** The dishes shown so far, newest first; [viewing] and [onView] use indices into [shown]. */
 @Composable
 private fun ShownChips(shown: List<Step>, viewing: Int, modifier: Modifier = Modifier, onView: (Int) -> Unit) {
+    val row = rememberLazyListState()
+    LaunchedEffect(shown.size) { row.animateScrollToItem(0) }
     LazyRow(
         modifier.height(ChipRowHeight),
+        state = row,
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        itemsIndexed(shown) { index, step ->
+        items(shown.indices.reversed().toList(), key = { shown[it].guessId ?: it.toString() }) { index ->
+            val step = shown[index]
             val on = index == viewing
             val background by animateColorAsState(if (on) MetchuColors.Grey900 else Color.White, label = "chip")
             Box(
