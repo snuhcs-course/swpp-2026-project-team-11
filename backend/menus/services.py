@@ -1,11 +1,14 @@
 """What the question engines read from the menu DB.
 
-    get_catalog(date, meal)       -> matching candidates, schema, version
+    get_catalog(date, meal, allergies) -> matching candidates, schema, version
     get_feature_schema("v1")      -> legacy schema
     get_candidates(date, meal)    -> legacy candidate shape
 
 MVP2 only needs names. MVP1 receives v2 feature intensity means and recipe std,
 or v1 scores when a dated meal has no v2 candidates.
+
+`allergies` (menus/allergens.py keys) is a hard rule: a dish tagged with one of them
+is never served, and neither is a dish without current allergen tags.
 """
 
 from __future__ import annotations
@@ -15,9 +18,10 @@ import logging
 
 from django.utils import timezone
 
+from .allergens import ALLERGEN_VERSION
 from .features.schema import FEATURE_VERSION, FEATURES
 from .features.legacy_schema import FEATURES as LEGACY_FEATURES
-from .models import MenuItem
+from .models import Food, MenuItem
 
 logger = logging.getLogger(__name__)
 MEAL_ORDER = {"BR": 0, "LU": 1, "DN": 2}
@@ -34,7 +38,8 @@ def get_feature_schema(feature_version: str = "v1") -> list[dict]:
              "family": FEATURE_PRESENTATION_V2[f.key][1]} for f in FEATURES]
 
 
-def get_catalog(date: datetime.date | None = None, meal: str | None = None) -> tuple[list, list, str]:
+def get_catalog(date: datetime.date | None = None, meal: str | None = None,
+                allergies: frozenset[str] = frozenset()) -> tuple[list, list, str]:
     """Load matching candidates/schema: choose whichever version covers more candidates on the date/meal.
 
     Never mix measurements with different meanings in one session; when coverage is partial,
@@ -58,6 +63,12 @@ def get_catalog(date: datetime.date | None = None, meal: str | None = None) -> t
             "%s %s: serving %d/%d candidates with feature_version=%s",
             date, meal or "ALL", len(candidates), total, version,
         )
+    if allergies:
+        tagged = dict(Food.objects.filter(pk__in=[c["food_id"] for c in candidates],
+                                          allergen_version=ALLERGEN_VERSION)
+                      .values_list("pk", "allergens"))
+        candidates = [c for c in candidates
+                      if c["food_id"] in tagged and allergies.isdisjoint(tagged[c["food_id"]])]
     return candidates, get_feature_schema(version), version
 
 

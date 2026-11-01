@@ -1,12 +1,13 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal, engine) -> RecommendSession
+    create(date, meal, engine, allergies) -> RecommendSession
     get(session_id)            -> RecommendSession | None
     session.public_state()     -> what the phone is allowed to see
 
 A session runs one of ENGINES, chosen when it is created: the P10 decision tree
 or the P13/P14 LLM engine. Both have the same session API and step shapes, so
-everything below the constructor is the same for either. The LLM engine calls
+everything below the constructor is the same for either. Dishes with one of the
+user's `allergies` never reach the engine (menus.services.get_catalog). The LLM engine calls
 the LLM while it starts and after every answer, rejection and "recommend now", so
 those requests can take as long as its timeout allows; undo never calls it.
 
@@ -46,13 +47,14 @@ class EngineUnavailable(Exception):
 
 
 class RecommendSession:
-    def __init__(self, date: datetime.date, meal: str | None, engine: str):
+    def __init__(self, date: datetime.date, meal: str | None, engine: str,
+                 allergies: frozenset[str] = frozenset()):
         self.session_id = uuid.uuid4().hex
         self.engine_name = engine
         self.date = date
         self.meal = meal
         self.lock = threading.Lock()
-        candidates, schema, version = get_catalog(date, meal)
+        candidates, schema, version = get_catalog(date, meal, allergies)
         self.feature_version = version
         self.candidate_count = len(candidates)
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
@@ -120,10 +122,10 @@ _sessions_lock = threading.Lock()
 
 
 def create(date: datetime.date | None = None, meal: str | None = None,
-           engine: str | None = None) -> RecommendSession:
+           engine: str | None = None, allergies: frozenset[str] = frozenset()) -> RecommendSession:
     """Raises EngineUnavailable when `engine` is "llm" and the server has no API key."""
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine or settings.RECOMMEND_DEFAULT_ENGINE)
+                               meal, engine or settings.RECOMMEND_DEFAULT_ENGINE, allergies)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:
