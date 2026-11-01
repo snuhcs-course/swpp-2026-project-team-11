@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.metchu.R
+import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.ApiError
 import com.example.metchu.data.repository.RecommendRepository
@@ -43,10 +44,11 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
 
     /**
      * [meal] is "BR", "LU", "DN" or null for the whole day. [engine] is one of the
-     * Engine IDs, or null for the server's default.
+     * Engine IDs, or null for the server's default. No dish with one of [allergies]
+     * is proposed.
      */
-    fun start(meal: String?, engine: String? = null) =
-        request { repository.createSession(meal, engine) }
+    fun start(meal: String?, engine: String? = null, allergies: List<Allergen> = emptyList()) =
+        request { repository.createSession(meal, engine, allergies) }
 
     fun answer(answerId: String) {
         val current = _session.value ?: return
