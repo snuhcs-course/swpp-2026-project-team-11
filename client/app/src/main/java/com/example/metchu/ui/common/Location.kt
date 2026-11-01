@@ -4,21 +4,23 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationManager
+import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-import androidx.core.location.LocationManagerCompat
-import androidx.core.os.CancellationSignal
 import com.example.metchu.ui.result.Point
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 
 private val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
@@ -35,26 +37,34 @@ fun rememberLocationPermission(): LocationPermission {
     return LocationPermission(granted) { launcher.launch(LOCATION_PERMISSIONS) }
 }
 
-/** The last known position at once, then a fresh fix when the system has one. Null without permission. */
+/**
+ * The user's position from Google's fused location provider, kept up to date while the
+ * screen is shown: the last known fix at once, then every new one. A phone (or an
+ * emulator) often has no last fix until some app listens, so a single read is not enough.
+ * Null without permission or before the first fix.
+ */
 @SuppressLint("MissingPermission") // checked by hasLocationPermission()
 @Composable
 fun rememberUserPoint(granted: Boolean): Point? {
     val context = LocalContext.current
-    return produceState<Point?>(null, granted) {
-        if (!granted || !hasLocationPermission(context)) return@produceState
-        val manager = context.getSystemService(LocationManager::class.java) ?: return@produceState
-        val providers = manager.getProviders(true)
-        value = providers.mapNotNull { manager.getLastKnownLocation(it) }.maxByOrNull { it.time }
-            ?.let { Point(it.latitude, it.longitude) }
-        val provider = providers.firstOrNull { it == LocationManager.FUSED_PROVIDER }
-            ?: providers.firstOrNull { it == LocationManager.NETWORK_PROVIDER }
-            ?: providers.firstOrNull() ?: return@produceState
-        val signal: CancellationSignal? = null
-        LocationManagerCompat.getCurrentLocation(manager, provider, signal, ContextCompat.getMainExecutor(context)) { fix: Location? ->
-            if (fix != null) value = Point(fix.latitude, fix.longitude)
+    var point by remember { mutableStateOf<Point?>(null) }
+    DisposableEffect(granted) {
+        if (!granted || !hasLocationPermission(context)) return@DisposableEffect onDispose {}
+        val client = LocationServices.getFusedLocationProviderClient(context)
+        client.lastLocation.addOnSuccessListener { fix -> if (fix != null && point == null) point = Point(fix.latitude, fix.longitude) }
+        val callback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { point = Point(it.latitude, it.longitude) }
+            }
         }
-    }.value
+        val request = LocationRequest.Builder(Priority.PRIORITY_BALANCED_POWER_ACCURACY, UPDATE_MILLIS).build()
+        client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+        onDispose { client.removeLocationUpdates(callback) }
+    }
+    return point
 }
+
+private const val UPDATE_MILLIS = 10_000L
 
 fun hasLocationPermission(context: Context): Boolean = LOCATION_PERMISSIONS.any {
     ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
