@@ -140,10 +140,11 @@ inside the APK, so restrict it to Android apps (package `com.example.metchu` and
 your signing certificate's SHA-1) in the console; never commit it.
 
 The app asks for location permission once, when Start is first tapped (or when the
-map first appears). With it, a new session sends the device's last known location,
-each cafeteria line shows its straight-line distance ("· 644 m"), and the map shows
-the user's own position. If the user declines, or the device has no recent fix,
-the session starts without a location and nothing else changes. On the emulator,
+map first appears). With it, a new session sends where the device is: a current fix,
+or the last known location when none comes within 3 seconds (Start shows the loading
+indicator meanwhile). Each cafeteria line then shows its straight-line distance
+("· 644 m"), and the map shows the user's own position. If the user declines, or the
+device has neither, the session starts without a location and nothing else changes. On the emulator,
 set a position under Extended controls > Location.
 
 ## Screens
@@ -178,7 +179,7 @@ Food and cafeteria names stay in their source language.
 data/model/SessionState.kt          JSON shapes returned by the server
 data/network/ApiService.kt          Retrofit endpoints and request bodies
 data/network/RetrofitInstance.kt    server address and HTTP client
-data/location/LocationSource.kt     the device's last known location for a new session
+data/location/LocationSource.kt     where the device is when a session starts
 data/repository/RecommendRepository.kt   the only class that calls Retrofit
 ui/main/RecommendViewModel.kt       session state, loading and error LiveData
 ui/main/MainActivity.kt             draws the current step, forwards taps
