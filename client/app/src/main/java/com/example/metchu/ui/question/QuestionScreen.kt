@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -85,6 +86,12 @@ import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.screenBackground
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** A line of the question list, newest first; [index] counts answered questions before it. */
+private class Row(val index: Int, val text: String, val answerId: String)
+
+private fun rows(count: Int, history: List<AnsweredQuestion>): List<Row> =
+    listOf(Row(count, "", "")) + history.indices.reversed().map { Row(it, history[it].text, history[it].answerId) }
 
 /** The answer line under the current question: 12 dp gap and one 39 dp line. */
 private val AnswerLineHeight = 51.dp
@@ -171,33 +178,22 @@ fun QuestionScreen(
                 verticalArrangement = Arrangement.Top,
                 contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 8.dp)
             ) {
-                item(key = "q$count") {
+                // One call site for current and past questions, so a question keeps its state
+                // (and animates) when it moves from current to past.
+                items(rows(count, history), key = { "q${it.index}" }) { row ->
+                    val current = row.index == count
                     QuestionItem(
-                        text = step.text,
-                        current = true,
-                        color = MetchuColors.Grey900,
-                        answer = lastShown,
-                        answerVisible = active != null,
-                        answerOpen = true,
-                        onRevisit = null,
+                        text = if (current) step.text else row.text,
+                        current = current,
+                        color = if (current) MetchuColors.Grey900 else answerColor(row.answerId),
+                        // The question just answered keeps its answer line while it fades and folds away.
+                        answer = if (current) lastShown else row.answerId.takeIf { row.index == history.lastIndex },
+                        answerVisible = current && active != null,
+                        answerOpen = current,
+                        onRevisit = if (current) null else ({ if (!loading) onRevisit(row.index) }),
                         // A new question fades in once the previous answer has faded out.
                         modifier = Modifier.animateItem(fadeInSpec = tween(300, delayMillis = 200), placementSpec = null, fadeOutSpec = tween(300))
                     )
-                }
-                history.indices.reversed().forEach { index ->
-                    item(key = "q$index") {
-                        QuestionItem(
-                            text = history[index].text,
-                            current = false,
-                            color = answerColor(history[index].answerId),
-                            // The question just answered keeps its answer line while it fades and folds away.
-                            answer = history[index].answerId.takeIf { index == history.lastIndex },
-                            answerVisible = false,
-                            answerOpen = false,
-                            onRevisit = { if (!loading) onRevisit(index) },
-                            modifier = Modifier.animateItem(fadeInSpec = tween(300), placementSpec = null, fadeOutSpec = tween(300))
-                        )
-                    }
                 }
             }
 
