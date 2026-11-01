@@ -305,9 +305,11 @@ A user's allergies are a hard rule. `POST /api/sessions/` takes `"allergies"`, a
 keys from `menus/allergens.py` (the 19 allergens Korean food labels must declare: `egg`,
 `milk`, `buckwheat`, `peanut`, `soybean`, `wheat`, `mackerel`, `crab`, `shrimp`, `pork`,
 `peach`, `tomato`, `sulfite`, `walnut`, `chicken`, `beef`, `squid`, `shellfish`, `pine_nut`).
-`get_catalog(date, meal, allergies)` then drops every dish tagged with one of them **and every
-dish without current tags**, before either engine sees the candidates. Without allergies
-nothing changes. The phone keeps the allergies; the server stores nothing about the user.
+`get_catalog(date, meal, allergies)` then drops every menu line with a dish tagged with one of
+them **or a dish without current tags**, before either engine sees the candidates. A combo line
+("돈가스 카레우동") is bought whole, so 카레우동 is not offered there to someone allergic to pork,
+though it can still be offered where it is served alone. The feature version is chosen among
+the dishes that are left. Without allergies nothing changes. The phone keeps the allergies; the server stores nothing about the user.
 
 `extract_allergens` asks the menu model which allergens each dish name may contain, sauces,
 broths and batters included; the prompt tells it to leave a key out only when it is sure.
