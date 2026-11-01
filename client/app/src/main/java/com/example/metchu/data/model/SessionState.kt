@@ -55,6 +55,20 @@ data class Step(
 
 data class AnswerOption(val id: String, val label: String)
 
+/**
+ * The answer IDs both engines accept, from ANSWER_OPTIONS in
+ * backend/question_engines/decision_tree/contracts.py. The question screen draws its
+ * own five-step scale for them instead of the server's labels.
+ */
+object AnswerId {
+    const val YES = "yes"
+    const val PROBABLY_YES = "probably_yes"
+    const val ANY = "any"
+    const val PROBABLY_NO = "probably_no"
+    const val NO = "no"
+    const val UNKNOWN = "unknown"
+}
+
 data class Food(
     @SerializedName("food_id") val foodId: Int,
     val name: String,
