@@ -1,10 +1,11 @@
 # Metchu Android client
 
-One screen that plays a recommendation session against the Django server. The
-question engine runs on the server; the app renders whatever step the engine is
-on and sends the user's taps back. The start screen chooses between the two
-engines, the P10 decision tree and the P13/P14 LLM engine, so they can be
-compared on the same menu.
+The app plays a recommendation session against the Django server. The question
+engine runs on the server; the app draws whatever step the engine is on and
+sends the user's taps back. The screens follow the first UI/UX design (i3-P4,
+11/02): Jetpack Compose, the Pretendard font, one orange key color, English and
+Korean text. Settings choose between the two engines, the P10 decision tree and
+the P13/P14 LLM engine, so they can be compared on the same menu.
 
 ## Run it
 
@@ -124,68 +125,101 @@ METCHU_PUBLIC_URL=https://metchu.example.com
 built once with `metchu.baseUrl=https://metchu.example.com/`. The token is a
 secret like the API key: keep it in `.env` only.
 
-### Cafeteria map (Google Maps key)
+### Maps (Google Maps key)
 
-The result screen shows the cafeterias serving the dish on a Google Map. It
-needs a Google Maps API key with **Maps SDK for Android** enabled (Google Cloud
-Console > APIs & Services). Put it in the untracked `client/local.properties`
-and rebuild:
+The start screen shows a still map around the user under the start button, and
+the result screen shows the cafeterias serving the dish on a Google map, in
+Google's own map style. Both need a Google Maps API key with **Maps SDK for
+Android** enabled (Google Cloud Console > APIs & Services). Put it in the
+untracked `client/local.properties` and rebuild:
 
 ```properties
 metchu.mapsApiKey=AIza...
 ```
 
-Without the key the app works as before and leaves the map out. The key ends up
-inside the APK, so restrict it to Android apps (package `com.example.metchu` and
-your signing certificate's SHA-1) in the console; never commit it. The map asks
-for location permission the first time it appears, to show the user's own
-position; if the user declines, it shows only the cafeterias. On the emulator,
-set a position under Extended controls > Location.
+Without the key the app works and leaves both maps out (a plain grey area on
+the result screen). The key ends up inside the APK, so restrict it to Android
+apps (package `com.example.metchu` and your signing certificate's SHA-1) in the
+console; never commit it.
+
+The start screen asks for location once. With it, the start map centers on the
+user, the result map shows the user's position, and the cafeteria list shows
+distances and walking times, nearest first. Without it the start map shows the
+middle of campus and the list has no distances. On the emulator, set a position
+under Extended controls > Location (for example 37.4600, 126.9520).
 
 ## Screens
 
-| Engine step | What the app shows | Actions |
+| When | Screen | Actions |
 | --- | --- | --- |
-| first launch | Allergy screen: one chip per allergen, and a note that the tags are AI estimates | Save (none picked means no allergies) |
-| no session | Start screen with a meal selector, an engine selector (Decision tree / LLM) and the saved allergies | Start, Edit (allergies) |
-| `question` | Progress, question text, one button per answer option | answer, Back, Just recommend something |
-| `guess` | The proposed dish with its cafeterias and prices. A group guess shows the group name, one example dish and the other dishes in the group | yes, no, Back |
-| `recommendation` | The accepted dish, where to get it and, with a Maps key, a map of those cafeterias | Start over |
+| first launch | Settings: one chip per allergen, a note that the tags are AI estimates, the engine (decision tree or LLM) | Back keeps the choices; there is no save button |
+| no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
+| `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet listing them | "Find another" turns it down and asks on; ‹ undoes; "Start over"; chips switch between the dishes shown so far; a cafeteria row moves the map to it |
 | `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them | Start over |
 
-A tapped button gives a light haptic tick, sinks slightly and stays highlighted
-while its request runs; the other buttons fade and ignore taps. A failed request shows a
-banner that stays until the next request, with Try again.
+The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
+to right; "I'm not sure" sends `unknown`. The scale is drawn by the app for the
+answer IDs both engines share (`AnswerId`); a circle whose ID the server does
+not offer is dimmed. Holding a circle previews its answer under the question.
 
-The line under the header shows the date, meal, number of dishes and the engine
-the server ran. Both engines use the same screens. Two things differ in use:
+The server keeps no question texts, so `RecommendViewModel` remembers the
+answered questions and trims the list to the step's `question_count` after
+every reply. Tapping a past question sends `undo` until the server is back on
+it. The progress bar fills by `1 − 0.72^answers` (at least answers ÷
+`max_questions` when the server caps them), up to 95 %.
 
-- An LLM step waits for the LLM, usually a few seconds and at most about 20
-  (two 10-second attempts) before the server falls back to a fixed question or
-  a random dish. The app's read timeout is 30 seconds; raise it in
-  `RetrofitInstance.kt` if you raise `METCHU_LLM_TIMEOUT`. Back never waits.
-- The LLM engine proposes single dishes only, never a group.
+"Find another" is `feedback` with `accepted: false`: the result screen shows a
+`guess`, and the app never accepts one. Leaving with "Start over" simply drops
+the session. The server has no distance filter, so "nearby" is applied to the
+result's cafeteria list on the phone: cafeterias within 800 m (a 10-minute walk
+at 80 m/min, straight line); if none is that close, all are listed with a note.
 
-The allergies are kept on the phone (`AllergyStore`, SharedPreferences) and sent with every
-new session; the server never proposes a dish that may contain one. There is no account.
+The meal starts at the next one the cafeterias serve (breakfast before 10,
+lunch before 15, dinner after). The distance, engine and allergies are kept on
+the phone (`SettingsStore`, `AllergyStore`, SharedPreferences). The language
+follows the phone until the globe picks one (`AppCompatDelegate` per-app
+locales). Question text and food and cafeteria names are shown as the server
+sends them, so questions stay in English in the Korean app.
 
-Question text, answer labels and guess text are shown as the server sends them.
-Food and cafeteria names stay in their source language.
+A tapped answer stays filled while its request runs and the phase line reads
+"Picking the next question…"; other taps are ignored. A failed request shows a
+banner at the top that stays until the next request, with Try again.
+Screens change with 0.3 s fades. A question that is answered stays in place
+and the next one fades in below it; going from a question to a result, the
+question fades upward and the map, sheet, text and buttons enter in turn.
+
+An LLM step waits for the LLM, usually a few seconds and at most about 20 (two
+10-second attempts) before the server falls back to a fixed question or a
+random dish. The app's read timeout is 30 seconds; raise it in
+`RetrofitInstance.kt` if you raise `METCHU_LLM_TIMEOUT`. The LLM engine proposes
+single dishes only, never a group.
 
 ## Structure
 
 ```
-data/model/SessionState.kt          JSON shapes returned by the server
+data/model/SessionState.kt          JSON shapes returned by the server, and the answer IDs
 data/model/Allergen.kt              the allergens the server accepts (backend/menus/allergens.py)
 data/network/ApiService.kt          Retrofit endpoints and request bodies
 data/network/RetrofitInstance.kt    server address and HTTP client
 data/repository/RecommendRepository.kt   the only class that calls Retrofit
 data/repository/AllergyStore.kt     the user's allergies, on this device
-ui/main/RecommendViewModel.kt       session state, loading and error LiveData
-ui/main/MainActivity.kt             draws the current step, forwards taps
-ui/main/CafeteriaPin.kt             which cafeterias the result map marks
-ui/allergy/AllergyActivity.kt       picks the allergies; opened on first launch and by Edit
+data/repository/SettingsStore.kt    the engine and the distance choice, on this device
+ui/main/MainActivity.kt             hosts the Compose app
+ui/main/MetchuApp.kt                picks the screen for the session's step; the error banner
+ui/main/RecommendViewModel.kt       session state, question history, loading and error LiveData
+ui/start/                           start screen and the meal choice
+ui/settings/                        allergies and engine
+ui/question/                        question history, five-step scale, progress
+ui/result/                          result map and sheet, cafeteria distances, nothing to recommend
+ui/common/                          shared buttons, pills, picker sheet, location
+ui/theme/Theme.kt                   colors, font and text sizes of the design foundation board
 ```
+
+The font is Pretendard (SIL Open Font License), subset to the 2,350 KS X 1001
+Hangul syllables plus Latin and renamed MetchuSans, as the license's reserved
+font name requires. Rarer syllables fall back to the system font. The license
+is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 
 ## REST contract (`backend/recommend`)
 
@@ -255,8 +289,8 @@ Server behavior to know about:
 | What | Command | Needs |
 | --- | --- | --- |
 | REST API and `serve_public` (`backend/recommend/tests`) | `python -m pytest backend/recommend` | Python only |
-| JSON contract, repository and ViewModel (`app/src/test`) | `./gradlew testDebugUnitTest` | JDK only |
-| The screen against a fake server (`app/src/androidTest`) | `./gradlew connectedDebugAndroidTest` | a running emulator or phone |
+| JSON contract, repository, ViewModel, progress, meal and cafeteria list (`app/src/test`) | `./gradlew testDebugUnitTest` | JDK only |
+| The Compose screens against a fake server (`app/src/androidTest`) | `./gradlew connectedDebugAndroidTest` | a running emulator or phone |
 
 `app/src/sharedTest` holds what the two client suites share: a fake `ApiService`
 and `resources/contract/*.json`, replies captured from the real server on the

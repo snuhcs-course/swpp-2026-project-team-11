@@ -121,18 +121,21 @@ covers the details and a fixed address with a named tunnel.
 
 ### 4. Try it
 
-This is the flow in the video.
+The video shows the earlier screens; the steps below are for the current app
+(the i3-P4 redesign).
 
-1. On the start screen, keep **Lunch** and **Decision tree**, and tap **Start**.
-   The top line shows `2026-09-29 · LUNCH · 193 DISHES · DECISION TREE`.
-2. Answer the questions with any of the six buttons. **Back** undoes the last
-   step. There is no fixed number of questions: the engine proposes something
-   when it is confident enough, and **Just recommend something** asks for a
-   proposal right away.
-3. A proposal is either one dish or a kind of dish with an example. Tap
-   **No, something else** to keep going, or **Yes, I'll have this** to accept.
-4. The result shows the dish, the cafeteria and the price. Tap **Start over**.
-5. Choose **LLM** and tap **Start** to play the same menu with the LLM writing
+1. The first launch opens Settings: pick any allergies and tap ‹. On the start
+   screen, set the sentence to **Lunch** (tap the orange word) and tap the round
+   **Start** button. The meal starts at the next one by the clock; the fixture
+   has breakfast, lunch and dinner for 2026-09-29.
+2. Answer with the five circles (no … yes) or **I'm not sure**. ‹ undoes the
+   last step, and tapping an earlier question goes back to it. There is no fixed
+   number of questions: the engine proposes something when it is confident
+   enough, and **Recommend now** asks for a proposal right away.
+3. The result shows the dish (or a kind of dish with an example), the
+   cafeterias and their prices, with a map when a Maps key is set. **Find
+   another** turns it down and asks on; **Start over** returns to the start.
+4. In Settings (gear), choose **LLM** to play the same menu with the LLM writing
    the questions (needs the key from step 2). Each step takes a few seconds.
 
 Your questions and dishes will differ from the video's: they depend on your
@@ -149,8 +152,8 @@ python backend/manage.py demo_llm_engine --date 2026-09-29 --meal LU     # needs
 
 ```bash
 python -m pytest backend                                           # 183 tests, no API key
-cd client && ./gradlew testDebugUnitTest                            # 58 unit tests
-cd client && ./gradlew connectedDebugAndroidTest                    # 34 UI tests, needs an emulator
+cd client && ./gradlew testDebugUnitTest                            # 81 unit tests
+cd client && ./gradlew connectedDebugAndroidTest                    # 14 UI tests, needs an emulator
 ```
 
 ## Environment we used
@@ -179,8 +182,9 @@ cd client && ./gradlew connectedDebugAndroidTest                    # 34 UI test
   with a fixed question or a random dish.
 - **REST session API.** One API runs either engine: start a session, answer,
   accept or reject a proposal, ask for a recommendation now, and undo.
-- **Android app.** One screen that follows the session: start, question,
-  proposal, result. The start screen chooses the meal and the engine.
+- **Android app.** Start, settings, question and result screens that follow the
+  session. The start screen chooses the meal and the distance; settings hold the
+  allergies and the engine.
 
 ### Goals of the prototype
 
