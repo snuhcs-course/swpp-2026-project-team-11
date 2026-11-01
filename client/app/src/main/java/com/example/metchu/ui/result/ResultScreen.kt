@@ -2,7 +2,6 @@ package com.example.metchu.ui.result
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -34,6 +33,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.animation.core.Animatable
+import kotlinx.coroutines.launch
+import com.example.metchu.ui.start.CampusCenter
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -68,13 +72,15 @@ import com.example.metchu.ui.common.Pill
 import com.example.metchu.ui.common.PillDivider
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
-import com.example.metchu.ui.common.floating
+import com.example.metchu.ui.common.chipShadow
+import com.example.metchu.ui.common.cssShadow
 import com.example.metchu.ui.common.rememberLocationPermission
 import com.example.metchu.ui.common.rememberUserPoint
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.ScreenGradient
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
@@ -82,9 +88,10 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberMarkerState
+import com.google.maps.android.compose.MarkerState
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * The proposed dish over a Google map of the cafeterias that serve it. "Find another"
@@ -116,16 +123,32 @@ fun ResultScreen(
     val key = "$round/${step.guessId ?: food.foodId}"
     var revealed by remember(key) { mutableStateOf(false) }
     LaunchedEffect(key) { revealed = true }
-    var expanded by remember(key) { mutableStateOf(false) }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MetchuColors.MapBlank)) {
         val height = maxHeight
-        val sheetTop by animateDpAsState(height * if (expanded) 0.197f else 0.474f, tween(380, easing = SheetEasing), label = "sheet")
+        val density = LocalDensity.current
+        val heightPx = constraints.maxHeight.toFloat()
+        val scope = rememberCoroutineScope()
+        var stop by remember(key) { mutableStateOf(SheetStop.MIDDLE) }
+        val top = remember(key) { Animatable(SheetStop.MIDDLE.fraction * heightPx) }
+        val sheetTop = with(density) { top.value.toDp() }
+        val settle: (SheetStop) -> Unit = { next ->
+            stop = next
+            scope.launch { top.animateTo(next.fraction * heightPx, tween(380, easing = SheetEasing)) }
+        }
+        val drag: (Float) -> Unit = { dy ->
+            scope.launch { top.snapTo((top.value + dy).coerceIn(SheetStop.HIGH.fraction * heightPx, SheetStop.LOW.fraction * heightPx)) }
+        }
 
         val mapIn by animateFloatAsState(if (revealed) 1f else 0f, tween(380, easing = SheetEasing), label = "map")
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = mapIn; scaleX = 1.06f - 0.06f * mapIn; scaleY = scaleX }) {
             if (BuildConfig.HAS_MAPS_KEY) {
-                CafeteriaMap(cafeterias.cafeterias, selected, permission.granted, bottomInset = height - sheetTop) { selected = it }
+                // The padding follows the resting sheet, not the finger, so the map does not slide while dragging.
+                CafeteriaMap(
+                    cafeterias.cafeterias, selected, permission.granted,
+                    start = cafeterias.cafeterias.firstNotNullOfOrNull { it.point } ?: user ?: CampusCenter,
+                    bottomInset = height * (1f - stop.fraction)
+                ) { selected = it }
             }
         }
 
@@ -145,7 +168,12 @@ fun ResultScreen(
                     }
                 }
             }
-            if (shown.size > 1) ShownChips(shown, viewing) { viewing = it }
+        }
+
+        // The dishes shown so far ride just above the sheet.
+        val chipsIn by animateFloatAsState(if (shown.size > 1 && stop != SheetStop.HIGH) topIn else 0f, label = "chips")
+        if (shown.size > 1) {
+            ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight).alpha(chipsIn)) { viewing = it }
         }
 
         ResultSheet(
@@ -156,8 +184,14 @@ fun ResultScreen(
             selected = selected,
             onSelect = { selected = it },
             revealed = revealed,
-            expanded = expanded,
-            onExpand = { expanded = it },
+            stop = stop,
+            onStop = settle,
+            onDrag = drag,
+            onRelease = { moved ->
+                // Snap to the nearest stop, but always move on once the finger has gone far enough.
+                val nearest = SheetStop.entries.minBy { abs(it.fraction * heightPx - top.value) }
+                settle(if (nearest == stop && abs(moved) > with(density) { 40.dp.toPx() }) stop.step(moved > 0) else nearest)
+            },
             modifier = Modifier.offset(y = sheetTop).height(height - sheetTop)
         )
     }
@@ -171,11 +205,22 @@ private fun captionFor(meal: String?): Int = when (meal) {
     else -> R.string.result_caption_any
 }
 
+/** Where the result sheet rests: high (expanded), middle (as designed) or low (title only). */
+private enum class SheetStop(val fraction: Float) {
+    HIGH(0.197f), MIDDLE(0.474f), LOW(0.74f);
+
+    /** The next stop down ([down]) or up, or this one at the end. */
+    fun step(down: Boolean): SheetStop = entries.getOrElse(ordinal + if (down) 1 else -1) { this }
+}
+
+/** 36 dp chips with room for their shadow above and below. */
+private val ChipRowHeight = 60.dp
+
 @Composable
-private fun ShownChips(shown: List<Step>, viewing: Int, onView: (Int) -> Unit) {
+private fun ShownChips(shown: List<Step>, viewing: Int, modifier: Modifier = Modifier, onView: (Int) -> Unit) {
     LazyRow(
-        Modifier.padding(top = 12.dp),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+        modifier.height(ChipRowHeight),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         itemsIndexed(shown) { index, step ->
@@ -184,7 +229,7 @@ private fun ShownChips(shown: List<Step>, viewing: Int, onView: (Int) -> Unit) {
             Box(
                 Modifier
                     .height(36.dp)
-                    .floating(elevation = 4.dp)
+                    .chipShadow()
                     .clip(CircleShape)
                     .background(background)
                     .clickable(role = Role.Tab) { onView(index) }
@@ -210,8 +255,10 @@ private fun ResultSheet(
     selected: Int,
     onSelect: (Int) -> Unit,
     revealed: Boolean,
-    expanded: Boolean,
-    onExpand: (Boolean) -> Unit,
+    stop: SheetStop,
+    onStop: (SheetStop) -> Unit,
+    onDrag: (Float) -> Unit,
+    onRelease: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val food = step.food ?: return
@@ -226,18 +273,26 @@ private fun ResultSheet(
         modifier
             .fillMaxWidth()
             .graphicsLayer { translationY = size.height * slide }
-            .shadow(12.dp, RectangleShape, ambientColor = MetchuColors.Shadow.copy(alpha = 0.12f), spotColor = MetchuColors.Shadow.copy(alpha = 0.12f))
+            .cssShadow(RectangleShape, (-6).dp, 20.dp, 0.12f)
             .background(ScreenGradient)
     ) {
+        var moved by remember { mutableFloatStateOf(0f) }
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(28.dp)
-                .clickable(role = Role.Button, onClickLabel = toggle) { onExpand(!expanded) }
-                .pointerInput(expanded) {
-                    detectVerticalDragGestures { _, drag ->
-                        if (drag < -8 && !expanded) onExpand(true)
-                        if (drag > 8 && expanded) onExpand(false)
+                .height(36.dp)
+                .clickable(role = Role.Button, onClickLabel = toggle) {
+                    onStop(if (stop == SheetStop.MIDDLE) SheetStop.HIGH else SheetStop.MIDDLE)
+                }
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragStart = { moved = 0f },
+                        onDragEnd = { onRelease(moved) },
+                        onDragCancel = { onRelease(moved) }
+                    ) { change, dy ->
+                        change.consume()
+                        moved += dy
+                        onDrag(dy)
                     }
                 }
                 .semantics { contentDescription = toggle },
@@ -248,7 +303,7 @@ private fun ResultSheet(
         Column(
             Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState(), enabled = expanded)
+                .verticalScroll(rememberScrollState(), enabled = stop == SheetStop.HIGH)
                 .padding(start = 20.dp, end = 20.dp, bottom = 24.dp)
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -339,17 +394,22 @@ private fun distanceText(meters: Int): String =
 
 /**
  * Google's own map style, with a label pill over each cafeteria. The chosen one is orange.
- * The camera keeps every cafeteria clear of the sheet, [bottomInset] high.
+ * The camera opens at street level over [start] and then fits the cafeterias, keeping
+ * them clear of the sheet, [bottomInset] high. Google's logo stays visible just above the
+ * sheet, as the Maps terms require.
  */
 @Composable
 private fun CafeteriaMap(
     cafeterias: List<Cafeteria>,
     selected: Int,
     showUser: Boolean,
+    start: Point,
     bottomInset: Dp,
     onSelect: (Int) -> Unit
 ) {
-    val camera = rememberCameraPositionState()
+    val camera = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(LatLng(start.lat, start.lng), 16f)
+    }
     var loaded by remember { mutableStateOf(false) }
     val points = cafeterias.mapNotNull { it.point?.let { p -> LatLng(p.lat, p.lng) } }
     val density = LocalDensity.current
@@ -381,14 +441,17 @@ private fun CafeteriaMap(
         cafeterias.forEachIndexed { index, cafeteria ->
             val point = cafeteria.point ?: return@forEachIndexed
             val on = index == selected
-            MarkerComposable(
-                index, on, cafeteria.meters ?: -1,
-                state = rememberMarkerState(key = cafeteria.offer.restaurant, position = LatLng(point.lat, point.lng)),
-                anchor = Offset(0.5f, 1f),
-                zIndex = if (on) 1f else 0f,
-                onClick = { onSelect(index); true }
-            ) {
-                MapPin(cafeteria, on)
+            // Keyed by the cafeteria, so switching dishes moves each pin rather than relabeling another.
+            key(cafeteria.offer.restaurant, point) {
+                MarkerComposable(
+                    cafeteria.offer.restaurant, on, cafeteria.meters ?: -1,
+                    state = remember { MarkerState(LatLng(point.lat, point.lng)) },
+                    anchor = Offset(0.5f, 0.93f),
+                    zIndex = if (on) 1f else 0f,
+                    onClick = { onSelect(index); true }
+                ) {
+                    MapPin(cafeteria, on)
+                }
             }
         }
     }
@@ -396,11 +459,15 @@ private fun CafeteriaMap(
 
 @Composable
 private fun MapPin(cafeteria: Cafeteria, on: Boolean) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    // Padding leaves room for the shadows inside the marker's bitmap.
+    Column(
+        Modifier.padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
         Box(
             Modifier
-                .padding(4.dp)
-                .floating(elevation = 4.dp)
+                .chipShadow()
                 .clip(CircleShape)
                 .background(if (on) MetchuColors.Primary else Color.White)
                 .padding(horizontal = 10.dp, vertical = 6.dp)
@@ -412,7 +479,7 @@ private fun MapPin(cafeteria: Cafeteria, on: Boolean) {
         Box(
             Modifier
                 .size(18.dp)
-                .floating(elevation = 3.dp)
+                .cssShadow(CircleShape, 2.dp, 6.dp, 0.24f)
                 .clip(CircleShape)
                 .background(Color.White)
                 .padding(3.dp)
