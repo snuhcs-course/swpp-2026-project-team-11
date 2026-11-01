@@ -103,7 +103,6 @@ fun ResultScreen(
     session: SessionState,
     shown: List<Step>,
     place: Place,
-    round: Int,
     loading: Boolean,
     onBack: () -> Unit,
     onHome: () -> Unit,
@@ -120,7 +119,7 @@ fun ResultScreen(
     var selected by remember(food) { mutableIntStateOf(0) }
 
     // Everything enters in a short sequence each time a dish is shown.
-    val key = "$round/${step.guessId ?: food.foodId}"
+    val key = step.guessId ?: food.foodId.toString()
     var revealed by remember(key) { mutableStateOf(false) }
     LaunchedEffect(key) { revealed = true }
 

@@ -21,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,6 +41,7 @@ import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.ui.common.PillSegment
+import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.floating
 import com.example.metchu.ui.question.QuestionScreen
 import com.example.metchu.ui.result.ResultScreen
@@ -74,8 +74,6 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
     var engine by remember { mutableStateOf(settings.engine) }
     var place by remember { mutableStateOf(settings.place) }
-    // Bumped by "Find another" so the result reveals the next dish anew.
-    var round by rememberSaveable { mutableIntStateOf(0) }
 
     val screen = screenOf(session, settingsOpen)
     val closeSettings = {
@@ -87,12 +85,16 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
         AnimatedContent(
             targetState = screen,
             transitionSpec = {
-                // Question to result: the question leaves upward, then the result reveals itself.
-                if (initialState == Screen.QUESTION && targetState == Screen.RESULT) {
-                    (fadeIn(tween(160, delayMillis = 200))) togetherWith
-                        (fadeOut(tween(200)) + slideOutVertically(tween(200)) { -it / 50 })
-                } else {
-                    fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+                when {
+                    // Question to result: the question leaves upward, then the result reveals itself.
+                    initialState == Screen.QUESTION && targetState == Screen.RESULT ->
+                        fadeIn(tween(160, delayMillis = 200)) togetherWith
+                            (fadeOut(tween(200)) + slideOutVertically(tween(200)) { -it / 50 })
+                    // Result back to a question: the map and sheet sink away first, then the question fades in.
+                    initialState == Screen.RESULT && targetState == Screen.QUESTION ->
+                        (fadeIn(tween(240, delayMillis = 180)) + slideInVertically(tween(300, delayMillis = 180, easing = SheetEasing)) { -it / 60 }) togetherWith
+                            (fadeOut(tween(220)) + slideOutVertically(tween(260, easing = SheetEasing)) { it / 12 })
+                    else -> fadeIn(tween(300)) togetherWith fadeOut(tween(300))
                 }
             },
             label = "screen"
@@ -134,11 +136,10 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                         session = current,
                         shown = shown,
                         place = place,
-                        round = round,
                         loading = loading,
                         onBack = viewModel::undo,
                         onHome = viewModel::startOver,
-                        onMore = { round++; viewModel.feedback(accepted = false) }
+                        onMore = { viewModel.feedback(accepted = false) }
                     )
                 }
                 Screen.UNAVAILABLE -> if (current != null) {
