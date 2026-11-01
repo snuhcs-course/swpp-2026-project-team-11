@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
@@ -64,7 +63,7 @@ fun BottomSheetPicker(visible: Boolean, title: String, options: List<PickerOptio
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .shadow(12.dp, RectangleShape, ambientColor = MetchuColors.Shadow.copy(alpha = 0.12f))
+                    .cssShadow(RectangleShape, (-6).dp, 20.dp, 0.12f)
                     .background(ScreenGradient)
                     .navigationBarsPadding()
                     .padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 24.dp),

@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -44,6 +43,7 @@ import com.example.metchu.data.model.Engine
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Wordmark
+import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.screenBackground
@@ -103,7 +103,7 @@ private fun AllergenChips(picked: List<Allergen>, onChange: (List<Allergen>) -> 
             Row(
                 Modifier
                     .height(40.dp)
-                    .shadow(4.dp, CircleShape, ambientColor = MetchuColors.Shadow.copy(alpha = 0.14f), spotColor = MetchuColors.Shadow.copy(alpha = 0.14f))
+                    .chipShadow()
                     .clip(CircleShape)
                     .background(background)
                     .toggleable(on, role = Role.Checkbox) { checked ->

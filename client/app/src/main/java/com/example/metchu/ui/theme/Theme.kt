@@ -1,5 +1,6 @@
 package com.example.metchu.ui.theme
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -9,13 +10,16 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.metchu.R
+import com.example.metchu.ui.common.NoIndication
 
 /** The color tokens of the design foundation board (1st UI/UX, 11/02). */
 object MetchuColors {
@@ -42,12 +46,20 @@ val MetchuSans = FontFamily(
 
 /** The six text sizes of the design foundation board. */
 object MetchuType {
-    private val base = TextStyle(fontFamily = MetchuSans, letterSpacing = (-0.01).em, color = MetchuColors.Grey900)
+    // CSS puts half the extra line height above each line and half below, and does not trim it.
+    private val base = TextStyle(
+        fontFamily = MetchuSans,
+        letterSpacing = (-0.01).em,
+        color = MetchuColors.Grey900,
+        platformStyle = PlatformTextStyle(includeFontPadding = false),
+        lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)
+    )
     val Title = base.copy(fontSize = 28.sp, lineHeight = 39.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.02).em)
     val Item = base.copy(fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.02).em)
     val Button = base.copy(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
     val Label = base.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
     val Body = base.copy(fontSize = 15.sp, lineHeight = 22.sp, color = MetchuColors.Grey700)
+    val Lead = base.copy(fontSize = 17.sp, lineHeight = 26.sp, color = MetchuColors.Grey700)
     val Caption = base.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, color = MetchuColors.Grey400)
 }
 
@@ -68,6 +80,10 @@ fun MetchuTheme(content: @Composable () -> Unit) {
             onSurface = MetchuColors.Grey900
         )
     ) {
-        CompositionLocalProvider(LocalTextStyle provides MetchuType.Body, content = content)
+        CompositionLocalProvider(
+            LocalTextStyle provides MetchuType.Body,
+            LocalIndication provides NoIndication,
+            content = content
+        )
     }
 }
