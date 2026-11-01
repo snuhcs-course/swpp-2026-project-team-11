@@ -90,11 +90,12 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                     initialState == Screen.QUESTION && targetState == Screen.RESULT ->
                         fadeIn(tween(160, delayMillis = 200)) togetherWith
                             (fadeOut(tween(200)) + slideOutVertically(tween(200)) { -it / 50 })
-                    // Result back to a question: the map and sheet sink away first, then the question fades in.
-                    initialState == Screen.RESULT && targetState == Screen.QUESTION ->
+                    // Leaving a result: the map and sheet sink away first, then the next screen fades in.
+                    initialState == Screen.RESULT ->
                         (fadeIn(tween(240, delayMillis = 180)) + slideInVertically(tween(300, delayMillis = 180, easing = SheetEasing)) { -it / 60 }) togetherWith
                             (fadeOut(tween(220)) + slideOutVertically(tween(260, easing = SheetEasing)) { it / 12 })
-                    else -> fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+                    // Otherwise one screen fades out before the next fades in, so two never show through each other.
+                    else -> fadeIn(tween(260, delayMillis = 160)) togetherWith fadeOut(tween(180))
                 }
             },
             label = "screen"

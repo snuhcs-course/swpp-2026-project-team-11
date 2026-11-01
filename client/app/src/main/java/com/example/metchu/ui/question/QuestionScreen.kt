@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -249,11 +250,11 @@ private fun QuestionItem(
             .blur(blur, BlurredEdgeTreatment.Unbounded)
     ) {
         Text(text, style = MetchuType.Title, color = ink, modifier = if (current) Modifier.testTag("question") else Modifier)
-        // The answer line: its text fades first, then the line folds shut.
+        // The answer line: its text fades first, then the empty line goes away at once.
         val shown by animateFloatAsState(if (answerVisible) 1f else 0f, tween(250), label = "answer")
         val lineHeight by animateDpAsState(
             if (answerOpen) AnswerLineHeight else 0.dp,
-            tween(300, delayMillis = if (answerOpen) 0 else 250, easing = SheetEasing),
+            if (answerOpen) snap() else snap(delayMillis = 250),
             label = "answerLine"
         )
         if (lineHeight > 0.dp) {
