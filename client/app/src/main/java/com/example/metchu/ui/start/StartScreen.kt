@@ -95,6 +95,9 @@ fun StartScreen(
     val nowMeal = remember { Meal.at(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) }
     var meal by rememberSaveable { mutableStateOf(nowMeal) }
     var sheet by rememberSaveable { mutableStateOf<Sheet?>(null) }
+    // What the picker shows; kept while it slides away so it does not switch to the other list.
+    var shownSheet by rememberSaveable { mutableStateOf(Sheet.MEAL) }
+    sheet?.let { shownSheet = it }
     val english = LocalConfiguration.current.locales[0].language != "ko"
 
     val permission = rememberLocationPermission()
@@ -149,8 +152,8 @@ fun StartScreen(
 
         BottomSheetPicker(
             visible = sheet != null,
-            title = stringResource(if (sheet == Sheet.PLACE) R.string.start_place_sheet else R.string.start_meal_sheet),
-            options = if (sheet == Sheet.PLACE) {
+            title = stringResource(if (shownSheet == Sheet.PLACE) R.string.start_place_sheet else R.string.start_meal_sheet),
+            options = if (shownSheet == Sheet.PLACE) {
                 Place.entries.map {
                     PickerOption(
                         stringResource(if (it == Place.NEAR) R.string.place_near_option else R.string.place_any_option),
