@@ -85,6 +85,9 @@ import com.example.metchu.ui.theme.screenBackground
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/** How long a picked answer stays before it is sent and the next question can appear. */
+private const val ANSWER_HOLD_MILLIS = 450L
+
 /** One circle of the five-step scale, left (no) to right (yes). */
 private class Level(val id: String, val size: Dp, val color: Color, @StringRes val label: Int, val icon: ImageVector?)
 
@@ -132,10 +135,14 @@ fun QuestionScreen(
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(count) { list.scrollToItem(0) }
+    // The picked answer stays on screen a moment before the next question replaces it.
     val pick = { id: String ->
         if (!loading && chosen == null) {
             chosen = id
-            onAnswer(id)
+            scope.launch {
+                delay(ANSWER_HOLD_MILLIS)
+                onAnswer(id)
+            }
         }
     }
     val press = { id: String? ->
@@ -187,7 +194,7 @@ fun QuestionScreen(
             }
 
             AnswerScale(offered, active, loading, pick, press)
-            ProgressBlock(session, loading)
+            ProgressBlock(session)
         }
         Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
     }
@@ -363,7 +370,7 @@ private fun ScaleCircle(
 
 /** The grey bar and the phase under it; it fills fast at first and slower later. */
 @Composable
-private fun ProgressBlock(session: SessionState, loading: Boolean) {
+private fun ProgressBlock(session: SessionState) {
     val fill = progressFill(session.step.questionCount, session.maxQuestions)
     val width by animateFloatAsState(fill, tween(450, easing = SheetEasing), label = "progress")
     val label = stringResource(R.string.progress)
@@ -383,7 +390,7 @@ private fun ProgressBlock(session: SessionState, loading: Boolean) {
         }
         Spacer(Modifier.height(6.dp))
         Text(
-            stringResource(if (loading) R.string.phase_thinking else phaseText(fill)),
+            stringResource(phaseText(fill)),
             Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("phase"),
             style = MetchuType.Caption
         )

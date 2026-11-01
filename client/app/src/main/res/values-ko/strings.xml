@@ -71,7 +71,6 @@
     <string name="phase_narrowing">후보를 좁히고 있어요</string>
     <string name="phase_almost">거의 다 왔어요</string>
     <string name="phase_found">메뉴를 찾았어요</string>
-    <string name="phase_thinking">다음 질문을 고르고 있어요…</string>
 
     <string name="result_caption_breakfast">아침 추천 메뉴</string>
     <string name="result_caption_lunch">점심 추천 메뉴</string>

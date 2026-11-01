@@ -78,7 +78,6 @@
     <string name="phase_narrowing">Narrowing it down</string>
     <string name="phase_almost">Almost there</string>
     <string name="phase_found">Found your dish</string>
-    <string name="phase_thinking">Picking the next question…</string>
 
     <!-- result -->
     <string name="result_caption_breakfast">Breakfast pick</string>
