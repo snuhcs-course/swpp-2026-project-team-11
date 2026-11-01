@@ -4,6 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.example.metchu.FakeApi
 import com.example.metchu.Fixtures
 import com.example.metchu.R
+import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
@@ -106,6 +107,14 @@ class RecommendViewModelTest {
         viewModel.answer("probably_yes")
         assertEquals("answer ${llmQuestion.sessionId} q:llm-0 probably_yes", api.calls.last())
         assertIdle(guess)
+    }
+
+    @Test
+    fun startSendsTheAllergies() {
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE, listOf(Allergen.MILK, Allergen.SHRIMP))
+        assertEquals(listOf("create LU decision_tree milk,shrimp"), api.calls)
+        assertIdle(question)
     }
 
     @Test
