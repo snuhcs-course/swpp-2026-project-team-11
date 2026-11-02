@@ -542,7 +542,7 @@ so `menus/sources/naver.py` reads the public mobile pages a signed-out visitor s
   photos gives no items; a price that is not a single amount ("변동", a range) is `null`.
 - Both pages embed `window.__APOLLO_STATE__`; if Naver changes it, parsing raises
   `ValueError`. Naver answers non-browser user agents with 429, so a mobile browser's is sent.
-  This is unofficial and may conflict with Naver's terms; requests are a second apart.
+  Requests are a second apart.
 
 ```bash
 python manage.py fetch_naver_menus --stores PATH/소상공인시장진흥공단_상가(상권)정보_서울_202609.csv \
