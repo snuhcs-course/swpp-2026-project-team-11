@@ -255,3 +255,7 @@ class StoreDishesTests(TestCase):
         self.assertEqual(model.calls, [["짜장면"]])  # 육개장 was tagged with the cafeteria menu
         self.assertEqual(Food.objects.get(name="짜장면").feature_version, FEATURE_VERSION)
         self.assertIn("일반 식당: 새로 태깅할 음식 없음", self.run_command(FakeLLM()))
+
+    def test_stores_and_a_date_are_not_taken_together(self):
+        with self.assertRaises(CommandError):
+            call_command("extract_features", "--stores", "--date", DAY.isoformat(), stdout=io.StringIO())

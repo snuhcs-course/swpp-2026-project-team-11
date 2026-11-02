@@ -39,9 +39,12 @@ class RuleTests(SimpleTestCase):
             with self.subTest(banner):
                 self.assertTrue(is_store_notice(banner, clean_store_name(banner)[0], None))
         self.assertTrue(is_store_notice("★★★", "", 1000))  # nothing left to name a dish
+        self.assertTrue(is_store_notice("■□■□세트 메뉴□■□■", "세트 메뉴", None))  # a section header
 
     def test_dishes_are_kept_with_or_without_a_price(self):
         self.assertTrue(kept("모둠회(대)", None))  # "변동": a price that is not one number
+        self.assertTrue(kept("★모둠회", None))  # "시가": marked, not framed
+        self.assertTrue(kept("🔥불닭볶음면", None))
         self.assertTrue(kept("🍜 짬뽕", 8000))
         self.assertTrue(kept("한우등심(예약시 주문가능)", None))
         self.assertFalse(kept("주차 2시간 무료", None))
@@ -61,9 +64,10 @@ class RuleTests(SimpleTestCase):
                 self.assertFalse(is_drink(name))
 
     def test_vague_names_are_resolved_per_restaurant(self):
-        for name in ["A세트", "점심특선", "2인 커플세트"]:
+        for name in ["A세트", "점심특선", "2인 커플세트", "2인세트", "Premium Set", "VIP 특선", "혼밥 Set"]:
             self.assertTrue(is_vague(name), name)
-        self.assertFalse(is_vague("탕수육세트"))
+        for name in ["탕수육세트", "Carbonara", "AMERICAN CHEESE SET", "죽", "회", "LA갈비"]:
+            self.assertFalse(is_vague(name), name)
         self.assertNotEqual(key("MA1", "A세트"), key("MA2", "A세트"))
         self.assertEqual(key("MA1", "짜장 면"), key("MA2", "짜장면"))
 
@@ -84,6 +88,11 @@ class RuleTests(SimpleTestCase):
         self.assertEqual(sorted(line.label for line in lines.values()),
                          ["A세트 @북경", "A세트 @홍콩반점", "짜장면", "짬뽕", "짬뽕 #2"])
         self.assertEqual(lines[key("MA2", "짬뽕", "해물 가득")].description, "해물 가득")
+
+    def test_labels_differ_as_the_answers_are_matched(self):
+        lines = distinct_lines(entries([store("MA1", "분식집", ("떡볶이", 4000, "")),
+                                        store("MA2", "포차", ("떡 볶이", 9000, "치즈 추가"))]))
+        self.assertEqual(sorted(line.label for line in lines.values()), ["떡 볶이 #2", "떡볶이"])
 
 
 class PromptVersionTests(SimpleTestCase):

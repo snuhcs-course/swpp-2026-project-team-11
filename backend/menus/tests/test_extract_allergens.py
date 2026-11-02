@@ -140,3 +140,7 @@ class StoreLineTests(TestCase):
         again = FakeLLM()
         self.run_stores(again)
         self.assertEqual(again.calls, [])
+
+    def test_stores_and_a_date_are_not_taken_together(self):
+        with self.assertRaises(CommandError):
+            call_command("extract_allergens", "--stores", "--date", DAY.isoformat(), stdout=io.StringIO())

@@ -1,5 +1,7 @@
 """source=general: sessions over the restaurants near the stations (menus.StoreMenu)."""
 import datetime
+import zoneinfo
+from unittest import mock
 
 from django.test import TestCase, override_settings
 
@@ -58,11 +60,29 @@ class GeneralSourceTests(TestCase):
         food = self.proposal(state)
         self.assertIn(food["name"], {"짜장면", "짬뽕", "김치찌개"})
         self.assertTrue(all(offer["meal"] == "DN" for offer in food["offers"]))
-        candidates, _, version = services.get_store_catalog()
+        StoreMenu.objects.create(restaurant=Restaurant.objects.get(code="MA0001"), raw_name="옛날짜장",
+                                 food=Food.objects.get(name="짜장면"), price=7000)  # same offer, listed once
+        candidates, _, version = services.get_store_catalog("LU")
         jjajang = next(c for c in candidates if c["name"] == "짜장면")
         self.assertEqual(version, FEATURE_VERSION)
         self.assertEqual([(o["restaurant"], o["price"], o["meal"]) for o in jjajang["offers"]],
                          [("북경 서울대입구점", 6500, "LU"), ("홍콩반점 낙성대점", 7000, "LU")])
+
+    def test_without_a_meal_offers_carry_the_current_one(self):
+        with mock.patch.object(services, "current_meal", return_value="DN"):
+            food = self.proposal(self.start())
+        self.assertTrue(all(offer["meal"] == "DN" for offer in food["offers"]))
+        seoul = zoneinfo.ZoneInfo("Asia/Seoul")
+        for hour, minute, meal in [(9, 59, "BR"), (10, 0, "LU"), (15, 59, "LU"), (16, 0, "DN")]:
+            self.assertEqual(services.current_meal(datetime.datetime(2026, 11, 2, hour, minute, tzinfo=seoul)), meal)
+
+    @override_settings(RECOMMEND_STORE_MENU_CACHE_S=300)
+    def test_the_menus_are_read_once_per_cache_period(self):
+        services._store_menus = None
+        self.addCleanup(setattr, services, "_store_menus", None)
+        services.get_store_catalog("LU")
+        with self.assertNumQueries(0):
+            self.assertEqual(len(services.get_store_catalog("LU")[0]), 3)
 
     def test_location_adds_distances(self):
         food = self.proposal(self.start(location=SEOUL_NAT_UNIV_STATION))

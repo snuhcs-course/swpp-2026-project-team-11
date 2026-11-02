@@ -118,6 +118,28 @@ class ImportStoresTests(TestCase):
         self.assertEqual(self.menu("MA0001"), [])
         self.assertTrue(StoreMenu.objects.filter(restaurant__code="MA0002").exists())
 
+    def test_a_new_file_updates_the_restaurants(self):
+        self.run_command()
+        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        naver = next(s for s in data["stores"] if s["id"] == "MA0001")["naver"]
+        naver.update(name="홍콩반점0410 낙성대점", category="중국집", id="2002")
+        self.run_command(FakeStoreLLM(ANSWERS | {"A세트 @홍콩반점0410 낙성대점": (True, ["짜장면", "탕수육"])}),
+                         path=self.write(data))
+        restaurant = Restaurant.objects.get(code="MA0001")
+        self.assertEqual((restaurant.name, restaurant.category, restaurant.place_id),
+                         ("홍콩반점0410 낙성대점", "중국집", "2002"))
+
+    def test_a_line_listed_twice_keeps_the_dishes_of_both(self):
+        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        menus = next(s for s in data["stores"] if s["id"] == "MA0001")["menus"]
+        menus += [{"name": "정식", "price": 9000, "description": "김치찌개", "is_set": False},
+                  {"name": "정식", "price": 12000, "description": "김치찌개+제육볶음", "is_set": False}]
+        self.run_command(FakeStoreLLM(ANSWERS | {"정식 @홍콩반점 낙성대점": (True, ["김치찌개"]),
+                                                 "정식 @홍콩반점 낙성대점 #2": (True, ["김치찌개", "제육볶음"])}),
+                         path=self.write(data))
+        self.assertEqual([row for row in self.menu("MA0001") if row[0] == "정식"], [
+            ("정식", "김치찌개", False), ("정식", "김치찌개", True), ("정식", "제육볶음", True)])
+
     def test_a_partial_crawl_is_refused_and_can_keep_the_earlier_menus(self):
         self.run_command()
         before = self.menu("MA0002")
@@ -217,3 +239,11 @@ class RunStorePipelineTests(TestCase):
         # 짜장면 and 탕수육 alone and in a set, 차돌짬뽕, 짬뽕 (set), 닭볶음탕, 모둠회
         self.assertIn("일반 식당 추천 후보: 8", out.getvalue())
         self.assertFalse(StoreMenu.objects.filter(allergen_version="").exists())
+
+    def test_a_failed_import_stops_before_tagging(self):
+        with mock.patch.object(llm, "api_key_available", return_value=True), \
+                mock.patch.object(mapper, "build_llm", return_value=FakeStoreLLM(ANSWERS, fail=True)), \
+                mock.patch.object(extractor, "build_llm", side_effect=AssertionError("no tagging")), \
+                mock.patch.object(allergens, "build_llm", side_effect=AssertionError("no tagging")):
+            with self.assertRaisesMessage(CommandError, "태깅은 건너뜁니다"):
+                call_command("run_store_pipeline", "--file", str(FIXTURE), stdout=io.StringIO())
