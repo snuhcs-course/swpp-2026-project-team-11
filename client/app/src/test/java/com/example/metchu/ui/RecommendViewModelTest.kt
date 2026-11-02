@@ -154,6 +154,13 @@ class RecommendViewModelTest {
     }
 
     @Test
+    fun startSendsTheLanguage() {
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE, allergies = listOf(Allergen.EGG), language = "ko")
+        assertEquals(listOf("create LU decision_tree egg ko"), api.calls)
+    }
+
+    @Test
     fun startForTheWholeDaySendsNoMeal() {
         api.reply(unavailable)
         viewModel.start(null)
