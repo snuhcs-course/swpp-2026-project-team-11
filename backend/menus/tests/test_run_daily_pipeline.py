@@ -7,10 +7,13 @@ from unittest import mock
 from django.core.management import CommandError, call_command
 from django.test import TestCase
 
+from menus import allergens, llm
+from menus.allergens import ALLERGEN_VERSION
 from menus.features import extractor
 from menus.features.schema import FEATURE_VERSION
 from menus.models import Food
 from menus.preprocess import mapper
+from menus.tests.test_extract_allergens import FakeLLM as FakeAllergenTagger
 from menus.tests.test_extract_features import FakeLLM as FakeTagger
 from menus.tests.test_preprocess_llm import FakeLLM as FakeMapper
 from menus.tests.test_preprocess_review import ANSWERS, DAY, PAYLOAD
@@ -25,6 +28,8 @@ class RunDailyPipelineTests(TestCase):
                 mock.patch("menus.management.commands.run_daily_pipeline.api_key_available", return_value=key), \
                 mock.patch("menus.management.commands.fetch_menus.api_key_available", return_value=key), \
                 mock.patch.object(extractor, "api_key_available", return_value=key), \
+                mock.patch.object(llm, "api_key_available", return_value=key), \
+                mock.patch.object(allergens, "build_llm", return_value=FakeAllergenTagger()), \
                 mock.patch.object(mapper, "build_llm", return_value=FakeMapper(ANSWERS)), \
                 mock.patch.object(extractor, "build_llm", return_value=tagger or FakeTagger()):
             call_command("run_daily_pipeline", "--date", DAY.isoformat(), *args, stdout=out)
@@ -38,8 +43,9 @@ class RunDailyPipelineTests(TestCase):
         self.assertEqual(sorted(Food.objects.values_list("name", flat=True)),
                          ["돈까스", "마라탕", "즉석마라탕", "카레우동"])
         self.assertFalse(Food.objects.exclude(feature_version=FEATURE_VERSION).exists())
+        self.assertFalse(Food.objects.exclude(allergen_version=ALLERGEN_VERSION).exists())
         self.assertIn("점심 4", output)
-        self.assertIn("[3/3]", output)
+        self.assertIn("[4/4]", output)
 
     def test_a_failing_step_fails_the_run_after_every_step_ran(self):
         with tempfile.TemporaryDirectory() as tmp:

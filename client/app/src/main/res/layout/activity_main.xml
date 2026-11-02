@@ -232,6 +232,34 @@
                     android:layout_marginTop="8dp"
                     android:text="@string/engine_decision_tree_hint" />
 
+                <TextView
+                    style="@style/Text.Caption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="@string/start_allergies_label" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvAllergies"
+                        style="@style/Text.Body"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEditAllergies"
+                        style="@style/Button.Quiet"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/allergies_edit" />
+                </LinearLayout>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnStart"
                     style="@style/Button.Primary"

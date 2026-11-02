@@ -1,12 +1,13 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal, engine) -> RecommendSession
+    create(date, meal, engine, location, allergies) -> RecommendSession
     get(session_id)            -> RecommendSession | None
     session.public_state()     -> what the phone is allowed to see
 
 A session runs one of ENGINES, chosen when it is created: the P10 decision tree
 or the P13/P14 LLM engine. Both have the same session API and step shapes, so
-everything below the constructor is the same for either. The LLM engine calls
+everything below the constructor is the same for either. Dishes with one of the
+user's `allergies` never reach the engine (menus.services.get_catalog). The LLM engine calls
 the LLM while it starts and after every answer, rejection and "recommend now", so
 those requests can take as long as its timeout allows; undo never calls it.
 
@@ -14,6 +15,10 @@ The engine is one session per instance and is not safe to mutate from two
 requests at once, so every session carries its own lock. The candidate list is
 read once at creation and stays with the engine: a later `fetch_menus` run does
 not change a session that is already in progress.
+
+`location` is the user's (lat, lng), if the phone sent one. Each offer then
+carries its `distance_m`, and with RECOMMEND_MAX_DISTANCE_M set, cafeterias
+farther than that are left out before the engine sees the candidates.
 
 Sessions live in this process only. `runserver` restarts and multi-worker
 deployments lose them; persisting `engine.snapshot()` is the planned replacement.
@@ -30,6 +35,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from menus.services import get_catalog
+from recommend.distance import with_distances
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.llm import LLMConfigError, LLMEngine
 
@@ -46,13 +52,15 @@ class EngineUnavailable(Exception):
 
 
 class RecommendSession:
-    def __init__(self, date: datetime.date, meal: str | None, engine: str):
+    def __init__(self, date: datetime.date, meal: str | None, engine: str,
+                 location: tuple[float, float] | None, allergies: frozenset[str]):
         self.session_id = uuid.uuid4().hex
         self.engine_name = engine
         self.date = date
         self.meal = meal
         self.lock = threading.Lock()
-        candidates, schema, version = get_catalog(date, meal)
+        candidates, schema, version = get_catalog(date, meal, allergies)
+        candidates = with_distances(candidates, location, settings.RECOMMEND_MAX_DISTANCE_M)
         self.feature_version = version
         self.candidate_count = len(candidates)
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
@@ -120,10 +128,11 @@ _sessions_lock = threading.Lock()
 
 
 def create(date: datetime.date | None = None, meal: str | None = None,
-           engine: str | None = None) -> RecommendSession:
+           engine: str | None = None, location: tuple[float, float] | None = None,
+           allergies: frozenset[str] = frozenset()) -> RecommendSession:
     """Raises EngineUnavailable when `engine` is "llm" and the server has no API key."""
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine or settings.RECOMMEND_DEFAULT_ENGINE)
+                               meal, engine or settings.RECOMMEND_DEFAULT_ENGINE, location, allergies)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:

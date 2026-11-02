@@ -24,9 +24,16 @@ class FakeApi : ApiService {
         return replies.removeFirst().invoke()
     }
 
-    /** Recorded as "create LU" with the server's default engine, or "create LU llm". */
-    override suspend fun createSession(request: CreateSessionRequest) =
-        next(listOfNotNull("create", request.meal ?: "null", request.engine).joinToString(" "))
+    /**
+     * Recorded as "create LU" with the server's default engine, or "create LU llm",
+     * followed by any location and allergies: "create LU llm @37.4,126.9 egg,milk".
+     */
+    override suspend fun createSession(request: CreateSessionRequest) = next(
+        listOfNotNull(
+            "create", request.meal ?: "null", request.engine,
+            request.location?.let { "@${it.lat},${it.lng}" }, request.allergies?.joinToString(",")
+        ).joinToString(" ")
+    )
     override suspend fun getState(sessionId: String) = next("state $sessionId")
     override suspend fun answer(sessionId: String, request: AnswerRequest) =
         next("answer $sessionId ${request.questionId} ${request.answerId}")
