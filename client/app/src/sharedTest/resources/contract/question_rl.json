@@ -1,0 +1,42 @@
+{
+  "session_id": "c15ed230e093402688017d4e47e0c46a",
+  "engine": "rl",
+  "date": "2026-09-29",
+  "meal": "LU",
+  "language": "en",
+  "candidate_count": 3,
+  "max_questions": null,
+  "can_undo": false,
+  "step": {
+    "type": "question",
+    "question_count": 0,
+    "question_id": "q:noodle",
+    "text": "Do you feel like noodles?",
+    "options": [
+      {
+        "id": "yes",
+        "label": "Yes, sounds good"
+      },
+      {
+        "id": "probably_yes",
+        "label": "Probably yes"
+      },
+      {
+        "id": "any",
+        "label": "Doesn't matter"
+      },
+      {
+        "id": "probably_no",
+        "label": "Probably not"
+      },
+      {
+        "id": "no",
+        "label": "No"
+      },
+      {
+        "id": "unknown",
+        "label": "Not sure"
+      }
+    ]
+  }
+}

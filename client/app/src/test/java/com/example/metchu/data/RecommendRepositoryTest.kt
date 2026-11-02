@@ -60,10 +60,12 @@ class RecommendRepositoryTest {
 
     @Test
     fun createSessionSendsTheChosenEngine() = runTest {
-        reply("question_llm", 201)
-        val state = repository.createSession("LU", Engine.LLM)
-        assertEquals(Engine.LLM, state.engine)
-        assertEquals("""{"meal":"LU","engine":"llm"}""", server.takeRequest().json().toString())
+        for ((engine, fixture) in listOf(Engine.LLM to "question_llm", Engine.RL to "question_rl")) {
+            reply(fixture, 201)
+            val state = repository.createSession("LU", engine)
+            assertEquals(engine, state.engine)
+            assertEquals("""{"meal":"LU","engine":"$engine"}""", server.takeRequest().json().toString())
+        }
     }
 
     /** The server's ALLERGEN_KEYS are the Allergen IDs; none chosen leaves the field out. */

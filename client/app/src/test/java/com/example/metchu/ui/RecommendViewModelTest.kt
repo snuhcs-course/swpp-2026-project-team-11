@@ -443,6 +443,27 @@ class RecommendViewModelTest {
         assertIdle(question)
     }
 
+    @Test
+    fun anUnavailableRlCatalogueCanBeRecoveredByChoosingAnotherEngine() {
+        api.fail(Fixtures.httpError(503, Fixtures.json("error_engine_unavailable")))
+        viewModel.start("LU", Engine.RL)
+        assertIdle(null, engineUnavailable)
+        viewModel.retry()
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE)
+        assertEquals(listOf("create LU rl", "create LU decision_tree"), api.calls)
+        assertIdle(question)
+    }
+
+    @Test
+    fun anOlderServerRejectingRlDoesNotRetryTheSameRequest() {
+        api.fail(Fixtures.httpError(400, Fixtures.json("error_invalid_request")))
+        viewModel.start("LU", Engine.RL)
+        assertIdle(null, UiError(R.string.error_session_settings, canRetry = false))
+        viewModel.retry()
+        assertEquals(listOf("create LU rl"), api.calls)
+    }
+
     /** A 503 that is not about the engine, such as a proxy's, is an ordinary server error. */
     @Test
     fun another503OffersRetry() {
