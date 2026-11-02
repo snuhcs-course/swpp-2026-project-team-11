@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import com.example.metchu.R
 import com.example.metchu.data.model.AnswerId
 import com.example.metchu.data.model.SessionState
+import com.example.metchu.data.model.Step
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Pill
@@ -131,7 +132,7 @@ fun QuestionScreen(
     session: SessionState,
     history: List<AnsweredQuestion>,
     loading: Boolean,
-    onAnswer: (String) -> Unit,
+    onAnswer: (String, Step) -> Unit,
     onBack: () -> Unit,
     onRecommendNow: () -> Unit,
     onRevisit: (Int) -> Unit
@@ -157,13 +158,14 @@ fun QuestionScreen(
         settled = count
         list.animateScrollTo(0)
     }
-    // The picked answer stays on screen a moment before the next question replaces it.
+    // The picked answer stays on screen a moment before the next question replaces it. It
+    // names the question it answers, so it is dropped if Back moved the session meanwhile.
     val pick = { id: String ->
         if (!loading && chosen == null) {
             chosen = id
             scope.launch {
                 delay(ANSWER_HOLD_MILLIS)
-                onAnswer(id)
+                onAnswer(id, step)
             }
         }
     }

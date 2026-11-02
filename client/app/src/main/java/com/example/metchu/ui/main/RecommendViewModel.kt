@@ -77,8 +77,13 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         request { repository.createSession(meal, engine, location?.current(), allergies) }
     }
 
-    fun answer(answerId: String) {
+    /**
+     * Answers the current question if it is still [asked]: the question screen holds a
+     * picked answer for a moment, and Back can move the session on meanwhile.
+     */
+    fun answer(answerId: String, asked: Step) {
         val current = _session.value ?: return
+        if (current.step != asked) return
         val questionId = current.step.questionId ?: return
         request(answered = AnsweredQuestion(current.step.text, answerId)) {
             repository.answer(current.sessionId, questionId, answerId)
@@ -178,9 +183,9 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     private fun handleHttpError(e: HttpException) {
         val body = repository.errorBody(e)
         when {
-            // The server moved on (for example a request that was sent twice):
-            // show the step it is actually on.
-            e.code() == 409 && body?.state != null -> show(body.state)
+            // The server moved on (for example an answer whose reply was lost, sent again):
+            // show the step it is actually on, with the answer if it was recorded.
+            e.code() == 409 && body?.state != null -> show(body.state, lastAnswered)
             // The server restarted and forgot the session.
             e.code() == 404 -> {
                 lastRequest = null
