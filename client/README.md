@@ -190,8 +190,9 @@ The meal starts at the next one the cafeterias serve (breakfast before 10,
 lunch before 15, dinner after). The distance, engine and allergies are kept on
 the phone (`SettingsStore`, `AllergyStore`, SharedPreferences). The language
 follows the phone until the globe picks one (`AppCompatDelegate` per-app
-locales). Question text and food and cafeteria names are shown as the server
-sends them, so questions stay in English in the Korean app.
+locales). A new session asks the server for the app's language (`en` or `ko`), so
+questions come in that language too. Food and cafeteria names are shown as the
+server sends them, in Korean.
 
 A tapped answer stays filled while its request runs and the phase line reads
 "Picking the next question…"; other taps are ignored. A failed request shows a
@@ -237,7 +238,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 
 | Request | Body | Effect |
 | --- | --- | --- |
-| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?}` | Start a session. `meal` is `BR`, `LU`, `DN` or omitted for the whole day. `engine` is `decision_tree` or `llm`; omitted, the server uses `METCHU_ENGINE` (default `decision_tree`). `location` is the user's `{"lat", "lng"}`. `allergies` lists `Allergen` IDs; no dish that may contain one, or that has no allergen tags, is proposed |
+| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?}` | Start a session. `meal` is `BR`, `LU`, `DN` or omitted for the whole day. `engine` is `decision_tree` or `llm`; omitted, the server uses `METCHU_ENGINE` (default `decision_tree`). `location` is the user's `{"lat", "lng"}`. `allergies` lists `Allergen` IDs; no dish that may contain one, or that has no allergen tags, is proposed. `language` is `en` (default) or `ko`: every text in the replies is in it, except dish and cafeteria names |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |
@@ -252,6 +253,7 @@ Every success returns the same session state:
   "engine": "decision_tree",
   "date": "2026-09-29",
   "meal": "LU",
+  "language": "en",
   "candidate_count": 193,
   "max_questions": null,
   "can_undo": false,

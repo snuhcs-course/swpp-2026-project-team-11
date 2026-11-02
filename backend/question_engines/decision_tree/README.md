@@ -89,6 +89,9 @@ seafood/cuisine features separate. A custom schema can provide
 The original schema, candidate values/offers, context and prior all contribute
 to the replay fingerprint. Source food and cafeteria names retain their original
 language; all authored prompts, answer labels, errors and documentation are English.
+With `config={"language": "ko"}` the steps carry Korean questions, answer labels and
+texts instead: `contracts.KOREAN` holds the Korean of every fixed English text, and a
+test fails when one is missing. A custom `question_en` with no Korean stays English.
 
 Optional `priors={food_id: weight, ...}` must cover all candidates with finite,
 positive weights; the engine normalizes them. Default food priors are uniform.
@@ -143,7 +146,7 @@ Other step types:
   a group ends with the representative that was displayed, without another
   forced variant question. Its real `food_id` remains in the input candidates.
 - `unavailable`: a reason (`empty_candidates` or `candidates_exhausted`) and
-  English product text. No food ID is fabricated when candidates are absent.
+  product text in the session's language. No food ID is fabricated when candidates are absent.
 
 `question_count` counts answered questions in the active history. Repeated reads
 do not increment it; undo restores it. For actual user effort, P20 should log
