@@ -1,11 +1,12 @@
 from django.contrib import admin
 
-from .models import Food, MenuItem, Restaurant
+from .models import Food, MenuItem, Restaurant, StoreMenu
 
 
 @admin.register(Restaurant)
 class RestaurantAdmin(admin.ModelAdmin):
-    list_display = ["name", "code", "source"]
+    list_display = ["name", "code", "source", "category"]
+    list_filter = ["source"]
     search_fields = ["name", "code"]
 
 
@@ -21,4 +22,11 @@ class MenuItemAdmin(admin.ModelAdmin):
     list_display = ["date", "meal", "restaurant", "raw_name", "price", "food"]
     list_filter = ["date", "meal", "restaurant"]
     search_fields = ["raw_name", "food__name"]
+    list_select_related = ["restaurant", "food"]
+
+
+@admin.register(StoreMenu)
+class StoreMenuAdmin(admin.ModelAdmin):
+    list_display = ["restaurant", "raw_name", "price", "food"]
+    search_fields = ["raw_name", "restaurant__name", "food__name"]
     list_select_related = ["restaurant", "food"]

@@ -151,6 +151,10 @@ RECOMMEND_MAX_QUESTIONS = max(int(os.environ.get('METCHU_MAX_QUESTIONS') or 0), 
 # from the location the app sends; unset, 0 or less means no cutoff.
 RECOMMEND_MAX_DISTANCE_M = max(int(os.environ.get('METCHU_MAX_DISTANCE_M') or 0), 0) or None
 
+# General mode reads the restaurant menus (menus/services.py) at most this often, in
+# seconds: they change only when a crawl is imported.
+RECOMMEND_STORE_MENU_CACHE_S = 300
+
 # Menu date used when the client sends none. Unset means today in Seoul; the
 # shared fixture only has 2026-09-29, so set METCHU_MENU_DATE to demo with it.
 RECOMMEND_DEFAULT_DATE = (

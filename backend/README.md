@@ -4,7 +4,8 @@ Django 5.2 server, on local SQLite or the team's shared Supabase Postgres
 ([Shared database](#shared-database-supabase-p8)). For now it holds the MVP's candidate set:
 **the SNU cafeteria dishes of a given day**, split and merged into real dishes
 ([Daily menu preprocessing](#daily-menu-preprocessing-p7)) and each tagged by an LLM with the
-features the question engines use.
+features the question engines use. General menu mode adds the restaurants near
+서울대입구역 and 낙성대역 ([General restaurants](#general-restaurants-near-the-stations-i3-p9)).
 
 The P10 question engine now consumes this candidate set. See the
 [engine integration guide](question_engines/decision_tree/README.md) for its
@@ -176,6 +177,56 @@ Mark wrong rows `N` and write the fix, then put it in `overrides.json`
 
 > **주의:** 이 파일들은 사람이 검토한 결과라 git으로 공유합니다. 고칠 때는 PR로 남겨 주세요.
 
+## General restaurants near the stations (i3-P9)
+
+General menu mode recommends from the restaurants near 서울대입구역 and 낙성대역 instead of the
+cafeterias. Their menu boards come from a crawl: the 소상공인시장진흥공단 상가(상권)정보 stores within
+600 m / 500 m of the stations, each matched to its Naver Place menu by `fetch_naver_menus`
+(i3-A2). The snapshot is committed as `menus/data/naver_menus_YYYY-MM-DD.json`; the format
+`import_stores` reads is in `menus/sources/naver_stores.py`. The crawl is not daily: import
+a new snapshot whenever the stores are crawled again. It replaces the menus of the earlier import,
+so a file with failed stores, or fewer stores than its `counts` say, is refused: `--allow-partial`
+imports it and keeps the earlier menus of those stores. The snapshot is added by #22.
+
+```bash
+S=menus/data/naver_menus_2026-11-02.json
+python manage.py import_stores --file $S --dry-run                     # no LLM call, no write
+python manage.py import_stores --file $S --limit 30 --review review.csv  # try on a local DB
+python manage.py run_store_pipeline --file $S --review review.csv      # import + features + allergens
+```
+
+- **Restaurants.** Matched stores with a menu are kept. Cafes, bakeries and dessert shops are left
+  out (상가정보 중분류 `비알코올`, a bakery or dessert 소분류, or such a Naver category). Bars stay.
+- **Menu lines.** Rules drop banners and notices ("🔥 중식은 불향이 반입니다 🔥": no price and
+  framed by decorations, sentence-like or a notice word; "★모둠회" stays) and drinks (소주, 생맥주
+  500cc, 콜라) for free. The LLM
+  resolves the rest with the cafeteria's dish rules (`menus/preprocess/store_prompt.py`), using the
+  restaurant's category and the menu description: it splits sets ("A세트: 짜장면+탕수육(소)"), drops
+  side dishes such as 마른안주, and leaves a vague line with no description ("점심특선") without a dish.
+- **Shared dishes.** A dish has the same name and the same `Food` row as in the cafeterias, so its
+  features are extracted once. `extract_features --stores` tags only the new ones.
+- **Allergens per menu line.** The dishes kept for recommendation leave sides out, so
+  `extract_allergens --stores` tags each whole line with its description ("낙지볶음+계란찜" may
+  contain egg) in `StoreMenu.allergens`; a session with allergies leaves out lines whose tags match
+  or are not current. Tags carry over to the same line (name and description) in a new snapshot.
+- **Cache.** Answers are cached in `MenuLine` under `store:` keys and `STORE_VERSION`, apart from the
+  cafeteria lines. A key holds everything the LLM sees: the name, the restaurant's category and the
+  description (its first 60 characters). "A세트" is also keyed by its restaurant.
+- **Review.** `--review` adds `rule_notice` / `rule_drink` (dropped by a rule) and `unnamed` rows to
+  the usual ones. Corrections go into `overrides.json`; a vague line is written with its restaurant,
+  as the CSV shows it: `{"lines": {"A세트 @홍콩반점 낙성대점": ["짜장면", "탕수육"]}}`.
+- **Sessions.** `POST /api/sessions/` with `"source": "general"` serves these dishes
+  (`services.get_store_catalog`). Offers keep the cafeteria shape, with the session's meal (the
+  current one in Seoul when the session has none). The menus are read from the database at most
+  every `RECOMMEND_STORE_MENU_CACHE_S` seconds (5 minutes), so an import shows within that time.
+  General sessions run the decision tree only. Starting one takes longer with more dishes: about
+  0.1 s with 500, 1 s with 2,000 and 5 s with 4,000 (the planner's setup).
+- **Pipeline.** If `import_stores` fails (a quota error), `run_store_pipeline` stops before tagging:
+  the lines it stored as they read are replaced by the next run.
+
+> **주의:** `--dry-run`이 LLM에 보낼 줄 수를 알려 줍니다. 실제 실행 전에 호출 수를 확인하세요. 2026-11-02 스냅샷은 640곳, 서로 다른 메뉴 줄 9,659개로 전처리 호출이 약 387회, 알레르기 호출이 약 366회입니다.
+> 머지 후 첫 07:00 매일 작업의 `migrate`가 Supabase에 새 테이블 `menus_storemenu`를 만듭니다. 그 뒤 RLS SQL을 다시 실행하세요.
+
 ## Shared database: Supabase (P8)
 
 The team shares one Postgres database on Supabase, so every teammate's server sees the same
@@ -288,6 +339,8 @@ services.get_candidates(datetime.date(2026, 9, 29), meal="LU")   # meal=None: wh
 
 # New sessions load one matching version of candidates and questions together:
 candidates, schema, version = services.get_catalog(datetime.date(2026, 10, 13), meal="LU")
+# The same for the restaurants near the stations (v2 only; offers carry the given meal):
+candidates, schema, version = services.get_store_catalog(meal="DN")
 ```
 
 The low-level readers above default to **v1** for existing callers. Recommendation
@@ -491,9 +544,11 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `loaddata menus_YYYY-MM-DD` | load a shared snapshot | no |
 | `run_daily_pipeline [--date] [--review PATH]` | fetch + preprocess + tag a day (+ review CSV); runs daily on GitHub Actions | **yes** |
 | `fetch_menus [--date] [--no-llm]` | fetch, preprocess and store a day's menu | for new lines |
+| `extract_features [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
+| `extract_allergens [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes (with `--stores`, restaurant menu lines) with the allergens they may contain | **yes** |
 | `fetch_naver_menus --stores CSV --output PATH` | save the Naver Place menus of the food shops near 서울대입구역 and 낙성대역 to JSON | no |
-| `extract_features [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
-| `extract_allergens [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with the allergens they may contain | **yes** |
+| `import_stores --file [--dry-run] [--limit N] [--allow-partial] [--no-llm] [--review PATH]` | import the restaurants near the stations from a crawl file | for new lines |
+| `run_store_pipeline --file [--review PATH]` | import + tag the restaurants near the stations | **yes** |
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
 | `export_preprocess_review [--date] --output PATH` | the day's results as a review CSV | no |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |
@@ -512,10 +567,11 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 
 | Model | One row per | Notes |
 |---|---|---|
-| `Restaurant` | cafeteria | `code` is the Siksha id, e.g. `220동식당`; `lat`/`lng` come from Siksha and are null when it has none |
+| `Restaurant` | cafeteria or restaurant | `source` `siksha`: `code` is the Siksha id, e.g. `220동식당`; `lat`/`lng` come from Siksha and are null when it has none. `source` `naver`: `code` is the 상가업소번호, with `category`, `address` and the Naver `place_id` |
 | `Food` | distinct (dish name, set status) | recommendation unit; holds mean `features`, `feature_std`, preprocessing `is_food`, `display_name`, `food_group`, `allergens` |
 | `MenuItem` | dish x restaurant x meal x day | `meal` is `BR` / `LU` / `DN`; `price` in won. A combo line has one row per dish |
-| `MenuLine` | distinct menu line (`dish_key`) | cache of the dishes a line stands for (`is_meal`, `dishes`, `source`) |
+| `StoreMenu` | dish x restaurant menu line | the menu boards of the restaurants near the stations; no date or meal. A set has one row per dish; `allergens` are the whole line's |
+| `MenuLine` | distinct menu line (`dish_key`) | cache of the dishes a line stands for (`is_meal`, `dishes`, `source`); restaurant lines use `store:` keys |
 
 ## Data source
 
@@ -554,9 +610,9 @@ with a `status`: `matched` (with `naver` and `menus`), `not_found` (Naver lists 
 place nearby, or the shop has closed) or `failed` (a request failed). After five failures
 in a row the command writes what it has and exits with an error.
 
-It goes to a JSON file, not the DB: `MenuItem` is per day and meal, which does not fit a
-restaurant's standing menu. Menus still include drinks and per-person fees ("성인"), so
-they need preprocessing before an engine can use them.
+It goes to a JSON file. `import_stores` cleans its menus (drinks, notices, per-person fees)
+and puts them into the DB as `StoreMenu`; see
+[General restaurants](#general-restaurants-near-the-stations-i3-p9).
 
 #### Committed snapshot: `menus/data/naver_menus_2026-11-02.json`
 

@@ -38,6 +38,19 @@ def menu_lines(records: list[siksha.MenuRecord]) -> dict[str, str]:
     return lines
 
 
+def ensure_foods(dishes: set[tuple[str, bool]]) -> tuple[dict, int]:
+    """({(name, is_set): Food} for `dishes`, creating the missing ones, and how many were new)."""
+    foods = {(food.name, food.is_set): food
+             for food in Food.objects.filter(name__in={name for name, _ in dishes})}
+    new_foods = Food.objects.bulk_create([
+        Food(name=name, is_set=is_set, is_food=True)
+        for name, is_set in sorted(dishes - foods.keys())
+    ], batch_size=1000)
+    foods.update({(food.name, food.is_set): food for food in new_foods})
+    Food.objects.filter(pk__in=[foods[key].pk for key in dishes]).update(is_food=True)
+    return foods, len(new_foods)
+
+
 @transaction.atomic
 def store(date: datetime.date, records: list[siksha.MenuRecord],
           mappings: dict[str, Mapping]) -> Counter:
@@ -65,17 +78,9 @@ def store(date: datetime.date, records: list[siksha.MenuRecord],
                       "lng": record.lng, "source": "siksha"},
         )
 
-    dish_keys = {(dish[:NAME_MAX], len(mapping.dishes) > 1)
-                 for _, mapping, _ in kept if mapping.is_meal for dish in mapping.dishes}
-    foods = {(food.name, food.is_set): food
-             for food in Food.objects.filter(name__in={name for name, _ in dish_keys})}
-    new_foods = Food.objects.bulk_create([
-        Food(name=name, is_set=is_set, is_food=True)
-        for name, is_set in sorted(dish_keys - foods.keys())
-    ])
-    foods.update({(food.name, food.is_set): food for food in new_foods})
-    Food.objects.filter(pk__in=[foods[key].pk for key in dish_keys]).update(is_food=True)
-    stats["new_foods"] = len(new_foods)
+    foods, stats["new_foods"] = ensure_foods({
+        (dish[:NAME_MAX], len(mapping.dishes) > 1)
+        for _, mapping, _ in kept if mapping.is_meal for dish in mapping.dishes})
 
     items, seen = [], set()
     for record, mapping, price_in_name in kept:

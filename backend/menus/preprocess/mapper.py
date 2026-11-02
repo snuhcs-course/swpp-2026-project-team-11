@@ -63,12 +63,12 @@ def _loose(name: str) -> str:
     return "".join(re.sub(r"^\s*\d+\.\s*", "", name).split())
 
 
-def _valid(item: LineDishes, name: str) -> tuple[bool, tuple[str, ...]] | None:
+def _valid(item: LineDishes, name: str, line_as_dish: bool = True) -> tuple[bool, tuple[str, ...]] | None:
     """Clean one answer for line `name`, or None when it is unusable (rule fallback)."""
     if not item.is_meal:
         return False, ()
     dishes = tuple(dict.fromkeys(d.strip() for d in item.dishes if d.strip()))
-    if not dishes:
+    if not dishes and line_as_dish:
         # A meal with no nameable main, e.g. "세미양식부페": the line itself is the dish.
         dishes = (name[:DISH_MAX],)
     if any(len(d) > DISH_MAX for d in dishes):
@@ -76,50 +76,58 @@ def _valid(item: LineDishes, name: str) -> tuple[bool, tuple[str, ...]] | None:
     return True, dishes
 
 
-def _ask(llm, names: list[str], known: list[str]) -> dict[str, tuple[bool, tuple[str, ...]]]:
+def _ask(llm, names: list[str], known: list[str], prompt=None,
+         line_as_dish: bool = True) -> dict[str, tuple[bool, tuple[str, ...]]]:
     from langchain_core.messages import HumanMessage, SystemMessage
 
-    batch = llm.invoke([SystemMessage(content=SYSTEM_PROMPT),
-                        HumanMessage(content=build_user_message(names, known))])
+    system, message = prompt or (SYSTEM_PROMPT, build_user_message)
+    batch = llm.invoke([SystemMessage(content=system), HumanMessage(content=message(names, known))])
     wanted = {_loose(name): name for name in names}
     found = {}
     for item in batch.items:
         name = wanted.get(_loose(item.input_name))
         if name is None and len(names) == 1 and len(batch.items) == 1:
             name = names[0]  # a single answer can only be for the single line
-        answer = _valid(item, name) if name else None
+        answer = _valid(item, name, line_as_dish) if name else None
         if answer is not None:
             found[name] = answer
     return found
 
 
-def resolve_with_llm(names: list[str], llm, known: list[str], batch_size: int = 25,
-                     on_progress=None) -> dict[str, tuple[bool, tuple[str, ...]]]:
+def resolve_with_llm(names: list[str], llm, known, batch_size: int = 25, on_progress=None,
+                     prompt=None, line_as_dish: bool = True) -> dict[str, tuple[bool, tuple[str, ...]]]:
     """Ask the LLM batch by batch, retrying misses one by one.
 
-    Batches run in order and every new dish name is added to `known`, so later
-    batches reuse the names earlier ones chose.
+    Batches run in order and every new dish name is offered for reuse, so later
+    batches reuse the names earlier ones chose. `known` is the list of names to
+    offer, or a function (batch, names chosen so far) -> list when there are too
+    many to send every time. `prompt` is (system prompt, message builder), the
+    cafeteria prompt by default. With line_as_dish=False, a meal line without a
+    nameable main dish resolves to no dishes instead of to the line itself.
     """
-    known = list(known)
+    chosen = [] if callable(known) else list(known)
+    seen = set(chosen)
     results: dict[str, tuple[bool, tuple[str, ...]]] = {}
     for start in range(0, len(names), batch_size):
         chunk = names[start:start + batch_size]
+        offered = known(chunk, chosen) if callable(known) else chosen
         try:
-            results.update(_ask(llm, chunk, known))
+            results.update(_ask(llm, chunk, offered, prompt, line_as_dish))
         except Exception as error:  # invalid JSON, a network error, a quota error...
             if on_progress:
                 on_progress(f"  배치 실패, 하나씩 재시도: {type(error).__name__}"[:200])
         for name in chunk:
             if name not in results:
                 try:
-                    results.update(_ask(llm, [name], known))
+                    results.update(_ask(llm, [name], offered, prompt, line_as_dish))
                 except Exception as error:
                     if on_progress:
                         on_progress(f"  실패: {name} ({type(error).__name__})")
         for name in chunk:
             for dish in results.get(name, (True, ()))[1]:
-                if dish not in known:
-                    known.append(dish)
+                if dish not in seen:
+                    seen.add(dish)
+                    chosen.append(dish)
         if on_progress:
             on_progress(f"  메뉴 줄 {min(start + batch_size, len(names))}/{len(names)} 처리")
     return results

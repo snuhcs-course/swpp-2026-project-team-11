@@ -1,6 +1,6 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal, engine, location, allergies) -> RecommendSession
+    create(date, meal, engine, location, allergies, source) -> RecommendSession
     get(session_id)            -> RecommendSession | None
     session.public_state()     -> what the phone is allowed to see
 
@@ -15,6 +15,11 @@ The engine is one session per instance and is not safe to mutate from two
 requests at once, so every session carries its own lock. The candidate list is
 read once at creation and stays with the engine: a later `fetch_menus` run does
 not change a session that is already in progress.
+
+`source` is what the dishes come from: "cafeteria", the day's SNU cafeteria menu
+(menus.services.get_catalog), or "general", the restaurants near 서울대입구역 and
+낙성대역 (get_store_catalog). A general session runs the decision tree: the LLM
+engine would send thousands of dish names with every question.
 
 `location` is the user's (lat, lng), if the phone sent one. Each offer then
 carries its `distance_m`, and with RECOMMEND_MAX_DISTANCE_M set, cafeterias
@@ -34,12 +39,13 @@ from collections import OrderedDict
 from django.conf import settings
 from django.utils import timezone
 
-from menus.services import get_catalog
+from menus.services import get_catalog, get_store_catalog
 from recommend.distance import with_distances
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.llm import LLMConfigError, LLMEngine
 
 ENGINES = ("decision_tree", "llm")
+SOURCES = ("cafeteria", "general")
 MAX_SESSIONS = 500
 
 
@@ -53,13 +59,17 @@ class EngineUnavailable(Exception):
 
 class RecommendSession:
     def __init__(self, date: datetime.date, meal: str | None, engine: str,
-                 location: tuple[float, float] | None, allergies: frozenset[str]):
+                 location: tuple[float, float] | None, allergies: frozenset[str],
+                 source: str = "cafeteria"):
         self.session_id = uuid.uuid4().hex
         self.engine_name = engine
         self.date = date
         self.meal = meal
         self.lock = threading.Lock()
-        candidates, schema, version = get_catalog(date, meal, allergies)
+        if source == "general":
+            candidates, schema, version = get_store_catalog(meal, allergies)
+        else:
+            candidates, schema, version = get_catalog(date, meal, allergies)
         candidates = with_distances(candidates, location, settings.RECOMMEND_MAX_DISTANCE_M)
         self.feature_version = version
         self.candidate_count = len(candidates)
@@ -129,10 +139,16 @@ _sessions_lock = threading.Lock()
 
 def create(date: datetime.date | None = None, meal: str | None = None,
            engine: str | None = None, location: tuple[float, float] | None = None,
-           allergies: frozenset[str] = frozenset()) -> RecommendSession:
-    """Raises EngineUnavailable when `engine` is "llm" and the server has no API key."""
+           allergies: frozenset[str] = frozenset(), source: str | None = None) -> RecommendSession:
+    """Raises EngineUnavailable when `engine` is "llm" and the server has no API key.
+
+    A general session runs the decision tree unless asked otherwise, whatever the
+    server's default engine.
+    """
+    source = source or "cafeteria"
+    engine = engine or ("decision_tree" if source == "general" else settings.RECOMMEND_DEFAULT_ENGINE)
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine or settings.RECOMMEND_DEFAULT_ENGINE, location, allergies)
+                               meal, engine, location, allergies, source)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:

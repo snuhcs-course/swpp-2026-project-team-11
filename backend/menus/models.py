@@ -2,13 +2,16 @@ from django.db import models
 
 
 class Restaurant(models.Model):
-    """A campus cafeteria, e.g. 학생회관식당."""
+    """A campus cafeteria (source "siksha"), or a restaurant near a station ("naver")."""
 
     code = models.CharField(max_length=100, unique=True)  # source's id, e.g. "220동식당"
     name = models.CharField(max_length=100)
     lat = models.FloatField(null=True, blank=True)
     lng = models.FloatField(null=True, blank=True)
     source = models.CharField(max_length=20, default="siksha")
+    category = models.CharField(max_length=50, blank=True)  # naver: e.g. 중식, 분식
+    address = models.CharField(max_length=200, blank=True)
+    place_id = models.CharField(max_length=30, blank=True)  # naver place id
 
     def __str__(self):
         return self.name
@@ -102,3 +105,34 @@ class MenuItem(models.Model):
 
     def __str__(self):
         return f"{self.date} {self.meal} {self.restaurant} - {self.raw_name}"
+
+
+class StoreMenu(models.Model):
+    """One dish on the menu board of a restaurant near a station; not tied to a day.
+
+    Like MenuItem, a combo line is stored once per dish it contains. A new crawl
+    replaces the rows (import_stores).
+
+    `allergens` belong to the whole menu line, sides included ("낙지볶음+계란찜" may
+    contain egg though its dish is 낙지볶음); untagged unless allergen_version is current.
+    """
+
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="store_menus")
+    raw_name = models.CharField(max_length=500)
+    description = models.CharField(max_length=500, blank=True)
+    food = models.ForeignKey(
+        Food, null=True, blank=True, on_delete=models.SET_NULL, related_name="store_menus"
+    )
+    price = models.IntegerField(null=True, blank=True)
+    allergens = models.JSONField(default=list, blank=True)
+    allergen_version = models.CharField(max_length=10, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["restaurant", "raw_name", "food"], name="unique_store_menu_per_dish",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.restaurant} - {self.raw_name}"

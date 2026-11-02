@@ -1,0 +1,99 @@
+{
+ "fetched_at": "2026-11-02T15:10:00+09:00",
+ "stores_file": "made-up sample in the shape of the crawl file",
+ "areas": {
+  "서울대입구역": {"lat": 37.481247, "lng": 126.952739, "radius_m": 600},
+  "낙성대역": {"lat": 37.47693, "lng": 126.963693, "radius_m": 500}
+ },
+ "counts": {"in_radius": 7, "matched": 6, "not_found": 1, "failed": 0},
+ "stores": [
+  {
+   "id": "MA0001", "name": "홍콩반점", "branch": "낙성대점",
+   "category": "중식", "subcategory": "중국집",
+   "lat": 37.4769, "lng": 126.9636, "road_address": "서울특별시 관악구 남부순환로 1900", "floor": "1",
+   "distances_m": {"낙성대역": 30}, "status": "matched",
+   "naver": {"id": "1001", "name": "홍콩반점 낙성대점", "category": "중식당", "lat": 37.47692, "lng": 126.96361,
+             "road_address": "남부순환로 1900", "distance_m": 3},
+   "menus": [
+    {"name": "짜장면", "price": 7000, "description": "", "is_set": false},
+    {"name": "🔥 중식은 불향이 반입니다 🔥", "price": null,
+     "description": "주문 즉시 센 불의 웍에서 볶아 재료의 식감과 깊은 풍미를 살립니다", "is_set": false},
+    {"name": "🍜 혼밥부터 가족 외식까지 🍜", "price": null,
+     "description": "혼자 먹는 한 끼부터 데이트와 가족 외식까지 편하게 이용하세요", "is_set": false},
+    {"name": "🚇역에서 2분 주차는 2시간🚗", "price": null,
+     "description": "서울대입구역에서 가깝고 3시간 무료 주차까지 지원됩니다", "is_set": false},
+    {"name": "A세트", "price": 25000, "description": "짜장면+탕수육(소)+군만두", "is_set": true},
+    {"name": "탕수육(소)", "price": 15000, "description": "", "is_set": false},
+    {"name": "콜라 1.25L", "price": 3000, "description": "", "is_set": false}
+   ]
+  },
+  {
+   "id": "MA0002", "name": "북경", "branch": "서울대입구점",
+   "category": "중식", "subcategory": "중국집",
+   "lat": 37.4810, "lng": 126.9530, "road_address": "서울특별시 관악구 관악로 150", "floor": "2",
+   "distances_m": {"서울대입구역": 40}, "status": "matched",
+   "naver": {"id": "1002", "name": "북경 서울대입구점", "category": "중식당", "lat": 37.48101, "lng": 126.95302,
+             "road_address": "관악로 150", "distance_m": 2},
+   "menus": [
+    {"name": "짜장면", "price": 6500, "description": "", "is_set": false},
+    {"name": "[BEST] 차돌짬뽕", "price": 9500, "description": "", "is_set": false},
+    {"name": "A세트", "price": 22000, "description": "짬뽕+탕수육", "is_set": true}
+   ]
+  },
+  {
+   "id": "MA0003", "name": "달밤", "branch": "",
+   "category": "주점", "subcategory": "요리 주점",
+   "lat": 37.4775, "lng": 126.9620, "road_address": "서울특별시 관악구 낙성대로 10", "floor": "B1",
+   "distances_m": {"낙성대역": 160}, "status": "matched",
+   "naver": {"id": "1003", "name": "달밤", "category": "요리주점", "lat": 37.47752, "lng": 126.96198,
+             "road_address": "낙성대로 10", "distance_m": 2},
+   "menus": [
+    {"name": "소주", "price": 5000, "description": "", "is_set": false},
+    {"name": "생맥주 500cc", "price": 4000, "description": "", "is_set": false},
+    {"name": "닭볶음탕", "price": 25000, "description": "", "is_set": false},
+    {"name": "마른안주", "price": 15000, "description": "", "is_set": false}
+   ]
+  },
+  {
+   "id": "MA0004", "name": "카페 온", "branch": "",
+   "category": "비알코올", "subcategory": "카페",
+   "lat": 37.4800, "lng": 126.9540, "road_address": "서울특별시 관악구 관악로 160", "floor": "1",
+   "distances_m": {"서울대입구역": 120}, "status": "matched",
+   "naver": {"id": "1004", "name": "카페 온", "category": "카페,디저트", "lat": 37.48, "lng": 126.954,
+             "road_address": "관악로 160", "distance_m": 1},
+   "menus": [
+    {"name": "아메리카노", "price": 4000, "description": "", "is_set": false},
+    {"name": "크로플", "price": 6000, "description": "", "is_set": false}
+   ]
+  },
+  {
+   "id": "MA0005", "name": "소금집", "branch": "",
+   "category": "기타 간이", "subcategory": "토스트/샌드위치/샐러드",
+   "lat": 37.4790, "lng": 126.9550, "road_address": "서울특별시 관악구 관악로 170", "floor": "1",
+   "distances_m": {"서울대입구역": 260}, "status": "matched",
+   "naver": {"id": "1005", "name": "소금집", "category": "베이커리", "lat": 37.479, "lng": 126.955,
+             "road_address": "관악로 170", "distance_m": 1},
+   "menus": [
+    {"name": "소금빵", "price": 3500, "description": "", "is_set": false}
+   ]
+  },
+  {
+   "id": "MA0006", "name": "없는집", "branch": "",
+   "category": "한식", "subcategory": "백반/한정식",
+   "lat": 37.4780, "lng": 126.9600, "road_address": "서울특별시 관악구 봉천로 1", "floor": "1",
+   "distances_m": {"낙성대역": 300}, "status": "not_found", "naver": null, "menus": []
+  },
+  {
+   "id": "MA0007", "name": "바다횟집", "branch": "",
+   "category": "일식", "subcategory": "일식 회/초밥",
+   "lat": 37.4815, "lng": 126.9520, "road_address": "서울특별시 관악구 관악로 140", "floor": "1",
+   "distances_m": {"서울대입구역": 30}, "status": "matched",
+   "naver": {"id": "1007", "name": "바다횟집", "category": "일식,횟집", "lat": 37.48151, "lng": 126.95199,
+             "road_address": "관악로 140", "distance_m": 1},
+   "menus": [
+    {"name": "모둠회(대)", "price": null, "description": "그날 들어온 활어", "is_set": false},
+    {"name": "공깃밥", "price": 1000, "description": "", "is_set": false}
+   ]
+  }
+ ]
+}

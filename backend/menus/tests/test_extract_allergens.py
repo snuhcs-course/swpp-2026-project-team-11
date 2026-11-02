@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from menus import allergens, llm
 from menus.allergens import ALLERGEN_KEYS, ALLERGEN_VERSION, SYSTEM_PROMPT
-from menus.models import Food, MenuItem, Restaurant
+from menus.models import Food, MenuItem, Restaurant, StoreMenu
 
 DAY = datetime.date(2026, 9, 29)
 TAGS = {"돈까스": ["pork", "wheat", "egg", "wheat"], "카레우동": ["wheat", "soybean"], "샐러드": []}
@@ -111,3 +111,36 @@ class ExtractAllergensTests(TestCase):
     def test_requires_an_api_key(self):
         with self.assertRaisesMessage(CommandError, "GOOGLE_API_KEY"):
             self.run_command(key=False)
+
+
+class StoreLineTests(TestCase):
+    def run_stores(self, model):
+        with mock.patch.object(llm, "api_key_available", return_value=True), \
+                mock.patch.object(allergens, "build_llm", return_value=model):
+            call_command("extract_allergens", "--stores", stdout=io.StringIO())
+
+    def test_stores_tags_whole_menu_lines_once_per_text(self):
+        hall = Restaurant.objects.create(code="hall", name="Hall")
+        MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name="샐러드",
+                                food=Food.objects.create(name="샐러드", is_food=True))
+        cutlet = Food.objects.create(name="돈까스", is_food=True)
+        for code, raw_name, description in [("MA1", "돈까스", ""), ("MA2", "돈까스", ""),
+                                            ("MA2", "🍜 돈까스 세트", "돈까스+카레우동")]:
+            shop, _ = Restaurant.objects.get_or_create(code=code, defaults={"name": code, "source": "naver"})
+            StoreMenu.objects.create(restaurant=shop, raw_name=raw_name, description=description, food=cutlet)
+        model = FakeLLM()
+        self.run_stores(model)
+        self.assertEqual(model.calls, [["돈까스", "돈까스 세트 (돈까스+카레우동)"]])  # the cafeteria 샐러드 is not sent
+        self.assertEqual(sorted((m.raw_name, m.allergens, m.allergen_version) for m in StoreMenu.objects.all()), [
+            ("돈까스", ["egg", "wheat", "pork"], ALLERGEN_VERSION),
+            ("돈까스", ["egg", "wheat", "pork"], ALLERGEN_VERSION),
+            ("🍜 돈까스 세트", [], ALLERGEN_VERSION)])
+        self.assertEqual(cutlet.allergen_version, "")  # dish tags are the cafeteria's business
+
+        again = FakeLLM()
+        self.run_stores(again)
+        self.assertEqual(again.calls, [])
+
+    def test_stores_and_a_date_are_not_taken_together(self):
+        with self.assertRaises(CommandError):
+            call_command("extract_allergens", "--stores", "--date", DAY.isoformat(), stdout=io.StringIO())
