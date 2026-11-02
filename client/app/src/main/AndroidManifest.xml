@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Shows the user's own position next to the recommended cafeteria. -->
+    <!-- Sent when a session starts, for the distance to each cafeteria, and shown
+         next to the recommended cafeteria on the map. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 

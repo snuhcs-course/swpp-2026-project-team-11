@@ -1,6 +1,6 @@
 """HTTP glue between the Android client and the question engine.
 
-    POST /api/sessions/          {"date"?, "meal"?, "engine"?, "allergies"?} -> 201 state
+    POST /api/sessions/          {"date"?, "meal"?, "engine"?, "location"?, "allergies"?} -> 201 state
     GET  /api/sessions/<id>/                                               -> state
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
@@ -18,7 +18,8 @@ be reached, for example through the tunnel of `manage.py serve_public`.
 
 `engine` is "decision_tree" or "llm"; without it the server's default runs
 (settings.RECOMMEND_DEFAULT_ENGINE). Asking for "llm" on a server with no API key
-is a 503 `engine_unavailable`.
+is a 503 `engine_unavailable`. `location` is the user's `{"lat", "lng"}`; it
+adds each cafeteria's `distance_m` to the offers (see recommend/distance.py).
 
 `allergies` lists keys of menus/allergens.py ALLERGEN_KEYS, as the phone stores
 them; no dish that may contain one is proposed.
@@ -53,6 +54,19 @@ def _body(request) -> dict:
     return payload
 
 
+def _location(value) -> tuple[float, float] | None:
+    if value is None:
+        return None
+    try:
+        lat, lng = value["lat"], value["lng"]
+    except (TypeError, KeyError):
+        raise ValueError("location must be {\"lat\": ..., \"lng\": ...}.") from None
+    if not all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in (lat, lng)) \
+            or not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        raise ValueError("location lat and lng must be numbers within -90..90 and -180..180.")
+    return float(lat), float(lng)
+
+
 @require_GET
 def health(request):
     return JsonResponse({"status": "ok"})
@@ -74,6 +88,7 @@ def create_session(request):
         engine = payload.get("engine")
         if engine is not None and engine not in sessions.ENGINES:
             raise ValueError(f"engine must be one of {', '.join(sessions.ENGINES)}.")
+        location = _location(payload.get("location"))
         allergies = payload.get("allergies")
         if allergies is not None and (not isinstance(allergies, list)
                                       or any(key not in ALLERGEN_KEYS for key in allergies)):
@@ -81,7 +96,7 @@ def create_session(request):
     except ValueError as error:  # includes json.JSONDecodeError
         return _error(400, "invalid_request", str(error))
     try:
-        session = sessions.create(date, meal, engine, frozenset(allergies or ()))
+        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()))
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     return JsonResponse(session.public_state(), status=201)
