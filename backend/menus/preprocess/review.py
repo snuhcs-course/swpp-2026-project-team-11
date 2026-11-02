@@ -42,12 +42,21 @@ def review_rows(records, mappings) -> list[list]:
         name, _ = clean_name(record.raw_name)
         entry = lines.setdefault(dish_key(name), {"name": name, "cafeterias": set()})
         entry["cafeterias"].add(record.restaurant_name)
+    return line_rows(lines, mappings)
 
+
+def line_rows(lines: dict, mappings) -> list[list]:
+    """review_rows for {key: {"name": line, "cafeterias": set of places}}, any kind of place.
+
+    A line judged a meal with no nameable dish ("점심특선" at a restaurant) is `unnamed`.
+    """
     rows, by_dish = [], defaultdict(list)
     for key, entry in sorted(lines.items(), key=lambda kv: kv[1]["name"]):
         mapping, cafeterias = mappings[key], ", ".join(sorted(entry["cafeterias"]))
         if not mapping.is_meal:
             rows.append(["not_meal", cafeterias, entry["name"], "", mapping.source])
+        elif not mapping.dishes:
+            rows.append(["unnamed", cafeterias, entry["name"], "", mapping.source])
         elif len(mapping.dishes) > 1:
             rows.append(["split", cafeterias, entry["name"], " | ".join(mapping.dishes), mapping.source])
         for dish in mapping.dishes:

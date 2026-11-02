@@ -5,4 +5,7 @@ A raw line can be one dish ("육개장"), several dishes ("돈가스 카레우�
 meal at all ("공기밥", drinks). Lines are grouped by normalize.dish_key, so spacing
 and size variants are the same line, and each line is resolved once and cached in
 menus.MenuLine. See mapper.map_lines for the order the sources are consulted in.
+
+store_lines.py does the same for the menu boards of the restaurants near the
+stations (general menu mode), with rules for notices and drinks first.
 """
