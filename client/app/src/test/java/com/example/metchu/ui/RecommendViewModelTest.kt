@@ -126,6 +126,13 @@ class RecommendViewModelTest {
     }
 
     @Test
+    fun startSendsTheLocationAndTheAllergiesTogether() {
+        api.reply(question)
+        viewModel.start("LU", Engine.LLM, LocationSource { UserLocation(37.45932, 126.95058) }, listOf(Allergen.EGG))
+        assertEquals(listOf("create LU llm @37.45932,126.95058 egg"), api.calls)
+    }
+
+    @Test
     fun findingTheLocationIsPartOfTheStartRequest() {
         val fix = CompletableDeferred<UserLocation?>()
         api.reply(question)

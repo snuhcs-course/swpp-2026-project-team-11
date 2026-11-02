@@ -6,7 +6,7 @@ from unittest import mock
 from menus import services
 from menus.allergens import ALLERGEN_VERSION
 from menus.features.schema import FEATURE_VERSION
-from menus.models import Food, MenuItem
+from menus.models import Food, MenuItem, Restaurant
 from question_engines.llm import LLMEngine
 from question_engines.llm.tests.helpers import FakeLLM, ask
 
@@ -68,6 +68,13 @@ class AllergyTests(SmallMenuTestCase):
         self.assertEqual(self.call(url + "feedback/", {"guess_id": guess["step"]["guess_id"],
                                                        "accepted": False})["step"]["reason"],
                          "candidates_exhausted")
+
+    def test_a_location_still_gives_distances_with_allergies(self):
+        Restaurant.objects.filter(code="Test hall").update(lat=37.4593, lng=126.9506)
+        state, url = self.start(allergies=["egg"], location={"lat": 37.4593, "lng": 126.9506})
+        self.assertEqual(state["candidate_count"], 1)
+        offers = self.call(url + "recommend-now/")["step"]["food"]["offers"]
+        self.assertEqual([offer["distance_m"] for offer in offers], [0])
 
     def test_no_safe_dish_is_an_empty_menu(self):
         state, _ = self.start(allergies=["egg", "wheat"])

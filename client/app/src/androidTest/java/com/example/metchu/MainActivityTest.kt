@@ -155,6 +155,16 @@ class MainActivityTest {
         assertEquals("create LU decision_tree @37.45932,126.95058", api.calls.last())
     }
 
+    @Test
+    fun startSendsTheLocationAndTheAllergiesTogether() {
+        AllergyStore(context).allergies = listOf(Allergen.MILK)
+        relaunch()
+        location = UserLocation(37.45932, 126.95058)
+        api.reply(question)
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
+        assertEquals("create LU decision_tree @37.45932,126.95058 milk", api.calls.last())
+    }
+
     /** Holds the location request until the test answers it, as the permission dialog would. */
     private class HeldRequest : ActivityResultRegistry() {
         var requestCode: Int? = null
