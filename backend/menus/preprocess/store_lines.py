@@ -81,8 +81,10 @@ def is_store_notice(raw: str, name: str, price: int | None) -> bool:
         return True
     if price is not None:
         return False
+    # A notice word in parentheses is a note on a dish: "한우등심(예약시 주문가능)".
+    outside = _PARENS.sub("", name)
     return (bool(_DECORATION.search(raw)) or bool(_SENTENCE_END.search(name)) or "!" in name
-            or len(name) > 30 or any(word in name for word in NOTICE_WORDS))
+            or len(name) > 30 or any(word in outside for word in NOTICE_WORDS))
 
 
 def is_drink(name: str) -> bool:
