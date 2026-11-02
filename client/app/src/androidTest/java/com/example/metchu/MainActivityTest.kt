@@ -4,8 +4,10 @@ import android.Manifest
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -119,7 +121,7 @@ class MainActivityTest {
             pickMeal(meal)
             api.reply(question)
             tap("start")
-            assertEquals("create $code decision_tree", api.calls.last())
+            assertEquals("create $code decision_tree en", api.calls.last())
             tap("back")
         }
     }
@@ -136,7 +138,7 @@ class MainActivityTest {
         pickMeal(R.string.meal_lunch)
         api.reply(question)
         tap("start")
-        assertEquals("create LU decision_tree egg,pine_nut", api.calls.last())
+        assertEquals("create LU decision_tree egg,pine_nut en", api.calls.last())
 
         // Chosen, so the next launch goes straight to the start screen.
         relaunch()
@@ -151,7 +153,7 @@ class MainActivityTest {
         pickMeal(R.string.meal_lunch)
         api.reply(question)
         tap("start")
-        assertEquals("create LU decision_tree @37.45932,126.95058 milk", api.calls.last())
+        assertEquals("create LU decision_tree @37.45932,126.95058 milk en", api.calls.last())
     }
 
     @Test
@@ -162,7 +164,27 @@ class MainActivityTest {
         pickMeal(R.string.meal_lunch)
         api.reply(Fixtures.state("question_llm"))
         tap("start")
-        assertEquals("create LU llm", api.calls.last())
+        assertEquals("create LU llm en", api.calls.last())
+    }
+
+    /** The language is the app's, not the test's: it is switched back the same way before the test ends. */
+    @Test
+    fun theLanguagePickedOnTheStartScreenRunsTheSession() {
+        pickLanguage("Language", "한국어", "언어")
+        api.reply(question)
+        tap("start")
+        assertEquals("ko", api.calls.last().substringAfterLast(" "))
+        tap("back")
+        pickLanguage("언어", "English", "Language")
+    }
+
+    /** The locale switch recreates the activity, which Compose does not wait for. */
+    private fun pickLanguage(button: String, language: String, buttonAfter: String) {
+        compose.onNodeWithContentDescription(button).performClick()
+        compose.onNodeWithText(language).performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodes(hasContentDescription(buttonAfter)).fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     @Test
