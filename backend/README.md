@@ -198,7 +198,8 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
 - **Restaurants.** Matched stores with a menu are kept. Cafes, bakeries and dessert shops are left
   out (상가정보 중분류 `비알코올`, a bakery or dessert 소분류, or such a Naver category). Bars stay.
 - **Menu lines.** Rules drop banners and notices ("🔥 중식은 불향이 반입니다 🔥": no price and
-  decorated, sentence-like or a notice word) and drinks (소주, 생맥주 500cc, 콜라) for free. The LLM
+  framed by decorations, sentence-like or a notice word; "★모둠회" stays) and drinks (소주, 생맥주
+  500cc, 콜라) for free. The LLM
   resolves the rest with the cafeteria's dish rules (`menus/preprocess/store_prompt.py`), using the
   restaurant's category and the menu description: it splits sets ("A세트: 짜장면+탕수육(소)"), drops
   side dishes such as 마른안주, and leaves a vague line with no description ("점심특선") without a dish.
@@ -215,11 +216,15 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
   the usual ones. Corrections go into `overrides.json`; a vague line is written with its restaurant,
   as the CSV shows it: `{"lines": {"A세트 @홍콩반점 낙성대점": ["짜장면", "탕수육"]}}`.
 - **Sessions.** `POST /api/sessions/` with `"source": "general"` serves these dishes
-  (`services.get_store_catalog`). Offers keep the cafeteria shape, with the session's meal (lunch by
-  default). General sessions run the decision tree only. Starting one takes longer with more
-  dishes: about 0.1 s with 500, 1 s with 2,000 and 5 s with 4,000 (the planner's setup).
+  (`services.get_store_catalog`). Offers keep the cafeteria shape, with the session's meal (the
+  current one in Seoul when the session has none). The menus are read from the database at most
+  every `RECOMMEND_STORE_MENU_CACHE_S` seconds (5 minutes), so an import shows within that time.
+  General sessions run the decision tree only. Starting one takes longer with more dishes: about
+  0.1 s with 500, 1 s with 2,000 and 5 s with 4,000 (the planner's setup).
+- **Pipeline.** If `import_stores` fails (a quota error), `run_store_pipeline` stops before tagging:
+  the lines it stored as they read are replaced by the next run.
 
-> **주의:** `--dry-run`이 LLM에 보낼 줄 수를 알려 줍니다. 실제 실행 전에 호출 수를 확인하세요. 2026-11-02 스냅샷은 640곳, 서로 다른 메뉴 줄 9,656개로 전처리 호출이 약 387회, 알레르기 호출이 약 366회입니다.
+> **주의:** `--dry-run`이 LLM에 보낼 줄 수를 알려 줍니다. 실제 실행 전에 호출 수를 확인하세요. 2026-11-02 스냅샷은 640곳, 서로 다른 메뉴 줄 9,659개로 전처리 호출이 약 387회, 알레르기 호출이 약 366회입니다.
 > 머지 후 첫 07:00 매일 작업의 `migrate`가 Supabase에 새 테이블 `menus_storemenu`를 만듭니다. 그 뒤 RLS SQL을 다시 실행하세요.
 
 ## Shared database: Supabase (P8)
