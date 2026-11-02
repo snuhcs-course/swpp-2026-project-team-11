@@ -39,6 +39,7 @@ class CheckTests(SimpleTestCase):
         self.assertIn("two sentences", self.refuses("It is spicy. It has broth. It is not fried."))
         self.assertIn("짜장면", self.refuses("Unlike 짜장면, it has a spicy broth."))
         self.assertIn("not in Korean", self.refuses("짬뽕 is spicy.", language="ko"))
+        self.assertIn("not in Korean", self.refuses("soupy한 국물이 있어서 짬뽕을 골랐어요.", language="ko"))
         self.assertIn("English", self.refuses("짬뽕 is 매운 and hot."))
 
     def test_refuses_evidence_that_does_not_point_to_the_dish(self):
@@ -74,14 +75,26 @@ class TemplateTests(SimpleTestCase):
     def test_names_the_last_two_yes_answers_the_dish_fits(self):
         self.assertEqual(template(facts()), "You felt like something spicy and something with broth, "
                                             "and 짬뽕 is a good match.")
-        self.assertEqual(template(facts("ko")), "매운 음식, 국물 있는 음식을 원하셔서 고른 메뉴예요.")
+        self.assertEqual(template(facts("ko")), "매운 음식, 국물 있는 음식을 원하셔서 짬뽕을 골랐어요.")
         beef = facts("ko", answers=(("Do you feel like beef?", "yes", .9),))
-        self.assertEqual(template(beef), "소고기를 원하셔서 고른 메뉴예요.")
+        self.assertEqual(template(beef), "소고기를 원하셔서 짬뽕을 골랐어요.")
 
-    def test_without_such_an_answer_it_stays_general(self):
-        for language in ("en", "ko"):
-            reason = template(facts(language, answers=((SPICY, "no", .9),)))
-            self.assertIn("짬뽕" if language == "en" else "답하신", reason)
+    def test_without_such_an_answer_it_stays_general_in_the_session_language(self):
+        expected = {
+            ("en", True): "짬뽕 is the best match for your answers among today's menus.",
+            ("en", False): "짬뽕 is a good pick from today's menus.",
+            ("ko", True): "답하신 내용에 가장 잘 맞는 짬뽕을 골랐어요.",
+            ("ko", False): "오늘 메뉴 중에서 짬뽕을 골라 봤어요.",
+        }
+        for (language, answered), reason in expected.items():
+            with self.subTest(language=language, answered=answered):
+                answers = ((SPICY, "no", .9),) if answered else ()
+                self.assertEqual(template(facts(language, answers=answers)), reason)
+
+    def test_the_korean_object_particle_follows_the_dish_name(self):
+        for dish, reason in (("짜장면", "짜장면을"), ("돈까스", "돈까스를"), ("제육덮밥(L)", "제육덮밥(L)을")):
+            korean = Facts("ko", dish, (), (), (), (), ())
+            self.assertIn(reason, template(korean))
 
     def test_the_message_lists_a_group_and_no_answers(self):
         group = Facts("en", "Noodles", ("Beef noodles", "Chicken noodles"), (), (), (), ())
@@ -119,7 +132,7 @@ class ReasonApiTests(SmallMenuTestCase):
             self.call(url + "recommend-now/")
             reason = self.client.get(url + "reason/").json()
         self.assertEqual(reason["source"], "template")
-        self.assertIn("메뉴예요", reason["reason"])
+        self.assertRegex(reason["reason"], "^오늘 메뉴 중에서 .+ 골라 봤어요\\.$")
 
     def test_no_dish_on_screen_is_stale_and_an_unknown_session_404(self):
         state, url = self.start()
