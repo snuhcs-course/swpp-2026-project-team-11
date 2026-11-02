@@ -1,4 +1,5 @@
-"""python manage.py import_stores --file stores.json [--dry-run] [--limit N] [--no-llm] [--review PATH]
+"""python manage.py import_stores --file stores.json [--dry-run] [--limit N] [--allow-partial] [--no-llm]
+                                    [--review PATH]
 
 Import the restaurants near the stations and their menu boards from a crawl file
 (menus/sources/naver_stores.py) for general menu mode. Each menu line is resolved to
@@ -6,8 +7,13 @@ the dishes it stands for (menus/preprocess/store_lines.py) and stored as one Sto
 per dish; dishes share their Food rows with the cafeteria menus.
 
 A file replaces the menus of the earlier import, so run this whenever the stores are
-crawled again. --limit imports the first N restaurants and replaces only their menus:
-use it to try the prompt on a local database.
+crawled again. A file that is not a whole crawl (failed or missing stores) is refused,
+so a broken run cannot wipe menus; --allow-partial imports it and keeps the earlier
+menus of those stores. --limit imports the first N restaurants and replaces only their
+menus: use it to try the prompt on a local database.
+
+Allergen tags of a menu line (extract_allergens --stores) carry over to the same line
+(name and description) in the new file.
 
 --dry-run reads the file and the cache only, with no LLM call and no write: it prints
 what would be imported and how many menu lines the LLM would get.
@@ -22,6 +28,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from menus import llm as menu_llm
+from menus.allergens import ALLERGEN_VERSION
 from menus.management.commands.fetch_menus import ensure_foods
 from menus.models import Restaurant, StoreMenu
 from menus.preprocess import mapper, store_lines
@@ -30,8 +37,9 @@ from menus.preprocess.review import line_rows, write_csv
 from menus.sources import naver_stores
 
 HEADER = ["type", "restaurants", "line", "dishes", "source"]
-SKIPPED = {"not_matched": "미매칭", "no_menu": "메뉴 없음", "cafe_or_bakery": "카페·베이커리", "same_place": "중복"}
-RAW_NAME_MAX = 500  # StoreMenu.raw_name max_length
+SKIPPED = {"failed": "실패", "not_matched": "미매칭", "no_menu": "메뉴 없음", "cafe_or_bakery": "카페·베이커리",
+           "same_place": "중복"}
+TEXT_MAX = 500  # StoreMenu.raw_name and description max_length
 RESTAURANT_FIELDS = ["name", "lat", "lng", "source", "category", "address", "place_id"]
 
 
@@ -41,11 +49,11 @@ def _restaurant_fields(store: naver_stores.StoreRecord) -> dict:
 
 
 @transaction.atomic
-def store(stores, entries, mappings, replace_all: bool = True) -> Counter:
+def store(stores, entries, mappings, replace_codes: set[str] | None = None) -> Counter:
     """Upsert the restaurants and replace the menus: one StoreMenu per (line, dish). Returns counts.
 
-    replace_all=False replaces only the menus of `stores`. Written with few queries,
-    as fetch_menus.store is: the shared database is remote.
+    With replace_codes, only the menus of those restaurants are replaced; others keep
+    theirs. Written with few queries, as fetch_menus.store is: the shared database is remote.
     """
     stats = Counter(entry.dropped for entry in entries if entry.dropped)
     existing = {r.code: r for r in Restaurant.objects.filter(code__in=[s.code for s in stores])}
@@ -59,8 +67,10 @@ def store(stores, entries, mappings, replace_all: bool = True) -> Counter:
         batch_size=1000)
     restaurants = existing | {r.code: r for r in created}
 
+    tagged = {(raw_name, description): allergens for raw_name, description, allergens in StoreMenu.objects
+              .filter(allergen_version=ALLERGEN_VERSION).values_list("raw_name", "description", "allergens")}
     old = StoreMenu.objects.filter(restaurant__source="naver")
-    (old if replace_all else old.filter(restaurant__code__in=list(restaurants))).delete()
+    (old if replace_codes is None else old.filter(restaurant__code__in=list(replace_codes))).delete()
 
     kept = [(entry, mappings[entry.key]) for entry in entries if not entry.dropped]
     foods, stats["new_foods"] = ensure_foods({
@@ -76,14 +86,17 @@ def store(stores, entries, mappings, replace_all: bool = True) -> Counter:
             continue
         if len(mapping.dishes) > 1:
             stats["split_lines"] += 1
-        raw_name = entry.raw_name[:RAW_NAME_MAX]
+        raw_name, description = entry.raw_name[:TEXT_MAX], entry.description[:TEXT_MAX]
+        allergens = tagged.get((raw_name, description))
         for dish in mapping.dishes:
             unique = (entry.store.code, raw_name, dish[:NAME_MAX])
             if unique in seen:  # a menu board can list a line twice
                 continue
             seen.add(unique)
-            items.append(StoreMenu(restaurant=restaurants[entry.store.code], raw_name=raw_name,
-                                   food=foods[(dish[:NAME_MAX], len(mapping.dishes) > 1)], price=entry.price))
+            items.append(StoreMenu(
+                restaurant=restaurants[entry.store.code], raw_name=raw_name, description=description,
+                food=foods[(dish[:NAME_MAX], len(mapping.dishes) > 1)], price=entry.price,
+                allergens=allergens or [], allergen_version=ALLERGEN_VERSION if allergens is not None else ""))
     StoreMenu.objects.bulk_create(items, batch_size=1000)
 
     stats["restaurants"] = len(restaurants)
@@ -99,8 +112,8 @@ def review_rows(entries, lines, mappings) -> list[list]:
         (dropped[(entry.dropped, entry.name)] if entry.dropped else places[entry.key]).add(entry.store.name)
     rows = [[f"rule_{kind}", ", ".join(sorted(names)), name, "", "rule"]
             for (kind, name), names in sorted(dropped.items())]
-    # The label ("A세트 @홍콩반점") is what overrides.json "lines" matches.
-    return rows + line_rows({key: {"name": line.label, "cafeterias": places[key]} for key, line in lines.items()},
+    # The ref ("A세트 @홍콩반점") is what overrides.json "lines" matches.
+    return rows + line_rows({key: {"name": line.ref, "cafeterias": places[key]} for key, line in lines.items()},
                             mappings)
 
 
@@ -112,6 +125,8 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", action="store_true",
                             help="print what would be imported; no LLM call, no write")
         parser.add_argument("--limit", type=int, default=None, help="import only the first N restaurants")
+        parser.add_argument("--allow-partial", action="store_true",
+                            help="import a file with failed or missing stores, keeping their earlier menus")
         parser.add_argument("--no-llm", action="store_true",
                             help="do not call the LLM; new lines are stored as one dish each")
         parser.add_argument("--review", default=None, help="also write a review CSV here")
@@ -124,6 +139,11 @@ class Command(BaseCommand):
             data = naver_stores.read(options["file"])
         except (OSError, ValueError) as error:
             raise CommandError(f"크롤 파일을 읽지 못했습니다: {error}") from error
+        problems = naver_stores.incomplete(data)
+        if problems and not (options["dry_run"] or options["allow_partial"]):
+            raise CommandError(
+                f"크롤 파일이 완전하지 않습니다 ({', '.join(problems)}). 다시 수집하거나, 그 가게들의 기존 메뉴를 "
+                "남기고 가져오려면 --allow-partial을 붙이세요.")
         stores, skipped = naver_stores.parse(data)
         stores = stores[:options["limit"]]
         entries = store_lines.entries(stores)
@@ -134,6 +154,8 @@ class Command(BaseCommand):
             + ", ".join(f"{SKIPPED[k]} {v}" for k, v in skipped.items())
             + f") / 메뉴 줄 {len(entries)} (규칙 제외: 공지 {rules['notice']}, 술·음료 {rules['drink']}) "
             f"/ 서로 다른 줄 {len(lines)}")
+        if problems:
+            self.stdout.write(self.style.WARNING(f"완전하지 않은 크롤 파일: {', '.join(problems)}"))
         if options["dry_run"]:
             self.dry_run(data, stores, entries, lines, options["batch_size"])
             return
@@ -146,7 +168,13 @@ class Command(BaseCommand):
                 self.stdout.write(f"{menu_llm.key_name()}가 없어 새 메뉴 줄은 LLM 없이 한 덩어리로 저장합니다.")
         mappings = store_lines.map_store_lines(lines, llm, on_progress=self.stdout.write,
                                                batch_size=options["batch_size"])
-        stats = store(stores, entries, mappings, replace_all=options["limit"] is None)
+        if options["limit"] is not None:
+            replace_codes = {s.code for s in stores}
+        elif problems:
+            replace_codes = naver_stores.settled_codes(data)
+        else:
+            replace_codes = None
+        stats = store(stores, entries, mappings, replace_codes)
         if options["review"]:
             rows = review_rows(entries, lines, mappings)
             write_csv(options["review"], HEADER, rows)

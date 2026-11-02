@@ -142,17 +142,15 @@ def get_store_catalog(meal: str | None = None,
 
     Only v2-tagged dishes are served. A menu board is not split into meals, so each offer
     carries the session's meal (lunch by default) and keeps the cafeteria offer shape.
-    A menu line is left out when one of its dishes may contain one of `allergies`.
+    With `allergies`, a menu line is left out unless its own tags (the whole line, sides
+    included: StoreMenu.allergens) are current and free of them.
     """
-    rows = list(StoreMenu.objects.filter(food__is_food=True).select_related("food", "restaurant")
-                .order_by("food__name", "restaurant__name"))
-    unsafe = {(row.restaurant_id, row.raw_name) for row in rows
-              if allergies and (row.food.allergen_version != ALLERGEN_VERSION
-                                or not allergies.isdisjoint(row.food.allergens))}
+    rows = (StoreMenu.objects.filter(food__is_food=True).select_related("food", "restaurant")
+            .order_by("food__name", "restaurant__name"))
     candidates: dict[int, dict] = {}
     untagged = set()
     for row in rows:
-        if (row.restaurant_id, row.raw_name) in unsafe:
+        if allergies and (row.allergen_version != ALLERGEN_VERSION or not allergies.isdisjoint(row.allergens)):
             continue
         if row.food.feature_version != FEATURE_VERSION:
             untagged.add(row.food_id)

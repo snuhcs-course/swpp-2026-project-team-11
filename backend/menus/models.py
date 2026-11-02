@@ -111,15 +111,21 @@ class StoreMenu(models.Model):
     """One dish on the menu board of a restaurant near a station; not tied to a day.
 
     Like MenuItem, a combo line is stored once per dish it contains. A new crawl
-    replaces every row (import_stores).
+    replaces the rows (import_stores).
+
+    `allergens` belong to the whole menu line, sides included ("낙지볶음+계란찜" may
+    contain egg though its dish is 낙지볶음); untagged unless allergen_version is current.
     """
 
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="store_menus")
     raw_name = models.CharField(max_length=500)
+    description = models.CharField(max_length=500, blank=True)
     food = models.ForeignKey(
         Food, null=True, blank=True, on_delete=models.SET_NULL, related_name="store_menus"
     )
     price = models.IntegerField(null=True, blank=True)
+    allergens = models.JSONField(default=list, blank=True)
+    allergen_version = models.CharField(max_length=10, blank=True)
 
     class Meta:
         constraints = [

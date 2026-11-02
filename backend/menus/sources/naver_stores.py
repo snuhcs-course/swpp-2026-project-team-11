@@ -9,6 +9,8 @@ each station, matches each to a Naver Place and saves its menu board:
          "naver": {"id", "name", "category", "lat", "lng", "road_address", "distance_m"} | null,
          "menus": [{"name", "price", "description", "is_set"}]}]}
 
+`incomplete` tells whether a file is a whole crawl: the collector can stop early or
+fail on some stores, and those stores must not lose the menus of an earlier import.
 `parse` keeps the matched stores that have a menu and serve meals. Cafes, bakeries
 and dessert shops are left out; bars stay, and their drinks are dropped line by line
 (menus/preprocess/store_lines.py). The crawl is not daily: import_stores loads a new
@@ -99,11 +101,30 @@ def _record(store: dict) -> StoreRecord:
     )
 
 
+def incomplete(data: dict) -> list[str]:
+    """Why `data` is not a whole crawl (empty when it is): failed stores, or missing ones."""
+    problems = []
+    failed = sum(store["status"] == "failed" for store in data["stores"])
+    if failed:
+        problems.append(f"실패한 가게 {failed}곳")
+    expected = (data.get("counts") or {}).get("in_radius")
+    if isinstance(expected, int) and expected != len(data["stores"]):
+        problems.append(f"파일의 가게 {len(data['stores'])}곳이 counts.in_radius {expected}곳과 다름")
+    return problems
+
+
+def settled_codes(data: dict) -> set[str]:
+    """The stores this crawl has an answer for (not failed): their earlier menus may be replaced."""
+    return {str(store["id"]) for store in data["stores"] if store["status"] != "failed"}
+
+
 def parse(data: dict) -> tuple[list[StoreRecord], Counter]:
     """(stores to import, why the other stores were skipped)."""
     stores, skipped, places = [], Counter(), set()
     for store in data["stores"]:
-        if store["status"] != "matched" or not store.get("naver"):
+        if store["status"] == "failed":
+            skipped["failed"] += 1
+        elif store["status"] != "matched" or not store.get("naver"):
             skipped["not_matched"] += 1
         elif not store.get("menus"):
             skipped["no_menu"] += 1

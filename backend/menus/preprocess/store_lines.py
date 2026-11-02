@@ -11,18 +11,20 @@ the cafeteria's dish rules (store_prompt.py), so a dish has one name and one Foo
 both modes.
 
 Answers are cached in MenuLine under "store:" keys and STORE_VERSION, apart from the
-cafeteria lines. "김치찌개" is the same dish everywhere and is resolved once for all
-restaurants; a vague line such as "A세트" or "점심특선" is resolved per restaurant,
-from its description.
+cafeteria lines. A key holds everything the LLM sees: the name (by dish_key), the
+restaurant's category and the description, so "김치찌개" with the same category and
+description is resolved once for all restaurants. A vague line such as "A세트" or
+"점심특선" is also keyed by its restaurant.
 
 Sources, first match wins: overrides.json "lines" (matched by the dish_key of the
-label, so a correction of "A세트 @홍콩반점" stays with that restaurant), the cache, the LLM, then the rule fallback (the whole line is one dish, and a vague
+line's ref, so a correction of "A세트 @홍콩반점" stays with that restaurant), the cache, the LLM, then the rule fallback (the whole line is one dish, and a vague
 line none). The fallback is not cached, so a later run asks the LLM again.
 overrides.json "dishes" renames dishes in every answer.
 """
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, replace
 
@@ -32,7 +34,7 @@ from menus.sources.naver_stores import StoreRecord
 
 from . import fixed, overrides
 from .mapper import NAME_MAX, Mapping, known_dishes, resolve_with_llm
-from .store_prompt import STORE_SYSTEM_PROMPT, build_store_message
+from .store_prompt import DESCRIPTION_MAX, STORE_SYSTEM_PROMPT, build_store_message
 
 STORE_VERSION = "store-v1"
 # sha256(STORE_SYSTEM_PROMPT)[:12] for this version. A prompt change bumps STORE_VERSION,
@@ -101,9 +103,17 @@ def is_vague(name: str) -> bool:
     return len(re.findall(r"[가-힣]", _VAGUE_WORDS.sub("", name.lower()))) < 2
 
 
-def line_key(store_code: str, name: str) -> str:
-    key = dish_key(name)
-    return (f"store:{store_code}:{key}" if is_vague(name) else f"store:{key}")[:KEY_MAX]
+def allergen_text(raw_name: str, description: str) -> str:
+    """What the allergen model reads for a menu line: the whole line, sides included."""
+    name, _ = clean_store_name(raw_name)
+    return f"{name} ({description[:DESCRIPTION_MAX]})" if description else name
+
+
+def line_key(store_code: str, name: str, category: str = "", description: str = "") -> str:
+    """Equal for lines the LLM sees alike: the same dish_key, category and description."""
+    context = hashlib.sha256(f"{category}\n{description[:DESCRIPTION_MAX]}".encode("utf-8")).hexdigest()[:10]
+    scope = f"{store_code}:" if is_vague(name) else ""
+    return f"store:{scope}{context}:{dish_key(name)}"[:KEY_MAX]
 
 
 @dataclass(frozen=True)
@@ -114,14 +124,15 @@ class Entry:
     raw_name: str
     name: str
     price: int | None
-    description: str
+    description: str  # whitespace collapsed
     dropped: str  # "notice" or "drink" when a rule dropped the line
     key: str      # cache key of a line that was kept
 
 
 @dataclass(frozen=True)
 class StoreLine:
-    label: str        # what the LLM sees and copies back, unique within a run
+    ref: str          # the name, or "A세트 @홍콩반점" for a vague line; overrides.json "lines" use it
+    label: str        # the ref made unique within a run: what the LLM sees and copies back
     name: str
     category: str
     description: str
@@ -133,28 +144,28 @@ def entries(stores: list[StoreRecord]) -> list[Entry]:
         for menu in store.menus:
             name, price_in_name = clean_store_name(menu.name)
             price = menu.price if menu.price is not None else price_in_name
+            description = " ".join(menu.description.split())
             dropped = "notice" if is_store_notice(menu.name, name, price) else "drink" if is_drink(name) else ""
-            result.append(Entry(store, menu.name, name, price, menu.description, dropped,
-                                "" if dropped else line_key(store.code, name)))
+            result.append(Entry(store, menu.name, name, price, description, dropped,
+                                "" if dropped else line_key(store.code, name, store.category, description)))
     return result
 
 
 def distinct_lines(entries: list[Entry]) -> dict[str, StoreLine]:
-    """One StoreLine per cache key; a vague line is labeled with its restaurant ("A세트 @홍콩반점")."""
+    """One StoreLine per cache key; a vague line is referred to with its restaurant ("A세트 @홍콩반점").
+
+    Lines of one name with another category or description get labels "떡볶이 #2", ...
+    """
     lines, labels = {}, set()
     for entry in entries:
-        if entry.dropped:
+        if entry.dropped or entry.key in lines:
             continue
-        line = lines.get(entry.key)
-        if line is None:
-            label = f"{entry.name} @{entry.store.name}" if is_vague(entry.name) else entry.name
-            unique, n = label, 2
-            while unique in labels:
-                unique, n = f"{label} #{n}", n + 1
-            labels.add(unique)
-            lines[entry.key] = StoreLine(unique, entry.name, entry.store.category, entry.description)
-        elif not line.description and entry.description:
-            lines[entry.key] = replace(line, description=entry.description)
+        ref = f"{entry.name} @{entry.store.name}" if is_vague(entry.name) else entry.name
+        label, n = ref, 2
+        while label in labels:
+            label, n = f"{ref} #{n}", n + 1
+        labels.add(label)
+        lines[entry.key] = StoreLine(ref, label, entry.name, entry.store.category, entry.description)
     return lines
 
 
@@ -163,7 +174,7 @@ def known_answers(lines: dict[str, StoreLine]) -> dict[str, Mapping]:
     line_overrides, _ = overrides.load_overrides()
     found = {}
     for key, line in lines.items():
-        dishes = line_overrides.get(dish_key(line.label))  # "A세트 @홍콩반점" names one restaurant's set
+        dishes = line_overrides.get(dish_key(line.ref))
         if dishes is not None:
             found[key] = Mapping(bool(dishes), tuple(dishes), "override")
     cached = MenuLine.objects.filter(key__in=[key for key in lines if key not in found],
