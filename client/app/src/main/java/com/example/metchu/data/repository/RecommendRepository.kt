@@ -1,6 +1,7 @@
 package com.example.metchu.data.repository
 
 import com.example.metchu.data.model.Allergen
+import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.AnswerRequest
@@ -38,6 +39,8 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
         api.recommendNow(sessionId).checked()
 
     suspend fun undo(sessionId: String): SessionState = api.undo(sessionId).checked()
+
+    suspend fun reason(sessionId: String): Reason = api.reason(sessionId)
 
     /** The session as the server has it now. Changes nothing. */
     suspend fun state(sessionId: String): SessionState = api.getState(sessionId).checked()

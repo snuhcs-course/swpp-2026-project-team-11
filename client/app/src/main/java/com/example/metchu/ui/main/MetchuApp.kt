@@ -70,6 +70,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     val error by viewModel.error.observeAsState()
     val history by viewModel.history.observeAsState(emptyList())
     val shown by viewModel.shown.observeAsState(emptyList())
+    val reasons by viewModel.reasons.observeAsState(emptyMap())
 
     // The first launch opens the settings, where the allergies are picked.
     var settingsOpen by rememberSaveable { mutableStateOf(!allergyStore.chosen) }
@@ -140,6 +141,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                     ResultScreen(
                         session = current,
                         shown = shown,
+                        reasons = reasons,
                         place = place,
                         loading = loading,
                         onBack = viewModel::undo,

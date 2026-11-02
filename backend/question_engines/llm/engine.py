@@ -109,8 +109,7 @@ class LLMEngine:
         return sum(event["type"] == "answer" for event in self._events)
 
     def _history(self):
-        return [(event["before"].get("english", event["before"]["text"]), ANSWER_LABELS[event["answer_id"]])
-                for event in self._events if event["type"] == "answer"]
+        return [(answer["text"], ANSWER_LABELS[answer["answer_id"]]) for answer in self.answered()]
 
     def _rejected(self):
         return [event["before"]["food"]["display_name"] for event in self._events
@@ -262,6 +261,12 @@ class LLMEngine:
         if self._events:
             self._pending = self._events.pop()["before"]
         return self.next_step()
+
+    def answered(self):
+        """The answered questions of the current history, oldest first, with their English text."""
+        return [{"question_id": event["question_id"], "answer_id": event["answer_id"],
+                 "text": event["before"].get("english", event["before"]["text"])}
+                for event in self._events if event["type"] == "answer"]
 
     def diagnostics(self):
         shown = [event["before"] for event in self._events] + [self._pending or {}]

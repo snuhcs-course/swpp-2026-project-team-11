@@ -1,5 +1,6 @@
 package com.example.metchu.data.network
 
+import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.SessionState
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
@@ -68,4 +69,7 @@ interface ApiService {
 
     @POST("api/sessions/{id}/undo/")
     suspend fun undo(@Path("id") sessionId: String): SessionState
+
+    @GET("api/sessions/{id}/reason/")
+    suspend fun reason(@Path("id") sessionId: String): Reason
 }

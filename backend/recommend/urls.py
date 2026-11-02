@@ -10,4 +10,5 @@ urlpatterns = [
     path("sessions/<str:session_id>/feedback/", views.feedback),
     path("sessions/<str:session_id>/recommend-now/", views.recommend_now),
     path("sessions/<str:session_id>/undo/", views.undo),
+    path("sessions/<str:session_id>/reason/", views.reason),
 ]

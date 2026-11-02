@@ -104,6 +104,7 @@ import kotlin.math.abs
 fun ResultScreen(
     session: SessionState,
     shown: List<Step>,
+    reasons: Map<Int, String>,
     place: Place,
     loading: Boolean,
     onBack: () -> Unit,
@@ -180,6 +181,7 @@ fun ResultScreen(
 
         ResultSheet(
             step = step,
+            reason = reasons[food.foodId],
             caption = captionFor(session.meal),
             cafeterias = cafeterias,
             place = place,
@@ -257,6 +259,7 @@ private fun ShownChips(shown: List<Step>, viewing: Int, modifier: Modifier = Mod
 @Composable
 private fun ResultSheet(
     step: Step,
+    reason: String?,
     @StringRes caption: Int,
     cafeterias: CafeteriaList,
     place: Place,
@@ -330,6 +333,11 @@ private fun ResultSheet(
                     else -> null
                 }
                 if (description != null) Text(description, Modifier.padding(top = 6.dp), style = MetchuType.Body)
+                // The reason comes after the dish is drawn, so it fades in.
+                val reasonIn by animateFloatAsState(if (reason != null) 1f else 0f, tween(300), label = "reason")
+                if (reason != null) {
+                    Text(reason, Modifier.padding(top = 8.dp).graphicsLayer { alpha = reasonIn }.testTag("reason"), style = MetchuType.Body)
+                }
             }
 
             Column(Modifier.rise(listIn, density)) {

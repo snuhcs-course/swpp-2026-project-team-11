@@ -38,6 +38,9 @@ data class AnsweredQuestion(val text: String, val answerId: String)
  * no question texts, so the phone remembers them, and trims the list to the
  * server's `question_count` after every reply so the two never disagree.
  * [shown] lists the guesses this session has proposed, for the result screen.
+ * [reasons] holds the reason under each proposed dish by food ID. It is asked for
+ * once per dish after the dish is shown, as it can take an LLM call, and a failure
+ * only leaves the reason out.
  */
 class RecommendViewModel(private val repository: RecommendRepository) : ViewModel() {
 
@@ -55,6 +58,10 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
 
     private val _shown = MutableLiveData<List<Step>>(emptyList())
     val shown: LiveData<List<Step>> = _shown
+
+    private val _reasons = MutableLiveData<Map<Int, String>>(emptyMap())
+    val reasons: LiveData<Map<Int, String>> = _reasons
+    private val askedReasons = mutableSetOf<Int>()
 
     private var lastRequest: (suspend () -> SessionState)? = null
     private var lastAnswered: AnsweredQuestion? = null
@@ -74,8 +81,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         language: String? = null
     ) {
         if (_loading.value == true) return
-        _history.value = emptyList()
-        _shown.value = emptyList()
+        forgetSession()
         request { repository.createSession(meal, engine, location?.current(), allergies, language) }
     }
 
@@ -138,8 +144,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         if (_loading.value == true) return
         _session.value = null
         _error.value = null
-        _history.value = emptyList()
-        _shown.value = emptyList()
+        forgetSession()
         lastRequest = null
     }
 
@@ -192,8 +197,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
             e.code() == 404 -> {
                 lastRequest = null
                 _session.value = null
-                _history.value = emptyList()
-                _shown.value = emptyList()
+                forgetSession()
                 _error.value = UiError(R.string.error_session_lost, canRetry = false)
             }
             // The LLM engine has no API key on this server; asking again cannot help.
@@ -213,6 +217,28 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
             _shown.value = _shown.value.orEmpty() + state.step
         }
         _session.value = state
+        val food = state.step.food
+        if (food != null && askedReasons.add(food.foodId)) explain(state.sessionId)
+    }
+
+    private fun explain(sessionId: String) {
+        viewModelScope.launch {
+            try {
+                val reason = repository.reason(sessionId)
+                if (_session.value?.sessionId == sessionId) _reasons.value = _reasons.value.orEmpty() + (reason.foodId to reason.reason)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "no reason for the dish", e)
+            }
+        }
+    }
+
+    private fun forgetSession() {
+        _history.value = emptyList()
+        _shown.value = emptyList()
+        _reasons.value = emptyMap()
+        askedReasons.clear()
     }
 
     private companion object {
