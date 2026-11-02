@@ -16,6 +16,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
+import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.AllergyStore
@@ -262,6 +263,13 @@ class MainActivityTest {
         val food = guess.step.food!!
         compose.onNodeWithText(food.displayName).assertIsDisplayed()
         compose.onNodeWithText(food.offers.single().restaurant).assertIsDisplayed()
+    }
+
+    @Test
+    fun aGuessShowsItsReasonWhenTheServerSendsOne() {
+        api.reason = Reason(guess.step.food!!.foodId, "Spicy, as you wanted.")
+        startWith(guess)
+        compose.onNodeWithText("Spicy, as you wanted.").assertIsDisplayed()
     }
 
     @Test

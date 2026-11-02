@@ -7,6 +7,7 @@ import com.example.metchu.R
 import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
+import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.ApiError
@@ -675,5 +676,41 @@ class RecommendViewModelTest {
         viewModel.startOver()
         assertEquals(emptyList<AnsweredQuestion>(), viewModel.history.value)
         assertEquals(emptyList<Step>(), viewModel.shown.value)
+    }
+
+    // --- the reason under a proposed dish ---
+
+    @Test
+    fun aProposedDishGetsItsReasonOnce() {
+        val food = guess.step.food!!
+        api.reason = Reason(food.foodId, "Spicy, as you wanted.")
+        startWith(question)
+        assertEquals(emptyList<String>(), api.reasonCalls.toList())
+        answerTo(guess)
+        assertEquals(mapOf(food.foodId to "Spicy, as you wanted."), viewModel.reasons.value)
+
+        api.reply(question)
+        viewModel.undo()
+        answerTo(guess)
+        assertEquals(listOf(guess.sessionId), api.reasonCalls.toList())
+    }
+
+    @Test
+    fun aFailedReasonIsLeftOutWithoutAnError() {
+        startWith(question)
+        answerTo(guess)
+        assertEquals(listOf(guess.sessionId), api.reasonCalls.toList())
+        assertEquals(emptyMap<Int, String>(), viewModel.reasons.value)
+        assertIdle(guess)
+    }
+
+    @Test
+    fun startOverForgetsTheReasons() {
+        api.reason = Reason(guess.step.food!!.foodId, "Spicy, as you wanted.")
+        startWith(guess)
+        viewModel.startOver()
+        assertEquals(emptyMap<Int, String>(), viewModel.reasons.value)
+        startWith(guess)
+        assertEquals(2, api.reasonCalls.size)
     }
 }
