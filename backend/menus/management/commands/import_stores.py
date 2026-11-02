@@ -40,7 +40,6 @@ HEADER = ["type", "restaurants", "line", "dishes", "source"]
 SKIPPED = {"failed": "실패", "not_matched": "미매칭", "no_menu": "메뉴 없음", "cafe_or_bakery": "카페·베이커리",
            "same_place": "중복"}
 TEXT_MAX = 500  # StoreMenu.raw_name and description max_length
-RESTAURANT_FIELDS = ["name", "lat", "lng", "source", "category", "address", "place_id"]
 
 
 def _restaurant_fields(store: naver_stores.StoreRecord) -> dict:
@@ -61,7 +60,9 @@ def store(stores, entries, mappings, replace_codes: set[str] | None = None) -> C
         if s.code in existing:
             for field, value in _restaurant_fields(s).items():
                 setattr(existing[s.code], field, value)
-    Restaurant.objects.bulk_update(list(existing.values()), RESTAURANT_FIELDS, batch_size=500)
+    if existing:
+        Restaurant.objects.bulk_update(list(existing.values()), list(_restaurant_fields(stores[0])),
+                                       batch_size=500)
     created = Restaurant.objects.bulk_create(
         [Restaurant(code=s.code, **_restaurant_fields(s)) for s in stores if s.code not in existing],
         batch_size=1000)
@@ -89,13 +90,14 @@ def store(stores, entries, mappings, replace_codes: set[str] | None = None) -> C
         raw_name, description = entry.raw_name[:TEXT_MAX], entry.description[:TEXT_MAX]
         allergens = tagged.get((raw_name, description))
         for dish in mapping.dishes:
-            unique = (entry.store.code, raw_name, dish[:NAME_MAX])
+            food = foods[(dish[:NAME_MAX], len(mapping.dishes) > 1)]
+            unique = (entry.store.code, raw_name, food.pk)  # as unique_store_menu_per_dish
             if unique in seen:  # a menu board can list a line twice
                 continue
             seen.add(unique)
             items.append(StoreMenu(
                 restaurant=restaurants[entry.store.code], raw_name=raw_name, description=description,
-                food=foods[(dish[:NAME_MAX], len(mapping.dishes) > 1)], price=entry.price,
+                food=food, price=entry.price,
                 allergens=allergens or [], allergen_version=ALLERGEN_VERSION if allergens is not None else ""))
     StoreMenu.objects.bulk_create(items, batch_size=1000)
 

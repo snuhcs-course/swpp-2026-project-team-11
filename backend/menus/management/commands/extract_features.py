@@ -32,9 +32,10 @@ class Command(BaseCommand):
     help = "Extract mean/std for preprocessed dishes, once per name."
 
     def add_arguments(self, parser):
-        parser.add_argument("--date", type=datetime.date.fromisoformat, default=None)
-        parser.add_argument("--stores", action="store_true",
-                            help="the dishes of the restaurants near the stations instead of a day's menu")
+        scope = parser.add_mutually_exclusive_group()
+        scope.add_argument("--date", type=datetime.date.fromisoformat, default=None)
+        scope.add_argument("--stores", action="store_true",
+                           help="the dishes of the restaurants near the stations instead of a day's menu")
         parser.add_argument("--batch-size", type=int, default=25)
         parser.add_argument("--limit", type=int, default=None, help="Maximum number of distinct names")
         parser.add_argument("--force", action="store_true")

@@ -33,7 +33,7 @@ from menus.normalize import KEY_MAX, clean_name, dish_key
 from menus.sources.naver_stores import StoreRecord
 
 from . import fixed, overrides
-from .mapper import NAME_MAX, Mapping, known_dishes, resolve_with_llm
+from .mapper import NAME_MAX, Mapping, _loose, known_dishes, resolve_with_llm
 from .store_prompt import DESCRIPTION_MAX, STORE_SYSTEM_PROMPT, build_store_message
 
 STORE_VERSION = "store-v1"
@@ -66,9 +66,11 @@ DRINK_NAMES = {"참이슬", "처음처럼", "진로", "새로", "카스", "테�
                "산사춘", "이과두주", "복분자주", "매실주", "청주", "양주", "보드카", "데킬라", "진토닉", "환타",
                "스프라이트", "펩시", "밀키스", "웰치스", "데미소다", "토닉워터", "우롱차", "녹차", "커피", "우유"}
 
-# Words that say how a menu is sold, not what it is: "A세트", "2인 점심특선".
+# Words that say how a menu is sold, not what it is: "A세트", "2인 점심특선", "Premium Set".
 _VAGUE_WORDS = re.compile(r"세트|셋트|정식|특선|코스|메뉴|런치|디너|점심|저녁|스페셜|오늘의|추천|기본|베스트|"
-                          r"커플|가족|패밀리|혼밥|실속|알뜰|든든|인분|[a-z]|\d")
+                          r"커플|가족|패밀리|혼밥|실속|알뜰|든든|\d+\s*인분?|\d|"
+                          r"(?<![a-z])(?:set|menu|course|tasting|lunch|dinner|special|best|basic|premium|"
+                          r"signature|vip|combo|[a-z])(?![a-z])")
 
 
 def clean_store_name(raw: str) -> tuple[str, int | None]:
@@ -78,14 +80,17 @@ def clean_store_name(raw: str) -> tuple[str, int | None]:
 
 
 def is_store_notice(raw: str, name: str, price: int | None) -> bool:
-    """True for banners and notices: no letters, or no price and decorated, sentence-like or a notice word."""
+    """True for banners and notices: no letters, or no price and framed, sentence-like or a notice word."""
     if not _LETTER.search(name):
         return True
     if price is not None:
         return False
+    # Banners and section headers are framed ("■□세트 메뉴□■"); a dish is at most marked ("★모둠회").
+    raw = raw.strip()
+    framed = bool(_DECORATION.match(raw)) and bool(_DECORATION.match(raw[-1]))
     # A notice word in parentheses is a note on a dish: "한우등심(예약시 주문가능)".
     outside = _PARENS.sub("", name)
-    return (bool(_DECORATION.search(raw)) or bool(_SENTENCE_END.search(name)) or "!" in name
+    return (framed or bool(_SENTENCE_END.search(name)) or "!" in name
             or len(name) > 30 or any(word in outside for word in NOTICE_WORDS))
 
 
@@ -99,8 +104,13 @@ def is_drink(name: str) -> bool:
 
 
 def is_vague(name: str) -> bool:
-    """True when the name alone does not tell the dish ("A세트", "점심특선", "2인 커플세트")."""
-    return len(re.findall(r"[가-힣]", _VAGUE_WORDS.sub("", name.lower()))) < 2
+    """True when the name alone does not tell the dish ("A세트", "점심특선", "2인 커플세트").
+
+    A name without such words is a dish however short ("죽", "Carbonara").
+    """
+    lowered = name.lower()
+    rest = _VAGUE_WORDS.sub("", lowered)
+    return rest != lowered and len(_LETTER.findall(rest)) < 2
 
 
 def allergen_text(raw_name: str, description: str) -> str:
@@ -155,6 +165,7 @@ def distinct_lines(entries: list[Entry]) -> dict[str, StoreLine]:
     """One StoreLine per cache key; a vague line is referred to with its restaurant ("A세트 @홍콩반점").
 
     Lines of one name with another category or description get labels "떡볶이 #2", ...
+    Labels differ as the LLM's answers are matched (_loose), so "떡 볶이" is "떡 볶이 #2" too.
     """
     lines, labels = {}, set()
     for entry in entries:
@@ -162,9 +173,9 @@ def distinct_lines(entries: list[Entry]) -> dict[str, StoreLine]:
             continue
         ref = f"{entry.name} @{entry.store.name}" if is_vague(entry.name) else entry.name
         label, n = ref, 2
-        while label in labels:
+        while _loose(label) in labels:
             label, n = f"{ref} #{n}", n + 1
-        labels.add(label)
+        labels.add(_loose(label))
         lines[entry.key] = StoreLine(ref, label, entry.name, entry.store.category, entry.description)
     return lines
 

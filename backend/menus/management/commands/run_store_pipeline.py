@@ -7,8 +7,9 @@ The restaurants near the stations, start to finish, whenever they are crawled ag
 
 It needs the key of METCHU_MENU_MODEL (menus/llm.py). Dishes and lines resolved
 before, by this or by the cafeteria pipeline, are reused, so only new ones cost LLM
-calls; `import_stores --dry-run` tells how many lines that is. If a step fails, the
-other steps still run and the command then exits with an error.
+calls; `import_stores --dry-run` tells how many lines that is. If the import fails, the
+command stops there; if a tagging step fails, the other still runs and the command then
+exits with an error.
 """
 
 from __future__ import annotations
@@ -40,7 +41,10 @@ class Command(BaseCommand):
             self.stdout.write(title)
             try:
                 call_command(*command, stdout=self.stdout)
-            except CommandError as error:  # keep going: later steps still help, then fail below
+            except CommandError as error:
+                if command[0] == "import_stores":
+                    # Its rule-fallback lines are replaced by the next import: tagging them wastes calls.
+                    raise CommandError(f"import_stores: {error}\n태깅은 건너뜁니다. 다시 실행해 주세요.") from error
                 errors.append(f"{command[0]}: {error}")
 
         candidates, _, _ = services.get_store_catalog()

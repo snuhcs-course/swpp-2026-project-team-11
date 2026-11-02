@@ -17,13 +17,15 @@ from __future__ import annotations
 
 import datetime
 import logging
+import time
 
+from django.conf import settings
 from django.utils import timezone
 
 from .allergens import ALLERGEN_VERSION
 from .features.schema import FEATURE_VERSION, FEATURES
 from .features.legacy_schema import FEATURES as LEGACY_FEATURES
-from .models import MenuItem, StoreMenu
+from .models import Food, MenuItem, StoreMenu
 
 logger = logging.getLogger(__name__)
 MEAL_ORDER = {"BR": 0, "LU": 1, "DN": 2}
@@ -136,33 +138,56 @@ def _candidate(food, include_std: bool) -> dict:
     return candidate
 
 
+def current_meal(now: datetime.datetime | None = None) -> str:
+    """The meal at this hour in Seoul: BR before 10:00, LU before 16:00, DN after."""
+    hour = timezone.localtime(now).hour
+    return "BR" if hour < 10 else "LU" if hour < 16 else "DN"
+
+
+_store_menus = None  # (read at, rows, foods) of _read_store_menus
+
+
+def _read_store_menus() -> tuple[list[tuple], dict]:
+    """(menu rows, {food id: v2-tagged Food}) of the restaurants, read again after
+    RECOMMEND_STORE_MENU_CACHE_S seconds: they change only when a crawl is imported."""
+    global _store_menus
+    now = time.monotonic()
+    if _store_menus is None or now - _store_menus[0] >= settings.RECOMMEND_STORE_MENU_CACHE_S:
+        rows = list(StoreMenu.objects.filter(food__is_food=True).order_by("food__name", "restaurant__name")
+                    .values_list("food_id", "restaurant__name", "restaurant__lat", "restaurant__lng", "price",
+                                 "allergens", "allergen_version"))
+        foods = Food.objects.filter(pk__in=StoreMenu.objects.values("food_id"),
+                                    feature_version=FEATURE_VERSION).in_bulk()
+        _store_menus = (now, rows, foods)
+    return _store_menus[1], _store_menus[2]
+
+
 def get_store_catalog(meal: str | None = None,
                       allergies: frozenset[str] = frozenset()) -> tuple[list, list, str]:
     """The dishes of the restaurants near the stations (StoreMenu), as get_catalog returns them.
 
     Only v2-tagged dishes are served. A menu board is not split into meals, so each offer
-    carries the session's meal (lunch by default) and keeps the cafeteria offer shape.
+    carries the session's meal (else the current one) and keeps the cafeteria offer shape.
     With `allergies`, a menu line is left out unless its own tags (the whole line, sides
     included: StoreMenu.allergens) are current and free of them.
     """
-    rows = (StoreMenu.objects.filter(food__is_food=True).select_related("food", "restaurant")
-            .order_by("food__name", "restaurant__name"))
+    rows, foods = _read_store_menus()
+    meal = meal or current_meal()
     candidates: dict[int, dict] = {}
-    untagged = set()
-    for row in rows:
-        if allergies and (row.allergen_version != ALLERGEN_VERSION or not allergies.isdisjoint(row.allergens)):
+    offered, untagged = set(), set()
+    for food_id, restaurant, lat, lng, price, tags, allergen_version in rows:
+        if allergies and (allergen_version != ALLERGEN_VERSION or not allergies.isdisjoint(tags)):
             continue
-        if row.food.feature_version != FEATURE_VERSION:
-            untagged.add(row.food_id)
+        if food_id not in foods:
+            untagged.add(food_id)
             continue
-        if row.food_id not in candidates:
-            candidates[row.food_id] = _candidate(row.food, include_std=True)
-        candidate = candidates[row.food_id]
-        restaurant = row.restaurant
-        offer = {"restaurant": restaurant.name, "meal": meal or "LU", "price": row.price,
-                 "lat": restaurant.lat, "lng": restaurant.lng}
-        if offer not in candidate["offers"]:
-            candidate["offers"].append(offer)
+        if (food_id, restaurant, price, lat, lng) in offered:
+            continue
+        offered.add((food_id, restaurant, price, lat, lng))
+        if food_id not in candidates:
+            candidates[food_id] = _candidate(foods[food_id], include_std=True)
+        candidates[food_id]["offers"].append(
+            {"restaurant": restaurant, "meal": meal, "price": price, "lat": lat, "lng": lng})
     if untagged:
         logger.warning("restaurants: %d dishes without %s features are not served; run extract_features --stores",
                        len(untagged), FEATURE_VERSION)
