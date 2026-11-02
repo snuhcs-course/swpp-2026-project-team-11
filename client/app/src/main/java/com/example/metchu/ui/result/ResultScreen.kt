@@ -97,7 +97,8 @@ import kotlin.math.abs
 /**
  * The proposed dish over a Google map of the cafeterias that serve it. "Find another"
  * turns the dish down and asks on; back returns to the last question. Chips switch
- * between the dishes proposed so far in this session.
+ * between the dishes proposed so far in this session; "Find another" is only offered
+ * on the server's current guess, the one it would turn down.
  */
 @Composable
 fun ResultScreen(
@@ -117,7 +118,8 @@ fun ResultScreen(
     val permission = rememberLocationPermission()
     val user = rememberUserPoint(permission.granted)
     val cafeterias = remember(food, user, place) { cafeteriaList(food, user, place) }
-    var selected by remember(food) { mutableIntStateOf(0) }
+    // By restaurant: the list re-sorts as the user moves, and one restaurant can have several lines.
+    var selected by remember(food) { mutableStateOf(cafeterias.cafeterias.firstOrNull()?.offer?.restaurant) }
 
     // Everything enters in a short sequence each time a dish is shown.
     val key = step.guessId ?: food.foodId.toString()
@@ -145,7 +147,7 @@ fun ResultScreen(
             if (BuildConfig.HAS_MAPS_KEY) {
                 // The padding follows the resting sheet, not the finger, so the map does not slide while dragging.
                 CafeteriaMap(
-                    cafeterias.cafeterias, selected, permission.granted,
+                    cafeterias.cafeterias.distinctBy { it.offer.restaurant }, selected, permission.granted,
                     start = cafeterias.cafeterias.firstNotNullOfOrNull { it.point } ?: user ?: CampusCenter,
                     // Above the dish chips when they are shown, so they never cover the logo.
                     bottomInset = height * (1f - stop.fraction) + if (shown.size > 1) ChipRowHeight else 0.dp
@@ -163,7 +165,7 @@ fun ResultScreen(
                 CircleIconButton(Icons.Back, stringResource(R.string.back), { if (!loading) onBack() }, Modifier.testTag("back"))
                 Pill {
                     PillSegment(stringResource(R.string.result_home), onHome, start = 18.dp, end = 14.dp)
-                    if (current.type == Step.GUESS) {
+                    if (current.type == Step.GUESS && step.guessId == current.guessId) {
                         PillDivider()
                         PillSegment(stringResource(R.string.result_more), { if (!loading) onMore() }, start = 14.dp, end = 18.dp)
                     }
@@ -238,7 +240,8 @@ private fun ShownChips(shown: List<Step>, viewing: Int, modifier: Modifier = Mod
                     .clip(CircleShape)
                     .background(background)
                     .clickable(role = Role.Tab) { onView(index) }
-                    .padding(horizontal = 14.dp),
+                    .padding(horizontal = 14.dp)
+                    .testTag("dishChip"),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -257,8 +260,8 @@ private fun ResultSheet(
     @StringRes caption: Int,
     cafeterias: CafeteriaList,
     place: Place,
-    selected: Int,
-    onSelect: (Int) -> Unit,
+    selected: String?,
+    onSelect: (String) -> Unit,
     revealed: Boolean,
     stop: SheetStop,
     onStop: (SheetStop) -> Unit,
@@ -331,14 +334,19 @@ private fun ResultSheet(
 
             Column(Modifier.rise(listIn, density)) {
                 Text(
-                    stringResource(if (place == Place.NEAR && !cafeterias.widened) R.string.result_nearby else R.string.result_all),
-                    Modifier.padding(bottom = 6.dp),
+                    stringResource(if (place == Place.NEAR && cafeterias.allListed == null) R.string.result_nearby else R.string.result_all),
+                    Modifier.padding(bottom = 6.dp).testTag("cafeteriaHeading"),
                     style = MetchuType.Caption
                 )
-                if (cafeterias.widened) Text(stringResource(R.string.result_none_near), Modifier.padding(bottom = 6.dp), style = MetchuType.Caption)
+                val note = when (cafeterias.allListed) {
+                    AllListed.NONE_NEAR -> R.string.result_none_near
+                    AllListed.NO_LOCATION -> R.string.result_no_location
+                    null -> null
+                }
+                if (note != null) Text(stringResource(note), Modifier.padding(bottom = 6.dp), style = MetchuType.Caption)
                 if (cafeterias.cafeterias.isEmpty()) Text(stringResource(R.string.offer_none), style = MetchuType.Body)
-                cafeterias.cafeterias.forEachIndexed { index, cafeteria ->
-                    CafeteriaRow(cafeteria, index == selected) { onSelect(index) }
+                cafeterias.cafeterias.forEach { cafeteria ->
+                    CafeteriaRow(cafeteria, cafeteria.offer.restaurant == selected) { onSelect(cafeteria.offer.restaurant) }
                 }
             }
         }
@@ -406,11 +414,11 @@ private fun distanceText(meters: Int): String =
 @Composable
 private fun CafeteriaMap(
     cafeterias: List<Cafeteria>,
-    selected: Int,
+    selected: String?,
     showUser: Boolean,
     start: Point,
     bottomInset: Dp,
-    onSelect: (Int) -> Unit
+    onSelect: (String) -> Unit
 ) {
     val camera = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(start.lat, start.lng), 16f)
@@ -432,7 +440,7 @@ private fun CafeteriaMap(
         camera.animate(update, 600)
     }
     LaunchedEffect(selected) {
-        val point = cafeterias.getOrNull(selected)?.point ?: return@LaunchedEffect
+        val point = cafeterias.firstOrNull { it.offer.restaurant == selected }?.point ?: return@LaunchedEffect
         if (loaded && points.size > 1) camera.animate(CameraUpdateFactory.newLatLng(LatLng(point.lat, point.lng)), 400)
     }
 
@@ -444,9 +452,9 @@ private fun CafeteriaMap(
         uiSettings = MapUiSettings(mapToolbarEnabled = false, myLocationButtonEnabled = false, zoomControlsEnabled = false),
         onMapLoaded = { loaded = true }
     ) {
-        cafeterias.forEachIndexed { index, cafeteria ->
-            val point = cafeteria.point ?: return@forEachIndexed
-            val on = index == selected
+        cafeterias.forEach { cafeteria ->
+            val point = cafeteria.point ?: return@forEach
+            val on = cafeteria.offer.restaurant == selected
             // Keyed by the cafeteria, so switching dishes moves each pin rather than relabeling another.
             key(cafeteria.offer.restaurant, point) {
                 MarkerComposable(
@@ -454,7 +462,7 @@ private fun CafeteriaMap(
                     state = remember { MarkerState(LatLng(point.lat, point.lng)) },
                     anchor = Offset(0.5f, 0.93f),
                     zIndex = if (on) 1f else 0f,
-                    onClick = { onSelect(index); true }
+                    onClick = { onSelect(cafeteria.offer.restaurant); true }
                 ) {
                     MapPin(cafeteria, on)
                 }

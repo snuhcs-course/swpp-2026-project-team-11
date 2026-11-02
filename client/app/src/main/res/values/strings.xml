@@ -89,6 +89,7 @@
     <string name="result_nearby">Nearby cafeterias</string>
     <string name="result_all">Cafeterias serving it</string>
     <string name="result_none_near">None within a 10-minute walk, so all are listed.</string>
+    <string name="result_no_location">Your location is unknown, so every cafeteria is listed.</string>
     <string name="result_group_example">For example %1$s</string>
     <string name="result_group_members">Also %1$s</string>
     <string name="result_sheet_toggle">Show more or fewer cafeterias</string>

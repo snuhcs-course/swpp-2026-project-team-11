@@ -13,30 +13,39 @@ import kotlin.math.sqrt
 /** A place on the map, in degrees. */
 data class Point(val lat: Double, val lng: Double)
 
-/** One cafeteria serving the dish. [meters] is the straight-line distance from the user, if known. */
+/**
+ * One cafeteria serving the dish at one meal. [meters] is the straight-line distance from
+ * the user: from the phone's current position, or the server's `distance_m` from where the
+ * session started until the phone has one.
+ */
 data class Cafeteria(val offer: Offer, val meters: Int?) {
     val point: Point? get() = if (offer.lat != null && offer.lng != null) Point(offer.lat, offer.lng) else null
     val walkMinutes: Int? get() = meters?.let { ceil(it / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1) }
 }
 
-/** What the result sheet lists. [widened] is true when [Place.NEAR] found nothing close, so all are listed. */
-data class CafeteriaList(val cafeterias: List<Cafeteria>, val widened: Boolean)
+/** Why the result sheet lists every cafeteria although [Place.NEAR] was picked. */
+enum class AllListed { NONE_NEAR, NO_LOCATION }
+
+/** What the result sheet lists. [allListed] says why [Place.NEAR] did not narrow the list, if it did not. */
+data class CafeteriaList(val cafeterias: List<Cafeteria>, val allListed: AllListed?)
 
 /**
- * The cafeterias serving [food], once each, nearest first when [user] is known. The server
- * has no distance filter, so [Place.NEAR] keeps those within a 10-minute walk here, or all
- * of them when none is that close.
+ * The cafeterias serving [food], one line per cafeteria and meal (times and prices can
+ * differ), nearest first when the distance is known. The server cuts no distance by
+ * default, so [Place.NEAR] keeps those within a 10-minute walk here, or all of them when
+ * none is that close or no distance is known.
  */
 fun cafeteriaList(food: Food, user: Point?, place: Place): CafeteriaList {
-    val all = food.offers.distinctBy { it.restaurant }.map { offer ->
+    val all = food.offers.distinctBy { it.restaurant to it.meal }.map { offer ->
         val meters = if (user != null && offer.lat != null && offer.lng != null) {
             distanceMeters(user, Point(offer.lat, offer.lng))
-        } else null
+        } else offer.distanceM
         Cafeteria(offer, meters)
     }.sortedWith(compareBy(nullsLast()) { it.meters })
-    if (place == Place.ANY || user == null) return CafeteriaList(all, widened = false)
+    if (place == Place.ANY || all.isEmpty()) return CafeteriaList(all, null)
+    if (all.all { it.meters == null }) return CafeteriaList(all, AllListed.NO_LOCATION)
     val near = all.filter { it.meters != null && it.meters <= NEAR_METERS }
-    return if (near.isEmpty()) CafeteriaList(all, widened = all.isNotEmpty()) else CafeteriaList(near, widened = false)
+    return if (near.isEmpty()) CafeteriaList(all, AllListed.NONE_NEAR) else CafeteriaList(near, null)
 }
 
 /** Great-circle distance; on campus the error against a walking route is far larger. */

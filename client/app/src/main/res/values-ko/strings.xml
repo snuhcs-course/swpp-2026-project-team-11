@@ -81,6 +81,7 @@
     <string name="result_nearby">가까운 식당</string>
     <string name="result_all">이 메뉴가 있는 식당</string>
     <string name="result_none_near">걸어서 10분 안에는 없어서 모든 식당을 보여드려요.</string>
+    <string name="result_no_location">위치를 알 수 없어서 모든 식당을 보여드려요.</string>
     <string name="result_group_example">예를 들면 %1$s</string>
     <string name="result_group_members">%1$s도 있어요</string>
     <string name="result_sheet_toggle">식당 목록 펼치거나 접기</string>
