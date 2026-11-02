@@ -181,14 +181,16 @@ Mark wrong rows `N` and write the fix, then put it in `overrides.json`
 
 General menu mode recommends from the restaurants near 서울대입구역 and 낙성대역 instead of the
 cafeterias. Their menu boards come from a crawl: the 소상공인시장진흥공단 상가(상권)정보 stores within
-600 m / 500 m of the stations, each matched to its Naver Place menu (the file format is in
-`menus/sources/naver_stores.py`). The crawl is not daily; import a new file whenever the
-stores are crawled again. It replaces the menus of the earlier import.
+600 m / 500 m of the stations, each matched to its Naver Place menu by `fetch_naver_menus`
+(i3-A2). The snapshot is committed as `menus/data/naver_menus_YYYY-MM-DD.json`; the format
+`import_stores` reads is in `menus/sources/naver_stores.py`. The crawl is not daily: import
+a new snapshot whenever the stores are crawled again. It replaces the menus of the earlier import.
 
 ```bash
-python manage.py import_stores --file stores.json --dry-run                     # no LLM call, no write
-python manage.py import_stores --file stores.json --limit 30 --review review.csv  # try on a local DB
-python manage.py run_store_pipeline --file stores.json --review review.csv      # import + features + allergens
+S=menus/data/naver_menus_2026-11-02.json
+python manage.py import_stores --file $S --dry-run                     # no LLM call, no write
+python manage.py import_stores --file $S --limit 30 --review review.csv  # try on a local DB
+python manage.py run_store_pipeline --file $S --review review.csv      # import + features + allergens
 ```
 
 - **Restaurants.** Matched stores with a menu are kept. Cafes, bakeries and dessert shops are left
@@ -211,7 +213,7 @@ python manage.py run_store_pipeline --file stores.json --review review.csv      
   default). General sessions run the decision tree only. Starting one takes longer with more
   dishes: about 0.1 s with 500, 1 s with 2,000 and 5 s with 4,000 (the planner's setup).
 
-> **주의:** `--dry-run`이 LLM에 보낼 줄 수를 알려 줍니다. 실제 실행 전에 호출 수를 확인하세요. 크롤 원본 파일은 git에 넣지 않습니다.
+> **주의:** `--dry-run`이 LLM에 보낼 줄 수를 알려 줍니다. 실제 실행 전에 호출 수를 확인하세요. 2026-11-02 스냅샷은 640곳, 서로 다른 메뉴 줄 8,002개로 전처리 호출이 약 321회입니다.
 > Supabase에 처음 넣을 때는 `migrate` 뒤에 RLS SQL을 다시 실행하세요(새 테이블 `menus_storemenu`).
 
 ## Shared database: Supabase (P8)
