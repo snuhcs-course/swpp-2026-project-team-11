@@ -542,6 +542,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `fetch_menus [--date] [--no-llm]` | fetch, preprocess and store a day's menu | for new lines |
 | `extract_features [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
 | `extract_allergens [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes (with `--stores`, restaurant menu lines) with the allergens they may contain | **yes** |
+| `fetch_naver_menus --stores CSV --output PATH` | save the Naver Place menus of the food shops near 서울대입구역 and 낙성대역 to JSON | no |
 | `import_stores --file [--dry-run] [--limit N] [--allow-partial] [--no-llm] [--review PATH]` | import the restaurants near the stations from a crawl file | for new lines |
 | `run_store_pipeline --file [--review PATH]` | import + tag the restaurants near the stations | **yes** |
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
@@ -576,5 +577,50 @@ Menus come from the public [Siksha](https://siksha.wafflestudio.com) API by Waff
 - One request per day (`build_fixed_menus` fetches day by day; long ranges time out).
 - The official SNU co-op page (`https://snuco.snu.ac.kr/foodmenu/`) is the planned fallback.
 
-The restaurants of general menu mode come from a crawl file (see
-[General restaurants](#general-restaurants-near-the-stations-i3-p9)), not from an API.
+### Naver Place menus of shops near the stations (i3-A2)
+
+The shop list comes from 소상공인시장진흥공단 상가(상권)정보 (data.go.kr, a quarterly
+zip of CSVs per province; unzip the 서울 one, about 300 MB). `menus/sources/stores.py`
+reads its food shops (대분류 `I2`) other than cafés, bakeries, rice-cake shops and ice
+cream. The menus come from Naver Place: Naver has no official API that returns menus
+(the Search API's local search and the NCP Maps APIs give names and coordinates only),
+so `menus/sources/naver.py` reads the public mobile pages a signed-out visitor sees:
+
+- List: `https://m.place.naver.com/restaurant/list?query=...&x=<lng>&y=<lat>`, searched
+  with the shop's name and branch near the shop. The match is the nearest place within
+  150 m whose name contains the shop's name (ignoring spaces, case and symbols).
+- Menu: `https://m.place.naver.com/restaurant/<place id>/menu/list`. A menu shown only as
+  photos gives no items; a price that is not a single amount ("변동", a range) is `null`.
+- Both pages embed `window.__APOLLO_STATE__`; if Naver changes it, parsing raises
+  `ValueError`. Naver answers non-browser user agents with 429, so a mobile browser's is sent.
+  Requests are a second apart.
+
+```bash
+python manage.py fetch_naver_menus --stores PATH/소상공인시장진흥공단_상가(상권)정보_서울_202609.csv \
+    --output menus/data/naver_menus_YYYY-MM-DD.json
+```
+
+`AREAS` in the command sets the stations and radii (서울대입구역 600 m, 낙성대역 500 m):
+1132 shops in the 2026-09 file, so about 2000 requests and 40 minutes. Each shop is kept
+with a `status`: `matched` (with `naver` and `menus`), `not_found` (Naver lists no such
+place nearby, or the shop has closed) or `failed` (a request failed). After five failures
+in a row the command writes what it has and exits with an error.
+
+It goes to a JSON file. `import_stores` cleans its menus (drinks, notices, per-person fees)
+and puts them into the DB as `StoreMenu`; see
+[General restaurants](#general-restaurants-near-the-stations-i3-p9).
+
+#### Committed snapshot: `menus/data/naver_menus_2026-11-02.json`
+
+- Shops: `소상공인시장진흥공단_상가(상권)정보_서울_202609.csv`, from the data.go.kr zip
+  `소상공인시장진흥공단_상가(상권)정보_20260930.zip`.
+- Menus: Naver Place, fetched on 2026-11-02 from 15:28 to 16:19 KST (51 minutes) with the
+  command above, from one machine, signed out, a second between requests.
+- Result: 1132 shops in the radii; 809 matched (서울대입구역 581 of 826, 낙성대역 229 of 307),
+  323 not found, 0 failed; 11,464 menu items. 149 matched places list their menu only as
+  photos and have no items.
+- Check: 12 random matches were all the same shop; the two sources' coordinates differ by
+  at most 125 m (90% within 12 m). Shops not found are mostly not real names
+  ("그외기타간이음식점"), karaoke and hold'em bars, closed shops, and some chains whose
+  Naver name differs (e.g. BHC 낙성대점).
+- Refresh it by running the command again with a newer CSV; do not edit it by hand.
