@@ -1,6 +1,7 @@
-"""python manage.py extract_allergens [--date YYYY-MM-DD] [--dry-run]
+"""python manage.py extract_allergens [--date YYYY-MM-DD | --stores] [--dry-run]
 
-Tags one day's dishes with allergens (menus/allergens.py), once per name: the
+Tags one day's dishes (or, with --stores, those of the restaurants near the
+stations) with allergens (menus/allergens.py), once per name: the
 standalone and set rows of a dish share the answer, and a name tagged with the
 current ALLERGEN_VERSION is not sent again unless --force.
 """
@@ -21,6 +22,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--date", type=datetime.date.fromisoformat, default=None)
+        parser.add_argument("--stores", action="store_true",
+                            help="the dishes of the restaurants near the stations instead of a day's menu")
         parser.add_argument("--batch-size", type=int, default=25)
         parser.add_argument("--limit", type=int, default=None, help="Maximum number of distinct names")
         parser.add_argument("--force", action="store_true")
@@ -30,9 +33,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options["batch_size"] < 1 or (options["limit"] is not None and options["limit"] < 1):
             raise CommandError("--batch-size와 --limit은 양수여야 합니다.")
-        date = options["date"] or timezone.localdate()
+        if options["stores"]:
+            foods, scope = Food.objects.filter(store_menus__isnull=False, is_food=True), "일반 식당"
+        else:
+            date = options["date"] or timezone.localdate()
+            foods, scope = Food.objects.filter(menu_items__date=date, is_food=True), date
         targets = {}
-        for food in Food.objects.filter(menu_items__date=date, is_food=True).order_by("name", "pk").distinct():
+        for food in foods.order_by("name", "pk").distinct():
             targets.setdefault(food.name, []).append(food)
         known = {} if options["force"] else dict(
             Food.objects.filter(name__in=targets, allergen_version=ALLERGEN_VERSION)
@@ -41,7 +48,7 @@ class Command(BaseCommand):
                    if options["force"] or any(food.allergen_version != ALLERGEN_VERSION for food in foods)]
         pending = pending[:options["limit"]]
         if not pending:
-            self.stdout.write(f"{date}: 새로 태깅할 음식 없음")
+            self.stdout.write(f"{scope}: 새로 태깅할 음식 없음")
             return
         missing = [name for name in pending if name not in known]
         results, failed = {}, []
