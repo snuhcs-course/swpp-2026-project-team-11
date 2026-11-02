@@ -39,6 +39,8 @@ class RuleTests(SimpleTestCase):
     def test_dishes_are_kept_with_or_without_a_price(self):
         self.assertTrue(kept("모둠회(대)", None))  # "변동": a price that is not one number
         self.assertTrue(kept("🍜 짬뽕", 8000))
+        self.assertTrue(kept("한우등심(예약시 주문가능)", None))
+        self.assertFalse(kept("주차 2시간 무료", None))
         self.assertEqual(clean_store_name("🍜 짬뽕")[0], "짬뽕")
 
     def test_promo_tags_are_removed(self):
