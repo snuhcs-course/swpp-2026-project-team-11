@@ -1,6 +1,7 @@
 """HTTP glue between the Android client and the question engine.
 
-    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?} -> 201 state
+    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?,
+                          "language"?}                                       -> 201 state
     GET  /api/sessions/<id>/                                               -> state
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
@@ -22,7 +23,8 @@ is a 503 `engine_unavailable`. `location` is the user's `{"lat", "lng"}`; it
 adds each cafeteria's `distance_m` to the offers (see recommend/distance.py).
 
 `allergies` lists keys of menus/allergens.py ALLERGEN_KEYS, as the phone stores
-them; no dish that may contain one is proposed.
+them; no dish that may contain one is proposed. `language` is "en" (default) or "ko":
+every text the session sends is in it, except dish and cafeteria names, which stay Korean.
 
 `source` is "cafeteria" (default), the day's SNU cafeteria menu, or "general", the
 restaurants near 서울대입구역 and 낙성대역. A general session runs the decision tree
@@ -39,6 +41,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from menus.allergens import ALLERGEN_KEYS
+from question_engines.decision_tree.contracts import LANGUAGES
 
 from . import sessions
 
@@ -102,10 +105,13 @@ def create_session(request):
             raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
         if source == "general" and engine == "llm":
             raise ValueError("source general runs the decision_tree engine only.")
+        language = payload.get("language", "en")
+        if language not in LANGUAGES:
+            raise ValueError(f"language must be one of {', '.join(LANGUAGES)}.")
     except ValueError as error:  # includes json.JSONDecodeError
         return _error(400, "invalid_request", str(error))
     try:
-        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source)
+        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     return JsonResponse(session.public_state(), status=201)

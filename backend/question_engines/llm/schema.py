@@ -25,10 +25,15 @@ class EngineTurn(BaseModel):
         description="The most likely menu given the answers so far; the proposal when action=recommend.")
 
 
-def build_turn_model(food_names):
-    """EngineTurn whose `food` must be one of `food_names` (sent to the LLM as an enum)."""
-    return create_model(
-        "EngineTurn",
-        __base__=EngineTurn,
-        food=(Literal[tuple(food_names)], EngineTurn.model_fields["food"]),
-    )
+def build_turn_model(food_names, language="en"):
+    """EngineTurn whose `food` must be one of `food_names` (sent to the LLM as an enum).
+
+    A Korean session also asks for `question_ko`, the question the user is shown.
+    """
+    fields = {"food": (Literal[tuple(food_names)], EngineTurn.model_fields["food"])}
+    if language == "ko":
+        fields["question_ko"] = (str, Field(
+            default="",
+            description="When action=ask, the same question in natural, friendly Korean (해요체), "
+                        "with menu names copied as they are. Otherwise empty."))
+    return create_model("EngineTurn", __base__=EngineTurn, **fields)

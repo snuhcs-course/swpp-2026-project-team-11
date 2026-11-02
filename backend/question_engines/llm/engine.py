@@ -29,7 +29,8 @@ import time
 from langchain_core.exceptions import OutputParserException
 from pydantic import ValidationError
 
-from question_engines.decision_tree.contracts import ANSWER_OPTIONS
+from question_engines.decision_tree.contracts import (ANSWER_OPTIONS, GUESS_TEXT, LANGUAGES, RECOMMENDATION_TEXT,
+                                                      UNAVAILABLE_TEXT, answer_options, translate)
 
 from .config import LLMSettings, build_llm
 from .prompt import FALLBACK_QUESTIONS, SYSTEM_PROMPT, build_user_message
@@ -37,19 +38,19 @@ from .schema import build_turn_model
 
 logger = logging.getLogger(__name__)
 
-ENGINE_VERSION = "llm-v2"  # v2: `known` field and the reworded-repeat check
+ENGINE_VERSION = "llm-v3"  # v3: `language`, and a question step keeps its English
 ANSWER_LABELS = {option["id"]: option["label"] for option in ANSWER_OPTIONS}
-GUESS_TEXT = "Is this what you feel like eating?"
-RECOMMENDATION_TEXT = "Enjoy your meal."
-UNAVAILABLE_TEXT = "No available meal matches this session. Try starting again."
 
 
 @dataclass(frozen=True)
 class EngineConfig:
     max_questions: int | None = 10
     max_attempts: int = 2  # LLM calls per step before falling back
+    language: str = "en"
 
     def __post_init__(self):
+        if self.language not in LANGUAGES:
+            raise ValueError(f"language must be one of {', '.join(LANGUAGES)}")
         if self.max_questions is not None and (type(self.max_questions) is not int or self.max_questions < 1):
             raise ValueError("max_questions must be positive or None")
         if type(self.max_attempts) is not int or self.max_attempts < 1:
@@ -79,7 +80,9 @@ class LLMEngine:
     """start/answer/feedback/recommend_now/undo -> JSON-compatible step, like P10.
 
     The session is its list of displayed steps and the user's responses to them
-    (`events`), so undo and snapshot replay never call the LLM again.
+    (`events`), so undo and snapshot replay never call the LLM again. In a Korean
+    session a question step also keeps its English in `english`, which the LLM and
+    the repeat check read; the shown step leaves it out.
     """
 
     def __init__(self, candidates, *, llm=None, config=None, rng=None):
@@ -106,7 +109,7 @@ class LLMEngine:
         return sum(event["type"] == "answer" for event in self._events)
 
     def _history(self):
-        return [(event["before"]["text"], ANSWER_LABELS[event["answer_id"]])
+        return [(event["before"].get("english", event["before"]["text"]), ANSWER_LABELS[event["answer_id"]])
                 for event in self._events if event["type"] == "answer"]
 
     def _rejected(self):
@@ -121,21 +124,26 @@ class LLMEngine:
 
     # Steps
 
-    def _question_step(self, text):
-        return {"type": "question", "question_count": self.question_count,
-                "question_id": f"q:llm-{len(self._events)}", "text": text,
-                "options": copy.deepcopy(list(ANSWER_OPTIONS))}
+    def _question_step(self, english, text=None):
+        language = self.config.language
+        step = {"type": "question", "question_count": self.question_count,
+                "question_id": f"q:llm-{len(self._events)}", "text": text or translate(english, language),
+                "options": answer_options(language)}
+        if language != "en":
+            step["english"] = english
+        return step
 
     def _food_step(self, kind, food):
         step = {"type": kind, "question_count": self.question_count, "food": copy.deepcopy(food),
-                "target_kind": "food", "text": GUESS_TEXT if kind == "guess" else RECOMMENDATION_TEXT}
+                "target_kind": "food",
+                "text": translate(GUESS_TEXT if kind == "guess" else RECOMMENDATION_TEXT, self.config.language)}
         if kind == "guess":
             step["guess_id"] = f"food:{food['food_id']}"
         return step
 
     def _unavailable_step(self, reason):
         return {"type": "unavailable", "question_count": self.question_count,
-                "reason": reason, "text": UNAVAILABLE_TEXT}
+                "reason": reason, "text": translate(UNAVAILABLE_TEXT, self.config.language)}
 
     def _decide(self, force_guess=False):
         accepted = self._accepted_food()
@@ -165,7 +173,7 @@ class LLMEngine:
             return self._fallback_step(available, questions_left)
         if turn.action == "recommend" or questions_left == 0:
             return self._food_step("guess", food_summary(available[turn.food]))
-        return self._question_step(turn.question.strip())
+        return self._question_step(turn.question.strip(), getattr(turn, "question_ko", "").strip())
 
     def _request_turn_with_retry(self, food_names, questions_left, usage):
         """(turn, attempts, None) on success, or (None, attempts, why the last attempt failed).
@@ -191,7 +199,8 @@ class LLMEngine:
         from langchain_core.messages import HumanMessage, SystemMessage
 
         history = self._history()
-        structured = self.llm.with_structured_output(build_turn_model(food_names), include_raw=True)
+        structured = self.llm.with_structured_output(build_turn_model(food_names, self.config.language),
+                                                     include_raw=True)
         reply = structured.invoke([
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(content=build_user_message(food_names, history, self._rejected(), questions_left,
@@ -201,7 +210,7 @@ class LLMEngine:
         if reply["parsing_error"] is not None:
             raise reply["parsing_error"]
         turn = reply["parsed"]
-        check_turn(turn, history, questions_left)
+        check_turn(turn, history, questions_left, self.config.language)
         return turn
 
     def _fallback_step(self, available, questions_left):
@@ -223,20 +232,20 @@ class LLMEngine:
     def next_step(self):
         if self._pending is None:
             self._pending = self._decide()
-        return copy.deepcopy(self._pending)
+        return {key: copy.deepcopy(value) for key, value in self._pending.items() if key != "english"}
 
     def answer(self, question_id, answer_id):
         pending = self.next_step()
         if pending["type"] != "question" or pending["question_id"] != question_id or answer_id not in ANSWER_LABELS:
             raise ValueError("Answer must match the current question and a supported answer ID")
-        self._record({"type": "answer", "question_id": question_id, "answer_id": answer_id, "before": pending})
+        self._record({"type": "answer", "question_id": question_id, "answer_id": answer_id, "before": self._pending})
         return self.next_step()
 
     def feedback(self, guess_id, accepted):
         pending = self.next_step()
         if pending["type"] != "guess" or pending["guess_id"] != guess_id or type(accepted) is not bool:
             raise ValueError("Feedback must match the current guess and be boolean")
-        self._record({"type": "feedback", "guess_id": guess_id, "accepted": accepted, "before": pending})
+        self._record({"type": "feedback", "guess_id": guess_id, "accepted": accepted, "before": self._pending})
         return self.next_step()
 
     def recommend_now(self):
@@ -245,9 +254,9 @@ class LLMEngine:
             raise ValueError("The session is not active")
         if pending["type"] == "guess":
             return pending  # already a concrete proposal; another LLM call would add nothing
-        self._record({"type": "recommend_now", "before": pending})
+        self._record({"type": "recommend_now", "before": self._pending})
         self._pending = self._decide(force_guess=True)
-        return copy.deepcopy(self._pending)
+        return self.next_step()
 
     def undo(self):
         if self._events:
@@ -315,7 +324,7 @@ def topic_words(question):
                      for word in words if word not in FRAME_WORDS)
 
 
-def check_turn(turn, history, questions_left):
+def check_turn(turn, history, questions_left, language="en"):
     if turn is None:
         raise InvalidTurn("The structured response was empty")
     if turn.action == "recommend" or questions_left == 0:
@@ -323,6 +332,8 @@ def check_turn(turn, history, questions_left):
     question = turn.question.strip()
     if not question:
         raise InvalidTurn("action=ask with an empty question")
+    if language == "ko" and not turn.question_ko.strip():
+        raise InvalidTurn("action=ask with an empty question_ko")
     words = topic_words(question)
     for number, (asked, answer) in enumerate(history, start=1):
         earlier = topic_words(asked)

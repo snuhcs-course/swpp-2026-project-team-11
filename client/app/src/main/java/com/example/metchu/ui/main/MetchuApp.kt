@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -75,6 +76,8 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
     var engine by remember { mutableStateOf(settings.engine) }
     var place by remember { mutableStateOf(settings.place) }
+    // The server writes its questions in the language the app is showing.
+    val language = if (LocalConfiguration.current.locales[0].language == "ko") "ko" else "en"
 
     val screen = screenOf(session, settingsOpen)
     val closeSettings = {
@@ -108,7 +111,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                     loading = loading,
                     onPlace = { place = it; settings.place = it },
                     onSettings = { settingsOpen = true },
-                    onStart = { meal -> viewModel.start(meal.code, engine, location, allergies) }
+                    onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language) }
                 )
                 Screen.SETTINGS -> {
                     BackHandler(onBack = closeSettings)

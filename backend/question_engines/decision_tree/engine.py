@@ -8,7 +8,8 @@ import math
 import numpy as np
 
 from .catalog import CandidateCatalog
-from .contracts import ANSWER_OPTIONS
+from .contracts import (GUESS_TEXT, LANGUAGES, RECOMMENDATION_TEXT, UNAVAILABLE_TEXT,
+                        answer_options, translate)
 from .planning import IntentModel, Planner, PlannerConfig, POLICY_VERSION
 from .preference import PreferencePlanner
 
@@ -21,8 +22,11 @@ class EngineConfig:
     greedy_information_floor: float = .001
     preference_question_cost: float = .06
     preference_lookahead_beam: int = 4
+    language: str = "en"
 
     def __post_init__(self):
+        if self.language not in LANGUAGES:
+            raise ValueError(f"language must be one of {', '.join(LANGUAGES)}")
         if self.policy not in {"preference", "lookahead", "greedy"}:
             raise ValueError("policy must be preference, lookahead or greedy")
         if (type(self.preference_lookahead_beam) is not int
@@ -112,7 +116,7 @@ class DecisionTreeEngine:
         common = {"type": kind, "question_count": self.question_count}
         if kind == "unavailable":
             return {**common, "reason": descriptor.get("reason", "candidates_exhausted"),
-                    "text": "No available meal matches this session. Try starting again."}
+                    "text": translate(UNAVAILABLE_TEXT, self.config.language)}
         if self.model is None:
             raise ValueError("No candidates available")
         if kind == "question":
@@ -123,8 +127,8 @@ class DecisionTreeEngine:
             if qi in self._asked or self._accepted is not None:
                 raise ValueError("Question was already answered or the session has ended")
             q = self.model.questions[qi]
-            return {**common, "question_id": question_id, "text": q["text"],
-                    "options": copy.deepcopy(list(ANSWER_OPTIONS))}
+            return {**common, "question_id": question_id, "text": translate(q["text"], self.config.language),
+                    "options": answer_options(self.config.language)}
         if kind not in {"guess", "recommendation"}:
             raise ValueError("Unknown step type")
         node_id = descriptor["id"]
@@ -144,7 +148,7 @@ class DecisionTreeEngine:
         node = self.catalog.food_tree.nodes[node_id]
         result = {**common, "food": self.catalog.by_id[food_id].summary(),
                   "target_kind": "group" if node.kind == "family" else "food",
-                  "text": "Is this what you feel like eating?" if kind == "guess" else "Enjoy your meal."}
+                  "text": translate(GUESS_TEXT if kind == "guess" else RECOMMENDATION_TEXT, self.config.language)}
         if kind == "guess":
             result["guess_id"] = node_id
         if node.kind == "family":

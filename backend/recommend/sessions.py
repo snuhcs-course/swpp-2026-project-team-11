@@ -1,13 +1,14 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal, engine, location, allergies, source) -> RecommendSession
+    create(date, meal, engine, location, allergies, source, language) -> RecommendSession
     get(session_id)            -> RecommendSession | None
     session.public_state()     -> what the phone is allowed to see
 
 A session runs one of ENGINES, chosen when it is created: the P10 decision tree
 or the P13/P14 LLM engine. Both have the same session API and step shapes, so
 everything below the constructor is the same for either. Dishes with one of the
-user's `allergies` never reach the engine (menus.services.get_catalog). The LLM engine calls
+user's `allergies` never reach the engine (menus.services.get_catalog), and the engine
+writes its questions and texts in the session's `language` ("en" or "ko"). The LLM engine calls
 the LLM while it starts and after every answer, rejection and "recommend now", so
 those requests can take as long as its timeout allows; undo never calls it.
 
@@ -60,11 +61,12 @@ class EngineUnavailable(Exception):
 class RecommendSession:
     def __init__(self, date: datetime.date, meal: str | None, engine: str,
                  location: tuple[float, float] | None, allergies: frozenset[str],
-                 source: str = "cafeteria"):
+                 source: str = "cafeteria", language: str = "en"):
         self.session_id = uuid.uuid4().hex
         self.engine_name = engine
         self.date = date
         self.meal = meal
+        self.language = language
         self.lock = threading.Lock()
         if source == "general":
             candidates, schema, version = get_store_catalog(meal, allergies)
@@ -74,7 +76,7 @@ class RecommendSession:
         self.feature_version = version
         self.candidate_count = len(candidates)
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
-        config = {"max_questions": self.max_questions}
+        config = {"max_questions": self.max_questions, "language": language}
         if engine == "llm":
             try:
                 self.engine = LLMEngine(candidates, config=config)
@@ -126,6 +128,7 @@ class RecommendSession:
             "engine": self.engine_name,
             "date": self.date.isoformat(),
             "meal": self.meal,
+            "language": self.language,
             "candidate_count": self.candidate_count,
             "max_questions": self.max_questions,
             "can_undo": bool(self.engine.snapshot()["events"]),
@@ -139,7 +142,8 @@ _sessions_lock = threading.Lock()
 
 def create(date: datetime.date | None = None, meal: str | None = None,
            engine: str | None = None, location: tuple[float, float] | None = None,
-           allergies: frozenset[str] = frozenset(), source: str | None = None) -> RecommendSession:
+           allergies: frozenset[str] = frozenset(), source: str | None = None,
+           language: str = "en") -> RecommendSession:
     """Raises EngineUnavailable when `engine` is "llm" and the server has no API key.
 
     A general session runs the decision tree unless asked otherwise, whatever the
@@ -148,7 +152,7 @@ def create(date: datetime.date | None = None, meal: str | None = None,
     source = source or "cafeteria"
     engine = engine or ("decision_tree" if source == "general" else settings.RECOMMEND_DEFAULT_ENGINE)
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine, location, allergies, source)
+                               meal, engine, location, allergies, source, language)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:

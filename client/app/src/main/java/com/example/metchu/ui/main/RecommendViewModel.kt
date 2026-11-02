@@ -63,18 +63,20 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
      * [meal] is "BR", "LU", "DN" or null for the whole day. [engine] is one of the
      * Engine IDs, or null for the server's default. [location] says where the user is; finding
      * that can take a few seconds, so it is part of the request and shows as [loading]. No dish
-     * with one of [allergies] is proposed.
+     * with one of [allergies] is proposed. [language] ("en" or "ko") is the language of the
+     * server's questions.
      */
     fun start(
         meal: String?,
         engine: String? = null,
         location: LocationSource? = null,
-        allergies: List<Allergen> = emptyList()
+        allergies: List<Allergen> = emptyList(),
+        language: String? = null
     ) {
         if (_loading.value == true) return
         _history.value = emptyList()
         _shown.value = emptyList()
-        request { repository.createSession(meal, engine, location?.current(), allergies) }
+        request { repository.createSession(meal, engine, location?.current(), allergies, language) }
     }
 
     /**
