@@ -1,6 +1,7 @@
 package com.example.metchu.data
 
 import com.example.metchu.Fixtures
+import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.RetrofitInstance
@@ -63,6 +64,14 @@ class RecommendRepositoryTest {
         val state = repository.createSession("LU", Engine.LLM)
         assertEquals(Engine.LLM, state.engine)
         assertEquals("""{"meal":"LU","engine":"llm"}""", server.takeRequest().json().toString())
+    }
+
+    /** The server's ALLERGEN_KEYS are the Allergen IDs; none chosen leaves the field out. */
+    @Test
+    fun createSessionSendsTheAllergies() = runTest {
+        reply("question", 201)
+        repository.createSession("LU", allergies = listOf(Allergen.EGG, Allergen.PINE_NUT))
+        assertEquals("""{"meal":"LU","allergies":["egg","pine_nut"]}""", server.takeRequest().json().toString())
     }
 
     /** The server refuses the LLM engine when it has no API key; the body says so. */

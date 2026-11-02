@@ -151,11 +151,12 @@ set a position under Extended controls > Location.
 
 | Engine step | What the app shows | Actions |
 | --- | --- | --- |
-| no session | Start screen with a meal selector and an engine selector (Decision tree / LLM) | Start |
+| first launch | Allergy screen: one chip per allergen, and a note that the tags are AI estimates | Save (none picked means no allergies) |
+| no session | Start screen with a meal selector, an engine selector (Decision tree / LLM) and the saved allergies | Start, Edit (allergies) |
 | `question` | Progress, question text, one button per answer option | answer, Back, Just recommend something |
 | `guess` | The proposed dish with its cafeterias, prices and (with a location) distances. A group guess shows the group name, one example dish and the other dishes in the group | yes, no, Back |
 | `recommendation` | The accepted dish, where to get it and, with a Maps key, a map of those cafeterias | Start over |
-| `unavailable` | Why nothing can be recommended | Start over |
+| `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them | Start over |
 
 A tapped button gives a light haptic tick, sinks slightly and stays highlighted
 while its request runs; the other buttons fade and ignore taps. A failed request shows a
@@ -170,6 +171,9 @@ the server ran. Both engines use the same screens. Two things differ in use:
   `RetrofitInstance.kt` if you raise `METCHU_LLM_TIMEOUT`. Back never waits.
 - The LLM engine proposes single dishes only, never a group.
 
+The allergies are kept on the phone (`AllergyStore`, SharedPreferences) and sent with every
+new session; the server never proposes a dish that may contain one. There is no account.
+
 Question text, answer labels and guess text are shown as the server sends them.
 Food and cafeteria names stay in their source language.
 
@@ -177,20 +181,23 @@ Food and cafeteria names stay in their source language.
 
 ```
 data/model/SessionState.kt          JSON shapes returned by the server
+data/model/Allergen.kt              the allergens the server accepts (backend/menus/allergens.py)
 data/network/ApiService.kt          Retrofit endpoints and request bodies
 data/network/RetrofitInstance.kt    server address and HTTP client
 data/location/LocationSource.kt     where the device is when a session starts
 data/repository/RecommendRepository.kt   the only class that calls Retrofit
+data/repository/AllergyStore.kt     the user's allergies, on this device
 ui/main/RecommendViewModel.kt       session state, loading and error LiveData
 ui/main/MainActivity.kt             draws the current step, forwards taps
 ui/main/CafeteriaPin.kt             which cafeterias the result map marks
+ui/allergy/AllergyActivity.kt       picks the allergies; opened on first launch and by Edit
 ```
 
 ## REST contract (`backend/recommend`)
 
 | Request | Body | Effect |
 | --- | --- | --- |
-| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?}` | Start a session. `meal` is `BR`, `LU`, `DN` or omitted for the whole day. `engine` is `decision_tree` or `llm`; omitted, the server uses `METCHU_ENGINE` (default `decision_tree`). `location` is the user's `{"lat", "lng"}` |
+| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?}` | Start a session. `meal` is `BR`, `LU`, `DN` or omitted for the whole day. `engine` is `decision_tree` or `llm`; omitted, the server uses `METCHU_ENGINE` (default `decision_tree`). `location` is the user's `{"lat", "lng"}`. `allergies` lists `Allergen` IDs; no dish that may contain one, or that has no allergen tags, is proposed |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |

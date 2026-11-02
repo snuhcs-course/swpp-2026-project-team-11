@@ -5,6 +5,7 @@ import com.example.metchu.FakeApi
 import com.example.metchu.Fixtures
 import com.example.metchu.R
 import com.example.metchu.data.location.LocationSource
+import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
@@ -111,10 +112,24 @@ class RecommendViewModelTest {
     }
 
     @Test
+    fun startSendsTheAllergies() {
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE, allergies = listOf(Allergen.MILK, Allergen.SHRIMP))
+        assertEquals(listOf("create LU decision_tree milk,shrimp"), api.calls)
+    }
+
+    @Test
     fun startSendsTheUsersLocationWhenThereIsOne() {
         api.reply(question)
         viewModel.start("LU", Engine.DECISION_TREE, LocationSource { UserLocation(37.45932, 126.95058) })
         assertEquals(listOf("create LU decision_tree @37.45932,126.95058"), api.calls)
+    }
+
+    @Test
+    fun startSendsTheLocationAndTheAllergiesTogether() {
+        api.reply(question)
+        viewModel.start("LU", Engine.LLM, LocationSource { UserLocation(37.45932, 126.95058) }, listOf(Allergen.EGG))
+        assertEquals(listOf("create LU llm @37.45932,126.95058 egg"), api.calls)
     }
 
     @Test

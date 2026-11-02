@@ -1,6 +1,7 @@
 package com.example.metchu.ui.main
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
@@ -19,9 +20,11 @@ import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Food
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
+import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.databinding.ActivityMainBinding
 import com.example.metchu.databinding.ItemAnswerBinding
+import com.example.metchu.ui.allergy.AllergyActivity
 import com.example.metchu.util.padForSystemBars
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.SupportMapFragment
@@ -39,13 +42,15 @@ import java.util.Locale
  *
  * Question text, answer labels and guess text come from the server as they are.
  * The start screen picks which question engine runs the session, so the two can be
- * compared; the screens are the same for both. A session starts with the user's
- * location when it is allowed, so the server can give each cafeteria's distance. The
- * result maps the cafeterias that serve the dish and the user's own position.
+ * compared; the screens are the same for both. Every session avoids the allergies
+ * saved on this device, which the first launch asks for (AllergyActivity), and starts
+ * with the user's location when it is allowed, so the server can give each cafeteria's
+ * distance. The result maps the cafeterias that serve the dish and the user's own position.
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var allergyStore: AllergyStore
 
     /** The button whose request is running, if any. */
     private var tapped: View? = null
@@ -92,8 +97,11 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.root.padForSystemBars()
+        allergyStore = AllergyStore(this)
+        if (savedInstanceState == null && !allergyStore.chosen) editAllergies()
 
         binding.btnStart.onTap { start(selectedMeal(), selectedEngine()) }
+        binding.btnEditAllergies.setOnClickListener { editAllergies() }
         binding.btnAccept.onTap { viewModel.feedback(accepted = true) }
         binding.btnReject.onTap { viewModel.feedback(accepted = false) }
         binding.btnUndo.onTap { viewModel.undo() }
@@ -132,6 +140,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** The allergies may have just been edited. */
+    override fun onResume() {
+        super.onResume()
+        val allergies = allergyStore.allergies
+        binding.tvAllergies.text =
+            if (allergies.isEmpty()) getString(R.string.allergies_none)
+            else allergies.joinToString(", ") { getString(it.label) }
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(KEY_ASKED_FOR_LOCATION, askedForLocation)
@@ -140,6 +157,8 @@ class MainActivity : AppCompatActivity() {
             outState.putString(KEY_START_ENGINE, it.engine)
         }
     }
+
+    private fun editAllergies() = startActivity(Intent(this, AllergyActivity::class.java))
 
     /** A click that also gives a light haptic tick and remembers which button it was. */
     private fun View.onTap(action: () -> Unit) = setOnClickListener { view ->
@@ -154,7 +173,8 @@ class MainActivity : AppCompatActivity() {
         askForLocation()
     }
 
-    private fun startSession(meal: String?, engine: String) = viewModel.start(meal, engine, locationSource)
+    private fun startSession(meal: String?, engine: String) =
+        viewModel.start(meal, engine, locationSource, allergyStore.allergies)
 
     /** With the permission already granted, the answer comes at once and no dialog is shown. */
     private fun askForLocation() {
@@ -204,7 +224,12 @@ class MainActivity : AppCompatActivity() {
             Step.RECOMMENDATION -> renderResult(step)
             Step.UNAVAILABLE -> binding.tvUnavailable.text =
                 if (step.reason == "empty_candidates") {
-                    getString(R.string.unavailable_no_menu, session.date, mealLabel(session.meal))
+                    // The server served no dish; with allergies set, it may have excluded them all.
+                    getString(
+                        if (allergyStore.allergies.isEmpty()) R.string.unavailable_no_menu
+                        else R.string.unavailable_no_safe_menu,
+                        session.date, mealLabel(session.meal)
+                    )
                 } else {
                     getString(R.string.unavailable_exhausted)
                 }

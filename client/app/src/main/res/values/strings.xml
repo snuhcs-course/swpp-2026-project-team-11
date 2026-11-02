@@ -6,6 +6,34 @@
     <string name="start_body">Answer a few quick questions and Metchu will pick a dish from the SNU cafeterias.</string>
     <string name="start_meal_label">Which meal?</string>
     <string name="start_button">Start</string>
+    <string name="start_allergies_label">Allergies to avoid</string>
+    <string name="allergies_none">None</string>
+    <string name="allergies_edit">Edit</string>
+
+    <!-- allergies: first launch, and Edit on the start screen -->
+    <string name="allergies_title">Any food allergies?</string>
+    <string name="allergies_body">Metchu will never suggest a dish that may contain what you pick. Leave everything unselected if you have none.</string>
+    <string name="allergies_disclaimer">Allergens are estimated by AI from dish names, not taken from the cafeterias. If an allergy is severe, check with the cafeteria too.</string>
+    <string name="allergies_save">Save</string>
+    <string name="allergen_egg">Eggs</string>
+    <string name="allergen_milk">Milk</string>
+    <string name="allergen_buckwheat">Buckwheat</string>
+    <string name="allergen_peanut">Peanuts</string>
+    <string name="allergen_soybean">Soybeans</string>
+    <string name="allergen_wheat">Wheat</string>
+    <string name="allergen_mackerel">Mackerel</string>
+    <string name="allergen_crab">Crab</string>
+    <string name="allergen_shrimp">Shrimp</string>
+    <string name="allergen_pork">Pork</string>
+    <string name="allergen_peach">Peach</string>
+    <string name="allergen_tomato">Tomato</string>
+    <string name="allergen_sulfite">Sulfites</string>
+    <string name="allergen_walnut">Walnuts</string>
+    <string name="allergen_chicken">Chicken</string>
+    <string name="allergen_beef">Beef</string>
+    <string name="allergen_squid">Squid</string>
+    <string name="allergen_shellfish">Shellfish (incl. oysters, abalone, mussels)</string>
+    <string name="allergen_pine_nut">Pine nuts</string>
 
     <!-- which question engine runs the session -->
     <string name="start_engine_label">Who asks the questions?</string>
@@ -55,6 +83,7 @@
     <!-- unavailable -->
     <string name="unavailable_title">Nothing to recommend</string>
     <string name="unavailable_no_menu">There is no menu for %1$s (%2$s). Try another meal.</string>
+    <string name="unavailable_no_safe_menu">No dish on the menu for %1$s (%2$s) is known to be free of your allergies. Try another meal.</string>
     <string name="unavailable_exhausted">You have turned down every dish on today\'s menu. Start over to see them again.</string>
 
     <!-- errors -->

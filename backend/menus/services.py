@@ -1,11 +1,15 @@
 """What the question engines read from the menu DB.
 
-    get_catalog(date, meal)       -> matching candidates, schema, version
+    get_catalog(date, meal, allergies) -> matching candidates, schema, version
     get_feature_schema("v1")      -> legacy schema
     get_candidates(date, meal)    -> legacy candidate shape
 
 MVP2 only needs names. MVP1 receives v2 feature intensity means and recipe std,
 or v1 scores when a dated meal has no v2 candidates.
+
+`allergies` (menus/allergens.py keys) is a hard rule: a menu line is never offered when
+one of its dishes is tagged with one of them or has no current allergen tags. A combo
+line ("돈가스 카레우동") is bought whole, so this covers every dish it lists.
 """
 
 from __future__ import annotations
@@ -15,6 +19,7 @@ import logging
 
 from django.utils import timezone
 
+from .allergens import ALLERGEN_VERSION
 from .features.schema import FEATURE_VERSION, FEATURES
 from .features.legacy_schema import FEATURES as LEGACY_FEATURES
 from .models import MenuItem
@@ -34,7 +39,8 @@ def get_feature_schema(feature_version: str = "v1") -> list[dict]:
              "family": FEATURE_PRESENTATION_V2[f.key][1]} for f in FEATURES]
 
 
-def get_catalog(date: datetime.date | None = None, meal: str | None = None) -> tuple[list, list, str]:
+def get_catalog(date: datetime.date | None = None, meal: str | None = None,
+                allergies: frozenset[str] = frozenset()) -> tuple[list, list, str]:
     """Load matching candidates/schema: choose whichever version covers more candidates on the date/meal.
 
     Never mix measurements with different meanings in one session; when coverage is partial,
@@ -44,10 +50,16 @@ def get_catalog(date: datetime.date | None = None, meal: str | None = None) -> t
     items = MenuItem.objects.filter(date=date, food__is_food=True)
     if meal:
         items = items.filter(meal=meal)
-    total = items.values("food_id").distinct().count()
-    v2_count = items.filter(food__feature_version=FEATURE_VERSION).values("food_id").distinct().count()
+    # The version is chosen among the dishes the user can be offered.
+    unsafe = _unsafe_lines(date, allergies)
+    versions = {food: feature_version for food, feature_version, *line in items.values_list(
+                    "food_id", "food__feature_version", "meal", "restaurant_id", "raw_name")
+                if tuple(line) not in unsafe}
+    total = len(versions)
+    v2_count = sum(feature_version == FEATURE_VERSION for feature_version in versions.values())
     version = FEATURE_VERSION if total > 0 and v2_count >= total - v2_count else "v1"
-    candidates = get_candidates(date, meal, feature_version=version, include_std=(version == FEATURE_VERSION))
+    candidates = get_candidates(date, meal, feature_version=version,
+                                include_std=(version == FEATURE_VERSION), allergies=allergies)
     if len(candidates) != total:
         logger.warning(
             "%s %s: serving %d/%d candidates with feature_version=%s (%d v2 candidates present)",
@@ -61,17 +73,29 @@ def get_catalog(date: datetime.date | None = None, meal: str | None = None) -> t
     return candidates, get_feature_schema(version), version
 
 
+def _unsafe_lines(date: datetime.date, allergies: frozenset[str]) -> set[tuple]:
+    """The (meal, restaurant, menu line) of `date` that cannot be offered with `allergies`."""
+    if not allergies:
+        return set()
+    rows = MenuItem.objects.filter(date=date).values_list(
+        "meal", "restaurant_id", "raw_name", "food__allergens", "food__allergen_version")
+    return {(meal, restaurant, line) for meal, restaurant, line, tags, version in rows
+            if version != ALLERGEN_VERSION or not allergies.isdisjoint(tags)}
+
+
 def get_candidates(date: datetime.date | None = None, meal: str | None = None, *,
-                   feature_version: str = "v1", include_std: bool = False) -> list[dict]:
+                   feature_version: str = "v1", include_std: bool = False,
+                   allergies: frozenset[str] = frozenset()) -> list[dict]:
     """Dishes served on `date` (default: today in Seoul), optionally for one meal ("BR"/"LU"/"DN").
 
     Version selection is explicit during the staged extractor/DT rollout.
     """
     get_feature_schema(feature_version)  # reject unsupported versions
+    date = date or timezone.localdate()
+    unsafe = _unsafe_lines(date, allergies)
     items = (
         MenuItem.objects
-        .filter(date=date or timezone.localdate(),
-                food__is_food=True, food__feature_version=feature_version)
+        .filter(date=date, food__is_food=True, food__feature_version=feature_version)
         .select_related("food", "restaurant")
         .order_by("food__name", "restaurant__name")
     )
@@ -80,6 +104,8 @@ def get_candidates(date: datetime.date | None = None, meal: str | None = None, *
 
     candidates: dict[int, dict] = {}
     for item in items:
+        if (item.meal, item.restaurant_id, item.raw_name) in unsafe:
+            continue
         food = item.food
         candidate = candidates.setdefault(food.id, {
             "food_id": food.id,

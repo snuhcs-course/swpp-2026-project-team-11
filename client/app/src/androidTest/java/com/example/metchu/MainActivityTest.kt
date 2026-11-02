@@ -1,6 +1,7 @@
 package com.example.metchu
 
 import android.Manifest
+import android.content.Context
 import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.core.app.ActivityOptionsCompat
@@ -23,8 +24,10 @@ import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.metchu.data.location.LocationSource
+import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.UserLocation
+import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.MainActivity
@@ -55,6 +58,9 @@ class MainActivityTest {
     private val recommendation = Fixtures.state("recommendation")
     private val unavailable = Fixtures.state("unavailable_empty")
 
+    private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    /** Past the first launch, with no allergies, unless a test says otherwise. */
     @Before
     fun setUp() {
         AppContainer.repository = RecommendRepository(api)
@@ -65,6 +71,16 @@ class MainActivityTest {
         for (permission in listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) {
             instrumentation.uiAutomation.grantRuntimePermission(instrumentation.targetContext.packageName, permission)
         }
+        clearAllergies()
+        AllergyStore(context).allergies = emptyList()
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+    }
+
+    private fun clearAllergies() =
+        context.getSharedPreferences("profile", Context.MODE_PRIVATE).edit().clear().commit()
+
+    private fun relaunch() {
+        scenario.close()
         scenario = ActivityScenario.launch(MainActivity::class.java)
     }
 
@@ -76,7 +92,7 @@ class MainActivityTest {
     /** Starts a session whose first reply is [state], then forgets the create call. */
     private fun startWith(state: SessionState) {
         api.reply(state)
-        onView(withId(R.id.btnStart)).perform(click())
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
         api.calls.clear()
     }
 
@@ -125,7 +141,7 @@ class MainActivityTest {
         for ((button, meal) in meals) {
             onView(withId(button)).perform(click())
             api.reply(question)
-            onView(withId(R.id.btnStart)).perform(click())
+            onView(withId(R.id.btnStart)).perform(scrollTo(), click())
             assertEquals("create $meal decision_tree", api.calls.last())
             onView(withId(R.id.btnQuit)).perform(click())
         }
@@ -137,6 +153,16 @@ class MainActivityTest {
         api.reply(question)
         onView(withId(R.id.btnStart)).perform(click())
         assertEquals("create LU decision_tree @37.45932,126.95058", api.calls.last())
+    }
+
+    @Test
+    fun startSendsTheLocationAndTheAllergiesTogether() {
+        AllergyStore(context).allergies = listOf(Allergen.MILK)
+        relaunch()
+        location = UserLocation(37.45932, 126.95058)
+        api.reply(question)
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
+        assertEquals("create LU decision_tree @37.45932,126.95058 milk", api.calls.last())
     }
 
     /** Holds the location request until the test answers it, as the permission dialog would. */
@@ -227,6 +253,46 @@ class MainActivityTest {
         onView(withId(R.id.btnStart)).perform(scrollTo(), click())
         assertOnlyPanel(R.id.panelQuestion)
         assertGone(R.id.errorBanner)
+    }
+
+    // --- allergies ---
+
+    @Test
+    fun theFirstLaunchAsksForAllergiesAndEverySessionAvoidsThem() {
+        clearAllergies()
+        relaunch()
+        onView(withId(R.id.allergyChips)).check(matches(hasChildCount(Allergen.entries.size)))
+        onView(withText("Eggs")).perform(scrollTo(), click())
+        onView(withText("Pine nuts")).perform(scrollTo(), click())
+        onView(withId(R.id.btnSaveAllergies)).perform(click())
+
+        assertOnlyPanel(R.id.panelStart)
+        onView(withId(R.id.tvAllergies)).check(matches(withText("Eggs, Pine nuts")))
+        api.reply(question)
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
+        assertEquals("create LU decision_tree egg,pine_nut", api.calls.last())
+
+        // Saved, so the next launch goes straight to the start screen.
+        relaunch()
+        assertOnlyPanel(R.id.panelStart)
+        onView(withId(R.id.tvAllergies)).check(matches(withText("Eggs, Pine nuts")))
+    }
+
+    @Test
+    fun allergiesCanBeEditedAndCleared() {
+        onView(withId(R.id.tvAllergies)).check(matches(withText(R.string.allergies_none)))
+        onView(withId(R.id.btnEditAllergies)).perform(scrollTo(), click())
+        onView(withText("Milk")).perform(scrollTo(), click())
+        onView(withId(R.id.btnSaveAllergies)).perform(click())
+        onView(withId(R.id.tvAllergies)).check(matches(withText("Milk")))
+
+        onView(withId(R.id.btnEditAllergies)).perform(scrollTo(), click())
+        onView(withText("Milk")).perform(scrollTo(), click())
+        onView(withId(R.id.btnSaveAllergies)).perform(click())
+        onView(withId(R.id.tvAllergies)).check(matches(withText(R.string.allergies_none)))
+        api.reply(question)
+        onView(withId(R.id.btnStart)).perform(scrollTo(), click())
+        assertEquals("create LU decision_tree", api.calls.last())
     }
 
     // --- question ---
@@ -467,6 +533,15 @@ class MainActivityTest {
         onView(withId(R.id.tvContext)).check(matches(withText("2026-01-01 · All day · 0 dishes · Decision tree")))
         assertGone(R.id.bottomBar)
         assertShown(R.id.btnStartOver)
+    }
+
+    @Test
+    fun anEmptyMenuWithAllergiesSaysNoDishIsSafe() {
+        AllergyStore(context).allergies = listOf(Allergen.WHEAT)
+        startWith(unavailable)
+        onView(withId(R.id.tvUnavailable)).check(matches(withText(
+            "No dish on the menu for 2026-01-01 (All day) is known to be free of your allergies. Try another meal."
+        )))
     }
 
     @Test
