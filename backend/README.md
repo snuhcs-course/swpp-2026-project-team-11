@@ -184,7 +184,9 @@ cafeterias. Their menu boards come from a crawl: the 소상공인시장진흥공
 600 m / 500 m of the stations, each matched to its Naver Place menu by `fetch_naver_menus`
 (i3-A2). The snapshot is committed as `menus/data/naver_menus_YYYY-MM-DD.json`; the format
 `import_stores` reads is in `menus/sources/naver_stores.py`. The crawl is not daily: import
-a new snapshot whenever the stores are crawled again. It replaces the menus of the earlier import.
+a new snapshot whenever the stores are crawled again. It replaces the menus of the earlier import,
+so a file with failed stores, or fewer stores than its `counts` say, is refused: `--allow-partial`
+imports it and keeps the earlier menus of those stores. The snapshot is added by #22.
 
 ```bash
 S=menus/data/naver_menus_2026-11-02.json
@@ -201,10 +203,14 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
   restaurant's category and the menu description: it splits sets ("A세트: 짜장면+탕수육(소)"), drops
   side dishes such as 마른안주, and leaves a vague line with no description ("점심특선") without a dish.
 - **Shared dishes.** A dish has the same name and the same `Food` row as in the cafeterias, so its
-  features and allergens are tagged once. `extract_features --stores` and `extract_allergens --stores`
-  tag only the new ones.
+  features are extracted once. `extract_features --stores` tags only the new ones.
+- **Allergens per menu line.** The dishes kept for recommendation leave sides out, so
+  `extract_allergens --stores` tags each whole line with its description ("낙지볶음+계란찜" may
+  contain egg) in `StoreMenu.allergens`; a session with allergies leaves out lines whose tags match
+  or are not current. Tags carry over to the same line (name and description) in a new snapshot.
 - **Cache.** Answers are cached in `MenuLine` under `store:` keys and `STORE_VERSION`, apart from the
-  cafeteria lines. "김치찌개" is resolved once for every restaurant; "A세트" once per restaurant.
+  cafeteria lines. A key holds everything the LLM sees: the name, the restaurant's category and the
+  description (its first 60 characters). "A세트" is also keyed by its restaurant.
 - **Review.** `--review` adds `rule_notice` / `rule_drink` (dropped by a rule) and `unnamed` rows to
   the usual ones. Corrections go into `overrides.json`; a vague line is written with its restaurant,
   as the CSV shows it: `{"lines": {"A세트 @홍콩반점 낙성대점": ["짜장면", "탕수육"]}}`.
@@ -535,8 +541,8 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `run_daily_pipeline [--date] [--review PATH]` | fetch + preprocess + tag a day (+ review CSV); runs daily on GitHub Actions | **yes** |
 | `fetch_menus [--date] [--no-llm]` | fetch, preprocess and store a day's menu | for new lines |
 | `extract_features [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
-| `extract_allergens [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes with the allergens they may contain | **yes** |
-| `import_stores --file [--dry-run] [--limit N] [--no-llm] [--review PATH]` | import the restaurants near the stations from a crawl file | for new lines |
+| `extract_allergens [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes (with `--stores`, restaurant menu lines) with the allergens they may contain | **yes** |
+| `import_stores --file [--dry-run] [--limit N] [--allow-partial] [--no-llm] [--review PATH]` | import the restaurants near the stations from a crawl file | for new lines |
 | `run_store_pipeline --file [--review PATH]` | import + tag the restaurants near the stations | **yes** |
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
 | `export_preprocess_review [--date] --output PATH` | the day's results as a review CSV | no |
@@ -559,7 +565,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `Restaurant` | cafeteria or restaurant | `source` `siksha`: `code` is the Siksha id, e.g. `220동식당`; `lat`/`lng` come from Siksha and are null when it has none. `source` `naver`: `code` is the 상가업소번호, with `category`, `address` and the Naver `place_id` |
 | `Food` | distinct (dish name, set status) | recommendation unit; holds mean `features`, `feature_std`, preprocessing `is_food`, `display_name`, `food_group`, `allergens` |
 | `MenuItem` | dish x restaurant x meal x day | `meal` is `BR` / `LU` / `DN`; `price` in won. A combo line has one row per dish |
-| `StoreMenu` | dish x restaurant menu line | the menu boards of the restaurants near the stations; no date or meal. A set has one row per dish |
+| `StoreMenu` | dish x restaurant menu line | the menu boards of the restaurants near the stations; no date or meal. A set has one row per dish; `allergens` are the whole line's |
 | `MenuLine` | distinct menu line (`dish_key`) | cache of the dishes a line stands for (`is_meal`, `dishes`, `source`); restaurant lines use `store:` keys |
 
 ## Data source
