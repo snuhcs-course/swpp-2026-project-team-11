@@ -254,12 +254,11 @@ Setup, once (needs admin rights on the repository):
    on OpenAI instead, also add the secret `OPENAI_API_KEY` and, under **Variables**, the
    repository variable `METCHU_MENU_MODEL` (e.g. `openai:gpt-5.4-mini`). Deleting the variable
    goes back to Gemini.
-2. **Put the workflow on the default branch.** GitHub only runs scheduled and manual triggers
-   for workflow files on the default branch, which is `main` today. Either set the default
-   branch to `MVP` (**Settings → General → Default branch**) or merge `MVP` into `main`.
+2. **Keep `main` the default branch** (**Settings → General → Default branch**). GitHub only
+   runs scheduled and manual triggers for workflow files on the default branch.
 3. Test it: **Actions → Daily menu pipeline → Run workflow** (a date is optional).
 
-- The job runs the code on `MVP`. To use another branch, set the repository variable
+- The job runs the code on `main`. To use another branch, set the repository variable
   `MENU_PIPELINE_REF`.
 - A run fails when a secret is missing (the key of the configured model) or when the model
   could not resolve every new line or tag every new dish (an expired key, an exhausted quota).
