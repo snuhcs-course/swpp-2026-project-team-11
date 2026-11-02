@@ -47,6 +47,7 @@ engine.snapshot()      # JSON record; LLMEngine.from_snapshot(candidates, snapsh
 | `recommend_now()` | Ask the LLM to propose a food now. A guess already on screen is returned unchanged |
 | `undo()` | Restore the step before the last event, without calling the LLM |
 | `snapshot()` / `from_snapshot(...)` | Persist and restore a session without calling the LLM |
+| `answered()` | The answered questions of the current history, as in P10: the English text even in a Korean session |
 | `diagnostics()` | Engineering logs for P20, not UI text |
 
 Steps are `question`, `guess`, `recommendation` and `unavailable`, exactly as in
