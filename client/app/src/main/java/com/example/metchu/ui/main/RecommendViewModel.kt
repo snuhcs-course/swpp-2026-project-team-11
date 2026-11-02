@@ -63,8 +63,8 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
      * [meal] is "BR", "LU", "DN" or null for the whole day. [engine] is one of the
      * Engine IDs, or null for the server's default. [location] says where the user is; finding
      * that can take a few seconds, so it is part of the request and shows as [loading]. No dish
-     * with one of [allergies] is proposed. [language] ("en" or "ko") is the language of the
-     * server's questions.
+     * with one of [allergies] is proposed. [language] ("en" or "ko") is the language of every
+     * text the server sends.
      */
     fun start(
         meal: String?,
