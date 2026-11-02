@@ -160,7 +160,7 @@ emulator, set a position under Extended controls > Location (for example
 | first launch | Settings: one chip per allergen, a note that the tags are AI estimates, the engine (decision tree or LLM) | Back keeps the choices; there is no save button |
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
 | `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" |
-| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet listing them | "Find another" turns it down and asks on; ‹ undoes; "Start over"; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it; the sheet's handle drags or taps it between low, middle and high |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet listing them, one line per cafeteria and meal | "Find another" turns it down and asks on (only on the dish the server proposes now); ‹ undoes; "Start over"; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it; the sheet's handle drags or taps it between low, middle and high |
 | `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them | Start over |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
@@ -170,15 +170,21 @@ not offer is dimmed. Holding a circle previews its answer under the question.
 
 The server keeps no question texts, so `RecommendViewModel` remembers the
 answered questions and trims the list to the step's `question_count` after
-every reply. Tapping a past question sends `undo` until the server is back on
-it. The progress bar fills by `1 − 0.72^answers` (at least answers ÷
+every reply, also when a lost reply is retried and the server answers with
+`stale_step`. Tapping a past question sends `undo` until the server is back on
+it. A picked answer is held for 0.45 s before it is sent, and is dropped if Back
+moved the session meanwhile. The progress bar fills by `1 − 0.72^answers` (at least answers ÷
 `max_questions` when the server caps them), up to 95 %.
 
 "Find another" is `feedback` with `accepted: false`: the result screen shows a
 `guess`, and the app never accepts one. Leaving with "Start over" simply drops
-the session. The server has no distance filter, so "nearby" is applied to the
-result's cafeteria list on the phone: cafeterias within 800 m (a 10-minute walk
-at 80 m/min, straight line); if none is that close, all are listed with a note.
+the session. The server cuts no distance by default (`METCHU_MAX_DISTANCE_M`), so
+"nearby" is applied to the result's cafeteria list on the phone: cafeterias
+within 800 m (a 10-minute walk at 80 m/min, straight line). Distances come from
+the phone's current position, or the server's `distance_m` until the phone has
+one. If none is that close, all are listed with a note; if no distance is known,
+all are listed under a note that the location is unknown. The selected cafeteria
+is kept by name, so it stays put when the list re-sorts as the user moves.
 
 The meal starts at the next one the cafeterias serve (breakfast before 10,
 lunch before 15, dinner after). The distance, engine and allergies are kept on
