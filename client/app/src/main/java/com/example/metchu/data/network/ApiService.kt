@@ -12,10 +12,17 @@ import retrofit2.http.Path
  *
  * [CreateSessionRequest.meal] is "BR", "LU", "DN" or null for the whole day.
  * [CreateSessionRequest.engine] is one of the [Engine] IDs, or null for the server's
- * default. Gson leaves a null field out of the body. The menu date is the server's
- * decision, so the phone does not send one.
+ * default. [CreateSessionRequest.location] is where the user is, if known; the server
+ * then adds each cafeteria's distance. Gson leaves a null field out of the body. The
+ * menu date is the server's decision, so the phone does not send one.
  */
-data class CreateSessionRequest(val meal: String?, val engine: String? = null)
+data class CreateSessionRequest(
+    val meal: String?,
+    val engine: String? = null,
+    val location: UserLocation?
+)
+
+data class UserLocation(val lat: Double, val lng: Double)
 
 data class AnswerRequest(
     @SerializedName("question_id") val questionId: String,

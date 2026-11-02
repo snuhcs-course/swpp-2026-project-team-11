@@ -4,9 +4,11 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.example.metchu.FakeApi
 import com.example.metchu.Fixtures
 import com.example.metchu.R
+import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
+import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.RecommendViewModel
 import com.example.metchu.ui.main.UiError
@@ -106,6 +108,27 @@ class RecommendViewModelTest {
         viewModel.answer("probably_yes")
         assertEquals("answer ${llmQuestion.sessionId} q:llm-0 probably_yes", api.calls.last())
         assertIdle(guess)
+    }
+
+    @Test
+    fun startSendsTheUsersLocationWhenThereIsOne() {
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE, LocationSource { UserLocation(37.45932, 126.95058) })
+        assertEquals(listOf("create LU decision_tree @37.45932,126.95058"), api.calls)
+    }
+
+    @Test
+    fun findingTheLocationIsPartOfTheStartRequest() {
+        val fix = CompletableDeferred<UserLocation?>()
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE, LocationSource { fix.await() })
+        assertEquals(true, viewModel.loading.value)
+        viewModel.start("LU", Engine.DECISION_TREE)
+        assertEquals("A second tap while locating is ignored", emptyList<String>(), api.calls.toList())
+
+        fix.complete(null)
+        assertEquals(listOf("create LU decision_tree"), api.calls)
+        assertIdle(question)
     }
 
     @Test

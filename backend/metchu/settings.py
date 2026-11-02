@@ -147,6 +147,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # it guess after N answers; unset, 0 or less means no limit.
 RECOMMEND_MAX_QUESTIONS = max(int(os.environ.get('METCHU_MAX_QUESTIONS') or 0), 0) or None
 
+# Off by default. METCHU_MAX_DISTANCE_M=N leaves out cafeterias more than N meters
+# from the location the app sends; unset, 0 or less means no cutoff.
+RECOMMEND_MAX_DISTANCE_M = max(int(os.environ.get('METCHU_MAX_DISTANCE_M') or 0), 0) or None
+
 # Menu date used when the client sends none. Unset means today in Seoul; the
 # shared fixture only has 2026-09-29, so set METCHU_MENU_DATE to demo with it.
 RECOMMEND_DEFAULT_DATE = (
