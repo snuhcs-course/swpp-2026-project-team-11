@@ -33,15 +33,20 @@ NO = frozenset({"no", "probably_no"})
 HANGUL = re.compile("[가-힣]")
 LATIN_WORD = re.compile("[A-Za-z]{2,}")
 
-SYSTEM_PROMPT = """You write the one or two sentences shown under the dish that "Metchu!",
-a meal recommendation app, proposes to a user. Say why it suits them, warmly and
-concretely, as a friend would.
+SYSTEM_PROMPT = """You write the short line shown under the dish that "Metchu!", a meal
+recommendation app, proposes to a user. Say why it suits them, plainly and concretely,
+as a friend would.
 
+- Write one sentence. Use a second only when one cannot hold the reason.
 - Rest the reason on the user's answers and list the numbers of the answers you use
   in `evidence`. Use only answers that point to this dish: a yes to a trait the dish
   has, or a no to a trait it lacks. Never cite "Doesn't matter" or "Not sure".
 - Describe the dish only with its listed traits; do not invent ingredients, tastes
-  or prices.
+  or prices. Do not guess preferences the user did not state, as in "if you like ...".
+- No hype: no words like "fantastic", "perfect", "wonderfully" or "탁월한".
+- The cafeteria serves the dish, not you: do not write that you made, prepared or
+  served it ("준비했어요"). You only suggest it.
+- In Korean, write natural 해요체 with standard spacing (e.g. "딱이에요", not "딱 이에요").
 - Copy the dish name exactly as written. Do not name any other dish.
 - With no answer to rest on, say briefly why the dish is a good pick from its traits,
   with empty evidence.
@@ -92,7 +97,7 @@ def build_message(facts, refused=None):
              f"## Served at\n{', '.join(facts.restaurants) or '(unknown)'}",
              f"## Traits of the dish\n{', '.join(facts.traits) or '(unknown)'}",
              f"## The user's answers\n{answers}",
-             f"Write in {LANGUAGE_NAMES[facts.language]}: at most two sentences and "
+             f"Write in {LANGUAGE_NAMES[facts.language]}: one sentence (two at most), under "
              f"{MAX_CHARS[facts.language]} characters."]
     if refused:
         parts.append(f"## Your previous draft was refused\n{refused}. Write it again.")
