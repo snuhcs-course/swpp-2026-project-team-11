@@ -6,13 +6,14 @@ import com.example.metchu.data.model.Offer
 import com.example.metchu.data.repository.Place
 import com.example.metchu.ui.question.phaseText
 import com.example.metchu.ui.question.progressFill
+import com.example.metchu.ui.result.AllListed
 import com.example.metchu.ui.result.NEAR_METERS
 import com.example.metchu.ui.result.Point
 import com.example.metchu.ui.result.cafeteriaList
 import com.example.metchu.ui.result.distanceMeters
 import com.example.metchu.ui.start.Meal
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -79,7 +80,7 @@ class CafeteriasTest {
         val list = cafeteriaList(food.copy(offers = listOf(unlocated, far, near)), user, Place.ANY)
         assertEquals(listOf(near, far, unlocated), list.cafeterias.map { it.offer })
         assertEquals(1, list.cafeterias.first().walkMinutes)
-        assertFalse(list.widened)
+        assertNull(list.allListed)
     }
 
     @Test
@@ -93,20 +94,30 @@ class CafeteriasTest {
     fun nearbyWithNothingCloseListsEveryCafeteriaAndSaysSo() {
         val list = cafeteriaList(food.copy(offers = listOf(far)), user, Place.NEAR)
         assertEquals(listOf(far), list.cafeterias.map { it.offer })
-        assertTrue(list.widened)
+        assertEquals(AllListed.NONE_NEAR, list.allListed)
     }
 
     @Test
-    fun withoutTheUsersPositionNothingIsFilteredOrMeasured() {
+    fun withoutAnyDistanceNearbyListsEveryCafeteriaAndSaysTheLocationIsUnknown() {
         val list = cafeteriaList(food.copy(offers = listOf(far, near)), null, Place.NEAR)
         assertEquals(listOf(far, near), list.cafeterias.map { it.offer })
         assertTrue(list.cafeterias.all { it.meters == null })
-        assertFalse(list.widened)
+        assertEquals(AllListed.NO_LOCATION, list.allListed)
+        assertNull(cafeteriaList(food.copy(offers = listOf(far, near)), null, Place.ANY).allListed)
     }
 
     @Test
-    fun aCafeteriaServingSeveralMealsIsListedOnce() {
-        val list = cafeteriaList(food.copy(offers = listOf(near, near.copy(meal = "DN"))), user, Place.ANY)
-        assertEquals(1, list.cafeterias.size)
+    fun theServersDistanceStandsInUntilThePhoneHasAPosition() {
+        val offers = listOf(far.copy(distanceM = 1500), near.copy(distanceM = 120))
+        val list = cafeteriaList(food.copy(offers = offers), null, Place.NEAR)
+        assertEquals(listOf(120), list.cafeterias.map { it.meters })
+        assertEquals(listOf(near.restaurant, far.restaurant), cafeteriaList(food.copy(offers = offers), user, Place.ANY).cafeterias.map { it.offer.restaurant })
+    }
+
+    @Test
+    fun aCafeteriaServingSeveralMealsGetsALineForEach() {
+        val dinner = near.copy(meal = "DN", price = 6500)
+        val list = cafeteriaList(food.copy(offers = listOf(near, dinner, near)), user, Place.ANY)
+        assertEquals(listOf(near, dinner), list.cafeterias.map { it.offer })
     }
 }

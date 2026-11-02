@@ -9,6 +9,9 @@ import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
+import com.example.metchu.data.network.ApiError
+import com.example.metchu.data.network.ApiErrorResponse
+import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.AnsweredQuestion
@@ -66,6 +69,9 @@ class RecommendViewModelTest {
         api.calls.clear()
     }
 
+    /** Answers the question on screen, as the question screen does. */
+    private fun answer(answerId: String) = viewModel.answer(answerId, viewModel.session.value!!.step)
+
     private fun assertIdle(session: SessionState?, error: UiError? = null) {
         assertEquals(false, viewModel.loading.value)
         assertEquals(session, viewModel.session.value)
@@ -107,7 +113,7 @@ class RecommendViewModelTest {
         api.reply(llmQuestion)
         viewModel.start("LU", Engine.LLM)
         api.reply(guess)
-        viewModel.answer("probably_yes")
+        answer("probably_yes")
         assertEquals("answer ${llmQuestion.sessionId} q:llm-0 probably_yes", api.calls.last())
         assertIdle(guess)
     }
@@ -159,7 +165,7 @@ class RecommendViewModelTest {
     fun answerUsesTheQuestionOnScreen() {
         startWith(question)
         api.reply(guess)
-        viewModel.answer("probably_yes")
+        answer("probably_yes")
         assertEquals(
             listOf("answer ${question.sessionId} ${question.step.questionId} probably_yes"), api.calls
         )
@@ -200,7 +206,7 @@ class RecommendViewModelTest {
 
     @Test
     fun nothingIsSentWithoutASession() {
-        viewModel.answer("yes")
+        viewModel.answer("yes", question.step)
         viewModel.feedback(true)
         viewModel.recommendNow()
         viewModel.undo()
@@ -213,7 +219,7 @@ class RecommendViewModelTest {
     fun answerIsIgnoredWhenTheStepIsNotAQuestion() {
         for (state in listOf(guess, recommendation, unavailable)) {
             startWith(state)
-            viewModel.answer("yes")
+            answer("yes")
             assertEquals(emptyList<String>(), api.calls)
             assertIdle(state)
         }
@@ -233,13 +239,13 @@ class RecommendViewModelTest {
     fun aSecondTapWhileLoadingIsDropped() {
         startWith(question)
         val gate = api.hold()
-        viewModel.answer("yes")
+        answer("yes")
         assertEquals(true, viewModel.loading.value)
         assertSame(question, viewModel.session.value)
 
         // Everything the user could reach while the first request is in flight.
-        viewModel.answer("no")
-        viewModel.answer("yes")
+        answer("no")
+        answer("yes")
         viewModel.recommendNow()
         viewModel.undo()
         viewModel.feedback(true)
@@ -270,7 +276,7 @@ class RecommendViewModelTest {
     fun noConnectionShowsARetryableErrorAndKeepsTheScreen() {
         startWith(question)
         api.fail(IOException("Failed to connect to /10.0.2.2:8000"))
-        viewModel.answer("yes")
+        answer("yes")
         assertIdle(question, noServer)
     }
 
@@ -278,7 +284,7 @@ class RecommendViewModelTest {
     fun retryRepeatsTheFailedRequestExactly() {
         startWith(question)
         api.fail(IOException("timeout"))
-        viewModel.answer("no")
+        answer("no")
         api.reply(guess)
         viewModel.retry()
         val call = "answer ${question.sessionId} ${question.step.questionId} no"
@@ -377,7 +383,7 @@ class RecommendViewModelTest {
     fun staleStepRedrawsFromTheServerWithoutAnError() {
         startWith(question)
         api.fail(Fixtures.httpError(409, Fixtures.json("error_stale_step")))
-        viewModel.answer("yes")
+        answer("yes")
         assertEquals(false, viewModel.loading.value)
         assertNull(viewModel.error.value)
         assertEquals(Fixtures.error("error_stale_step").state, viewModel.session.value)
@@ -393,7 +399,7 @@ class RecommendViewModelTest {
         for (body in bodies) {
             startWith(question)
             api.fail(Fixtures.httpError(409, body))
-            viewModel.answer("yes")
+            answer("yes")
             assertIdle(question, serverError)
         }
     }
@@ -471,10 +477,10 @@ class RecommendViewModelTest {
     fun anUnexpectedExceptionDoesNotLeaveLoadingStuck() {
         startWith(question)
         api.fail(IllegalArgumentException("boom"))
-        viewModel.answer("yes")
+        answer("yes")
         assertIdle(question, serverError)
         api.reply(guess)
-        viewModel.answer("yes")
+        answer("yes")
         assertIdle(guess)
     }
 
@@ -484,7 +490,7 @@ class RecommendViewModelTest {
     fun startOverLeavesTheSessionAndClearsTheError() {
         startWith(question)
         api.fail(IOException("timeout"))
-        viewModel.answer("yes")
+        answer("yes")
         viewModel.startOver()
         assertIdle(null)
         assertEquals(1, api.calls.size)
@@ -498,7 +504,7 @@ class RecommendViewModelTest {
         api.reply(second)
         viewModel.start("LU")
         api.reply(guess)
-        viewModel.answer("yes")
+        answer("yes")
         assertEquals("answer second-session ${question.step.questionId} yes", api.calls.last())
     }
 
@@ -506,7 +512,7 @@ class RecommendViewModelTest {
     fun retryAfterStartOverDoesNotReviveTheOldSession() {
         startWith(question)
         api.fail(IOException("timeout"))
-        viewModel.answer("yes")
+        answer("yes")
         viewModel.startOver()
         api.calls.clear()
         viewModel.retry()
@@ -524,7 +530,36 @@ class RecommendViewModelTest {
 
     private fun answerTo(next: SessionState, answerId: String = "yes") {
         api.reply(next)
-        viewModel.answer(answerId)
+        answer(answerId)
+    }
+
+    @Test
+    fun anAnswerHeldWhileBackMovedTheSessionIsDropped() {
+        startWith(questionAt(1))
+        val asked = viewModel.session.value!!.step
+        api.reply(questionAt(0))
+        viewModel.undo()
+        viewModel.answer("yes", asked)
+        assertEquals(listOf("undo ${question.sessionId}"), api.calls)
+        assertIdle(questionAt(0))
+    }
+
+    @Test
+    fun anAnswerWhoseReplyWasLostStillJoinsTheHistory() {
+        startWith(questionAt(0))
+        api.fail(IOException("reply lost"))
+        answer("no")
+        // The server recorded the answer, so Try again finds it on the next question.
+        val stale = RetrofitInstance.gson.toJson(
+            ApiErrorResponse(ApiError("stale_step", "moved on"), questionAt(1))
+        )
+        api.fail(Fixtures.httpError(409, stale))
+        viewModel.retry()
+        assertIdle(questionAt(1))
+        assertEquals(listOf(AnsweredQuestion("Question 0?", "no")), viewModel.history.value)
+
+        answerTo(questionAt(2), "yes")
+        assertEquals("Question 1?", viewModel.history.value!![1].text)
     }
 
     @Test
@@ -560,7 +595,7 @@ class RecommendViewModelTest {
     fun aRetriedAnswerStillJoinsTheHistory() {
         startWith(questionAt(0))
         api.fail(IOException("timeout"))
-        viewModel.answer("no")
+        answer("no")
         api.reply(questionAt(1))
         viewModel.retry()
         assertEquals(listOf(AnsweredQuestion("Question 0?", "no")), viewModel.history.value)
@@ -615,7 +650,7 @@ class RecommendViewModelTest {
         api.reply(questionAt(1))
         viewModel.feedback(accepted = false)
         api.reply(groupGuess)
-        viewModel.answer("yes")
+        answer("yes")
         api.reply(groupGuess)
         viewModel.recommendNow()
         assertEquals(listOf(guess.step, groupGuess.step), viewModel.shown.value)

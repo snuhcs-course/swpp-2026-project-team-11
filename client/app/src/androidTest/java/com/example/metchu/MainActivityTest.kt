@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -79,6 +80,14 @@ class MainActivityTest {
     private fun text(@StringRes id: Int) = context.getString(id)
 
     private fun tap(tag: String) = compose.onNodeWithTag(tag).performClick()
+
+    /** A picked answer is held a moment before it is sent; that wait is not one Compose tracks. */
+    private fun answer(id: String) {
+        val sent = api.calls.size
+        tap("answer_$id")
+        compose.waitUntil(3_000) { api.calls.size > sent }
+        compose.waitForIdle()
+    }
 
     private fun tapText(@StringRes id: Int) = compose.onNodeWithText(text(id)).performClick()
 
@@ -172,7 +181,7 @@ class MainActivityTest {
         for (id in listOf("no", "probably_no", "any", "probably_yes", "yes", "unknown")) {
             startWith(question)
             api.reply(question)
-            tap("answer_$id")
+            answer(id)
             assertEquals(listOf("answer ${question.sessionId} ${question.step.questionId} $id"), api.calls.toList())
             tap("back")
         }
@@ -198,7 +207,7 @@ class MainActivityTest {
             step = question.step.copy(questionId = "q:next", questionCount = 1, text = "Do you feel like noodles?")
         )
         api.reply(next)
-        tap("answer_yes")
+        answer("yes")
         compose.onNodeWithText("Do you feel like noodles?").assertIsDisplayed()
         compose.onNodeWithText(question.step.text).assertIsDisplayed()
 
@@ -214,6 +223,7 @@ class MainActivityTest {
         api.reply(question)
         tap("back")
         assertEquals("undo ${question.sessionId}", api.calls.last())
+        tap("back")
 
         startWith(question.copy(canUndo = true, step = question.step.copy(questionCount = 1)))
         api.reply(guess)
@@ -246,11 +256,28 @@ class MainActivityTest {
         tapText(R.string.result_more)
         assertEquals("feedback ${guess.sessionId} ${guess.step.guessId} false", api.calls.last())
         compose.onNodeWithTag("question").assertIsDisplayed()
+        tap("back")
 
         startWith(guess)
         api.reply(question)
         tap("back")
         assertEquals("undo ${guess.sessionId}", api.calls.last())
+    }
+
+    @Test
+    fun findAnotherIsOnlyOfferedOnTheDishTheServerProposes() {
+        startWith(guess)
+        api.reply(question)
+        tapText(R.string.result_more)
+        api.reply(groupGuess)
+        answer("yes")
+        compose.onNodeWithText(text(R.string.result_more)).assertIsDisplayed()
+
+        // The chips list the newest first; the second is the dish turned down.
+        compose.onAllNodesWithTag("dishChip")[1].performClick()
+        compose.onNodeWithText(text(R.string.result_more)).assertDoesNotExist()
+        compose.onAllNodesWithTag("dishChip")[0].performClick()
+        compose.onNodeWithText(text(R.string.result_more)).assertIsDisplayed()
     }
 
     @Test
@@ -275,7 +302,7 @@ class MainActivityTest {
     fun aFailedRequestShowsABannerAndTryAgainRepeatsIt() {
         startWith(question)
         api.fail(IOException("offline"))
-        tap("answer_no")
+        answer("no")
         compose.onNodeWithText(text(R.string.error_no_server)).assertIsDisplayed()
         compose.onNodeWithTag("question").assertIsDisplayed()
 
