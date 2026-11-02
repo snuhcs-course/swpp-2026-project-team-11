@@ -63,9 +63,9 @@ class MealTest {
 class CafeteriasTest {
 
     private val food = Fixtures.state("recommendation").step.food!!
-    private val near = Offer("220동식당", "LU", 5900, 37.46451, 126.95424)
-    private val far = Offer("301동식당", "LU", 6000, 37.44951, 126.95224)
-    private val unlocated = Offer("기숙사식당", "LU", null, null, null)
+    private val near = Offer("220동식당", "LU", 5900, 37.46451, 126.95424, null)
+    private val far = Offer("301동식당", "LU", 6000, 37.44951, 126.95224, null)
+    private val unlocated = Offer("기숙사식당", "LU", null, null, null, null)
     private val user = Point(37.46400, 126.95400)
 
     @Test

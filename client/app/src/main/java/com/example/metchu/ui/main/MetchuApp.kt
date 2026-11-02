@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.metchu.R
+import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.AllergyStore
@@ -62,7 +63,7 @@ private fun screenOf(session: SessionState?, settingsOpen: Boolean): Screen = wh
 }
 
 @Composable
-fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, settings: SettingsStore) {
+fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, settings: SettingsStore, location: LocationSource) {
     val session by viewModel.session.observeAsState()
     val loading by viewModel.loading.observeAsState(false)
     val error by viewModel.error.observeAsState()
@@ -107,7 +108,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                     loading = loading,
                     onPlace = { place = it; settings.place = it },
                     onSettings = { settingsOpen = true },
-                    onStart = { meal -> viewModel.start(meal.code, engine, allergies) }
+                    onStart = { meal -> viewModel.start(meal.code, engine, location, allergies) }
                 )
                 Screen.SETTINGS -> {
                     BackHandler(onBack = closeSettings)

@@ -1,9 +1,6 @@
 package com.example.metchu.ui.common
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,7 +11,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
+import com.example.metchu.data.location.LOCATION_PERMISSIONS
+import com.example.metchu.data.location.hasLocationPermission
 import com.example.metchu.ui.result.Point
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -22,17 +20,15 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 
-private val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-
 /** Whether the user allows location, and how to ask. Declining keeps the app working without distances. */
 class LocationPermission(val granted: Boolean, val request: () -> Unit)
 
 @Composable
 fun rememberLocationPermission(): LocationPermission {
     val context = LocalContext.current
-    var granted by remember { mutableStateOf(hasLocationPermission(context)) }
+    var granted by remember { mutableStateOf(context.hasLocationPermission()) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        granted = hasLocationPermission(context)
+        granted = context.hasLocationPermission()
     }
     return LocationPermission(granted) { launcher.launch(LOCATION_PERMISSIONS) }
 }
@@ -49,7 +45,7 @@ fun rememberUserPoint(granted: Boolean): Point? {
     val context = LocalContext.current
     var point by remember { mutableStateOf<Point?>(null) }
     DisposableEffect(granted) {
-        if (!granted || !hasLocationPermission(context)) return@DisposableEffect onDispose {}
+        if (!granted || !context.hasLocationPermission()) return@DisposableEffect onDispose {}
         val client = LocationServices.getFusedLocationProviderClient(context)
         client.lastLocation.addOnSuccessListener { fix -> if (fix != null && point == null) point = Point(fix.latitude, fix.longitude) }
         val callback = object : LocationCallback() {
@@ -65,7 +61,3 @@ fun rememberUserPoint(granted: Boolean): Point? {
 }
 
 private const val UPDATE_MILLIS = 10_000L
-
-fun hasLocationPermission(context: Context): Boolean = LOCATION_PERMISSIONS.any {
-    ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-}

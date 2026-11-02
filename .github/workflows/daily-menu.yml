@@ -39,7 +39,7 @@ jobs:
         with:
           # The pipeline code lives on the integration branch. Set the repository
           # variable MENU_PIPELINE_REF to run it from another branch.
-          ref: ${{ vars.MENU_PIPELINE_REF || 'MVP' }}
+          ref: ${{ vars.MENU_PIPELINE_REF || 'main' }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"

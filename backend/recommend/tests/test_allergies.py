@@ -5,11 +5,12 @@ from unittest import mock
 
 from menus import services
 from menus.allergens import ALLERGEN_VERSION
-from menus.models import Food
+from menus.features.schema import FEATURE_VERSION
+from menus.models import Food, MenuItem, Restaurant
 from question_engines.llm import LLMEngine
 from question_engines.llm.tests.helpers import FakeLLM, ask
 
-from .helpers import DAY, post
+from .helpers import DAY, add_food, post
 from .test_edge_cases import SmallMenuTestCase
 
 
@@ -20,9 +21,11 @@ class AllergyTests(SmallMenuTestCase):
             Food.objects.filter(name=name).update(allergens=tags, allergen_version=ALLERGEN_VERSION)
         # Chicken noodles has no tags yet.
 
+    def catalog(self, *allergies):
+        return services.get_catalog(datetime.date.fromisoformat(DAY), "LU", frozenset(allergies))
+
     def served(self, *allergies):
-        candidates, _, _ = services.get_catalog(datetime.date.fromisoformat(DAY), "LU", frozenset(allergies))
-        return sorted(c["name"] for c in candidates)
+        return sorted(c["name"] for c in self.catalog(*allergies)[0])
 
     def test_only_dishes_known_to_be_free_of_every_allergy_are_served(self):
         self.assertEqual(self.served(), ["Beef noodles", "Chicken noodles", "Rice bowl"])
@@ -34,6 +37,29 @@ class AllergyTests(SmallMenuTestCase):
         Food.objects.filter(name="Rice bowl").update(allergen_version="old")
         self.assertEqual(self.served("milk"), ["Beef noodles"])
 
+    def test_a_combo_line_is_left_out_when_any_of_its_dishes_is_unsafe(self):
+        for name, tags in [("Pork cutlet", ["pork"]), ("Curry udon", ["wheat"])]:
+            add_food(name, price=7000)
+            Food.objects.filter(name=name).update(allergens=tags, allergen_version=ALLERGEN_VERSION)
+        MenuItem.objects.filter(food__name__in=["Pork cutlet", "Curry udon"]).update(raw_name="Pork cutlet curry udon")
+        self.assertIn("Curry udon", self.served("egg"))
+        self.assertNotIn("Curry udon", self.served("pork"))
+
+        Food.objects.filter(name="Pork cutlet").update(allergen_version="")
+        self.assertNotIn("Curry udon", self.served("egg"))  # an untagged dish in the line
+
+        add_food("Curry udon", restaurant="Other hall", price=4500)
+        [udon] = [c for c in self.catalog("egg")[0] if c["name"] == "Curry udon"]
+        self.assertEqual([(o["restaurant"], o["price"]) for o in udon["offers"]], [("Other hall", 4500)])
+
+    def test_the_feature_version_is_chosen_among_the_safe_dishes(self):
+        # The small menu is v1; only the one dish free of egg is v2.
+        Food.objects.filter(name__in=["Beef noodles", "Chicken noodles"]).update(allergens=["egg"])
+        Food.objects.filter(name="Rice bowl").update(feature_version=FEATURE_VERSION, allergens=["wheat"])
+        self.assertEqual(self.catalog()[2], "v1")
+        candidates, _, version = self.catalog("egg")
+        self.assertEqual(([c["name"] for c in candidates], version), (["Rice bowl"], FEATURE_VERSION))
+
     def test_the_session_counts_and_proposes_only_safe_dishes(self):
         state, url = self.start(allergies=["egg"])
         self.assertEqual(state["candidate_count"], 1)
@@ -42,6 +68,13 @@ class AllergyTests(SmallMenuTestCase):
         self.assertEqual(self.call(url + "feedback/", {"guess_id": guess["step"]["guess_id"],
                                                        "accepted": False})["step"]["reason"],
                          "candidates_exhausted")
+
+    def test_a_location_still_gives_distances_with_allergies(self):
+        Restaurant.objects.filter(code="Test hall").update(lat=37.4593, lng=126.9506)
+        state, url = self.start(allergies=["egg"], location={"lat": 37.4593, "lng": 126.9506})
+        self.assertEqual(state["candidate_count"], 1)
+        offers = self.call(url + "recommend-now/")["step"]["food"]["offers"]
+        self.assertEqual([offer["distance_m"] for offer in offers], [0])
 
     def test_no_safe_dish_is_an_empty_menu(self):
         state, _ = self.start(allergies=["egg", "wheat"])

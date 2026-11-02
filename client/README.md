@@ -143,11 +143,15 @@ apps (package `com.example.metchu` and your signing certificate's SHA-1) in the
 console; never commit it. The Maps terms require Google's logo to stay visible; the
 result map keeps it just above the sheet with map padding.
 
-The start screen asks for location once. With it, the start map centers on the
-user, the result map shows the user's position, and the cafeteria list shows
-distances and walking times, nearest first. Without it the start map shows the
-middle of campus and the list has no distances. On the emulator, set a position
-under Extended controls > Location (for example 37.4600, 126.9520).
+The start screen asks for location once. With it, a new session sends where the
+device is: a current fix, or the last known location when none comes within 3
+seconds (the start button shows it is loading meanwhile); the server then gives
+each cafeteria's `distance_m`. The start map centers on the user, the result map
+shows the user's position, and the cafeteria list shows distances and walking
+times, nearest first. Without it the start map shows the middle of campus, the
+session starts without a location and the list has no distances. On the
+emulator, set a position under Extended controls > Location (for example
+37.4600, 126.9520).
 
 ## Screens
 
@@ -203,6 +207,7 @@ data/model/SessionState.kt          JSON shapes returned by the server, and the 
 data/model/Allergen.kt              the allergens the server accepts (backend/menus/allergens.py)
 data/network/ApiService.kt          Retrofit endpoints and request bodies
 data/network/RetrofitInstance.kt    server address and HTTP client
+data/location/LocationSource.kt     where the device is when a session starts
 data/repository/RecommendRepository.kt   the only class that calls Retrofit
 data/repository/AllergyStore.kt     the user's allergies, on this device
 data/repository/SettingsStore.kt    the engine and the distance choice, on this device
@@ -226,7 +231,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 
 | Request | Body | Effect |
 | --- | --- | --- |
-| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "allergies"?}` | Start a session. `meal` is `BR`, `LU`, `DN` or omitted for the whole day. `engine` is `decision_tree` or `llm`; omitted, the server uses `METCHU_ENGINE` (default `decision_tree`). `allergies` lists `Allergen` IDs; no dish that may contain one, or that has no allergen tags, is proposed |
+| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?}` | Start a session. `meal` is `BR`, `LU`, `DN` or omitted for the whole day. `engine` is `decision_tree` or `llm`; omitted, the server uses `METCHU_ENGINE` (default `decision_tree`). `location` is the user's `{"lat", "lng"}`. `allergies` lists `Allergen` IDs; no dish that may contain one, or that has no allergen tags, is proposed |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |
@@ -256,15 +261,16 @@ change: a group's `food_ids` is replaced by `members`, a list of
 `{"food_id", "display_name"}`. The
 [LLM engine](../backend/question_engines/llm/README.md) returns the same step
 shapes; its `question_id` is `q:llm-<n>` and it never sends a `group`.
-Each of a food's `offers` is `{"restaurant", "meal", "price", "lat", "lng"}`;
-`price` is null when the menu lists none, and `lat`/`lng` are null together
-when the cafeteria has no location.
+Each of a food's `offers` is `{"restaurant", "meal", "price", "lat", "lng", "distance_m"}`;
+`price` is null when the menu lists none, `lat` or `lng` is null when the cafeteria's
+location is not known (the app then leaves it off the map), and `distance_m` is the straight-line distance in meters
+from the session's `location`, null when either is unknown.
 
 Errors are `{"error": {"code", "message"}}`:
 
 | Status | `code` | Meaning |
 | --- | --- | --- |
-| 400 | `invalid_request` | Malformed body, unknown answer ID, bad date, meal or engine |
+| 400 | `invalid_request` | Malformed body, unknown answer ID, bad date, meal, engine or location |
 | 404 | `session_not_found` | Unknown session; the app returns to the start screen |
 | 409 | `stale_step` | The question or guess is no longer current. The body also carries `state`, and the app redraws from it |
 | 503 | `engine_unavailable` | `engine` was `llm` and the server has no `OPENROUTER_API_KEY` (or a malformed LLM setting). The app stays on the start screen |
@@ -276,6 +282,11 @@ Server behavior to know about:
   asks until it is ready to guess, and the user can tap "Just recommend
   something" at any time. `METCHU_MAX_QUESTIONS=N` makes either engine guess
   after N answers.
+- There is no distance cutoff by default. `METCHU_MAX_DISTANCE_M=N` leaves out
+  cafeterias more than N meters from the session's `location`, and dishes served
+  nowhere closer, before the engine starts; `candidate_count` counts what is
+  left. Sessions without a location and cafeterias without coordinates are not
+  cut. If everything is cut, the session is `unavailable` with `empty_candidates`.
 - Requests for one session run one at a time. A request repeated while an LLM
   step is still running waits for it and then gets `stale_step` with the
   current state, so a retry after a timeout never answers twice.

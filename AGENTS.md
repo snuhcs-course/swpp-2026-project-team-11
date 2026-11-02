@@ -125,12 +125,13 @@ ask before proceeding. Permission to read or preview does not authorize a write.
 People often commit and push themselves. Commit or push only when asked; when you
 do, or draft messages for someone, use these formats.
 
-- **Branches** start from `MVP`, and PRs target `MVP`: `feat/i<iteration>-p<n>-<topic>` for a
-  work item of the schedule sheet, `feat/i<iteration>-a<n>-<topic>` for work added during the
-  iteration. Iteration ends are tagged `iteration-<n>` on `MVP`.
+- **Branches** start from `main`, and PRs target `main` (the `MVP` branch is retired):
+  `feat/i<iteration>-p<n>-<topic>` for a work item of the schedule sheet,
+  `feat/i<iteration>-a<n>-<topic>` for work added during the iteration. Iteration ends are
+  tagged `iteration-<n>` on `main`.
   A dependent PR may start from and temporarily target its prerequisite branch
   to keep the review diff separate. Name that dependency in the PR body; after
-  it merges, retarget the dependent PR to `MVP` before merging it.
+  it merges, retarget the dependent PR to `main` before merging it.
 - **Commits**: `type(i<iteration>-P<n>): subject` (`i<iteration>-A<n>` for added work); types `feat`,
   `fix`, `test`, `docs`, `ci`, `chore`, `refactor`. Lower-case imperative subject,
   at most about 70 characters; an optional body of one to three lines on why; no AI

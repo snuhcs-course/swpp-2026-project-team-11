@@ -4,10 +4,12 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.example.metchu.FakeApi
 import com.example.metchu.Fixtures
 import com.example.metchu.R
+import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
+import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.AnsweredQuestion
 import com.example.metchu.ui.main.RecommendViewModel
@@ -113,8 +115,35 @@ class RecommendViewModelTest {
     @Test
     fun startSendsTheAllergies() {
         api.reply(question)
-        viewModel.start("LU", Engine.DECISION_TREE, listOf(Allergen.MILK, Allergen.SHRIMP))
+        viewModel.start("LU", Engine.DECISION_TREE, allergies = listOf(Allergen.MILK, Allergen.SHRIMP))
         assertEquals(listOf("create LU decision_tree milk,shrimp"), api.calls)
+    }
+
+    @Test
+    fun startSendsTheUsersLocationWhenThereIsOne() {
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE, LocationSource { UserLocation(37.45932, 126.95058) })
+        assertEquals(listOf("create LU decision_tree @37.45932,126.95058"), api.calls)
+    }
+
+    @Test
+    fun startSendsTheLocationAndTheAllergiesTogether() {
+        api.reply(question)
+        viewModel.start("LU", Engine.LLM, LocationSource { UserLocation(37.45932, 126.95058) }, listOf(Allergen.EGG))
+        assertEquals(listOf("create LU llm @37.45932,126.95058 egg"), api.calls)
+    }
+
+    @Test
+    fun findingTheLocationIsPartOfTheStartRequest() {
+        val fix = CompletableDeferred<UserLocation?>()
+        api.reply(question)
+        viewModel.start("LU", Engine.DECISION_TREE, LocationSource { fix.await() })
+        assertEquals(true, viewModel.loading.value)
+        viewModel.start("LU", Engine.DECISION_TREE)
+        assertEquals("A second tap while locating is ignored", emptyList<String>(), api.calls.toList())
+
+        fix.complete(null)
+        assertEquals(listOf("create LU decision_tree"), api.calls)
         assertIdle(question)
     }
 

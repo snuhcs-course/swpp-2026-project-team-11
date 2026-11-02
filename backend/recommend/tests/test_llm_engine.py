@@ -72,7 +72,7 @@ class LLMSessionFlowTests(LLMSessionTestCase):
         self.assertEqual((guess["step"]["type"], guess["step"]["target_kind"]), ("guess", "food"))
         self.assertEqual(guess["step"]["food"]["display_name"], BEEF)
         self.assertEqual(guess["step"]["food"]["offers"], [{"restaurant": "Test hall", "meal": "LU", "price": 6000,
-                                                                "lat": None, "lng": None}])
+                                                                "lat": None, "lng": None, "distance_m": None}])
         self.assertNotIn("group", guess["step"])  # the LLM engine never proposes a group
 
         second = self.call(url + "feedback/", {"guess_id": guess["step"]["guess_id"], "accepted": False})

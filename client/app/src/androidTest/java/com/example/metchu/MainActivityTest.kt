@@ -11,8 +11,10 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.SessionState
+import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.data.repository.RecommendRepository
@@ -36,6 +38,7 @@ class MainActivityTest {
     val compose = createEmptyComposeRule()
 
     private val api = FakeApi()
+    private var location: UserLocation? = null
     private lateinit var scenario: ActivityScenario<MainActivity>
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -48,6 +51,7 @@ class MainActivityTest {
     @Before
     fun setUp() {
         AppContainer.repository = RecommendRepository(api)
+        AppContainer.locationSource = LocationSource { location }
         // The start screen asks for location; a system dialog would cover the screen.
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         for (permission in listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) {
@@ -128,6 +132,17 @@ class MainActivityTest {
         // Chosen, so the next launch goes straight to the start screen.
         relaunch()
         compose.onNodeWithTag("start").assertIsDisplayed()
+    }
+
+    @Test
+    fun startSendsWhereTheUserIsWithTheAllergies() {
+        AllergyStore(context).allergies = listOf(Allergen.MILK)
+        relaunch()
+        location = UserLocation(37.45932, 126.95058)
+        pickMeal(R.string.meal_lunch)
+        api.reply(question)
+        tap("start")
+        assertEquals("create LU decision_tree @37.45932,126.95058 milk", api.calls.last())
     }
 
     @Test

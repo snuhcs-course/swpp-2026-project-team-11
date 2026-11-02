@@ -254,12 +254,11 @@ Setup, once (needs admin rights on the repository):
    on OpenAI instead, also add the secret `OPENAI_API_KEY` and, under **Variables**, the
    repository variable `METCHU_MENU_MODEL` (e.g. `openai:gpt-5.4-mini`). Deleting the variable
    goes back to Gemini.
-2. **Put the workflow on the default branch.** GitHub only runs scheduled and manual triggers
-   for workflow files on the default branch, which is `main` today. Either set the default
-   branch to `MVP` (**Settings → General → Default branch**) or merge `MVP` into `main`.
+2. **Keep `main` the default branch** (**Settings → General → Default branch**). GitHub only
+   runs scheduled and manual triggers for workflow files on the default branch.
 3. Test it: **Actions → Daily menu pipeline → Run workflow** (a date is optional).
 
-- The job runs the code on `MVP`. To use another branch, set the repository variable
+- The job runs the code on `main`. To use another branch, set the repository variable
   `MENU_PIPELINE_REF`.
 - A run fails when a secret is missing (the key of the configured model) or when the model
   could not resolve every new line or tag every new dish (an expired key, an exhausted quota).
@@ -305,9 +304,11 @@ A user's allergies are a hard rule. `POST /api/sessions/` takes `"allergies"`, a
 keys from `menus/allergens.py` (the 19 allergens Korean food labels must declare: `egg`,
 `milk`, `buckwheat`, `peanut`, `soybean`, `wheat`, `mackerel`, `crab`, `shrimp`, `pork`,
 `peach`, `tomato`, `sulfite`, `walnut`, `chicken`, `beef`, `squid`, `shellfish`, `pine_nut`).
-`get_catalog(date, meal, allergies)` then drops every dish tagged with one of them **and every
-dish without current tags**, before either engine sees the candidates. Without allergies
-nothing changes. The phone keeps the allergies; the server stores nothing about the user.
+`get_catalog(date, meal, allergies)` then drops every menu line with a dish tagged with one of
+them **or a dish without current tags**, before either engine sees the candidates. A combo line
+("돈가스 카레우동") is bought whole, so 카레우동 is not offered there to someone allergic to pork,
+though it can still be offered where it is served alone. The feature version is chosen among
+the dishes that are left. Without allergies nothing changes. The phone keeps the allergies; the server stores nothing about the user.
 
 `extract_allergens` asks the menu model which allergens each dish name may contain, sauces,
 broths and batters included; the prompt tells it to leave a key out only when it is sure.
@@ -490,6 +491,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | `loaddata menus_YYYY-MM-DD` | load a shared snapshot | no |
 | `run_daily_pipeline [--date] [--review PATH]` | fetch + preprocess + tag a day (+ review CSV); runs daily on GitHub Actions | **yes** |
 | `fetch_menus [--date] [--no-llm]` | fetch, preprocess and store a day's menu | for new lines |
+| `fetch_naver_menus --stores CSV --output PATH` | save the Naver Place menus of the food shops near 서울대입구역 and 낙성대역 to JSON | no |
 | `extract_features [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with features | **yes** |
 | `extract_allergens [--date] [--limit N] [--dry-run] [--force]` | tag new dishes with the allergens they may contain | **yes** |
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
@@ -522,3 +524,51 @@ Menus come from the public [Siksha](https://siksha.wafflestudio.com) API by Waff
 - Endpoint: `https://siksha-api.wafflestudio.com/menus/?start_date=...&end_date=...`
 - One request per day (`build_fixed_menus` fetches day by day; long ranges time out).
 - The official SNU co-op page (`https://snuco.snu.ac.kr/foodmenu/`) is the planned fallback.
+
+### Naver Place menus of shops near the stations (i3-A2)
+
+The shop list comes from 소상공인시장진흥공단 상가(상권)정보 (data.go.kr, a quarterly
+zip of CSVs per province; unzip the 서울 one, about 300 MB). `menus/sources/stores.py`
+reads its food shops (대분류 `I2`) other than cafés, bakeries, rice-cake shops and ice
+cream. The menus come from Naver Place: Naver has no official API that returns menus
+(the Search API's local search and the NCP Maps APIs give names and coordinates only),
+so `menus/sources/naver.py` reads the public mobile pages a signed-out visitor sees:
+
+- List: `https://m.place.naver.com/restaurant/list?query=...&x=<lng>&y=<lat>`, searched
+  with the shop's name and branch near the shop. The match is the nearest place within
+  150 m whose name contains the shop's name (ignoring spaces, case and symbols).
+- Menu: `https://m.place.naver.com/restaurant/<place id>/menu/list`. A menu shown only as
+  photos gives no items; a price that is not a single amount ("변동", a range) is `null`.
+- Both pages embed `window.__APOLLO_STATE__`; if Naver changes it, parsing raises
+  `ValueError`. Naver answers non-browser user agents with 429, so a mobile browser's is sent.
+  Requests are a second apart.
+
+```bash
+python manage.py fetch_naver_menus --stores PATH/소상공인시장진흥공단_상가(상권)정보_서울_202609.csv \
+    --output menus/data/naver_menus_YYYY-MM-DD.json
+```
+
+`AREAS` in the command sets the stations and radii (서울대입구역 600 m, 낙성대역 500 m):
+1132 shops in the 2026-09 file, so about 2000 requests and 40 minutes. Each shop is kept
+with a `status`: `matched` (with `naver` and `menus`), `not_found` (Naver lists no such
+place nearby, or the shop has closed) or `failed` (a request failed). After five failures
+in a row the command writes what it has and exits with an error.
+
+It goes to a JSON file, not the DB: `MenuItem` is per day and meal, which does not fit a
+restaurant's standing menu. Menus still include drinks and per-person fees ("성인"), so
+they need preprocessing before an engine can use them.
+
+#### Committed snapshot: `menus/data/naver_menus_2026-11-02.json`
+
+- Shops: `소상공인시장진흥공단_상가(상권)정보_서울_202609.csv`, from the data.go.kr zip
+  `소상공인시장진흥공단_상가(상권)정보_20260930.zip`.
+- Menus: Naver Place, fetched on 2026-11-02 from 15:28 to 16:19 KST (51 minutes) with the
+  command above, from one machine, signed out, a second between requests.
+- Result: 1132 shops in the radii; 809 matched (서울대입구역 581 of 826, 낙성대역 229 of 307),
+  323 not found, 0 failed; 11,464 menu items. 149 matched places list their menu only as
+  photos and have no items.
+- Check: 12 random matches were all the same shop; the two sources' coordinates differ by
+  at most 125 m (90% within 12 m). Shops not found are mostly not real names
+  ("그외기타간이음식점"), karaoke and hold'em bars, closed shops, and some chains whose
+  Naver name differs (e.g. BHC 낙성대점).
+- Refresh it by running the command again with a newer CSV; do not edit it by hand.
