@@ -24,6 +24,10 @@ def store(code, name, *menus, category="중식당"):
                        tuple(StoreMenuLine(menu, price, description) for menu, price, description in menus))
 
 
+def key(code, name, description=""):
+    return line_key(code, name, "중식당", description)
+
+
 def kept(name, price):
     cleaned, _ = clean_store_name(name)
     return not is_store_notice(name, cleaned, price) and not is_drink(cleaned)
@@ -60,19 +64,26 @@ class RuleTests(SimpleTestCase):
         for name in ["A세트", "점심특선", "2인 커플세트"]:
             self.assertTrue(is_vague(name), name)
         self.assertFalse(is_vague("탕수육세트"))
-        self.assertEqual(line_key("MA1", "A세트"), "store:MA1:a세트")
-        self.assertEqual(line_key("MA1", "짜장 면"), "store:짜장면")
+        self.assertNotEqual(key("MA1", "A세트"), key("MA2", "A세트"))
+        self.assertEqual(key("MA1", "짜장 면"), key("MA2", "짜장면"))
+
+    def test_the_key_holds_everything_the_llm_sees(self):
+        self.assertNotEqual(key("MA1", "치킨세트", "후라이드+콜라"), key("MA2", "치킨세트", "양념+감자튀김"))
+        self.assertNotEqual(key("MA1", "A세트", "짜장면+탕수육"), key("MA1", "A세트", "짬뽕+탕수육"))
+        self.assertNotEqual(line_key("MA1", "떡볶이", "분식"), line_key("MA1", "떡볶이", "요리주점"))
+        self.assertEqual(key("MA1", "짜장면", "x" * 60 + "a"), key("MA1", "짜장면", "x" * 60 + "b"))  # unseen tail
 
     def test_a_line_is_sent_once_and_a_vague_one_carries_its_restaurant(self):
         found = entries([
-            store("MA1", "홍콩반점", ("짜장면", 7000, ""), ("A세트", 20000, "짜장면+탕수육"), ("소주", 5000, "")),
-            store("MA2", "북경", ("짜장 면", 6500, "춘장을 볶아"), ("A세트", 22000, "짬뽕+탕수육")),
+            store("MA1", "홍콩반점", ("짜장면", 7000, ""), ("A세트", 20000, "짜장면+탕수육"), ("소주", 5000, ""),
+                  ("짬뽕", 8000, "")),
+            store("MA2", "북경", ("짜장 면", 6500, ""), ("A세트", 22000, "짬뽕+탕수육"), ("짬뽕", 8000, "해물  가득")),
         ])
-        self.assertEqual([e.dropped for e in found], ["", "", "drink", "", ""])
+        self.assertEqual([e.dropped for e in found], ["", "", "drink", "", "", "", ""])
         lines = distinct_lines(found)
         self.assertEqual(sorted(line.label for line in lines.values()),
-                         ["A세트 @북경", "A세트 @홍콩반점", "짜장면"])
-        self.assertEqual(lines["store:짜장면"].description, "춘장을 볶아")  # filled from the other restaurant
+                         ["A세트 @북경", "A세트 @홍콩반점", "짜장면", "짬뽕", "짬뽕 #2"])
+        self.assertEqual(lines[key("MA2", "짬뽕", "해물 가득")].description, "해물 가득")
 
 
 class PromptVersionTests(SimpleTestCase):
@@ -88,13 +99,15 @@ class MapStoreLinesTests(TestCase):
                "점심특선 @한솥": (True, []), "꿔바로우": (True, ["꿔바로우"])}
 
     def lines(self, *menus):
-        return distinct_lines(entries([store(code, name, (menu, 7000, "")) for code, name, menu in menus]))
+        """menus: (code, restaurant, line) or (code, restaurant, line, description)."""
+        return distinct_lines(entries([store(code, name, (menu, 7000, rest[0] if rest else ""))
+                                       for code, name, menu, *rest in menus]))
 
     def test_answers_are_cached_apart_from_the_cafeteria_lines(self):
         lines = self.lines(("MA1", "홍콩반점", "짜장면"), ("MA1", "홍콩반점", "A세트"), ("MA2", "북경", "꿔바로우"))
         llm = FakeStoreLLM(self.ANSWERS)
         result = map_store_lines(lines, llm)
-        self.assertEqual(result["store:MA1:a세트"], Mapping(True, ("짜장면", "탕수육"), "llm"))
+        self.assertEqual(result[key("MA1", "A세트")], Mapping(True, ("짜장면", "탕수육"), "llm"))
         self.assertEqual(set(MenuLine.objects.values_list("version", flat=True)), {store_lines.STORE_VERSION})
         self.assertNotIn("꿔바로우", mapper.known_dishes())  # the daily cafeteria prompt is unchanged
 
@@ -104,13 +117,21 @@ class MapStoreLinesTests(TestCase):
 
     def test_a_vague_line_without_a_nameable_dish_stores_none(self):
         result = map_store_lines(self.lines(("MA3", "한솥", "점심특선")), FakeStoreLLM(self.ANSWERS))
-        self.assertEqual(result["store:MA3:점심특선"], Mapping(True, (), "llm"))
+        self.assertEqual(result[key("MA3", "점심특선")], Mapping(True, (), "llm"))
+
+    def test_a_changed_description_is_asked_again(self):
+        map_store_lines(self.lines(("MA1", "홍콩반점", "A세트", "짜장면+탕수육")),
+                        FakeStoreLLM({"A세트 @홍콩반점": (True, ["짜장면", "탕수육"])}))
+        llm = FakeStoreLLM({"A세트 @홍콩반점": (True, ["짬뽕", "탕수육"])})
+        result = map_store_lines(self.lines(("MA1", "홍콩반점", "A세트", "짬뽕+탕수육")), llm)
+        self.assertEqual(len(llm.calls), 1)
+        self.assertEqual(result[key("MA1", "A세트", "짬뽕+탕수육")].dishes, ("짬뽕", "탕수육"))
 
     def test_without_an_answer_a_line_is_one_dish_and_a_vague_one_none(self):
         lines = self.lines(("MA1", "홍콩반점", "짜장면"), ("MA1", "홍콩반점", "A세트"))
         result = map_store_lines(lines, FakeStoreLLM(self.ANSWERS, fail=True))
-        self.assertEqual(result["store:짜장면"], Mapping(True, ("짜장면",), "rule"))
-        self.assertEqual(result["store:MA1:a세트"], Mapping(True, (), "rule"))
+        self.assertEqual(result[key("MA1", "짜장면")], Mapping(True, ("짜장면",), "rule"))
+        self.assertEqual(result[key("MA1", "A세트")], Mapping(True, (), "rule"))
         self.assertFalse(MenuLine.objects.exists())  # asked again next time
 
     def test_names_offered_for_reuse_share_letters_with_the_batch(self):
@@ -131,6 +152,6 @@ class MapStoreLinesTests(TestCase):
             llm = FakeStoreLLM({"A세트 @북경": (True, ["탕수육"]), "자장면": (True, ["자장면"])})
             with mock.patch("menus.preprocess.overrides.OVERRIDES_PATH", new=path):
                 result = map_store_lines(lines, llm)
-        self.assertEqual(result["store:MA1:a세트"], Mapping(True, ("짬뽕",), "override"))
-        self.assertEqual(result["store:MA2:a세트"].dishes, ("탕수육",))
-        self.assertEqual(result["store:자장면"].dishes, ("짜장면",))
+        self.assertEqual(result[key("MA1", "A세트")], Mapping(True, ("짬뽕",), "override"))
+        self.assertEqual(result[key("MA2", "A세트")].dishes, ("탕수육",))
+        self.assertEqual(result[key("MA2", "자장면")].dishes, ("짜장면",))

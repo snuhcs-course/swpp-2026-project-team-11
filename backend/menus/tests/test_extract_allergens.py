@@ -113,17 +113,30 @@ class ExtractAllergensTests(TestCase):
             self.run_command(key=False)
 
 
-class StoreDishesTests(TestCase):
-    def test_stores_tags_the_restaurant_dishes_instead_of_a_day(self):
-        hall = Restaurant.objects.create(code="hall", name="Hall")
-        shop = Restaurant.objects.create(code="MA1", name="Shop", source="naver")
-        MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name="샐러드",
-                                food=Food.objects.create(name="샐러드", is_food=True))
-        StoreMenu.objects.create(restaurant=shop, raw_name="돈까스",
-                                 food=Food.objects.create(name="돈까스", is_food=True))
-        model = FakeLLM()
+class StoreLineTests(TestCase):
+    def run_stores(self, model):
         with mock.patch.object(llm, "api_key_available", return_value=True), \
                 mock.patch.object(allergens, "build_llm", return_value=model):
             call_command("extract_allergens", "--stores", stdout=io.StringIO())
-        self.assertEqual(model.calls, [["돈까스"]])
-        self.assertEqual(Food.objects.get(name="돈까스").allergen_version, ALLERGEN_VERSION)
+
+    def test_stores_tags_whole_menu_lines_once_per_text(self):
+        hall = Restaurant.objects.create(code="hall", name="Hall")
+        MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name="샐러드",
+                                food=Food.objects.create(name="샐러드", is_food=True))
+        cutlet = Food.objects.create(name="돈까스", is_food=True)
+        for code, raw_name, description in [("MA1", "돈까스", ""), ("MA2", "돈까스", ""),
+                                            ("MA2", "🍜 돈까스 세트", "돈까스+카레우동")]:
+            shop, _ = Restaurant.objects.get_or_create(code=code, defaults={"name": code, "source": "naver"})
+            StoreMenu.objects.create(restaurant=shop, raw_name=raw_name, description=description, food=cutlet)
+        model = FakeLLM()
+        self.run_stores(model)
+        self.assertEqual(model.calls, [["돈까스", "돈까스 세트 (돈까스+카레우동)"]])  # the cafeteria 샐러드 is not sent
+        self.assertEqual(sorted((m.raw_name, m.allergens, m.allergen_version) for m in StoreMenu.objects.all()), [
+            ("돈까스", ["egg", "wheat", "pork"], ALLERGEN_VERSION),
+            ("돈까스", ["egg", "wheat", "pork"], ALLERGEN_VERSION),
+            ("🍜 돈까스 세트", [], ALLERGEN_VERSION)])
+        self.assertEqual(cutlet.allergen_version, "")  # dish tags are the cafeteria's business
+
+        again = FakeLLM()
+        self.run_stores(again)
+        self.assertEqual(again.calls, [])

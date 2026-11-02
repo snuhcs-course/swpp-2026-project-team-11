@@ -10,6 +10,7 @@ from django.core.management import CommandError, call_command
 from django.test import SimpleTestCase, TestCase
 
 from menus import allergens, llm
+from menus.allergens import ALLERGEN_VERSION
 from menus.features import extractor
 from menus.models import Food, MenuItem, MenuLine, Restaurant, StoreMenu
 from menus.preprocess import mapper
@@ -80,6 +81,11 @@ class ImportStoresTests(TestCase):
             call_command("import_stores", "--file", str(path), *args, stdout=out)
         return model, out.getvalue()
 
+    def write(self, data, name="next.json"):
+        path = self.folder / name
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        return path
+
     def menu(self, code):
         return sorted((m.raw_name, m.food.name, m.food.is_set)
                       for m in StoreMenu.objects.filter(restaurant__code=code).select_related("food"))
@@ -106,12 +112,43 @@ class ImportStoresTests(TestCase):
         self.run_command()
         data = json.loads(FIXTURE.read_text(encoding="utf-8"))
         data["stores"] = [s for s in data["stores"] if s["id"] != "MA0001"]
-        path = self.folder / "next.json"
-        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-        model, _ = self.run_command(path=path)
+        data["counts"]["in_radius"] = len(data["stores"])  # the store left the area
+        model, _ = self.run_command(path=self.write(data))
         self.assertEqual(model.calls, [])
         self.assertEqual(self.menu("MA0001"), [])
         self.assertTrue(StoreMenu.objects.filter(restaurant__code="MA0002").exists())
+
+    def test_a_partial_crawl_is_refused_and_can_keep_the_earlier_menus(self):
+        self.run_command()
+        before = self.menu("MA0002")
+        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        failed = next(s for s in data["stores"] if s["id"] == "MA0002")
+        failed.update(status="failed", naver=None, menus=[])
+        data["stores"] = [s for s in data["stores"] if s["id"] != "MA0007"]  # the collector stopped early
+        path = self.write(data)
+        with self.assertRaisesMessage(CommandError, "실패한 가게 1곳"):
+            self.run_command(path=path)
+        self.assertEqual(self.menu("MA0002"), before)
+
+        model, out = self.run_command(None, "--allow-partial", path=path)
+        self.assertIn("완전하지 않은 크롤 파일", out)
+        self.assertEqual(self.menu("MA0002"), before)  # failed: kept
+        self.assertEqual(self.menu("MA0007"), [("모둠회(대)", "모둠회", False)])  # missing: kept
+        self.assertTrue(self.menu("MA0001"))  # answered again: replaced
+
+    def test_line_allergens_carry_over_to_the_same_line(self):
+        self.run_command()
+        StoreMenu.objects.filter(raw_name="짜장면").update(allergens=["wheat"], allergen_version=ALLERGEN_VERSION)
+        StoreMenu.objects.filter(raw_name="A세트").update(allergens=["wheat"], allergen_version=ALLERGEN_VERSION)
+        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        next(s for s in data["stores"] if s["id"] == "MA0002")["menus"][2]["description"] = "짬뽕+군만두"
+        self.run_command(FakeStoreLLM(ANSWERS | {"A세트 @북경 서울대입구점": (True, ["짬뽕"])}),
+                         path=self.write(data))
+        tags = {(m.restaurant.code, m.raw_name, m.description): (m.allergens, m.allergen_version)
+                for m in StoreMenu.objects.select_related("restaurant")}
+        self.assertEqual(tags[("MA0002", "짜장면", "")], (["wheat"], ALLERGEN_VERSION))
+        self.assertEqual(tags[("MA0001", "A세트", "짜장면+탕수육(소)+군만두")], (["wheat"], ALLERGEN_VERSION))
+        self.assertEqual(tags[("MA0002", "A세트", "짬뽕+군만두")], ([], ""))  # a new line: tagged again
 
     def test_limit_replaces_only_the_restaurants_it_imports(self):
         self.run_command()
@@ -179,4 +216,4 @@ class RunStorePipelineTests(TestCase):
             call_command("run_store_pipeline", "--file", str(FIXTURE), stdout=out)
         # 짜장면 and 탕수육 alone and in a set, 차돌짬뽕, 짬뽕 (set), 닭볶음탕, 모둠회
         self.assertIn("일반 식당 추천 후보: 8", out.getvalue())
-        self.assertFalse(Food.objects.filter(store_menus__isnull=False, allergen_version="").exists())
+        self.assertFalse(StoreMenu.objects.filter(allergen_version="").exists())

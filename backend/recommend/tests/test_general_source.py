@@ -13,13 +13,12 @@ from .helpers import check_state, post
 SEOUL_NAT_UNIV_STATION = {"lat": 37.481247, "lng": 126.952739}
 
 
-def tagged_food(name, spicy, allergens=()):
-    """A v2-tagged dish; spicy varies so the decision tree has something to ask."""
+def tagged_food(name, spicy):
+    """A v2-tagged dish with no allergens; spicy varies so the decision tree has something to ask."""
     features = {key: 0.5 for key in FEATURE_KEYS} | {"spicy": spicy, "meal_variety": 0.0}
     return Food.objects.create(name=name, display_name=name, is_food=True, features=features,
                                feature_std={key: 0.1 for key in FEATURE_KEYS} | {"meal_variety": 0.0},
-                               feature_version=FEATURE_VERSION, allergens=list(allergens),
-                               allergen_version=ALLERGEN_VERSION)
+                               feature_version=FEATURE_VERSION, allergen_version=ALLERGEN_VERSION)
 
 
 class GeneralSourceTests(TestCase):
@@ -28,11 +27,14 @@ class GeneralSourceTests(TestCase):
                                              lat=37.47692, lng=126.96361)
         beijing = Restaurant.objects.create(code="MA0002", name="북경 서울대입구점", source="naver",
                                             lat=37.48101, lng=126.95302)
-        jjajang, jjamppong = tagged_food("짜장면", 0.1, ["wheat"]), tagged_food("짬뽕", 0.9, ["wheat"])
-        kimchi = tagged_food("김치찌개", 0.6)
-        for restaurant, food, price in [(hongkong, jjajang, 7000), (beijing, jjajang, 6500),
-                                        (hongkong, jjamppong, 8000), (beijing, kimchi, 8000)]:
-            StoreMenu.objects.create(restaurant=restaurant, raw_name=food.name, food=food, price=price)
+        jjajang, jjamppong, kimchi = tagged_food("짜장면", 0.1), tagged_food("짬뽕", 0.9), tagged_food("김치찌개", 0.6)
+        # Allergens are tagged per menu line: the 김치찌개 set also serves 계란말이.
+        for restaurant, food, line, price, tags in [
+                (hongkong, jjajang, "짜장면", 7000, ["wheat"]), (beijing, jjajang, "짜장면", 6500, ["wheat"]),
+                (hongkong, jjamppong, "짬뽕", 8000, ["wheat"]), (beijing, kimchi, "김치찌개", 8000, []),
+                (hongkong, kimchi, "김치찌개+계란말이", 11000, ["egg"])]:
+            StoreMenu.objects.create(restaurant=restaurant, raw_name=line, food=food, price=price,
+                                     allergens=tags, allergen_version=ALLERGEN_VERSION)
         hall = Restaurant.objects.create(code="학생회관식당", name="학생회관식당")
         MenuItem.objects.create(date=datetime.date(2026, 11, 2), meal="LU", restaurant=hall,
                                 raw_name="돈까스", food=tagged_food("돈까스", 0.2))
@@ -68,6 +70,19 @@ class GeneralSourceTests(TestCase):
 
     def test_allergies_leave_out_unsafe_dishes(self):
         self.assertEqual(self.start(allergies=["wheat"])["candidate_count"], 1)
+
+    def test_a_safe_dish_is_left_out_where_its_set_serves_an_allergen(self):
+        def kimchi_offers(*allergies):
+            candidates, _, _ = services.get_store_catalog(allergies=frozenset(allergies))
+            return [o["restaurant"] for c in candidates if c["name"] == "김치찌개" for o in c["offers"]]
+
+        self.assertEqual(kimchi_offers(), ["북경 서울대입구점", "홍콩반점 낙성대점"])
+        self.assertEqual(kimchi_offers("egg"), ["북경 서울대입구점"])  # the dish itself has no egg
+
+    def test_an_untagged_line_is_left_out_only_with_allergies(self):
+        StoreMenu.objects.filter(raw_name="김치찌개").update(allergen_version="")
+        self.assertEqual(self.start()["candidate_count"], 3)
+        self.assertEqual(self.start(allergies=["egg"])["candidate_count"], 2)
 
     def test_dishes_without_v2_features_are_not_served(self):
         Food.objects.filter(name="김치찌개").update(feature_version="")
