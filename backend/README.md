@@ -219,8 +219,8 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
   default). General sessions run the decision tree only. Starting one takes longer with more
   dishes: about 0.1 s with 500, 1 s with 2,000 and 5 s with 4,000 (the planner's setup).
 
-> **주의:** `--dry-run`이 LLM에 보낼 줄 수를 알려 줍니다. 실제 실행 전에 호출 수를 확인하세요. 2026-11-02 스냅샷은 640곳, 서로 다른 메뉴 줄 8,002개로 전처리 호출이 약 321회입니다.
-> Supabase에 처음 넣을 때는 `migrate` 뒤에 RLS SQL을 다시 실행하세요(새 테이블 `menus_storemenu`).
+> **주의:** `--dry-run`이 LLM에 보낼 줄 수를 알려 줍니다. 실제 실행 전에 호출 수를 확인하세요. 2026-11-02 스냅샷은 640곳, 서로 다른 메뉴 줄 9,656개로 전처리 호출이 약 387회, 알레르기 호출이 약 366회입니다.
+> 머지 후 첫 07:00 매일 작업의 `migrate`가 Supabase에 새 테이블 `menus_storemenu`를 만듭니다. 그 뒤 RLS SQL을 다시 실행하세요.
 
 ## Shared database: Supabase (P8)
 
