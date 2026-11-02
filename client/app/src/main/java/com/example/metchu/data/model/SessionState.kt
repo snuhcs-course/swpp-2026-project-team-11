@@ -31,6 +31,8 @@ data class Reason(
 object Engine {
     /** P10: picks each question from the dishes' extracted features. Answers at once. */
     const val DECISION_TREE = "decision_tree"
+    /** The learned feature-only policy uses the current menu's v2 features. */
+    const val RL = "rl"
     /** P13/P14: Gemini writes each question from the dish names. A step can take seconds. */
     const val LLM = "llm"
 }
@@ -62,7 +64,7 @@ data class Step(
 data class AnswerOption(val id: String, val label: String)
 
 /**
- * The answer IDs both engines accept, from ANSWER_OPTIONS in
+ * The answer IDs the engines accept, from ANSWER_OPTIONS in
  * backend/question_engines/decision_tree/contracts.py. The question screen draws its
  * own five-step scale for them instead of the server's labels.
  */

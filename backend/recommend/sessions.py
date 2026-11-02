@@ -5,9 +5,9 @@
     session.public_state()     -> what the phone is allowed to see
     session.reason()           -> why the proposed dish suits the user (recommend/reasons.py)
 
-A session runs one of ENGINES, chosen when it is created: the P10 decision tree
-or the P13/P14 LLM engine. Both have the same session API and step shapes, so
-everything below the constructor is the same for either. Dishes with one of the
+A session runs one of ENGINES, chosen when it is created: the decision tree,
+the feature-only RL policy, or the LLM engine. They share the session API and step shapes, so
+everything below the constructor is the same for all three. Dishes with one of the
 user's `allergies` never reach the engine (menus.services.get_catalog), and the engine
 writes its questions and texts in the session's `language` ("en" or "ko"). The LLM engine calls
 the LLM while it starts and after every answer, rejection and "recommend now", so
@@ -20,7 +20,7 @@ not change a session that is already in progress.
 
 `source` is what the dishes come from: "cafeteria", the day's SNU cafeteria menu
 (menus.services.get_catalog), or "general", the restaurants near 서울대입구역 and
-낙성대역 (get_store_catalog). A general session runs the decision tree: the LLM
+낙성대역 (get_store_catalog). A general session supports the decision tree and RL: the LLM
 engine would send thousands of dish names with every question.
 
 `location` is the user's (lat, lng), if the phone sent one. Each offer then
@@ -50,8 +50,9 @@ from recommend import reasons
 from recommend.distance import with_distances
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.llm import LLMConfigError, LLMEngine
+from question_engines.rl import RLEngine
 
-ENGINES = ("decision_tree", "llm")
+ENGINES = ("decision_tree", "llm", "rl")
 SOURCES = ("cafeteria", "general")
 MAX_SESSIONS = 500
 
@@ -77,11 +78,12 @@ class RecommendSession:
         if source == "general":
             candidates, schema, version = get_store_catalog(meal, allergies)
         else:
-            candidates, schema, version = get_catalog(date, meal, allergies)
+            candidates, schema, version = get_catalog(date, meal, allergies, prefer_v2=(engine == "rl"))
         candidates = with_distances(candidates, location, settings.RECOMMEND_MAX_DISTANCE_M)
         self.feature_version = version
         self.candidate_count = len(candidates)
-        self.candidates = {candidate["food_id"]: candidate for candidate in candidates}
+        # Reasons need only dish names and feature means after the engine is built.
+        self.reason_data = {c["food_id"]: (c["display_name"], c.get("features") or {}) for c in candidates}
         self.reasons = {}
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
         config = {"max_questions": self.max_questions, "language": language}
@@ -90,6 +92,13 @@ class RecommendSession:
                 self.engine = LLMEngine(candidates, config=config)
             except LLMConfigError as error:  # no API key, or a malformed LLM setting
                 raise EngineUnavailable(str(error)) from error
+        elif engine == "rl":
+            if candidates and version != "v2":
+                raise EngineUnavailable("The RL engine requires v2 food features.")
+            try:
+                self.engine = RLEngine(candidates, **config)
+            except ValueError as error:
+                raise EngineUnavailable("Invalid v2 catalogue for the RL engine.") from error
         else:
             self.engine = DecisionTreeEngine(
                 candidates, schema,
@@ -138,18 +147,18 @@ class RecommendSession:
 
     def _facts(self, step: dict, answered: list[dict]) -> reasons.Facts:
         food, group = step["food"], step.get("group")
-        features = self.candidates[food["food_id"]].get("features") or {}
-        members = tuple(self.candidates[food_id]["display_name"] for food_id in group["food_ids"]) if group else ()
+        features = self.reason_data[food["food_id"]][1]
+        members = tuple(self.reason_data[food_id][0] for food_id in group["food_ids"]) if group else ()
         names = {food["display_name"], *members}
         return reasons.Facts(
             language=self.language,
             dish=group["display_name"] if group else food["display_name"],
             members=members,
             restaurants=tuple(dict.fromkeys(offer["restaurant"] for offer in food["offers"])),
-            traits=tuple(key.replace("_", " ") for key, value in features.items() if value >= .6),
+            traits=tuple(key.replace("_", " ") for key, value in features.items() if value is not None and value >= .6),
             answers=tuple((answer["text"], answer["answer_id"], features.get(answer["question_id"].removeprefix("q:")))
                           for answer in answered),
-            others=tuple({c["display_name"] for c in self.candidates.values()} - names),
+            others=tuple({name for name, _ in self.reason_data.values()} - names),
         )
 
     def public_state(self) -> dict:
@@ -171,7 +180,7 @@ class RecommendSession:
             "language": self.language,
             "candidate_count": self.candidate_count,
             "max_questions": self.max_questions,
-            "can_undo": bool(self.engine.snapshot()["events"]),
+            "can_undo": self.engine.can_undo,
             "step": step,
         }
 
@@ -184,13 +193,12 @@ def create(date: datetime.date | None = None, meal: str | None = None,
            engine: str | None = None, location: tuple[float, float] | None = None,
            allergies: frozenset[str] = frozenset(), source: str | None = None,
            language: str = "en") -> RecommendSession:
-    """Raises EngineUnavailable when `engine` is "llm" and the server has no API key.
-
-    A general session runs the decision tree unless asked otherwise, whatever the
-    server's default engine.
-    """
+    """General sessions fall back to DT if the configured default is LLM."""
     source = source or "cafeteria"
-    engine = engine or ("decision_tree" if source == "general" else settings.RECOMMEND_DEFAULT_ENGINE)
+    if engine is None:
+        engine = settings.RECOMMEND_DEFAULT_ENGINE
+        if source == "general" and engine == "llm":
+            engine = "decision_tree"
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
                                meal, engine, location, allergies, source, language)
     with _sessions_lock:

@@ -43,8 +43,8 @@ def get_feature_schema(feature_version: str = "v1") -> list[dict]:
 
 
 def get_catalog(date: datetime.date | None = None, meal: str | None = None,
-                allergies: frozenset[str] = frozenset()) -> tuple[list, list, str]:
-    """Load matching candidates/schema: choose whichever version covers more candidates on the date/meal.
+                allergies: frozenset[str] = frozenset(), *, prefer_v2: bool = False) -> tuple[list, list, str]:
+    """Use the majority version unless a v2 engine requests available v2 dishes.
 
     Never mix measurements with different meanings in one session; when coverage is partial,
     log a warning with the served vs. total candidate counts.
@@ -60,7 +60,7 @@ def get_catalog(date: datetime.date | None = None, meal: str | None = None,
                 if tuple(line) not in unsafe}
     total = len(versions)
     v2_count = sum(feature_version == FEATURE_VERSION for feature_version in versions.values())
-    version = FEATURE_VERSION if total > 0 and v2_count >= total - v2_count else "v1"
+    version = FEATURE_VERSION if v2_count and (prefer_v2 or v2_count >= total - v2_count) else "v1"
     candidates = get_candidates(date, meal, feature_version=version,
                                 include_std=(version == FEATURE_VERSION), allergies=allergies)
     if len(candidates) != total:
