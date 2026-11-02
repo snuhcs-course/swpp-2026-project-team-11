@@ -4,6 +4,9 @@ Metchu helps you decide what to eat at the SNU cafeterias. It asks a few quick
 questions and proposes a dish from that day's menu. This branch is the working
 prototype at the end of Iteration 1.
 
+For the current app, see the [Android setup](client/README.md). Settings also offers a
+[feature-only RL engine](backend/README.md#feature-only-rl) on v2-tagged menus.
+
 ## Demo video
 
 [Watch the demo video](docs/iteration-1-demo.mp4) (2 min 18 s, a screen recording

@@ -4,8 +4,8 @@ The app plays a recommendation session against the Django server. The question
 engine runs on the server; the app draws whatever step the engine is on and
 sends the user's taps back. The screens follow the first UI/UX design (i3-P4,
 11/02): Jetpack Compose, the Pretendard font, one orange key color, English and
-Korean text. Settings choose between the two engines, the P10 decision tree and
-the P13/P14 LLM engine, so they can be compared on the same menu.
+Korean text. In Settings, choose the decision tree, reinforcement learning (RL)
+or LLM engine. The app remembers the choice for the next session.
 
 ## Run it
 
@@ -22,7 +22,7 @@ the P13/P14 LLM engine, so they can be compared on the same menu.
    server uses today's date in Seoul and the app shows "Nothing to recommend"
    unless that day's menu has been fetched and tagged.
 
-   The decision tree needs nothing else. For the LLM engine, put
+   The shared fixture is v1 and works with the decision tree. To try RL, point the server at a meal with v2-tagged dishes; RL runs on CPU without a model API key. For the LLM engine, put
    `OPENROUTER_API_KEY` in the repo-root `.env` (see `.env.example`) before starting
    the server; without it, choosing LLM in the app shows an error and the
    decision tree keeps working.
@@ -157,7 +157,7 @@ emulator, set a position under Extended controls > Location (for example
 
 | When | Screen | Actions |
 | --- | --- | --- |
-| first launch | Settings: one chip per allergen, a note that the tags are AI estimates, the engine (decision tree or LLM) | Back keeps the choices; there is no save button |
+| first launch | Settings: one chip per allergen, a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
 | `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" |
 | `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one line per cafeteria and meal | "Find another" turns it down and asks on (only on the dish the server proposes now); ‹ undoes; "Start over"; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it; the sheet's handle drags or taps it between low, middle and high |
@@ -165,7 +165,7 @@ emulator, set a position under Extended controls > Location (for example
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
 to right; "I'm not sure" sends `unknown`. The scale is drawn by the app for the
-answer IDs both engines share (`AnswerId`); a circle whose ID the server does
+answer IDs the engines share (`AnswerId`); a circle whose ID the server does
 not offer is dimmed. Holding a circle previews its answer under the question.
 
 The server keeps no question texts, so `RecommendViewModel` remembers the
@@ -199,8 +199,7 @@ questions come in that language too. Food and cafeteria names are shown as the
 server sends them, in Korean.
 
 A tapped answer stays filled while its request runs and the phase line reads
-"Picking the next question…"; other taps are ignored. A failed request shows a
-banner at the top that stays until the next request, with Try again.
+"Picking the next question…"; other taps are ignored. A failed request shows a banner at the top. Retry is offered for transient failures. An unsupported start configuration stays on the start screen so the user can change Settings.
 Screens change with 0.3 s fades. A question that is answered stays in place
 and the next one fades in below it; going from a question to a result, the
 question fades upward and the map, sheet, text and buttons enter in turn.
@@ -242,7 +241,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 
 | Request | Body | Effect |
 | --- | --- | --- |
-| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?}` | Start a session. `meal` is `BR`, `LU`, `DN` or omitted for the whole day. `engine` is `decision_tree` or `llm`; omitted, the server uses `METCHU_ENGINE` (default `decision_tree`). `location` is the user's `{"lat", "lng"}`. `allergies` lists `Allergen` IDs; no dish that may contain one, or that has no allergen tags, is proposed. `language` is `en` (default) or `ko`: every text in the replies is in it, except dish and cafeteria names |
+| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?, "source"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), and the app language (`en` or `ko`). Android uses the cafeteria catalogue; API callers can select `source: "general"` with DT or RL. `location` is the user's `{"lat", "lng"}`. With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |
@@ -283,17 +282,17 @@ Errors are `{"error": {"code", "message"}}`:
 
 | Status | `code` | Meaning |
 | --- | --- | --- |
-| 400 | `invalid_request` | Malformed body, unknown answer ID, bad date, meal, engine or location |
+| 400 | `invalid_request` | Invalid request fields. A rejected start request stays on the start screen so the user can change settings, including when an older server does not recognize RL. |
 | 404 | `session_not_found` | Unknown session; the app returns to the start screen |
 | 409 | `stale_step` | The question or guess is no longer current. The body also carries `state`, and the app redraws from it |
-| 503 | `engine_unavailable` | `engine` was `llm` and the server has no `OPENROUTER_API_KEY` (or a malformed LLM setting). The app stays on the start screen |
+| 503 | `engine_unavailable` | The selected engine is unavailable (for example missing LLM configuration or no compatible RL features). The app stays on the start screen and offers no retry |
 
 Server behavior to know about:
 
 - Sessions are kept in server memory. Restarting `runserver` ends them.
 - There is no question limit by default: `max_questions` is `null`, the engine
   asks until it is ready to guess, and the user can tap "Just recommend
-  something" at any time. `METCHU_MAX_QUESTIONS=N` makes either engine guess
+  something" at any time. `METCHU_MAX_QUESTIONS=N` makes the selected engine guess
   after N answers.
 - There is no distance cutoff by default. `METCHU_MAX_DISTANCE_M=N` leaves out
   cafeterias more than N meters from the session's `location`, and dishes served
@@ -320,7 +319,7 @@ Server behavior to know about:
 `app/src/sharedTest` holds what the two client suites share: a fake `ApiService`
 and `resources/contract/*.json`, replies captured from the real server on the
 2026-09-29 fixture with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
-scripted LLM in place of Gemini).
+scripted LLM in place of Gemini). The RL question fixture was captured from Django with three v2 cafeteria dishes.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 
