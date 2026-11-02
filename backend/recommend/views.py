@@ -1,6 +1,6 @@
 """HTTP glue between the Android client and the question engine.
 
-    POST /api/sessions/          {"date"?, "meal"?, "engine"?, "location"?, "allergies"?} -> 201 state
+    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?} -> 201 state
     GET  /api/sessions/<id>/                                               -> state
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
@@ -23,6 +23,10 @@ adds each cafeteria's `distance_m` to the offers (see recommend/distance.py).
 
 `allergies` lists keys of menus/allergens.py ALLERGEN_KEYS, as the phone stores
 them; no dish that may contain one is proposed.
+
+`source` is "cafeteria" (default), the day's SNU cafeteria menu, or "general", the
+restaurants near 서울대입구역 and 낙성대역. A general session runs the decision tree
+only, so it ignores `date` and asking for "llm" is a 400.
 """
 
 from __future__ import annotations
@@ -93,10 +97,15 @@ def create_session(request):
         if allergies is not None and (not isinstance(allergies, list)
                                       or any(key not in ALLERGEN_KEYS for key in allergies)):
             raise ValueError(f"allergies must be a list of {', '.join(ALLERGEN_KEYS)}.")
+        source = payload.get("source")
+        if source is not None and source not in sessions.SOURCES:
+            raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
+        if source == "general" and engine == "llm":
+            raise ValueError("source general runs the decision_tree engine only.")
     except ValueError as error:  # includes json.JSONDecodeError
         return _error(400, "invalid_request", str(error))
     try:
-        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()))
+        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     return JsonResponse(session.public_state(), status=201)
