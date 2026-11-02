@@ -12,7 +12,7 @@ from menus import services
 from menus.features import extractor
 from menus.features.prompt import SYSTEM_PROMPT, PROMPT_VERSION
 from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION, LLM_FEATURE_KEYS
-from menus.models import Food, MenuItem, Restaurant
+from menus.models import Food, MenuItem, Restaurant, StoreMenu
 
 DAY = datetime.date(2026, 9, 29)
 
@@ -227,3 +227,31 @@ class GetCandidatesTests(TestCase):
         self.assertEqual(len(services.get_feature_schema("v2")), 33)
         with self.assertRaises(ValueError):
             services.get_candidates(DAY, feature_version="v0")
+
+
+class StoreDishesTests(TestCase):
+    def run_command(self, model):
+        out = io.StringIO()
+        with mock.patch.object(extractor, "api_key_available", return_value=True), \
+                mock.patch.object(extractor, "build_llm", return_value=model):
+            call_command("extract_features", "--stores", stdout=out)
+        return out.getvalue()
+
+    def test_stores_tags_restaurant_dishes_and_reuses_cafeteria_tags(self):
+        hall = Restaurant.objects.create(code="hall", name="Hall")
+        shop = Restaurant.objects.create(code="MA1", name="Shop", source="naver")
+        yukgaejang = Food.objects.create(name="육개장", is_food=True)
+        MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name="육개장", food=yukgaejang)
+        cafeteria_model = FakeLLM()
+        with mock.patch.object(extractor, "api_key_available", return_value=True), \
+                mock.patch.object(extractor, "build_llm", return_value=cafeteria_model):
+            call_command("extract_features", "--date", DAY.isoformat(), stdout=io.StringIO())
+        StoreMenu.objects.create(restaurant=shop, raw_name="육개장", food=yukgaejang)
+        StoreMenu.objects.create(restaurant=shop, raw_name="짜장면",
+                                 food=Food.objects.create(name="짜장면", is_food=True))
+
+        model = FakeLLM()
+        self.run_command(model)
+        self.assertEqual(model.calls, [["짜장면"]])  # 육개장 was tagged with the cafeteria menu
+        self.assertEqual(Food.objects.get(name="짜장면").feature_version, FEATURE_VERSION)
+        self.assertIn("일반 식당: 새로 태깅할 음식 없음", self.run_command(FakeLLM()))

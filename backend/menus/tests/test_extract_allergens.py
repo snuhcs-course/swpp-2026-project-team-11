@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from menus import allergens, llm
 from menus.allergens import ALLERGEN_KEYS, ALLERGEN_VERSION, SYSTEM_PROMPT
-from menus.models import Food, MenuItem, Restaurant
+from menus.models import Food, MenuItem, Restaurant, StoreMenu
 
 DAY = datetime.date(2026, 9, 29)
 TAGS = {"돈까스": ["pork", "wheat", "egg", "wheat"], "카레우동": ["wheat", "soybean"], "샐러드": []}
@@ -111,3 +111,19 @@ class ExtractAllergensTests(TestCase):
     def test_requires_an_api_key(self):
         with self.assertRaisesMessage(CommandError, "GOOGLE_API_KEY"):
             self.run_command(key=False)
+
+
+class StoreDishesTests(TestCase):
+    def test_stores_tags_the_restaurant_dishes_instead_of_a_day(self):
+        hall = Restaurant.objects.create(code="hall", name="Hall")
+        shop = Restaurant.objects.create(code="MA1", name="Shop", source="naver")
+        MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name="샐러드",
+                                food=Food.objects.create(name="샐러드", is_food=True))
+        StoreMenu.objects.create(restaurant=shop, raw_name="돈까스",
+                                 food=Food.objects.create(name="돈까스", is_food=True))
+        model = FakeLLM()
+        with mock.patch.object(llm, "api_key_available", return_value=True), \
+                mock.patch.object(allergens, "build_llm", return_value=model):
+            call_command("extract_allergens", "--stores", stdout=io.StringIO())
+        self.assertEqual(model.calls, [["돈까스"]])
+        self.assertEqual(Food.objects.get(name="돈까스").allergen_version, ALLERGEN_VERSION)
