@@ -31,6 +31,7 @@ LANGUAGE_NAMES = {"en": "English", "ko": "Korean (polite 해요체)"}
 YES = frozenset({"yes", "probably_yes"})
 NO = frozenset({"no", "probably_no"})
 HANGUL = re.compile("[가-힣]")
+LATIN_WORD = re.compile("[A-Za-z]{2,}")
 
 SYSTEM_PROMPT = """You write the one or two sentences shown under the dish that "Metchu!",
 a meal recommendation app, proposes to a user. Say why it suits them, warmly and
@@ -112,8 +113,8 @@ def check(draft, facts):
     for other in facts.others:
         if len(other) > 1 and other in unnamed:
             raise InvalidReason(f'The reason names another dish, "{other}"')
-    if facts.language == "ko" and not HANGUL.search(unnamed):
-        raise InvalidReason("The reason is not in Korean")
+    if facts.language == "ko" and (not HANGUL.search(unnamed) or LATIN_WORD.search(unnamed)):
+        raise InvalidReason("The reason is not in Korean; write every word but the dish and cafeteria names in Korean")
     if facts.language == "en" and HANGUL.search(unnamed):
         raise InvalidReason("The reason has Korean outside the dish and cafeteria names; write it in English")
     for number in draft.evidence:
@@ -125,22 +126,33 @@ def check(draft, facts):
                                 "does not point to this dish")
 
 
+def has_final_consonant(word):
+    """Whether the last Hangul syllable of `word` ends in a consonant (을 rather than 를)."""
+    syllables = HANGUL.findall(word)
+    return bool(syllables) and (ord(syllables[-1]) - ord("가")) % 28 != 0
+
+
 def template(facts):
     """A reason from the user's yes answers that the dish fits, without an LLM."""
     wanted = [question for question, answer_id, value in facts.answers
               if answer_id in YES and supports(answer_id, value)][-2:]
     if facts.language == "ko":
-        stems = [match for match in (re.fullmatch(r"(.+)(이|가) 당기나요\?", translate(question, "ko"))
-                                     for question in wanted) if match]
-        if not stems:
-            return "오늘 메뉴 중에서 답하신 취향에 가장 잘 맞는 메뉴예요."
-        particle = "을" if stems[-1].group(2) == "이" else "를"
-        return f"{', '.join(match.group(1) for match in stems)}{particle} 원하셔서 고른 메뉴예요."
+        dish = facts.dish + ("을" if has_final_consonant(facts.dish) else "를")
+        stems = [match.group(1) for match in (re.fullmatch(r"(.+)(?:이|가) 당기나요\?", translate(question, "ko"))
+                                              for question in wanted) if match]
+        if stems:
+            things = ", ".join(stems) + ("을" if has_final_consonant(stems[-1]) else "를")
+            return f"{things} 원하셔서 {dish} 골랐어요."
+        if facts.answers:
+            return f"답하신 내용에 가장 잘 맞는 {dish} 골랐어요."
+        return f"오늘 메뉴 중에서 {dish} 골라 봤어요."
     things = [match.group(1) for match in (re.fullmatch(r"Do you feel like (.+)\?", question)
                                            for question in wanted) if match]
-    if not things:
+    if things:
+        return f"You felt like {' and '.join(things)}, and {facts.dish} is a good match."
+    if facts.answers:
         return f"{facts.dish} is the best match for your answers among today's menus."
-    return f"You felt like {' and '.join(things)}, and {facts.dish} is a good match."
+    return f"{facts.dish} is a good pick from today's menus."
 
 
 def default_llm():
