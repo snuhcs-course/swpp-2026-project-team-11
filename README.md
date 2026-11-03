@@ -81,9 +81,9 @@ working.
 
 Open the `client/` folder (not the repository root) in Android Studio, wait for
 the Gradle sync, start an emulator from the Device Manager, and run the `app`
-configuration. The emulator reaches the server on the same machine at
-`http://10.0.2.2:8000/`, which is the app's default, so nothing has to be
-configured.
+configuration. The app defaults to the team server. To use the local server
+from the emulator, set `metchu.baseUrl=http://10.0.2.2:8000/` in the untracked
+`client/local.properties` and rebuild.
 
 From a terminal instead, with the emulator running and JDK 21 as `JAVA_HOME`
 (the build fails on JDK 25):
