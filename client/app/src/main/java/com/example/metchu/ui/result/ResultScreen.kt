@@ -110,6 +110,7 @@ import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.common.cssShadow
+import com.example.metchu.ui.common.fadeEdges
 import com.example.metchu.ui.common.rememberLocationPermission
 import com.example.metchu.ui.common.rememberUserPoint
 import com.example.metchu.ui.theme.MetchuColors
@@ -553,6 +554,8 @@ private fun Modifier.rise(progress: Float, density: Density): Modifier =
 private val CafeteriaRowHeight = 72.dp
 
 /** The reason and the group's description: 14/20. */
+/** Cafeteria names in the list and dish names in a cafeteria's menu: 17/24. */
+private val MenuNameStyle = MetchuType.Label.copy(fontSize = 17.sp, lineHeight = 24.sp)
 private val ReasonStyle = MetchuType.Body.copy(fontSize = 14.sp, lineHeight = 20.sp)
 
 /** The second line of the folded sheet, left and right: 13/18. */
@@ -581,7 +584,7 @@ private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit,
             Image(Icons.Pin, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(pin))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(offer.restaurant, style = MetchuType.Label.copy(fontSize = 17.sp, lineHeight = 24.sp))
+            Text(offer.restaurant, style = MenuNameStyle)
             Text(stringResource(R.string.offer_meta, mealName(offer.meal), priceText(offer.price)), style = MetchuType.Caption)
         }
         val meters = cafeteria.meters
@@ -623,26 +626,40 @@ private fun MenuSheet(offer: Offer?, menus: Map<String, List<MenuDish>?>, foodId
     var last by remember { mutableStateOf(offer) }
     if (offer != null) last = offer
     val shown = last
-    val title = shown?.let { stringResource(R.string.result_menu_title, it.restaurant, mealName(it.meal)) }.orEmpty()
-    BottomSheet(offer != null, title, onDismiss) {
-        Text(stringResource(R.string.result_menu_note), Modifier.padding(bottom = 4.dp), style = MetchuType.Caption)
+    BottomSheet(
+        offer != null,
+        caption = shown?.let { stringResource(R.string.result_menu_caption, mealName(it.meal)) }.orEmpty(),
+        title = shown?.restaurant.orEmpty(),
+        description = stringResource(R.string.result_menu_note),
+        onDismiss = onDismiss
+    ) {
         if (shown != null) {
             val dishes = menus[shown.restaurant]
             when {
-                shown.restaurant !in menus -> Text(stringResource(R.string.result_menu_failed), style = MetchuType.Body)
+                shown.restaurant !in menus -> Text(stringResource(R.string.result_menu_failed), Modifier.padding(horizontal = 20.dp), style = MetchuType.Body)
                 dishes == null -> Spinner(MetchuColors.Primary, 28.dp, Modifier.align(Alignment.CenterHorizontally))
-                else -> Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()).testTag("menu")) {
-                    dishes.filter { it.meal == shown.meal }.forEach { dish ->
-                        Row(
-                            Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Text(
-                                dish.displayName, Modifier.weight(1f), style = MetchuType.Item,
-                                color = if (dish.foodId == foodId) MetchuColors.Primary else MetchuColors.Grey900
-                            )
-                            Text(priceText(dish.price), style = MetchuType.Caption)
+                else -> {
+                    // Scrolls in place; the edges fade where more dishes are hidden.
+                    val scroll = rememberScrollState()
+                    Column(
+                        Modifier
+                            .heightIn(max = 280.dp)
+                            .fadeEdges(top = scroll.canScrollBackward, bottom = scroll.canScrollForward, edge = 28.dp)
+                            .verticalScroll(scroll)
+                            .testTag("menu")
+                    ) {
+                        dishes.filter { it.meal == shown.meal }.forEach { dish ->
+                            Row(
+                                Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 20.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Text(
+                                    dish.displayName, Modifier.weight(1f), style = MenuNameStyle,
+                                    color = if (dish.foodId == foodId) MetchuColors.Primary else MetchuColors.Grey900
+                                )
+                                Text(priceText(dish.price), style = MetchuType.Label)
+                            }
                         }
                     }
                 }

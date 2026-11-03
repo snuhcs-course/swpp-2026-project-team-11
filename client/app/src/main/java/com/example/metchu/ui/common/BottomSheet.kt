@@ -12,7 +12,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -20,7 +19,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import com.example.metchu.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -39,9 +48,20 @@ private val SheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
 /** The sheet's entrance curve, shared with the result sheet. */
 val SheetEasing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f)
 
-/** A panel that rises from the bottom over a dimmed screen, with [title] above [content]. A tap outside it calls [onDismiss]. */
+/**
+ * A panel that rises from the bottom over a dimmed screen, built like the result sheet: its
+ * handle, a grey [caption] over the [title], then [description] where the result sheet puts
+ * its reason. [content] spans the full width. A tap on the handle or outside calls [onDismiss].
+ */
 @Composable
-fun BottomSheet(visible: Boolean, title: String, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun BottomSheet(
+    visible: Boolean,
+    caption: String,
+    title: String,
+    description: String?,
+    onDismiss: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Box(Modifier.fillMaxSize()) {
         AnimatedVisibility(visible, enter = fadeIn(tween(200)), exit = fadeOut(tween(200))) {
             Box(
@@ -55,17 +75,31 @@ fun BottomSheet(visible: Boolean, title: String, onDismiss: () -> Unit, content:
             enter = slideInVertically(tween(320, easing = SheetEasing)) { it },
             exit = slideOutVertically(tween(240)) { it }
         ) {
+            val close = stringResource(R.string.sheet_close)
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .cssShadow(SheetShape, (-6).dp, 20.dp, 0.12f)
+                    .cssShadow(SheetShape, (-2).dp, 12.dp, 0.10f)
                     .clip(SheetShape)
                     .background(Color.White)
                     .navigationBarsPadding()
-                    .padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(bottom = 24.dp)
             ) {
-                Text(title, Modifier.padding(bottom = 4.dp), style = MetchuType.Caption)
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(20.dp)
+                        .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button, onClickLabel = close, onClick = onDismiss)
+                        .semantics { contentDescription = close },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(Modifier.width(38.dp).height(3.5.dp).clip(CircleShape).background(MetchuColors.Grey300))
+                }
+                Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp)) {
+                    Text(caption, Modifier.padding(bottom = 2.dp), style = MetchuType.Caption)
+                    Text(title, style = MetchuType.Title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (description != null) Text(description, Modifier.padding(top = 10.dp), style = MetchuType.Body.copy(fontSize = 14.sp, lineHeight = 20.sp))
+                }
                 content()
             }
         }
