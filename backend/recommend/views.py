@@ -140,6 +140,7 @@ def create_session(request):
         session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language, distance_scope)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
+    session.interaction_test = request.headers.get("X-Metchu-Test") == "1"
     state = session.public_state()
     interaction_log.record(session, "start", after=state["step"])
     return JsonResponse(state, status=201)
