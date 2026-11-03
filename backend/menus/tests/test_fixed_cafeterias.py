@@ -18,9 +18,10 @@ CAFETERIA = {"name": "구시아푸드마켓", "lat": 37.45, "lng": 126.95, "sinc
                        {"name": "소금삼겹", "price": 3900}]}
 
 
+@mock.patch("menus.sources.fixed_cafeterias.load", new=lambda: [CAFETERIA])
 class RecordsTests(SimpleTestCase):
     def test_an_open_day_has_every_line_at_every_meal(self):
-        records = fixed_cafeterias.records(TUESDAY, [CAFETERIA])
+        records = fixed_cafeterias.records(TUESDAY)
         self.assertEqual([(r.meal, r.raw_name) for r in records],
                          [("LU", "장어비빔밥"), ("LU", "소금삼겹"), ("DN", "장어비빔밥"), ("DN", "소금삼겹")])
         eel = records[0]
@@ -29,9 +30,11 @@ class RecordsTests(SimpleTestCase):
         self.assertEqual(records[1].restaurant_name, "구시아푸드마켓")
 
     def test_a_closed_weekday_and_a_day_before_the_board_have_none(self):
-        self.assertEqual(fixed_cafeterias.records(SUNDAY, [CAFETERIA]), [])
-        self.assertEqual(fixed_cafeterias.records(datetime.date(2026, 11, 2), [CAFETERIA]), [])
+        self.assertEqual(fixed_cafeterias.records(SUNDAY), [])
+        self.assertEqual(fixed_cafeterias.records(datetime.date(2026, 11, 2)), [])
 
+
+class CommittedBoardTests(SimpleTestCase):
     def test_the_committed_boards_are_complete(self):
         for cafeteria in fixed_cafeterias.load():
             self.assertLessEqual(set(cafeteria["meals"]), set(siksha.MEALS))
@@ -41,9 +44,11 @@ class RecordsTests(SimpleTestCase):
                 self.assertTrue(menu["name"].strip())
                 self.assertIsInstance(menu["price"], int)
 
-    def test_a_set_with_a_plate_of_jeyuk_is_both_dishes(self):
+    def test_a_set_with_a_plate_of_jeyuk_is_both_dishes_and_drinks_are_none(self):
         lines, _ = overrides.load_overrides()
         self.assertEqual(lines[dish_key("스팸마요 SET")], ["스팸마요덮밥", "제육볶음"])
+        for drink in ("펩시콜라", "펩시콜라제로", "펩시 제로", "코카콜라 제로"):
+            self.assertEqual(lines[dish_key(drink)], [], drink)
 
 
 @without_committed_rules
@@ -57,13 +62,16 @@ class FetchMenusTests(TestCase):
         return out.getvalue()
 
     def test_the_board_is_stored_with_the_day_menu(self, fetch_raw):
-        fetch_raw.return_value = {"result": [{"date": TUESDAY.isoformat()}]}
+        fetch_raw.return_value = {"result": [{"date": TUESDAY.isoformat(), "LU": [{
+            "code": "학생회관식당", "name_kr": "학생회관식당", "lat": 37.45932, "lng": 126.95058,
+            "menus": [{"name_kr": "육개장", "price": 3000}]}]}]}
         self.run_command(TUESDAY)
         eel = MenuItem.objects.get(meal="DN", raw_name="장어비빔밥")
         self.assertEqual((eel.date, eel.price, eel.restaurant.name, eel.restaurant.lat),
                          (TUESDAY, 8900, "구시아푸드마켓>비비고고", 37.45))
-        self.assertEqual(MenuItem.objects.count(), 4)
-        self.assertEqual(Restaurant.objects.count(), 2)
+        self.assertEqual(MenuItem.objects.get(raw_name="육개장").restaurant.name, "학생회관식당")
+        self.assertEqual(MenuItem.objects.count(), 1 + 4)
+        self.assertEqual(Restaurant.objects.count(), 3)
 
     def test_nothing_is_stored_on_a_closed_day(self, fetch_raw):
         fetch_raw.return_value = {"result": [{"date": SUNDAY.isoformat()}]}
