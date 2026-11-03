@@ -39,13 +39,14 @@ class FakeApi : ApiService {
 
     /**
      * Recorded as "create LU" with the server's default engine, or "create LU llm",
-     * followed by any location, allergies and language: "create LU llm @37.4,126.9 egg,milk ko".
+     * followed by any location, allergies, banned food IDs and language:
+     * "create LU llm @37.4,126.9 egg,milk -3,8 ko".
      */
     override suspend fun createSession(request: CreateSessionRequest) = next(
         listOfNotNull(
             "create", request.meal ?: "null", request.engine,
             request.location?.let { "@${it.lat},${it.lng}" }, request.allergies?.joinToString(","),
-            request.language
+            request.banned?.joinToString(",", prefix = "-"), request.language
         ).joinToString(" ")
     )
     override suspend fun getState(sessionId: String) = next("state $sessionId")
