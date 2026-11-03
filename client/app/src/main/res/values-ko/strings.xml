@@ -44,6 +44,7 @@
     <string name="engine_rl">강화학습 (RL)</string>
     <string name="engine_rl_hint">음식의 특징과 내 답변을 보고 언제 메뉴를 제안할지 정해요.</string>
     <string name="engine_llm">LLM</string>
+    <string name="engine_unavailable">지금은 사용할 수 없어요</string>
     <string name="engine_decision_tree_hint">메뉴 특징으로 질문을 골라요. 바로 답해요.</string>
     <string name="engine_llm_hint">Gemini가 질문을 만들어요. 몇 초 걸릴 수 있어요.</string>
     <string name="allergen_egg">달걀</string>

@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
@@ -77,7 +78,7 @@ fun SettingsScreen(
                 Column {
                     EngineRow(Engine.DECISION_TREE, R.string.engine_decision_tree, R.string.engine_decision_tree_hint, engine, onEngine)
                     EngineRow(Engine.RL, R.string.engine_rl, R.string.engine_rl_hint, engine, onEngine)
-                    EngineRow(Engine.LLM, R.string.engine_llm, R.string.engine_llm_hint, engine, onEngine)
+                    EngineRow(Engine.LLM, R.string.engine_llm, R.string.engine_llm_hint, engine, onEngine, unavailable = R.string.engine_unavailable)
                 }
             }
             Box(Modifier.navigationBarsPadding().height(96.dp))
@@ -130,21 +131,26 @@ fun AllergenChips(picked: List<Allergen>, onChange: (List<Allergen>) -> Unit) {
 }
 
 @Composable
-private fun EngineRow(id: String, label: Int, hint: Int, selected: String, onPick: (String) -> Unit) {
-    val on = id == selected
+private fun EngineRow(id: String, label: Int, hint: Int, selected: String, onPick: (String) -> Unit, unavailable: Int? = null) {
+    val enabled = unavailable == null
+    val on = enabled && id == selected
     val ink by animateColorAsState(if (on) MetchuColors.Grey900 else MetchuColors.Grey600, label = "engine")
     val ring by animateDpAsState(if (on) 7.dp else 2.5.dp, label = "ring")
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 64.dp)
-            .selectable(on, role = Role.RadioButton) { onPick(id) }
+            .selectable(on, enabled = enabled, role = Role.RadioButton) { onPick(id) }
+            .alpha(if (enabled) 1f else 0.45f)
             .padding(vertical = 10.dp)
             .testTag("engine_$id"),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(stringResource(label), style = MetchuType.Item, color = ink)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(label), style = MetchuType.Item, color = ink)
+                if (unavailable != null) Text(stringResource(unavailable), Modifier.padding(start = 8.dp), style = MetchuType.Caption)
+            }
             Text(stringResource(hint), style = MetchuType.Caption)
         }
         Box(
