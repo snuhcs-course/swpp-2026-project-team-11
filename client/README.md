@@ -14,18 +14,18 @@ or LLM engine. The app remembers the choice for the next session.
 
    ```bash
    python backend/manage.py migrate
-   python backend/manage.py loaddata menus_2026-09-29
-   METCHU_MENU_DATE=2026-09-29 python backend/manage.py runserver 0.0.0.0:8000
+   python backend/manage.py loaddata menus_2026-11-02
+   METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
    ```
 
-   The shared fixture only has September 29. Without `METCHU_MENU_DATE` the
+   The shared fixture only has November 2. Without `METCHU_MENU_DATE` the
    server uses today's date in Seoul and the app shows "Nothing to recommend"
    unless that day's menu has been fetched and tagged.
 
-   The shared fixture is v1 and works with the decision tree. To try RL, point the server at a meal with v2-tagged dishes; RL runs on CPU without a model API key. For the LLM engine, put
-   `OPENROUTER_API_KEY` in the repo-root `.env` (see `.env.example`) before starting
-   the server; without it, choosing LLM in the app shows an error and the
-   decision tree keeps working.
+   The shared fixture works with the decision tree and RL; RL runs on CPU without a
+   model API key. For the LLM engine, put `OPENROUTER_API_KEY` in the repo-root
+   `.env` (see `.env.example`) before starting the server; without it, choosing LLM
+   in the app shows an error and the decision tree keeps working.
 
 2. Open the `client/` folder in Android Studio, wait for the Gradle sync, and
    run the `app` configuration on an emulator. Command line:
@@ -70,7 +70,7 @@ on the server machine once (`brew install cloudflared`,
 instead of `runserver`:
 
 ```bash
-METCHU_MENU_DATE=2026-09-29 python backend/manage.py serve_public --write-client-config
+METCHU_MENU_DATE=2026-11-02 python backend/manage.py serve_public --write-client-config
 ```
 
 ```
@@ -143,11 +143,15 @@ apps (package `com.example.metchu` and your signing certificate's SHA-1) in the
 console; never commit it. The Maps terms require Google's logo to stay visible; the
 result map keeps it just above the sheet with map padding.
 
-The start screen asks for location once. With it, a new session sends where the
+Once per launch until it is allowed, the start screen says why it needs location
+(on the first launch, after the settings tip is closed)
+and, on **Continue**, asks for it. With it, a new session sends where the
 device is: a current fix, or the last known location when none comes within 3
 seconds (the start button shows it is loading meanwhile); the server then gives
 each cafeteria's `distance_m`. The start map centers on the user, the result map
-shows the user's position, and the cafeteria list shows distances and walking
+shows the user's position and fits it with the cafeterias (once, when the first
+fix arrives, and only within 3 km of one, so a phone off campus keeps the
+map on the cafeterias), and the cafeteria list shows distances and walking
 times, nearest first. Without it the start map shows the middle of campus, the
 session starts without a location and the list has no distances. On the
 emulator, set a position under Extended controls > Location (for example
@@ -157,8 +161,9 @@ emulator, set a position under Extended controls > Location (for example
 
 | When | Screen | Actions |
 | --- | --- | --- |
-| first launch | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
+| first launch | Language (asked in both), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear, with a tip that both change there anytime | a language goes on at once; ‹ on Allergies returns to Language; on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
+| gear | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
 | `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" (greyed on the first question); "Start over" in the top-right corner |
 | `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user, a ban link and the cafeterias, one line per cafeteria and meal | "Find another" turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; "Start over", always in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it, and its "Menu" lists what that cafeteria serves at that meal, the proposed dish in orange; once a food group makes up two of the last three proposals, "Don't suggest any <group>" keeps that group out of the rest of the session, even after ‹ (a dish without a group offers "Don't suggest this dish" at once), and turns into Undo; "Start over" clears the bans; the sheet's handle drags or taps it between low, middle and high |
 | `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them and that Settings can change them | "Start over" in the top-right corner |
@@ -261,10 +266,10 @@ Every success returns the same session state:
 {
   "session_id": "b3e73addc47a4a54b6cb08e1d575f770",
   "engine": "decision_tree",
-  "date": "2026-09-29",
+  "date": "2026-11-02",
   "meal": "LU",
   "language": "en",
-  "candidate_count": 193,
+  "candidate_count": 107,
   "max_questions": null,
   "can_undo": false,
   "step": {"type": "question", "question_count": 0, "question_id": "q:chicken",
@@ -291,7 +296,7 @@ Errors are `{"error": {"code", "message"}}`:
 | 400 | `invalid_request` | Invalid request fields. A rejected start request stays on the start screen so the user can change settings, including when an older server does not recognize RL. |
 | 404 | `session_not_found` | Unknown session; the app returns to the start screen |
 | 409 | `stale_step` | The question or guess is no longer current. The body also carries `state`, and the app redraws from it |
-| 503 | `engine_unavailable` | The selected engine is unavailable (for example missing LLM configuration or no compatible RL features). The app stays on the start screen and offers no retry |
+| 503 | `engine_unavailable` | The selected engine is unavailable (for example missing LLM configuration or invalid stored features for RL). The app stays on the start screen and offers no retry |
 
 Server behavior to know about:
 
@@ -324,8 +329,10 @@ Server behavior to know about:
 
 `app/src/sharedTest` holds what the two client suites share: a fake `ApiService`
 and `resources/contract/*.json`, replies captured from the real server on the
-2026-09-29 fixture with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
-scripted LLM in place of Gemini). The RL question fixture was captured from Django with three v2 cafeteria dishes.
+2026-09-29 snapshot, since replaced by 2026-11-02 (the reply shape has not changed),
+with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
+scripted LLM in place of Gemini). `menu.json` was captured on 2026-11-02 (301동식당, lunch), so
+it includes a set listed once at its whole price. The RL question fixture was captured from Django with three v2 cafeteria dishes.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 

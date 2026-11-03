@@ -47,7 +47,7 @@ class Command(BaseCommand):
                     raise CommandError(f"import_stores: {error}\n태깅은 건너뜁니다. 다시 실행해 주세요.") from error
                 errors.append(f"{command[0]}: {error}")
 
-        candidates, _, _ = services.get_store_catalog()
+        candidates, _ = services.get_store_catalog()
         self.stdout.write(self.style.SUCCESS(f"일반 식당 추천 후보: {len(candidates)}"))
         if errors:
             raise CommandError("\n".join(errors))

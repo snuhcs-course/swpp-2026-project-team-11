@@ -57,6 +57,7 @@ from collections import OrderedDict
 from django.conf import settings
 from django.utils import timezone
 
+from menus.features.schema import FEATURE_VERSION
 from menus.services import MEAL_ORDER, get_catalog, get_store_catalog
 from recommend import reasons
 from recommend.distance import with_distances
@@ -87,12 +88,14 @@ class RecommendSession:
         self.meal = meal
         self.language = language
         self.lock = threading.Lock()
-        if source == "general":
-            candidates, schema, version = get_store_catalog(meal, allergies)
-        else:
-            candidates, schema, version = get_catalog(date, meal, allergies, prefer_v2=(engine == "rl"))
+        try:
+            if source == "general":
+                candidates, schema = get_store_catalog(meal, allergies)
+            else:
+                candidates, schema = get_catalog(date, meal, allergies)
+        except ValueError as error:
+            raise EngineUnavailable("Invalid stored menu features.") from error
         candidates = with_distances(candidates, location, settings.RECOMMEND_MAX_DISTANCE_M)
-        self.feature_version = version
         self.candidate_count = len(candidates)
         # Reasons need only dish names and feature means after the engine is built.
         self.reason_data = {c["food_id"]: (c["display_name"], c.get("features") or {}) for c in candidates}
@@ -114,16 +117,15 @@ class RecommendSession:
             except LLMConfigError as error:  # no API key, or a malformed LLM setting
                 raise EngineUnavailable(str(error)) from error
         elif engine == "rl":
-            if candidates and version != "v2":
-                raise EngineUnavailable("The RL engine requires v2 food features.")
             try:
                 self.engine = RLEngine(candidates, **config)
             except ValueError as error:
-                raise EngineUnavailable("Invalid v2 catalogue for the RL engine.") from error
+                raise EngineUnavailable("Invalid catalogue for the RL engine.") from error
         else:
             self.engine = DecisionTreeEngine(
                 candidates, schema,
-                context={"date": date.isoformat(), "meal": meal, "feature_version": version},
+                context={"date": date.isoformat(), "meal": meal, "feature_version": FEATURE_VERSION,
+                         "candidate_kind": "menu-rms-v1"},
                 config=config | {"policy": settings.RECOMMEND_DT_POLICY},
             )
         self.engine.start()
@@ -208,31 +210,21 @@ class RecommendSession:
         return cached
 
     def _facts(self, step: dict, answered: list[dict]) -> reasons.Facts:
-        food, group = step["food"], step.get("group")
+        food = step["food"]
         features = self.reason_data[food["food_id"]][1]
-        members = tuple(self.reason_data[food_id][0] for food_id in group["food_ids"]) if group else ()
-        names = {food["display_name"], *members}
+        names = {food["display_name"]}
         return reasons.Facts(
             language=self.language,
-            dish=group["display_name"] if group else food["display_name"],
-            members=members,
+            dish=food["display_name"],
+            members=(),
             restaurants=tuple(dict.fromkeys(offer["restaurant"] for offer in food["offers"])),
             traits=tuple(key.replace("_", " ") for key, value in features.items() if value is not None and value >= .6),
-            answers=tuple(reasons.answer_facts(answered, features, self.feature_version)),
+            answers=tuple(reasons.answer_facts(answered, features)),
             others=tuple({name for name, _ in self.reason_data.values()} - names),
         )
 
     def public_state(self) -> dict:
         step = self.engine.next_step()
-        group = step.get("group")
-        if group:
-            # Only the decision tree proposes groups. It lists members by ID only;
-            # the phone needs names to show them.
-            foods = self.engine.catalog.by_id
-            group["members"] = [
-                {"food_id": food_id, "display_name": foods[food_id].display_name}
-                for food_id in group.pop("food_ids")
-            ]
         return {
             "session_id": self.session_id,
             "engine": self.engine_name,

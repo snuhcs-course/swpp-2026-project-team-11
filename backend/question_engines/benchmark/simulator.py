@@ -170,10 +170,10 @@ class Simulator:
             self._remember(key, reply.answer, kind="answer", persona=persona, question=question)
         return self.cache[key]
 
-    def takes(self, persona: str, proposal: str, served: bool = True) -> bool:
+    def takes(self, persona: str, proposal: str, served: bool = True, *, menu_id: int | None = None) -> bool:
         text = (TAKE_PROMPT if served else INSTEAD_PROMPT).format(persona=persona, proposal=proposal)
-        key = self._key("take", persona, text)  # a new verdict prompt asks again
+        key = self._key("take", persona, text if menu_id is None else [menu_id, text])
         if key not in self.cache:
             reply = self._ask(Verdict, text)
-            self._remember(key, bool(reply.accept), kind="take", persona=persona, proposal=proposal, served=served)
+            self._remember(key, bool(reply.accept), kind="take", persona=persona, proposal=proposal, served=served, menu_id=menu_id)
         return self.cache[key]

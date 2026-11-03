@@ -21,6 +21,15 @@
     <string name="place_any_option">어느 식당이든</string>
     <string name="place_near_note">걸어서 10분 안쪽</string>
     <string name="place_any_note">모든 식당</string>
+    <string name="location_ask_title">위치 권한을 요청할게요</string>
+    <string name="location_ask_body">가까운 식당과 식당까지의 거리를 보여드리려면 위치가 필요해요. 허용하지 않으면 모든 식당을 보여드려요.</string>
+    <string name="location_ask_continue">계속</string>
+    <string name="location_ask_later">나중에</string>
+    <string name="setup_allergies_title">알러지가 있나요?</string>
+    <string name="setup_next">다음</string>
+    <string name="setup_tip_title">언제든 바꿀 수 있어요</string>
+    <string name="setup_tip_body">언어는 지구본에서,\n알러지는 설정에서 바꿀 수 있어요.</string>
+    <string name="setup_tip_done">확인</string>
 
     <string name="meal_breakfast">아침</string>
     <string name="meal_lunch">점심</string>
@@ -95,6 +104,7 @@
     <string name="offer_none">이 메뉴를 파는 식당 정보가 없어요</string>
     <string name="result_menu">메뉴</string>
     <string name="result_menu_title">%1$s %2$s 메뉴</string>
+    <string name="result_menu_note">Metchu가 추천할 수 있는 메뉴만 보여요</string>
     <string name="result_menu_failed">메뉴를 불러오지 못했어요. 닫고 다시 시도해 주세요.</string>
     <string name="result_ban">이 메뉴 추천하지 않기</string>
     <string name="result_unban">이번 추천에서 뺐어요 · 되돌리기</string>

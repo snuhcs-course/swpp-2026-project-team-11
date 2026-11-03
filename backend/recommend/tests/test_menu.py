@@ -1,6 +1,6 @@
 """The other dishes of a restaurant, for the result screen's menu list."""
 from menus.allergens import ALLERGEN_VERSION
-from menus.models import Food
+from menus.models import Food, MenuItem
 
 from .helpers import add_food
 from .test_edge_cases import SmallMenuTestCase
@@ -16,11 +16,21 @@ class RestaurantMenuTests(SmallMenuTestCase):
         add_food("Toast", restaurant="Test hall", meal="BR", price=2000)
         add_food("Curry", restaurant="Other hall", price=4500)
         _, url = self.start(meal=None)
+        # A menu's candidate ID is that of its MenuItem row.
         self.assertEqual(self.menu(url, "Test hall"), {"restaurant": "Test hall", "dishes": [
-            {"food_id": Food.objects.get(name=name).id, "display_name": name, "meal": meal, "price": price}
+            {"food_id": MenuItem.objects.get(raw_name=name).id, "display_name": name, "meal": meal, "price": price}
             for name, meal, price in [("Toast", "BR", 2000), ("Beef noodles", "LU", 6000),
                                       ("Chicken noodles", "LU", None), ("Rice bowl", "LU", 5000)]]})
         self.assertEqual([d["display_name"] for d in self.menu(url, "Other hall")["dishes"]], ["Curry"])
+
+    def test_a_set_is_listed_once_at_its_whole_price(self):
+        add_food("Pork cutlet", price=7000)
+        add_food("Curry udon", price=7000)
+        MenuItem.objects.filter(food__name__in=["Pork cutlet", "Curry udon"]).update(raw_name="Pork cutlet curry udon")
+        _, url = self.start()
+        dishes = [(d["display_name"], d["price"]) for d in self.menu(url, "Test hall")["dishes"]]
+        self.assertIn(("Pork cutlet curry udon", 7000), dishes)
+        self.assertEqual(len(dishes), 4)
 
     def test_lists_only_the_sessions_dishes(self):
         add_food("Toast", restaurant="Test hall", meal="BR", price=2000)

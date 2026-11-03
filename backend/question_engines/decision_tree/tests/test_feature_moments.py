@@ -47,7 +47,7 @@ class MomentCatalogTests(unittest.TestCase):
         self.assertEqual(set(catalog.by_id[1].summary()),
                          {"food_id", "name", "display_name", "food_group", "offers"})
 
-    def test_missing_legacy_std_is_preserved_as_missing(self):
+    def test_missing_std_is_preserved_as_missing(self):
         rows = candidates()
         for row in rows:
             del row["feature_std"]
@@ -70,11 +70,11 @@ class MomentInferenceTests(unittest.TestCase):
         zero = model(rows)
         for row in rows:
             del row["feature_std"]
-        legacy = model(rows)
-        np.testing.assert_array_equal(zero.values, legacy.values)
+        no_std = model(rows)
+        np.testing.assert_array_equal(zero.values, no_std.values)
         for answer in range(6):
             a = zero.observe(zero.prior, zero.salience_prior, 0, answer)
-            b = legacy.observe(legacy.prior, legacy.salience_prior, 0, answer)
+            b = no_std.observe(no_std.prior, no_std.salience_prior, 0, answer)
             for left, right in zip(a, b):
                 np.testing.assert_array_equal(left, right)
 
@@ -138,7 +138,7 @@ class MomentInferenceTests(unittest.TestCase):
         self.assertEqual(step["type"], "question")
         self.assertEqual(step["question_id"], "q:stable")
 
-    def test_group_averages_preserve_recipe_variation_and_legacy_indifference(self):
+    def test_group_averages_preserve_recipe_variation_and_indifference(self):
         rows = candidates(.35, 0)
         for row in rows:
             row["food_group"] = "Group"

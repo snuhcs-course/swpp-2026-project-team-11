@@ -44,7 +44,7 @@ class RunDailyPipelineTests(TestCase):
                          ["돈까스", "마라탕", "즉석마라탕", "카레우동"])
         self.assertFalse(Food.objects.exclude(feature_version=FEATURE_VERSION).exists())
         self.assertFalse(Food.objects.exclude(allergen_version=ALLERGEN_VERSION).exists())
-        self.assertIn("점심 4", output)
+        self.assertIn("점심 3", output)  # the combo is one sales menu
         self.assertIn("[4/4]", output)
 
     def test_a_failing_step_fails_the_run_after_every_step_ran(self):
