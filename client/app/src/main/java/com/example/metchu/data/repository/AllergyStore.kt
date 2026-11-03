@@ -3,15 +3,9 @@ package com.example.metchu.data.repository
 import android.content.Context
 import com.example.metchu.data.model.Allergen
 
-/**
- * The user's allergies, kept on this device only and sent with every new session.
- * [chosen] stays false until the allergy screen has been saved once, so the app
- * opens that screen on first launch.
- */
+/** The user's allergies, kept on this device only and sent with every new session. */
 class AllergyStore(context: Context) {
     private val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
-
-    val chosen: Boolean get() = prefs.contains(KEY)
 
     /** In [Allergen] order. */
     var allergies: List<Allergen>

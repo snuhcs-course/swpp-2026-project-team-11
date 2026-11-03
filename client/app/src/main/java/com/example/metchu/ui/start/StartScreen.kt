@@ -86,7 +86,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 /** Where the start button's center sits above the bottom, level with the question screen's answer circles. */
 val ActionCenterFromBottom = 202.dp
 
-/** The middle of the SNU campus, for when the user's position is unknown. */
+/** The SNU administration building (Building 60), shown until the user's position is known. */
 val CampusCenter = Point(37.4600, 126.9520)
 
 private enum class Sheet { MEAL, PLACE }
@@ -115,14 +115,10 @@ fun StartScreen(
     val english = LocalConfiguration.current.locales[0].language != "ko"
     val scope = rememberCoroutineScope()
 
+    // Location is asked for only when the user starts, the moment it is needed; the session
+    // starts after the answer either way.
     val permission = rememberLocationPermission()
     var askedForLocation by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        if (!permission.granted && !askedForLocation) {
-            askedForLocation = true
-            permission.request()
-        }
-    }
     val user = rememberUserPoint(permission.granted)
     // A new language recreates the screen; the words fade out first instead of jumping.
     var switching by remember { mutableStateOf(false) }
@@ -159,7 +155,13 @@ fun StartScreen(
 
         StartButton(
             loading = loading,
-            onClick = { onStart(meal) },
+            onClick = {
+                if (permission.granted || askedForLocation) onStart(meal)
+                else {
+                    askedForLocation = true
+                    permission.request { onStart(meal) }
+                }
+            },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).alpha(words)
         )
