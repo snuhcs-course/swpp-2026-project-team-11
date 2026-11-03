@@ -2,7 +2,7 @@ import datetime
 
 from django.test import TestCase
 
-from menus.services import get_candidates, get_feature_schema
+from menus.services import get_catalog, get_feature_schema
 from .. import DecisionTreeEngine
 
 
@@ -10,7 +10,7 @@ class CafeteriaIntegrationTests(TestCase):
     fixtures = ["menus_2026-09-29"]
 
     def test_real_lunch_candidates_can_be_used_without_api_key(self):
-        rows = get_candidates(datetime.date(2026, 9, 29), "LU")
+        rows = get_catalog(datetime.date(2026, 9, 29), "LU")[0]
         self.assertEqual(len(rows), 193)
         schema = get_feature_schema()
         engine = DecisionTreeEngine(rows, schema, context={"date": "2026-09-29", "meal": "LU"})
@@ -26,11 +26,11 @@ class CafeteriaIntegrationTests(TestCase):
         self.assertEqual(final["food"]["food_id"], original["food_id"])
 
     def test_no_menu_for_current_date_is_explicit(self):
-        engine = DecisionTreeEngine(get_candidates(datetime.date(2026, 10, 6)), get_feature_schema())
+        engine = DecisionTreeEngine(get_catalog(datetime.date(2026, 10, 6))[0], get_feature_schema())
         self.assertEqual(engine.start()["reason"], "empty_candidates")
 
     def test_changed_meal_context_rejects_snapshot(self):
-        rows = get_candidates(datetime.date(2026, 9, 29), "LU")
+        rows = get_catalog(datetime.date(2026, 9, 29), "LU")[0]
         schema = get_feature_schema()
         e = DecisionTreeEngine(rows, schema, config={"policy": "greedy"}, context={"date": "2026-09-29", "meal": "LU"})
         snap = e.snapshot()

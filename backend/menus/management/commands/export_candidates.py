@@ -32,12 +32,7 @@ class Command(BaseCommand):
         date = options["date"] or timezone.localdate()
         meal = options["meal"]
         version = options["feature_version"]
-        if version is None:
-            candidates, features, version = services.get_catalog(date, meal)
-        else:
-            candidates = services.get_candidates(date, meal, feature_version=version,
-                                                 include_std=(version == FEATURE_VERSION))
-            features = services.get_feature_schema(version)
+        candidates, features, version = services.get_catalog(date, meal, feature_version=version)
         text = json.dumps({
             "date": date.isoformat(),
             "meal": meal,

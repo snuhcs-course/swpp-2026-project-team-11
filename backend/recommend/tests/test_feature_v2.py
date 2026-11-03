@@ -46,9 +46,10 @@ class V2SessionTests(TestCase):
         self.assertNotEqual(questions["oily"], questions["greasy"])
 
     def test_v2_cannot_silently_run_without_std(self):
-        rows = services.get_candidates(DAY, feature_version="v2")
+        rows = services.get_catalog(DAY, feature_version="v2")[0]
+        without_std = [{k: v for k, v in row.items() if k != "feature_std"} for row in rows]
         with self.assertRaisesMessage(ValueError, "v2 requires std"):
-            DecisionTreeEngine(rows, services.get_feature_schema("v2"))
+            DecisionTreeEngine(without_std, services.get_feature_schema("v2"))
 
     def test_set_variants_stay_distinct_and_variety_is_asked(self):
         response = post(self.client, "/api/sessions/", {"date": str(DAY), "meal": "LU"})
@@ -67,7 +68,7 @@ class V2SessionTests(TestCase):
         guess = post(self.client, url + "recommend-now/").json()
         check_state(self, guess)
         self.assertEqual(guess["step"]["food"]["food_id"], self.foods[1].pk)
-        self.assertTrue(guess["step"]["food"]["display_name"].endswith(" (세트)"))
+        self.assertEqual(guess["step"]["food"]["display_name"], "돈까스와 우동")
 
     def test_version_selection_picks_majority_version_and_logs_partial_warning(self):
         legacy = Food.objects.create(name="Legacy", is_food=True, feature_version="v1")
@@ -90,7 +91,7 @@ class V2SessionTests(TestCase):
             rows, schema, version = services.get_catalog(DAY, "LU")
         self.assertEqual(version, "v2")
         self.assertEqual([r["food_id"] for r in rows], [f.pk for f in self.foods])
-        self.assertIn("serving 2/3 candidates with feature_version=v2 (2 v2 candidates present)",
+        self.assertIn("serving 2/3 actual menus with feature_version=v2",
                       "\n".join(cm.output))
 
     def test_retagging_shared_dish_on_later_date_keeps_earlier_day_on_v1(self):
@@ -141,5 +142,5 @@ class V2SessionTests(TestCase):
         self.assertEqual(response.status_code, 201)
         check_state(self, response.json())
         self.assertEqual(response.json()["candidate_count"], 2)
-        self.assertEqual(set(llm.offered_foods()), {"돈까스", "돈까스 (세트)"})
+        self.assertEqual(set(llm.offered_foods()), {"돈까스", "돈까스와 우동"})
         self.assertNotIn("feature_std", llm.prompt())

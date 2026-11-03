@@ -1,14 +1,9 @@
 # AI-generated: written with Claude (Anthropic) and reviewed by the team.
-name: Daily menu pipeline
+name: Legacy menu pipeline (manual recovery)
 
-# Fetches, preprocesses and tags the day's SNU cafeteria menu into the team's
-# shared Supabase database. Setup: backend/README.md, "Daily automation".
-#
-# GitHub only runs scheduled and manual ("Run workflow") triggers for workflow
-# files on the repository's default branch, so this runs once it is there.
+# Manual recovery for the former Supabase deployment. The live catalogue is
+# written by Metchu-DailyMenus on the mini PC; see docs/mini-pc-host.md.
 on:
-  schedule:
-    - cron: "0 22 * * *"  # 22:00 UTC = 07:00 KST, before breakfast menus are needed
   workflow_dispatch:
     inputs:
       date:

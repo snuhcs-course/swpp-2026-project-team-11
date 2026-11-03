@@ -1,7 +1,8 @@
 import unittest
 
 from ..evaluation import ResponseOracle, compare_policies
-from .helpers import small_catalog
+from ..catalog import CandidateCatalog
+from .helpers import candidate, small_catalog
 
 
 class EvaluationTests(unittest.TestCase):
@@ -12,6 +13,15 @@ class EvaluationTests(unittest.TestCase):
         forward = {q["id"]: a.answer(q["id"]) for q in c.questions}
         backward = {q["id"]: b.answer(q["id"]) for q in reversed(c.questions)}
         self.assertEqual(forward, backward)
+
+    def test_actual_menus_with_the_same_name_are_told_apart_by_id(self):
+        schema = [{"key": "beef"}, {"key": "soupy"}]
+        sets = [candidate(1, "A세트", "", .9, .1), candidate(2, "A세트", "", .1, .9)]
+        guess = {"target_kind": "food", "food": {"food_id": 2, "display_name": "A세트"}}
+        self.assertTrue(ResponseOracle(CandidateCatalog(sets, schema), 1, 0, 0).accepts(guess))
+        actual = CandidateCatalog([c | {"menu_profile": "rms-v1"} for c in sets], schema)
+        self.assertFalse(ResponseOracle(actual, 1, 0, 0).accepts(guess))
+        self.assertTrue(ResponseOracle(actual, 2, 0, 0).accepts(guess))
 
     def test_all_policies_use_the_same_targets_and_answers(self):
         c = small_catalog()

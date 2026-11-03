@@ -45,9 +45,12 @@ class ResponseOracle:
     def accepts(self, step):
         if step["target_kind"] == "group":
             return self.food_id in step["group"]["food_ids"]
+        exact = step["food"]["food_id"] == self.food_id
+        if exact or self.catalog.context.get("candidate_kind") == "menu-rms-v1":
+            return exact
         proposed = step["food"]["display_name"].strip().casefold()
         target = self.catalog.by_id[self.food_id].display_name.strip().casefold()
-        return step["food"]["food_id"] == self.food_id or proposed == target
+        return proposed == target
 
 
 def _percentile(values, fraction):
