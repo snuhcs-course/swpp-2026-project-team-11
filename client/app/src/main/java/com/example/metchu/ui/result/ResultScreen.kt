@@ -168,12 +168,14 @@ fun ResultScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), { if (!loading) onBack() }, Modifier.testTag("back"))
+                // "Start over" keeps the corner, so it never slides under the finger that tapped "Find another".
                 Pill {
-                    PillSegment(stringResource(R.string.result_home), onHome, start = 18.dp, end = 14.dp)
-                    if (current.type == Step.GUESS && step.guessId == current.guessId) {
+                    val more = current.type == Step.GUESS && step.guessId == current.guessId
+                    if (more) {
+                        PillSegment(stringResource(R.string.result_more), { if (!loading) onMore() }, start = 18.dp, end = 14.dp)
                         PillDivider()
-                        PillSegment(stringResource(R.string.result_more), { if (!loading) onMore() }, start = 14.dp, end = 18.dp)
                     }
+                    PillSegment(stringResource(R.string.result_home), onHome, start = if (more) 14.dp else 18.dp, modifier = Modifier.testTag("home"))
                 }
             }
         }

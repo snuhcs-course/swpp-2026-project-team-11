@@ -183,7 +183,8 @@ fun QuestionScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
-                if (count > 0) Pill(Modifier.testTag("recommendNow")) { PillSegment(stringResource(R.string.recommend_now), onRecommendNow) }
+                // Shown from the first question, so the corner does not change when it can be used.
+                Pill(Modifier.testTag("recommendNow")) { PillSegment(stringResource(R.string.recommend_now), onRecommendNow, enabled = count > 0) }
             }
 
             Column(

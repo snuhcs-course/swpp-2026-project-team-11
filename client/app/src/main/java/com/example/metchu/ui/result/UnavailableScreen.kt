@@ -1,7 +1,11 @@
 package com.example.metchu.ui.result
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -17,7 +21,6 @@ import com.example.metchu.data.model.SessionState
 import com.example.metchu.ui.common.Pill
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.Wordmark
-import com.example.metchu.ui.start.ActionCenterFromBottom
 import com.example.metchu.ui.start.Meal
 import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.screenBackground
@@ -32,14 +35,18 @@ fun UnavailableScreen(session: SessionState, hasAllergies: Boolean, onHome: () -
         else -> stringResource(R.string.unavailable_no_menu, meal, session.date)
     }
     Box(Modifier.fillMaxSize().screenBackground()) {
+        // "Start over" sits in the top-right corner, where the result screen has it.
+        Row(
+            Modifier.statusBarsPadding().fillMaxWidth().height(56.dp).padding(start = 20.dp, end = 20.dp, top = 6.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Pill { PillSegment(stringResource(R.string.result_home), onHome, modifier = Modifier.testTag("home")) }
+        }
         Text(
             message,
             Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 76.dp).testTag("unavailable"),
             style = MetchuType.Title
         )
-        Pill(
-            Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = ActionCenterFromBottom - 22.dp)
-        ) { PillSegment(stringResource(R.string.result_home), onHome) }
         Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
     }
 }
