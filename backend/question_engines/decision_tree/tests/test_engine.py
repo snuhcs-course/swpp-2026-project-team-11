@@ -26,6 +26,18 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(e.next_step()["options"][0]["id"], "yes")
         self.assertNotIn("diagnostics", step)
 
+    def test_answered_lists_the_current_history_in_english(self):
+        e = engine()
+        first = e.start()
+        e.answer(first["question_id"], "yes")
+        answered = [{"question_id": first["question_id"], "answer_id": "yes", "text": first["text"]}]
+        self.assertEqual(e.answered(), answered)
+        e.recommend_now()
+        e.undo()
+        self.assertEqual(e.answered(), answered)
+        e.undo()
+        self.assertEqual(e.answered(), [])
+
     def test_start_is_idempotent_and_answer_is_not_reapplied(self):
         e = engine()
         before = e.start()

@@ -38,6 +38,8 @@ data class AnsweredQuestion(val text: String, val answerId: String)
  * no question texts, so the phone remembers them, and trims the list to the
  * server's `question_count` after every reply so the two never disagree.
  * [shown] lists the guesses this session has proposed, for the result screen.
+ * [reasons] holds the latest explanation for each proposal; changing the answers
+ * invalidates that proposal's explanation.
  */
 class RecommendViewModel(private val repository: RecommendRepository) : ViewModel() {
 
@@ -55,6 +57,11 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
 
     private val _shown = MutableLiveData<List<Step>>(emptyList())
     val shown: LiveData<List<Step>> = _shown
+
+    private data class ReasonContext(val foodId: Int, val answers: List<AnsweredQuestion>)
+    private val _reasons = MutableLiveData<Map<String, String>>(emptyMap())
+    val reasons: LiveData<Map<String, String>> = _reasons
+    private val reasonContexts = mutableMapOf<String, ReasonContext>()
 
     private var lastRequest: (suspend () -> SessionState)? = null
     private var lastAnswered: AnsweredQuestion? = null
@@ -74,8 +81,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         language: String? = null
     ) {
         if (_loading.value == true) return
-        _history.value = emptyList()
-        _shown.value = emptyList()
+        forgetSession()
         request { repository.createSession(meal, engine, location?.current(), allergies, language) }
     }
 
@@ -138,8 +144,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         if (_loading.value == true) return
         _session.value = null
         _error.value = null
-        _history.value = emptyList()
-        _shown.value = emptyList()
+        forgetSession()
         lastRequest = null
     }
 
@@ -192,8 +197,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
             e.code() == 404 -> {
                 lastRequest = null
                 _session.value = null
-                _history.value = emptyList()
-                _shown.value = emptyList()
+                forgetSession()
                 _error.value = UiError(R.string.error_session_lost, canRetry = false)
             }
             // The LLM engine has no API key on this server; asking again cannot help.
@@ -209,10 +213,42 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
 
     private fun show(state: SessionState, answered: AnsweredQuestion? = null) {
         _history.value = (_history.value.orEmpty() + listOfNotNull(answered)).take(state.step.questionCount)
-        if (state.step.type == Step.GUESS && _shown.value.orEmpty().none { it.guessId == state.step.guessId }) {
-            _shown.value = _shown.value.orEmpty() + state.step
+        if (state.step.type == Step.GUESS) {
+            val shown = _shown.value.orEmpty()
+            _shown.value = if (shown.none { it.guessId == state.step.guessId }) shown + state.step
+                else shown.map { if (it.guessId == state.step.guessId) state.step else it }
         }
         _session.value = state
+        val proposal = state.step.proposalId ?: return
+        val food = state.step.food ?: return
+        val context = ReasonContext(food.foodId, _history.value.orEmpty())
+        if (reasonContexts[proposal] == context) return
+        reasonContexts[proposal] = context
+        _reasons.value = _reasons.value.orEmpty() - proposal
+        explain(state.sessionId, proposal, context)
+    }
+
+    private fun explain(sessionId: String, proposal: String, context: ReasonContext) {
+        viewModelScope.launch {
+            try {
+                val reason = repository.reason(sessionId)
+                if (_session.value?.sessionId == sessionId && reasonContexts[proposal] === context &&
+                    reason.foodId == context.foodId) {
+                    _reasons.value = _reasons.value.orEmpty() + (proposal to reason.reason)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "no reason for the dish", e)
+            }
+        }
+    }
+
+    private fun forgetSession() {
+        _history.value = emptyList()
+        _shown.value = emptyList()
+        _reasons.value = emptyMap()
+        reasonContexts.clear()
     }
 
     private companion object {

@@ -21,6 +21,12 @@ data class SessionState(
     val step: Step
 )
 
+/** Why the dish with [foodId] suits the user, in the session's language (GET .../reason/). */
+data class Reason(
+    @SerializedName("food_id") val foodId: Int,
+    val reason: String
+)
+
 /** The question engines the server can run a session with; see [SessionState.engine]. */
 object Engine {
     /** P10: picks each question from the dishes' extracted features. Answers at once. */
@@ -45,6 +51,8 @@ data class Step(
     // unavailable
     val reason: String?
 ) {
+    val proposalId: String? get() = guessId ?: group?.groupId ?: food?.let { "food:${it.foodId}" }
+
     companion object {
         const val QUESTION = "question"
         const val GUESS = "guess"

@@ -279,6 +279,12 @@ class DecisionTreeEngine:
         return self._set_pending({"kind": "guess", "id": node_id, "food_id": food_id,
                                   "planning": {"reason": "user_requested"}})
 
+    def answered(self):
+        """The answered questions of the current history, oldest first, with their English text."""
+        return [{"question_id": e["question_id"], "answer_id": e["answer_id"],
+                 "text": self.model.questions[self.model.question_index[e["question_id"]]]["text"]}
+                for e in self._events if e["type"] == "answer"]
+
     def diagnostics(self):
         probabilities = list(self.probabilities.values())
         entropy = -math.fsum(p * math.log2(p) for p in probabilities if p > 0)

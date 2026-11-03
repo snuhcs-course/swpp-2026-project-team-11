@@ -7,12 +7,19 @@
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
     POST /api/sessions/<id>/recommend-now/                                 -> state
     POST /api/sessions/<id>/undo/                                          -> state
+    GET  /api/sessions/<id>/reason/              -> {"food_id", "reason", "source"}
     GET  /api/health/                                                      -> {"status": "ok"}
 
 Every success returns the same session state (see `RecommendSession.public_state`),
 so the client always redraws from one shape. Errors are
 `{"error": {"code", "message"}}`; a 409 `stale_step` also carries the current
 `state`, so a double tap redraws instead of failing.
+
+`reason` explains the dish of the current guess or recommendation in one or two
+sentences of the session's language (recommend/reasons.py). The phone asks for it
+after drawing the result, as it can take an LLM call; `source` is "llm", or
+"template" when the server has no key or the LLM failed. With no dish on screen
+it is a 409 `stale_step` with the state.
 
 `health` touches nothing; it is for checking from a browser that the server can
 be reached, for example through the tunnel of `manage.py serve_public`.
@@ -141,6 +148,18 @@ def _action(request, session_id: str, apply):
         except ValueError as error:
             return _error(400, "invalid_request", str(error))
         return JsonResponse(session.public_state())
+
+
+@require_GET
+def reason(request, session_id: str):
+    session = sessions.get(session_id)
+    if session is None:
+        return _error(404, "session_not_found", "No such session. Start a new one.")
+    try:
+        return JsonResponse(session.reason())
+    except sessions.StaleStep as error:
+        with session.lock:
+            return _error(409, "stale_step", str(error), state=session.public_state())
 
 
 @csrf_exempt

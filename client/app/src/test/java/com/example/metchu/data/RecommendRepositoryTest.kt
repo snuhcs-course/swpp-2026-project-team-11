@@ -114,6 +114,18 @@ class RecommendRepositoryTest {
     }
 
     @Test
+    fun reasonReadsTheReasonForTheDishOnScreen() = runTest {
+        reply("reason")
+        val reason = repository.reason("abc")
+        assertEquals(138, reason.foodId)
+        assertTrue(reason.reason.isNotBlank())
+
+        val request = server.takeRequest()
+        assertEquals("GET", request.method)
+        assertEquals("/api/sessions/abc/reason/", request.path)
+    }
+
+    @Test
     fun answerSendsQuestionAndAnswerIds() = runTest {
         reply("question")
         repository.answer("abc", "q:soupy", "probably_no")

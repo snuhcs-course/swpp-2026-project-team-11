@@ -160,7 +160,7 @@ emulator, set a position under Extended controls > Location (for example
 | first launch | Settings: one chip per allergen, a note that the tags are AI estimates, the engine (decision tree or LLM) | Back keeps the choices; there is no save button |
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
 | `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" |
-| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet listing them, one line per cafeteria and meal | "Find another" turns it down and asks on (only on the dish the server proposes now); ‹ undoes; "Start over"; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it; the sheet's handle drags or taps it between low, middle and high |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one line per cafeteria and meal | "Find another" turns it down and asks on (only on the dish the server proposes now); ‹ undoes; "Start over"; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it; the sheet's handle drags or taps it between low, middle and high |
 | `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them | Start over |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
@@ -175,6 +175,12 @@ every reply, also when a lost reply is retried and the server answers with
 it. A picked answer is held for 0.45 s before it is sent, and is dropped if Back
 moved the session meanwhile. The progress bar fills by `1 − 0.72^answers` (at least answers ÷
 `max_questions` when the server caps them), up to 95 %.
+
+The app fetches a reason after displaying a proposal and fetches it again if
+the user changes the answers and sees the same proposal. With `OPENROUTER_API_KEY`
+set, a reason request for any engine can make up to two model calls. Without the
+key, or without evidence that a dish fits the user's answers, the server can
+give a template explanation. A network failure leaves the reason out.
 
 "Find another" is `feedback` with `accepted: false`: the result screen shows a
 `guess`, and the app never accepts one. Leaving with "Start over" simply drops
@@ -244,6 +250,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |
 | `POST /api/sessions/<id>/recommend-now/` | | Ask for a guess immediately |
 | `POST /api/sessions/<id>/undo/` | | Go back one step |
+| `GET /api/sessions/<id>/reason/` | | `{"food_id", "reason", "source"}`: why the dish on screen suits the user, in the session's language. `source` is `llm`, or `template` when the server has no key or the LLM failed. With no dish on screen, a 409 `stale_step` |
 
 Every success returns the same session state:
 

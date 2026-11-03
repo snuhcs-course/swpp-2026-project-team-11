@@ -109,6 +109,7 @@ the engine; sensory features alone do not establish ingredient safety.
 | `recommend_now()` | Offer a concrete, eligible input food immediately |
 | `undo()` | Restore the exact step before the last event |
 | `snapshot()` / `from_snapshot(...)` | Persist/replay displayed actions without rerunning timed search |
+| `answered()` | The answered questions of the current history, oldest first: `question_id`, `answer_id` and the English `text` |
 | `diagnostics()` | Separate model, question-count, posterior and planning logs |
 
 All methods return detached JSON-compatible dictionaries. Invalid or stale IDs

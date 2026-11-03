@@ -3,6 +3,7 @@
     create(date, meal, engine, location, allergies, source, language) -> RecommendSession
     get(session_id)            -> RecommendSession | None
     session.public_state()     -> what the phone is allowed to see
+    session.reason()           -> why the proposed dish suits the user (recommend/reasons.py)
 
 A session runs one of ENGINES, chosen when it is created: the P10 decision tree
 or the P13/P14 LLM engine. Both have the same session API and step shapes, so
@@ -26,6 +27,9 @@ engine would send thousands of dish names with every question.
 carries its `distance_m`, and with RECOMMEND_MAX_DISTANCE_M set, cafeterias
 farther than that are left out before the engine sees the candidates.
 
+`reason()` calls the LLM outside the session lock, so a tap on the result screen
+never waits for it, and keeps each reason for the answers it was written for.
+
 Sessions live in this process only. `runserver` restarts and multi-worker
 deployments lose them; persisting `engine.snapshot()` is the planned replacement.
 """
@@ -33,6 +37,7 @@ deployments lose them; persisting `engine.snapshot()` is the planned replacement
 from __future__ import annotations
 
 import datetime
+import json
 import threading
 import uuid
 from collections import OrderedDict
@@ -41,6 +46,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from menus.services import get_catalog, get_store_catalog
+from recommend import reasons
 from recommend.distance import with_distances
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.llm import LLMConfigError, LLMEngine
@@ -75,6 +81,8 @@ class RecommendSession:
         candidates = with_distances(candidates, location, settings.RECOMMEND_MAX_DISTANCE_M)
         self.feature_version = version
         self.candidate_count = len(candidates)
+        self.candidates = {candidate["food_id"]: candidate for candidate in candidates}
+        self.reasons = {}
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
         config = {"max_questions": self.max_questions, "language": language}
         if engine == "llm":
@@ -111,6 +119,37 @@ class RecommendSession:
 
     def undo(self) -> None:
         self.engine.undo()
+
+    def reason(self) -> dict:
+        """{"food_id", "reason", "source"} for the dish on screen. Raises StaleStep without one."""
+        with self.lock:
+            step = self.engine.next_step()
+            if step["type"] not in ("guess", "recommendation"):
+                raise StaleStep("No dish is proposed now.")
+            answered = self.engine.answered()
+            key = json.dumps([step.get("guess_id"), step["food"]["food_id"], answered])
+            cached = self.reasons.get(key)
+        if cached is None:
+            cached = {"food_id": step["food"]["food_id"],
+                      **reasons.explain(self._facts(step, answered), reasons.default_llm())}
+            with self.lock:
+                self.reasons[key] = cached
+        return cached
+
+    def _facts(self, step: dict, answered: list[dict]) -> reasons.Facts:
+        food, group = step["food"], step.get("group")
+        features = self.candidates[food["food_id"]].get("features") or {}
+        members = tuple(self.candidates[food_id]["display_name"] for food_id in group["food_ids"]) if group else ()
+        names = {food["display_name"], *members}
+        return reasons.Facts(
+            language=self.language,
+            dish=group["display_name"] if group else food["display_name"],
+            members=members,
+            restaurants=tuple(dict.fromkeys(offer["restaurant"] for offer in food["offers"])),
+            traits=tuple(key.replace("_", " ") for key, value in features.items() if value >= .6),
+            answers=tuple(reasons.answer_facts(answered, features, self.feature_version)),
+            others=tuple({c["display_name"] for c in self.candidates.values()} - names),
+        )
 
     def public_state(self) -> dict:
         step = self.engine.next_step()
