@@ -127,8 +127,8 @@ covers the details and a fixed address with a named tunnel.
 The video shows the earlier screens; the steps below are for the current app
 (the i3-P4 redesign).
 
-1. The first launch opens Settings: pick any allergies and tap ‹. On the start
-   screen, set the sentence to **Lunch** (tap the orange word) and tap the round
+1. The first launch asks for the language, then any allergies (tap **Next**),
+   and points to where both change later. On the start screen, set the sentence to **Lunch** (tap the orange word) and tap the round
    **Start** button. The meal starts at the next one by the clock; the fixture
    has breakfast, lunch and dinner for 2026-09-29.
 2. Answer with the five circles (no … yes) or **I'm not sure**. ‹ undoes the
