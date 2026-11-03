@@ -78,6 +78,7 @@
     <string name="result_caption_lunch">점심 추천 메뉴</string>
     <string name="result_caption_dinner">저녁 추천 메뉴</string>
     <string name="result_caption_any">오늘의 추천 메뉴</string>
+    <string name="reason_writing">이 메뉴를 고른 이유를 정리하고 있어요…</string>
     <string name="result_home">처음으로</string>
     <string name="result_more">메뉴 더 찾기</string>
     <string name="result_nearby">가까운 식당</string>

@@ -83,8 +83,10 @@ import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Pill
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
+import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.Wordmark
 import com.example.metchu.ui.common.fadeEdges
+import com.example.metchu.ui.common.rememberSlow
 import com.example.metchu.ui.main.AnsweredQuestion
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -219,7 +221,7 @@ fun QuestionScreen(
             }
 
             AnswerScale(offered, active, pressing, loading, pick, press)
-            ProgressBlock(session)
+            ProgressBlock(session, loading)
         }
         Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
     }
@@ -412,9 +414,12 @@ private fun ScaleCircle(
     }
 }
 
-/** The grey bar and the phase under it; it fills fast at first and slower later. */
+/**
+ * The grey bar and the phase under it; it fills fast at first and slower later. A spinner
+ * at the end of the phase line shows that the next step is on its way.
+ */
 @Composable
-private fun ProgressBlock(session: SessionState) {
+private fun ProgressBlock(session: SessionState, loading: Boolean) {
     val fill = progressFill(session.step.questionCount, session.maxQuestions)
     val width by animateFloatAsState(fill, tween(450, easing = SheetEasing), label = "progress")
     val label = stringResource(R.string.progress)
@@ -433,10 +438,13 @@ private fun ProgressBlock(session: SessionState) {
             Box(Modifier.fillMaxHeight().fillMaxWidth(width).background(MetchuColors.Grey400))
         }
         Spacer(Modifier.height(6.dp))
-        Text(
-            stringResource(phaseText(fill)),
-            Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("phase"),
-            style = MetchuType.Caption
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(phaseText(fill)),
+                Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }.testTag("phase"),
+                style = MetchuType.Caption
+            )
+            if (rememberSlow(loading)) Spinner(MetchuColors.Grey600, 14.dp)
+        }
     }
 }

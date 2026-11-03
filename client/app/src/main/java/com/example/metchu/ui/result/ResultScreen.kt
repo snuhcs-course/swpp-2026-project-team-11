@@ -2,7 +2,11 @@ package com.example.metchu.ui.result
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -104,7 +108,7 @@ import kotlin.math.abs
 fun ResultScreen(
     session: SessionState,
     shown: List<Step>,
-    reasons: Map<String, String>,
+    reasons: Map<String, String?>,
     place: Place,
     loading: Boolean,
     onBack: () -> Unit,
@@ -182,6 +186,7 @@ fun ResultScreen(
         ResultSheet(
             step = step,
             reason = reasons[step.proposalId],
+            writingReason = step.proposalId in reasons && reasons[step.proposalId] == null,
             caption = captionFor(session.meal),
             cafeterias = cafeterias,
             place = place,
@@ -260,6 +265,7 @@ private fun ShownChips(shown: List<Step>, viewing: Int, modifier: Modifier = Mod
 private fun ResultSheet(
     step: Step,
     reason: String?,
+    writingReason: Boolean,
     @StringRes caption: Int,
     cafeterias: CafeteriaList,
     place: Place,
@@ -333,10 +339,19 @@ private fun ResultSheet(
                     else -> null
                 }
                 if (description != null) Text(description, Modifier.padding(top = 6.dp), style = MetchuType.Body)
-                // The reason comes after the dish is drawn, so it fades in.
+                // The reason comes after the dish is drawn: a pulsing line holds its place, then it fades in.
                 val reasonIn by animateFloatAsState(if (reason != null) 1f else 0f, tween(300), label = "reason")
                 if (reason != null) {
                     Text(reason, Modifier.padding(top = 8.dp).graphicsLayer { alpha = reasonIn }.testTag("reason"), style = MetchuType.Body)
+                } else if (writingReason) {
+                    val pulse by rememberInfiniteTransition(label = "writing")
+                        .animateFloat(1f, 0.4f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "pulse")
+                    Text(
+                        stringResource(R.string.reason_writing),
+                        Modifier.padding(top = 8.dp).graphicsLayer { alpha = pulse }.testTag("reasonWriting"),
+                        style = MetchuType.Body,
+                        color = MetchuColors.Grey600
+                    )
                 }
             }
 
