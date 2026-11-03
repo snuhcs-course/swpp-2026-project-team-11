@@ -47,7 +47,7 @@ class V2SessionTests(TestCase):
 
     def test_dt_cannot_silently_run_without_std(self):
         rows = [{key: value for key, value in row.items() if key != "feature_std"}
-                for row in services.get_candidates(DAY)]
+                for row in services.get_catalog(DAY)[0]]
         with self.assertRaisesMessage(ValueError, "the feature schema requires std"):
             DecisionTreeEngine(rows, services.get_feature_schema())
 
@@ -68,7 +68,7 @@ class V2SessionTests(TestCase):
         guess = post(self.client, url + "recommend-now/").json()
         check_state(self, guess)
         self.assertEqual(guess["step"]["food"]["food_id"], self.foods[1].pk)
-        self.assertTrue(guess["step"]["food"]["display_name"].endswith(" (세트)"))
+        self.assertEqual(guess["step"]["food"]["display_name"], "돈까스와 우동")
 
     def test_dishes_without_current_features_are_left_out_with_a_warning(self):
         untagged = Food.objects.create(name="Untagged", is_food=True, feature_version="v1",
@@ -79,7 +79,7 @@ class V2SessionTests(TestCase):
         self.assertEqual(len(schema), 33)
         self.assertEqual([r["food_id"] for r in rows], [f.pk for f in self.foods])
         self.assertTrue(all(set(row["feature_std"]) == set(FEATURE_KEYS) for row in rows))
-        self.assertIn("1 dishes without v2 features are not served", "\n".join(cm.output))
+        self.assertIn("serving 2/3 actual menus with feature_version=v2", "\n".join(cm.output))
 
     def test_retagging_on_a_later_date_leaves_other_days_dishes_untagged(self):
         old_day = datetime.date(2026, 9, 29)
@@ -100,7 +100,7 @@ class V2SessionTests(TestCase):
         with self.assertLogs("menus.services", level="WARNING") as cm:
             rows, _ = services.get_catalog(old_day, "LU")
         self.assertEqual({r["name"] for r in rows}, {"짬뽕"})
-        self.assertIn("2 dishes without v2 features", "\n".join(cm.output))
+        self.assertIn("serving 1/3 actual menus with feature_version=v2", "\n".join(cm.output))
 
     def test_dt_policy_setting_and_diagnostics_expose_version_and_counts(self):
         session = sessions.create(DAY, "LU", "decision_tree")
@@ -128,5 +128,5 @@ class V2SessionTests(TestCase):
         self.assertEqual(response.status_code, 201)
         check_state(self, response.json())
         self.assertEqual(response.json()["candidate_count"], 2)
-        self.assertEqual(set(llm.offered_foods()), {"돈까스", "돈까스 (세트)"})
+        self.assertEqual(set(llm.offered_foods()), {"돈까스", "돈까스와 우동"})
         self.assertNotIn("feature_std", llm.prompt())

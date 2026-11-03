@@ -54,10 +54,10 @@ class Command(BaseCommand):
             except CommandError as error:  # keep going: later steps still help, then fail below
                 errors.append(f"{command[0]}: {error}")
 
-        counts = {meal: len(services.get_candidates(date, meal))
+        counts = {meal: len(services.get_catalog(date, meal)[0])
                   for meal in ("BR", "LU", "DN")}
         self.stdout.write(self.style.SUCCESS(
             f"{day} 추천 후보: 아침 {counts['BR']} / 점심 {counts['LU']} / 저녁 {counts['DN']} "
-            f"/ 하루 {len(services.get_candidates(date))}"))
+            f"/ 하루 {len(services.get_catalog(date)[0])}"))
         if errors:
             raise CommandError("\n".join(errors))

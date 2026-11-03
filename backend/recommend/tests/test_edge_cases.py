@@ -251,18 +251,6 @@ class MenuDataTests(SmallMenuTestCase):
         self.assertEqual(sorted((o["restaurant"], o["price"]) for o in offers["Chicken noodles"]),
                          [("Second hall", 7000), ("Test hall", None)])
 
-    def test_set_and_single_variants_are_shown_apart(self):
-        add_food("Bibimbap", restaurant="Hall A")
-        add_food("Bibimbap", restaurant="Hall B", is_set=True)
-        state, url = self.start()
-        self.assertEqual(state["candidate_count"], 5)
-        shown = {}
-        for _ in range(5):
-            step = self.call(url + "recommend-now/")["step"]
-            shown[step["food"]["display_name"]] = step["food"]["offers"][0]["restaurant"]
-            self.call(url + "feedback/", {"guess_id": step["guess_id"], "accepted": False})
-        self.assertEqual((shown["Bibimbap"], shown["Bibimbap (세트)"]), ("Hall A", "Hall B"))
-
     def test_menu_change_does_not_disturb_a_running_session(self):
         state, url = self.start()
         add_food("Late addition", rice=0.9)

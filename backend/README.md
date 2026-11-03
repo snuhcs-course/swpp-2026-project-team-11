@@ -1,5 +1,9 @@
 # Metchu! backend
 
+The live team deployment now uses the Windows mini PC and its local SQLite database.
+See [host updates and rollback](../docs/mini-pc-host.md); the Supabase instructions
+below describe the earlier deployment and recovery reference.
+
 Django 5.2 server, on local SQLite or the team's shared Supabase Postgres
 ([Shared database](#shared-database-supabase-p8)). For now it holds the MVP's candidate set:
 **the SNU cafeteria dishes of a given day**, split and merged into real dishes
@@ -44,7 +48,7 @@ This loads `menus/fixtures/menus_2026-11-02.json`:
 - v2 features (means and std) and allergen tags already filled in
 
 > **주의:** 스냅샷에는 2026-11-02 데이터만 있습니다. 날짜를 생략하면 "오늘" 기준이라 빈 목록이 나오니, 반드시 날짜를 넘기세요.
-> 예: `--date 2026-11-02`, `services.get_candidates(datetime.date(2026, 11, 2))`
+> 예: `--date 2026-11-02`, `services.get_catalog(datetime.date(2026, 11, 2))[0]`
 
 ## B. Build a day's DB with your own API key
 
@@ -334,20 +338,45 @@ services.get_feature_schema()
 # [{"key": "spicy", "question": "Do you feel like something spicy?",
 #   "question_en": "...", "family": "taste"}, ...]  (33 features)
 
-services.get_candidates(datetime.date(2026, 11, 2), meal="LU")   # meal=None: whole day, date=None: today
-# [{"food_id", "name", "display_name", "food_group",
+candidates, schema = services.get_catalog(datetime.date(2026, 11, 2), meal="LU")   # meal=None: whole day, date=None: today
+# One candidate per sales menu, named as the restaurant lists it:
+# [{"food_id", "name", "display_name", "food_group", "menu_profile": "rms-v1",
 #   "features": {"spicy": 0.9, "soupy": 1.0, ...}, "feature_std": {"spicy": 0.1, ...},
 #   "offers": [{"restaurant": "학생회관식당", "meal": "LU", "price": 3000,
 #               "lat": 37.45932, "lng": 126.95058}, ...]}, ...]
 
-# New sessions load candidates and questions together:
-candidates, schema = services.get_catalog(datetime.date(2026, 11, 2), meal="LU")
 # The same for the restaurants near the stations (offers carry the given meal):
 candidates, schema = services.get_store_catalog(meal="DN")
 ```
 
-Only dishes tagged with the current `FEATURE_VERSION` (v2) are candidates; `get_catalog`
-logs a warning with the number of served dishes left out for lack of features.
+A menu is a candidate only when every main dish is tagged with the current
+`FEATURE_VERSION` (v2); `get_catalog` logs how many of the served menus it kept.
+
+### Actual menu candidates and set composition
+
+`get_catalog` and `get_store_catalog` return the original purchasable menu,
+including its original name, price and restaurant offers. Main dishes remain
+internal feature records; they are not separate proposals for the same set.
+Each feature of a menu containing n main dishes is
+`sqrt(sum(x_i ** 2) / n)`. A singleton keeps its original feature values.
+
+Recipe spread is carried as an RMS dispersion proxy, not an independently
+measured standard deviation for the set. Valid bounded component moments keep
+this proxy bounded too: the mean squared deviations are at most
+`mean(x) - mean(x ** 2) <= rms(x) * (1 - rms(x))`.
+No assumption that the component recipes vary independently is made.
+
+A partially tagged set is withheld whole. Allergy and distance filtering happen
+at the complete sale-offer boundary. Equal menu names with different components
+remain distinct; identical original menus can list multiple restaurant offers.
+The transport key `food_id` is an opaque menu-candidate identifier derived from
+sales rows, not a `Food` primary key. It stays fixed within a session.
+Generic cuisine/group proposals are disabled for these menu candidates.
+
+`get_catalog`, `get_store_catalog` and `export_candidates` share the actual-menu
+candidate path; explicit feature-version exports use the same path.
+Inference reuses the frozen feature policy; composition correctness does not
+establish preference accuracy for real users.
 
 ### Feature-only RL
 
@@ -424,7 +453,7 @@ variant from another date without modifying rows not served on the target date).
 `features` remains a scalar mean dictionary; `feature_std` stores the matching
 std dictionary. `meal_variety` is 1 for sets and 0 otherwise, always with std 0.
 Existing food groups are preserved; new groups are left empty rather than
-introducing a second model task.
+introducing a second model task. Recommendation names come from the original menu line.
 
 Valid v2 data on an existing variant supplies a new variant without an API call.
 `--force` reevaluates each name once, `--limit` counts distinct names, and failed

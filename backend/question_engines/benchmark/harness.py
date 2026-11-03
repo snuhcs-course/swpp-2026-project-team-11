@@ -8,7 +8,8 @@ thinking (or the simulator's LLM call) is never counted as latency. The LLM
 engine's calls, tokens and cost (as OpenRouter reports it) come from its own
 diagnostics.
 
-A proposal is accepted when it is a wanted menu or a kind of it (accepted_by_rule).
+A proposal is accepted when it matches a wanted candidate (accepted_by_rule);
+historical dish scenarios can also match their name aliases.
 Otherwise the simulated user decides whether they would take it anyway, except for
 a close alternative, where only the wanted menu counts. `first_guess_exact` keeps
 the strict view: the first proposal was a wanted menu by the rule.
@@ -54,13 +55,16 @@ def accepted_by_rule(scenario, step) -> bool:
     return is_wanted(scenario, step["food"]["food_id"], (step.get("group") or {}).get("food_ids"))
 
 
-def proposal_text(step, key="display_name") -> str:
-    """How a proposal reads. key="name" drops the set marker ("떡볶이 (세트)" -> "떡볶이"): the
-    simulated user judges a dish once, whether it comes as a set or alone."""
-    food = step["food"][key]
-    if step.get("group"):
+def proposal_text(step) -> str:
+    """Full sales-menu label, including offer context when available."""
+    food = step["food"]["display_name"]
+    if step.get("group"):  # Replaying a historical dish-level scenario.
         return f"a kind of dish, {step['group']['display_name']} (for example {food})"
-    return food
+    offers = step["food"].get("offers", [])
+    context = list(dict.fromkeys(
+        f"{o['restaurant']} ({o['meal']}, {o['price'] if o['price'] is not None else 'unknown'} KRW)"
+        for o in offers))
+    return food + (" — " + "; ".join(context) if context else "")
 
 
 class EngineFactory:
@@ -160,7 +164,7 @@ def play(factory, scenario, user, repeat=0, anytime=ANYTIME) -> dict:
                         record["first_guess_exact"] = accepted_by_rule(scenario, step)
                 record["trace"].append({"proposal": step["food"]["food_id"],
                                         "group": (step.get("group") or {}).get("food_ids"),
-                                        "label": proposal_text(step, "name"), **verdict,
+                                        "label": proposal_text(step), **verdict,
                                         "state": explain(engine)})
                 if not accepted and record["guesses"] >= MAX_REJECTIONS:  # no next turn is asked for
                     record["outcome"] = "gave_up"
@@ -214,6 +218,6 @@ class SimulatedUser:
             return {"accepted": True, "judged_by": "rule"}
         if self.scenario["situation"] == "close_alternative":
             return {"accepted": False, "judged_by": "rule_only"}
-        taken = self.simulator.takes(self.persona, proposal_text(step, "name"),
-                                     served=self.scenario["situation"] != "not_in_menu")
+        taken = self.simulator.takes(self.persona, proposal_text(step),
+                                     served=self.scenario["situation"] != "not_in_menu", menu_id=step["food"]["food_id"])
         return {"accepted": taken, "judged_by": "simulator"}
