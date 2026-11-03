@@ -763,6 +763,43 @@ class RecommendViewModelTest {
         assertIdle(guess)
     }
 
+    // --- banning a dish for the session ---
+
+    @Test
+    fun aBanLastsUntilTheSessionEnds() {
+        val foodId = guess.step.food!!.foodId
+        startWith(guess)
+        api.reply(guess)
+        viewModel.ban(foodId, true)
+        assertEquals(listOf("ban ${guess.sessionId} $foodId true"), api.calls)
+        assertEquals(setOf(foodId), viewModel.banned.value)
+        assertIdle(guess)
+
+        api.reply(guess)
+        viewModel.ban(foodId, false)
+        assertEquals(emptySet<Int>(), viewModel.banned.value)
+
+        api.reply(guess)
+        viewModel.ban(foodId, true)
+        viewModel.startOver()
+        assertEquals(emptySet<Int>(), viewModel.banned.value)
+    }
+
+    @Test
+    fun aFailedBanIsNotRememberedAndTryAgainSendsIt() {
+        val foodId = guess.step.food!!.foodId
+        startWith(guess)
+        api.fail(IOException("offline"))
+        viewModel.ban(foodId, true)
+        assertIdle(guess, noServer)
+        assertEquals(emptySet<Int>(), viewModel.banned.value)
+
+        api.reply(guess)
+        viewModel.retry()
+        assertEquals(setOf(foodId), viewModel.banned.value)
+        assertEquals(2, api.calls.size)
+    }
+
     // --- the menu of a cafeteria ---
 
     @Test

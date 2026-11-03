@@ -394,28 +394,22 @@ class MainActivityTest {
     }
 
     @Test
-    fun aBannedDishIsLeftOutOfLaterSessionsUntilSettingsLetsItBack() {
-        val food = guess.step.food!!
+    fun aBanLastsUntilStartOver() {
+        val foodId = guess.step.food!!.foodId
         startWith(guess)
-        compose.onNodeWithText(text(R.string.result_ban)).performClick()
-        compose.onNodeWithText(text(R.string.result_unban)).assertIsDisplayed()
-        assertEquals(emptyList<String>(), api.calls.toList())
+        api.reply(guess)
+        tapText(R.string.result_ban)
+        assertEquals("ban ${guess.sessionId} $foodId true", api.calls.last())
+        api.reply(guess)
+        tapText(R.string.result_unban)
+        assertEquals("ban ${guess.sessionId} $foodId false", api.calls.last())
+        api.reply(guess)
+        tapText(R.string.result_ban)
 
+        // Start over ends the session, and the next one starts with no ban.
         tapText(R.string.result_home)
-        pickMeal(R.string.meal_lunch)
-        api.reply(question)
-        tap("start")
-        assertEquals("create LU decision_tree -${food.foodId} en", api.calls.last())
-
-        tap("home")
-        tap("settings")
-        compose.onNodeWithText(food.displayName).assertIsDisplayed()
-        compose.onNodeWithTag("banned_${food.foodId}").performClick()
-        compose.onNodeWithTag("banned_${food.foodId}").assertDoesNotExist()
-        tap("back")
-        api.reply(question)
-        tap("start")
-        assertEquals("create LU decision_tree en", api.calls.last())
+        startWith(guess)
+        compose.onNodeWithText(text(R.string.result_ban)).assertIsDisplayed()
     }
 
     @Test
