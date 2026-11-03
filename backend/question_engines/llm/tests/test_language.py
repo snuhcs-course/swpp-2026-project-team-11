@@ -40,6 +40,13 @@ class KoreanSessionTests(SimpleTestCase):
         self.assertEqual(engine.start()["text"], BROTH_KO)
         self.assertIn("question_ko", self.llm.prompt())
 
+    def test_english_wording_with_or_without_a_korean_menu_name_retries(self):
+        for wrong in (BROTH, "Would you like 물냉면?"):
+            with self.subTest(wrong=wrong):
+                engine = self.engine(ask_ko(BROTH, wrong), ask_ko(BROTH, BROTH_KO))
+                self.assertEqual(engine.start()["text"], BROTH_KO)
+                self.assertEqual(len(self.llm.calls), 2)
+
     def test_the_fixed_fallback_questions_are_shown_in_korean(self):
         engine = self.engine(TimeoutError(), TimeoutError())
         self.assertEqual(engine.start()["text"], KOREAN[FALLBACK_QUESTIONS[0]])
