@@ -24,7 +24,7 @@ from __future__ import annotations
 import random
 import statistics
 
-from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
+from menus.features.schema import FEATURE_KEYS
 from menus.services import get_feature_schema
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.decision_tree.catalog import CandidateCatalog
@@ -72,7 +72,7 @@ def evaluate(runset, reference, policy, trials=None, seed=20261020) -> dict:
     index = {key: i for i, key in enumerate(runset.keys)}
     extracted = {name: ({k: float(runset.mean(name)[i]) for k, i in index.items()},
                         {k: float(runset.std(name)[i]) for k, i in index.items()}) for name in shared}
-    schema = get_feature_schema(FEATURE_VERSION)
+    schema = get_feature_schema()
     catalogs = {"human": CandidateCatalog(candidates(shared), schema),
                 "ai": CandidateCatalog(candidates(extracted), schema)}
     targets = [c.food_id for c in catalogs["human"].candidates]

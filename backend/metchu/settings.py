@@ -156,7 +156,7 @@ RECOMMEND_MAX_DISTANCE_M = max(int(os.environ.get('METCHU_MAX_DISTANCE_M') or 0)
 RECOMMEND_STORE_MENU_CACHE_S = 300
 
 # Menu date used when the client sends none. Unset means today in Seoul; the
-# shared fixture only has 2026-09-29, so set METCHU_MENU_DATE to demo with it.
+# shared fixture only has 2026-11-02, so set METCHU_MENU_DATE to demo with it.
 RECOMMEND_DEFAULT_DATE = (
     datetime.date.fromisoformat(os.environ['METCHU_MENU_DATE'])
     if os.environ.get('METCHU_MENU_DATE') else None
