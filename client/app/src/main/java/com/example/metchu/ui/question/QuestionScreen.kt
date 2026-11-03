@@ -120,13 +120,14 @@ private class Level(val id: String, val size: Dp, val color: Color, @StringRes v
 private val Levels = listOf(
     Level(AnswerId.NO, 70.dp, MetchuColors.Grey800, R.string.level_no, Icons.Cross),
     Level(AnswerId.PROBABLY_NO, 58.dp, MetchuColors.Grey800, R.string.level_probably_no, null),
-    Level(AnswerId.ANY, 58.dp, MetchuColors.Grey400, R.string.level_any, null, ink = MetchuColors.Grey600),
+    // "Doesn't matter" keeps the circle's light grey in its caption, its answer line and the list.
+    Level(AnswerId.ANY, 58.dp, MetchuColors.Grey400, R.string.level_any, null),
     Level(AnswerId.PROBABLY_YES, 58.dp, MetchuColors.Primary, R.string.level_probably_yes, null),
     Level(AnswerId.YES, 70.dp, MetchuColors.Primary, R.string.level_yes, Icons.Check)
 )
 
 /** The color a past question keeps: the color of its answer. */
-fun answerColor(answerId: String): Color = Levels.firstOrNull { it.id == answerId }?.ink ?: MetchuColors.Grey600
+fun answerColor(answerId: String): Color = Levels.firstOrNull { it.id == answerId }?.ink ?: MetchuColors.Grey400
 
 @StringRes
 private fun answerLabel(answerId: String): Int =
@@ -377,7 +378,7 @@ private fun AnswerScale(offered: Set<String>, loading: Boolean, onPick: (String)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Caption(R.string.answer_no, MetchuColors.Grey800, scale)
                 // Twice as wide, so "Doesn't matter" is not cut off; the outer captions keep it centered.
-                Caption(R.string.answer_any, MetchuColors.Grey600, scale, width = 140.dp)
+                Caption(R.string.answer_any, MetchuColors.Grey400, scale, width = 140.dp)
                 Caption(R.string.answer_yes, MetchuColors.Primary, scale)
             }
         }
@@ -536,7 +537,7 @@ private fun ScaleCircle(level: Level, rowScale: Float, enabled: Boolean, dot: Bo
             contentAlignment = Alignment.Center
         ) {
             if (level.icon != null && !dot) {
-                Image(level.icon, null, Modifier.size(iconSize(level) * rowScale), colorFilter = ColorFilter.tint(MetchuColors.Grey300))
+                ThinIcon(level.id, iconSize(level) * rowScale, MetchuColors.Grey300)
             }
         }
     }
@@ -547,11 +548,6 @@ private fun ScaleCircle(level: Level, rowScale: Float, enabled: Boolean, dot: Bo
 private fun Handle(level: Level, x: Float, diameter: Float, faded: Boolean, rowScale: Float) {
     val color by animateColorAsState(level.color, tween(160), label = "handle")
     val alpha by animateFloatAsState(if (faded) 0.35f else 1f, tween(160), label = "handleAlpha")
-    val icon = when (level.id) {
-        AnswerId.YES, AnswerId.PROBABLY_YES -> Icons.Check
-        AnswerId.NO, AnswerId.PROBABLY_NO -> Icons.Cross
-        else -> null
-    }
     val size = with(LocalDensity.current) { diameter.toDp() }
     Box(
         Modifier
@@ -569,9 +565,26 @@ private fun Handle(level: Level, x: Float, diameter: Float, faded: Boolean, rowS
                 .background(color),
             contentAlignment = Alignment.Center
         ) {
-            if (icon != null) Image(icon, null, Modifier.size(iconSize(level) * rowScale), colorFilter = ColorFilter.tint(Color.White))
+            ThinIcon(level.id, iconSize(level) * rowScale, Color.White)
         }
     }
+}
+
+/**
+ * The check for yes answers, the cross for no answers, nothing for the rest, drawn with a
+ * true 1.5 dp line like the rings and the track whatever the icon's [size].
+ */
+@Composable
+private fun ThinIcon(answer: String, size: Dp, tint: Color) {
+    val width = 1.5f * 24f / size.value
+    val icon = remember(answer, width) {
+        when (answer) {
+            AnswerId.YES, AnswerId.PROBABLY_YES -> Icons.check(width)
+            AnswerId.NO, AnswerId.PROBABLY_NO -> Icons.cross(width)
+            else -> null
+        }
+    } ?: return
+    Image(icon, null, Modifier.size(size), colorFilter = ColorFilter.tint(tint))
 }
 
 /** The outer answers carry a full icon; the "a little" ones a smaller one on the handle. */

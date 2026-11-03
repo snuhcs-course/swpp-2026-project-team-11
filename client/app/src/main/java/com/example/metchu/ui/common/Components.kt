@@ -263,8 +263,12 @@ object Icons {
         pathFillType = PathFillType.EvenOdd
     ).build()
     val ChevronDown = line("down", "M7 10l5 5 5-5", 2.4f)
-    val Check = line("check", "M5 12.5l4.5 4.5L19 7.5", 2.4f)
-    val Cross = line("cross", "M6.5 6.5l11 11M17.5 6.5l-11 11", 2.4f)
+    val Check = check(2.4f)
+    val Cross = cross(2.4f)
+
+    /** The check and cross with a stroke [width] in the 24-unit grid, for icons drawn at other sizes. */
+    fun check(width: Float) = line("check", "M5 12.5l4.5 4.5L19 7.5", width)
+    fun cross(width: Float) = line("cross", "M6.5 6.5l11 11M17.5 6.5l-11 11", width)
     val Globe = line(
         "globe",
         "M21 12a9 9 0 1 1-18 0 9 9 0 1 1 18 0M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z",
