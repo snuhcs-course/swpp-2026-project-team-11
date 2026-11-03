@@ -161,7 +161,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     fun startOver() {
         if (_loading.value == true) return
         val left = _session.value
-        park(left?.takeIf { it.step.type != Step.QUESTION || it.step.questionCount > 0 }?.let {
+        park(left?.takeIf { it.step.type == Step.GUESS || it.step.type == Step.RECOMMENDATION || it.step.type == Step.QUESTION && it.step.questionCount > 0 }?.let {
             Parked(it, _history.value.orEmpty(), _shown.value.orEmpty(), _reasons.value.orEmpty(), reasonContexts.toMap())
         })
         _session.value = null
