@@ -1,5 +1,6 @@
 package com.example.metchu.ui.question
 
+import com.example.metchu.ui.common.fade
 import androidx.annotation.StringRes
 import android.os.Build
 import android.view.HapticFeedbackConstants
@@ -26,13 +27,10 @@ import androidx.compose.ui.unit.IntOffset
 import com.example.metchu.ui.common.cssShadow
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -231,15 +229,13 @@ fun QuestionScreen(
         }
         // Answering is the main thing here, so "Recommend now" is the quieter white capsule,
         // and only once there is an answer to recommend from.
-        AnimatedVisibility(
-            visible = count > 0,
-            modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp),
-            enter = fadeIn(tween(300)),
-            exit = fadeOut(tween(200))
-        ) {
+        val recommendIn by animateFloatAsState(if (count > 0) 1f else 0f, tween(if (count > 0) 300 else 200), label = "recommendNow")
+        if (recommendIn > 0f) {
             ActionCapsule(
-                stringResource(R.string.recommend_now), Icons.FastForward, { if (!loading) onRecommendNow() },
-                filled = false, modifier = Modifier.testTag("recommendNow")
+                stringResource(R.string.recommend_now), Icons.FastForward, { if (!loading && count > 0) onRecommendNow() },
+                filled = false,
+                modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp)
+                    .fade { recommendIn }.testTag("recommendNow")
             )
         }
     }

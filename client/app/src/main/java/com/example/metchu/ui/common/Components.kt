@@ -88,6 +88,15 @@ fun Modifier.cssShadow(shape: Shape, offsetY: Dp, blur: Dp, alpha: Float): Modif
     drawIntoCanvas { it.drawOutline(outline, paint) }
 }
 
+/**
+ * Fades by [alpha] without an offscreen layer, which would clip the drop shadows of what it
+ * holds to its bounds while the fade runs.
+ */
+fun Modifier.fade(alpha: () -> Float): Modifier = graphicsLayer {
+    this.alpha = alpha()
+    compositingStrategy = CompositingStrategy.ModulateAlpha
+}
+
 /** The shadow of buttons that float over the screen: 0 2 10, 16 %. */
 fun Modifier.floating(shape: Shape = CircleShape): Modifier = cssShadow(shape, 2.dp, 10.dp, 0.16f)
 

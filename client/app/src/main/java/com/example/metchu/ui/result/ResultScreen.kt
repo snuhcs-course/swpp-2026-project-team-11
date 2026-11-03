@@ -1,5 +1,6 @@
 package com.example.metchu.ui.result
 
+import com.example.metchu.ui.common.fade
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
@@ -233,7 +234,7 @@ fun ResultScreen(
         }
 
         val topIn by animateFloatAsState(if (revealed) 1f else 0f, tween(220, delayMillis = 400), label = "top")
-        Column(Modifier.statusBarsPadding().alpha(topIn)) {
+        Column(Modifier.statusBarsPadding().fade { topIn }) {
             TopRow {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), { if (!loading) onBack() }, Modifier.testTag("back"))
                 CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
@@ -242,12 +243,12 @@ fun ResultScreen(
 
         // The dishes shown so far ride just above the sheet, centered 40 dp over it.
         if (chips) {
-            ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight - 10.dp).alpha(topIn)) { viewing = it }
+            ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight - 10.dp).fade { topIn }) { viewing = it }
         }
         if (stop != SheetStop.FULL && BuildConfig.HAS_MAPS_KEY) {
             LocateButton(
                 locate,
-                Modifier.align(Alignment.TopEnd).offset(y = sheetTop - 64.dp).padding(end = 20.dp).alpha(topIn)
+                Modifier.align(Alignment.TopEnd).offset(y = sheetTop - 64.dp).padding(end = 20.dp).fade { topIn }
             ) {
                 when {
                     !permission.granted -> permission.request()
@@ -302,7 +303,7 @@ fun ResultScreen(
                     .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
                     .padding(end = 20.dp, bottom = 16.dp)
-                    .graphicsLayer { alpha = moreIn; translationY = 12.dp.toPx() * (1f - moreIn) }
+                    .graphicsLayer { alpha = moreIn; translationY = 12.dp.toPx() * (1f - moreIn); compositingStrategy = CompositingStrategy.ModulateAlpha }
                     .testTag("more"),
                 expanded = !peek
             )
