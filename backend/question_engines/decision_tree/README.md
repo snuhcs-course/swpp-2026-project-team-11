@@ -81,6 +81,14 @@ An explicitly supplied partial/empty std map is rejected. A custom schema may om
 the map; the candidates are then scored on their means alone. Candidate count and
 feature count are dynamic.
 
+Actual sales menus have one intent per candidate and no family proposals. The
+engine calculates their identity mapping and fixed diagonal/off-diagonal
+acceptance directly, without retaining quadratic intent matrices per session.
+The default preference policy uses these linear-size representations. Lookahead
+materializes acceptance only for its sampled support; setting `particles=0`
+explicitly requests full support and can still require quadratic memory.
+Catalogs with family proposals retain the general dense representation.
+
 `schema` uses the existing `[{"key", "question"}, ...]` shape. English presentation
 text is supplied for the 33 feature keys, which keep grilled
 and stir-fried, oily and greasy, large portion and filling, and the individual
