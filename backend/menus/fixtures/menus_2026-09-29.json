@@ -191,7 +191,6 @@
  "pk": 1,
  "fields": {
   "name": "냉모밀",
-  "display_name": "냉모밀",
   "is_food": true,
   "food_group": "국수",
   "features": {
@@ -229,7 +228,6 @@
  "pk": 2,
  "fields": {
   "name": "새우튀김카레우동",
-  "display_name": "새우튀김카레우동",
   "is_food": true,
   "food_group": "우동",
   "features": {
@@ -267,7 +265,6 @@
  "pk": 3,
  "fields": {
   "name": "등심까츠",
-  "display_name": "등심돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -305,7 +302,6 @@
  "pk": 4,
  "fields": {
   "name": "특 등심 왕돈까스",
-  "display_name": "왕돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -343,7 +339,6 @@
  "pk": 5,
  "fields": {
   "name": "새우튀김옛날 등심돈까스",
-  "display_name": "새우등심돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -381,7 +376,6 @@
  "pk": 6,
  "fields": {
   "name": "치즈돈까스",
-  "display_name": "치즈돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -419,7 +413,6 @@
  "pk": 7,
  "fields": {
   "name": "고구마 치즈돈까스",
-  "display_name": "고구마치즈돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -457,7 +450,6 @@
  "pk": 8,
  "fields": {
   "name": "새우튀김 카레라이스",
-  "display_name": "새우튀김카레",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -495,7 +487,6 @@
  "pk": 9,
  "fields": {
   "name": "카레돈가츠",
-  "display_name": "카레돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -533,7 +524,6 @@
  "pk": 10,
  "fields": {
   "name": "돈가스 카레우동",
-  "display_name": "돈까스 카레우동",
   "is_food": true,
   "food_group": "우동",
   "features": {
@@ -571,7 +561,6 @@
  "pk": 11,
  "fields": {
   "name": "눈꽃치즈 돈까스",
-  "display_name": "눈꽃치즈돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -609,7 +598,6 @@
  "pk": 12,
  "fields": {
   "name": "소세지 카레라이스",
-  "display_name": "소세지 카레",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -647,7 +635,6 @@
  "pk": 13,
  "fields": {
   "name": "옥수수 감자고로케 2P",
-  "display_name": "감자고로케",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -685,7 +672,6 @@
  "pk": 14,
  "fields": {
   "name": "물냉면",
-  "display_name": "물냉면",
   "is_food": true,
   "food_group": "냉면",
   "features": {
@@ -723,7 +709,6 @@
  "pk": 15,
  "fields": {
   "name": "비빔냉면",
-  "display_name": "비빔냉면",
   "is_food": true,
   "food_group": "냉면",
   "features": {
@@ -761,7 +746,6 @@
  "pk": 16,
  "fields": {
   "name": "숯불양념치킨덮밥",
-  "display_name": "숯불양념치킨덮밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -799,7 +783,6 @@
  "pk": 17,
  "fields": {
   "name": "치킨마요",
-  "display_name": "치킨마요",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -837,7 +820,6 @@
  "pk": 18,
  "fields": {
   "name": "고기든든",
-  "display_name": "고기든든",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -875,7 +857,6 @@
  "pk": 19,
  "fields": {
   "name": "제육덮밥",
-  "display_name": "제육덮밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -913,7 +894,6 @@
  "pk": 20,
  "fields": {
   "name": "참치마요",
-  "display_name": "참치마요",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -951,7 +931,6 @@
  "pk": 21,
  "fields": {
   "name": "스팸마요",
-  "display_name": "스팸마요",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -989,7 +968,6 @@
  "pk": 22,
  "fields": {
   "name": "볶음 김치덮밥",
-  "display_name": "볶음김치덮밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -1027,7 +1005,6 @@
  "pk": 23,
  "fields": {
   "name": "참치마요(R)+제육한접시 세트",
-  "display_name": "참치마요 덮밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -1065,7 +1042,6 @@
  "pk": 24,
  "fields": {
   "name": "스팸마요(R)+제육한접시세트",
-  "display_name": "스팸마요 제육세트",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -1103,7 +1079,6 @@
  "pk": 25,
  "fields": {
   "name": "참치마요(R)+고기한접시세트",
-  "display_name": "참치마요 고기세트",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -1141,7 +1116,6 @@
  "pk": 26,
  "fields": {
   "name": "스팸마요(R)+고기한접시세트",
-  "display_name": "스팸마요 고기세트",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -1179,7 +1153,6 @@
  "pk": 27,
  "fields": {
   "name": "계란후라이",
-  "display_name": "계란후라이",
   "is_food": false,
   "food_group": "정식/뷔페",
   "features": {
@@ -1217,7 +1190,6 @@
  "pk": 28,
  "fields": {
   "name": "스팸",
-  "display_name": "스팸",
   "is_food": false,
   "food_group": "정식/뷔페",
   "features": {
@@ -1255,7 +1227,6 @@
  "pk": 29,
  "fields": {
   "name": "비빔 쌀국수",
-  "display_name": "비빔쌀국수",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -1293,7 +1264,6 @@
  "pk": 30,
  "fields": {
   "name": "비빔 쌀국수 + 직화구이",
-  "display_name": "비빔쌀국수 직화구이",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -1331,7 +1301,6 @@
  "pk": 31,
  "fields": {
   "name": "포포 냉쌀국수",
-  "display_name": "냉쌀국수",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -1369,7 +1338,6 @@
  "pk": 32,
  "fields": {
   "name": "포포 냉짤국수+ 직화구이",
-  "display_name": "냉쌀국수 세트",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -1407,7 +1375,6 @@
  "pk": 33,
  "fields": {
   "name": "포포 쌀국수",
-  "display_name": "포포 쌀국수",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -1445,7 +1412,6 @@
  "pk": 34,
  "fields": {
   "name": "우삼겹 쌀국수",
-  "display_name": "우삼겹 쌀국수",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -1483,7 +1449,6 @@
  "pk": 35,
  "fields": {
   "name": "마라쌀국수",
-  "display_name": "마라쌀국수",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -1521,7 +1486,6 @@
  "pk": 36,
  "fields": {
   "name": "마라우삼겹 쌀국수",
-  "display_name": "마라우삼겹쌀국수",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -1559,7 +1523,6 @@
  "pk": 37,
  "fields": {
   "name": "직화구이 쌀국수",
-  "display_name": "직화구이 쌀국수",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -1597,7 +1560,6 @@
  "pk": 38,
  "fields": {
   "name": "야채춘권(3p)",
-  "display_name": "야채춘권",
   "is_food": false,
   "food_group": "만두",
   "features": {
@@ -1635,7 +1597,6 @@
  "pk": 39,
  "fields": {
   "name": "들기름 막국수",
-  "display_name": "들기름 막국수",
   "is_food": true,
   "food_group": "국수",
   "features": {
@@ -1673,7 +1634,6 @@
  "pk": 40,
  "fields": {
   "name": "돼지고추장 수제비찌개",
-  "display_name": "고추장 수제비",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -1711,7 +1671,6 @@
  "pk": 41,
  "fields": {
   "name": "순두부찌개(밥포함)",
-  "display_name": "순두부찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -1749,7 +1708,6 @@
  "pk": 42,
  "fields": {
   "name": "우삽겹순두부찌개(밥포함)",
-  "display_name": "우삼겹순두부찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -1787,7 +1745,6 @@
  "pk": 43,
  "fields": {
   "name": "우삼겹된장찌개(밥포함)",
-  "display_name": "우삼겹된장찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -1825,7 +1782,6 @@
  "pk": 44,
  "fields": {
   "name": "바지락된장찌개(밥포함)",
-  "display_name": "바지락된장찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -1863,7 +1819,6 @@
  "pk": 45,
  "fields": {
   "name": "우삽겹된장찌개(밥포함)",
-  "display_name": "우삽겹된장찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -1901,7 +1856,6 @@
  "pk": 46,
  "fields": {
   "name": "김치찌개(밥포함)",
-  "display_name": "김치찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -1939,7 +1893,6 @@
  "pk": 47,
  "fields": {
   "name": "돼지김치찌개(밥포함)",
-  "display_name": "돼지김치찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -1977,7 +1930,6 @@
  "pk": 48,
  "fields": {
   "name": "참치김치찌개(밥포함)",
-  "display_name": "참치김치찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -2015,7 +1967,6 @@
  "pk": 49,
  "fields": {
   "name": "스팸김치찌개(밥포함)",
-  "display_name": "스팸김치찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -2053,7 +2004,6 @@
  "pk": 50,
  "fields": {
   "name": "키친101 비빔밥(야채)",
-  "display_name": "야채비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -2091,7 +2041,6 @@
  "pk": 51,
  "fields": {
   "name": "육회 비빔밥(S)",
-  "display_name": "육회 비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -2129,7 +2078,6 @@
  "pk": 52,
  "fields": {
   "name": "육회 비빔밥(L)",
-  "display_name": "육회 비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -2167,7 +2115,6 @@
  "pk": 53,
  "fields": {
   "name": "연어 비빔밥(S)",
-  "display_name": "연어 비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -2205,7 +2152,6 @@
  "pk": 54,
  "fields": {
   "name": "연어 비빔밥(L)",
-  "display_name": "연어 비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -2243,7 +2189,6 @@
  "pk": 55,
  "fields": {
   "name": "장어비빔밥",
-  "display_name": "장어비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -2281,7 +2226,6 @@
  "pk": 56,
  "fields": {
   "name": "연두부튀김포케",
-  "display_name": "연두부튀김포케",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -2319,7 +2263,6 @@
  "pk": 57,
  "fields": {
   "name": "연어샐러드포케",
-  "display_name": "연어샐러드포케",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -2357,7 +2300,6 @@
  "pk": 58,
  "fields": {
   "name": "훈제오리포케",
-  "display_name": "훈제오리포케",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -2395,7 +2337,6 @@
  "pk": 59,
  "fields": {
   "name": "제육컵밥&두유",
-  "display_name": "제육컵밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -2433,7 +2374,6 @@
  "pk": 60,
  "fields": {
   "name": "유부초밥&두유",
-  "display_name": "유부초밥",
   "is_food": true,
   "food_group": "분식",
   "features": {
@@ -2471,7 +2411,6 @@
  "pk": 61,
  "fields": {
   "name": "즉석떡국OR즉석라면",
-  "display_name": "떡국 또는 라면",
   "is_food": true,
   "food_group": "국수",
   "features": {
@@ -2509,7 +2448,6 @@
  "pk": 62,
  "fields": {
   "name": "세미양식부페",
-  "display_name": "양식 뷔페",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -2547,7 +2485,6 @@
  "pk": 63,
  "fields": {
   "name": "단호박스프/김치두부국,잡채말이어묵튀김,삶은계란,토스트,씨리얼, 흰우유/두유,그린샐러드",
-  "display_name": "토스트&스프 조식",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -2585,7 +2522,6 @@
  "pk": 64,
  "fields": {
   "name": "한입떡복이 세트 - 눈꽃치즈떡볶이 + 순살후라이드치킨 반마리 + 음료 1잔",
-  "display_name": "떡볶이 치킨 세트",
   "is_food": true,
   "food_group": "분식",
   "features": {
@@ -2623,7 +2559,6 @@
  "pk": 65,
  "fields": {
   "name": "한입떡말이 세트 - 눈꽃치즈떡볶이 + 김말이 10조각",
-  "display_name": "눈꽃치즈떡볶이 세트",
   "is_food": true,
   "food_group": "분식",
   "features": {
@@ -2661,7 +2596,6 @@
  "pk": 66,
  "fields": {
   "name": "한입베이크 세트 - 달콤비프치즈베이크 + 케이준순살강정(소) + 음료 1잔",
-  "display_name": "비프베이크 세트",
   "is_food": true,
   "food_group": "디저트",
   "features": {
@@ -2699,7 +2633,6 @@
  "pk": 67,
  "fields": {
   "name": "한입강정 세트 - 버거운치킨버거 + 케이준순살강정(소) + 음료1잔",
-  "display_name": "버거운치킨버거 세트",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -2737,7 +2670,6 @@
  "pk": 68,
  "fields": {
   "name": "싱글통다리 세트 - 버거운치킨버거 + 후라이드통다리 1조각 + 음료 1잔",
-  "display_name": "통다리 치킨버거세트",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -2775,7 +2707,6 @@
  "pk": 69,
  "fields": {
   "name": "커플통다리 세트 - 버거운치킨버거 + 육즙가득비프버거 + 후라이드통다리 + 음료 2잔",
-  "display_name": "버거&치킨 세트",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -2813,7 +2744,6 @@
  "pk": 70,
  "fields": {
   "name": "한입치킨 세트 - 버거운치킨버거 + 후라이드치킨 반마리 + 음료 1잔",
-  "display_name": "치킨버거 치킨세트",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -2851,7 +2781,6 @@
  "pk": 71,
  "fields": {
   "name": "*+ 추가 시 L세트 변경",
-  "display_name": "세트 변경",
   "is_food": false,
   "food_group": "정식/뷔페",
   "features": {
@@ -2889,7 +2818,6 @@
  "pk": 72,
  "fields": {
   "name": "한입버거운시그니처버거",
-  "display_name": "시그니처버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -2927,7 +2855,6 @@
  "pk": 73,
  "fields": {
   "name": "버거운치킨버거",
-  "display_name": "치킨버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -2965,7 +2892,6 @@
  "pk": 74,
  "fields": {
   "name": "양념치킨버거",
-  "display_name": "양념치킨버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3003,7 +2929,6 @@
  "pk": 75,
  "fields": {
   "name": "핫치킨버거",
-  "display_name": "핫치킨버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3041,7 +2966,6 @@
  "pk": 76,
  "fields": {
   "name": "스노우치킨버거",
-  "display_name": "스노우치킨버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3079,7 +3003,6 @@
  "pk": 77,
  "fields": {
   "name": "딥치즈치킨버거",
-  "display_name": "딥치즈치킨버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3117,7 +3040,6 @@
  "pk": 78,
  "fields": {
   "name": "화이트어니언치킨버거",
-  "display_name": "어니언치킨버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3155,7 +3077,6 @@
  "pk": 79,
  "fields": {
   "name": "데리마요치킨버거",
-  "display_name": "치킨버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3193,7 +3114,6 @@
  "pk": 80,
  "fields": {
   "name": "칠리마요치킨버거",
-  "display_name": "칠리마요치킨버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3231,7 +3151,6 @@
  "pk": 81,
  "fields": {
   "name": "칠리크런치버거",
-  "display_name": "칠리크런치버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3269,7 +3188,6 @@
  "pk": 82,
  "fields": {
   "name": "에그마요휠렛버거",
-  "display_name": "에그마요휠렛버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3307,7 +3225,6 @@
  "pk": 83,
  "fields": {
   "name": "육즙가득비프버거",
-  "display_name": "비프버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3345,7 +3262,6 @@
  "pk": 84,
  "fields": {
   "name": "비프해쉬버거",
-  "display_name": "비프해쉬버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3383,7 +3299,6 @@
  "pk": 85,
  "fields": {
   "name": "더블비프버거",
-  "display_name": "더블비프버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3421,7 +3336,6 @@
  "pk": 86,
  "fields": {
   "name": "클래식치즈버거",
-  "display_name": "클래식치즈버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3459,7 +3373,6 @@
  "pk": 87,
  "fields": {
   "name": "투움바더블새우버거",
-  "display_name": "투움바새우버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3497,7 +3410,6 @@
  "pk": 88,
  "fields": {
   "name": "투움바비프새우버거",
-  "display_name": "투움바비프새우",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3535,7 +3447,6 @@
  "pk": 89,
  "fields": {
   "name": "통모짜치즈버거",
-  "display_name": "통모짜치즈버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3573,7 +3484,6 @@
  "pk": 90,
  "fields": {
   "name": "불닭통모짜치즈버거",
-  "display_name": "불닭치즈버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3611,7 +3521,6 @@
  "pk": 91,
  "fields": {
   "name": "통새우버거",
-  "display_name": "통새우버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3649,7 +3558,6 @@
  "pk": 92,
  "fields": {
   "name": "더블통새우버거",
-  "display_name": "더블통새우버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3687,7 +3595,6 @@
  "pk": 93,
  "fields": {
   "name": "불고기버거",
-  "display_name": "불고기버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3725,7 +3632,6 @@
  "pk": 94,
  "fields": {
   "name": "더블불고기버거",
-  "display_name": "더블불고기버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3763,7 +3669,6 @@
  "pk": 95,
  "fields": {
   "name": "불새버거",
-  "display_name": "불새버거",
   "is_food": true,
   "food_group": "버거",
   "features": {
@@ -3801,7 +3706,6 @@
  "pk": 96,
  "fields": {
   "name": "달콤비프치즈베이크",
-  "display_name": "비프치즈베이크",
   "is_food": true,
   "food_group": "디저트",
   "features": {
@@ -3839,7 +3743,6 @@
  "pk": 97,
  "fields": {
   "name": "쉬림프치즈베이크",
-  "display_name": "쉬림프치즈베이크",
   "is_food": true,
   "food_group": "디저트",
   "features": {
@@ -3877,7 +3780,6 @@
  "pk": 98,
  "fields": {
   "name": "소시지치즈베이크",
-  "display_name": "소시지치즈베이크",
   "is_food": true,
   "food_group": "디저트",
   "features": {
@@ -3915,7 +3817,6 @@
  "pk": 99,
  "fields": {
   "name": "매콤치킨치즈베이크",
-  "display_name": "치킨치즈베이크",
   "is_food": true,
   "food_group": "디저트",
   "features": {
@@ -3953,7 +3854,6 @@
  "pk": 100,
  "fields": {
   "name": "콘치즈베이크",
-  "display_name": "콘치즈베이크",
   "is_food": true,
   "food_group": "디저트",
   "features": {
@@ -3991,7 +3891,6 @@
  "pk": 101,
  "fields": {
   "name": "풀치즈베이크",
-  "display_name": "치즈베이크",
   "is_food": true,
   "food_group": "디저트",
   "features": {
@@ -4029,7 +3928,6 @@
  "pk": 102,
  "fields": {
   "name": "휠렛불갈비치즈베이크",
-  "display_name": "불갈비치즈베이크",
   "is_food": true,
   "food_group": "디저트",
   "features": {
@@ -4067,7 +3965,6 @@
  "pk": 103,
  "fields": {
   "name": "베이컨에그치즈베이크",
-  "display_name": "에그치즈베이크",
   "is_food": true,
   "food_group": "디저트",
   "features": {
@@ -4105,7 +4002,6 @@
  "pk": 104,
  "fields": {
   "name": "순살 변경",
-  "display_name": "순살 변경",
   "is_food": false,
   "food_group": "치킨",
   "features": {
@@ -4143,7 +4039,6 @@
  "pk": 105,
  "fields": {
   "name": "후라이드치킨",
-  "display_name": "후라이드치킨",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -4181,7 +4076,6 @@
  "pk": 106,
  "fields": {
   "name": "양념치킨",
-  "display_name": "양념치킨",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -4219,7 +4113,6 @@
  "pk": 107,
  "fields": {
   "name": "매운양념치킨",
-  "display_name": "매운양념치킨",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -4257,7 +4150,6 @@
  "pk": 108,
  "fields": {
   "name": "스노우치킨",
-  "display_name": "스노우치킨",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -4295,7 +4187,6 @@
  "pk": 109,
  "fields": {
   "name": "소이마요치킨",
-  "display_name": "소이마요치킨",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -4333,7 +4224,6 @@
  "pk": 110,
  "fields": {
   "name": "핫소마요치킨",
-  "display_name": "핫소마요치킨",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -4371,7 +4261,6 @@
  "pk": 111,
  "fields": {
   "name": "칠리마요치킨",
-  "display_name": "칠리마요치킨",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -4409,7 +4298,6 @@
  "pk": 112,
  "fields": {
   "name": "후라이드통다리",
-  "display_name": "후라이드통다리",
   "is_food": false,
   "food_group": "치킨",
   "features": {
@@ -4447,7 +4335,6 @@
  "pk": 113,
  "fields": {
   "name": "자메이카통다리",
-  "display_name": "자메이카통다리",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -4485,7 +4372,6 @@
  "pk": 114,
  "fields": {
   "name": "케이준순살강정(소)",
-  "display_name": "닭강정",
   "is_food": false,
   "food_group": "치킨",
   "features": {
@@ -4523,7 +4409,6 @@
  "pk": 115,
  "fields": {
   "name": "허니치즈강정(소)",
-  "display_name": "허니치즈강정(소)",
   "is_food": false,
   "food_group": "치킨",
   "features": {
@@ -4561,7 +4446,6 @@
  "pk": 116,
  "fields": {
   "name": "화이트어니언강정(소)",
-  "display_name": "화이트어니언강정",
   "is_food": false,
   "food_group": "치킨",
   "features": {
@@ -4599,7 +4483,6 @@
  "pk": 117,
  "fields": {
   "name": "불닭레드핫강정(소)",
-  "display_name": "불닭강정",
   "is_food": false,
   "food_group": "치킨",
   "features": {
@@ -4637,7 +4520,6 @@
  "pk": 118,
  "fields": {
   "name": "칠리스치즈스틱 1조각",
-  "display_name": "칠리치즈스틱",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -4675,7 +4557,6 @@
  "pk": 119,
  "fields": {
   "name": "버팔로스틱 2조각",
-  "display_name": "버팔로스틱",
   "is_food": false,
   "food_group": "치킨",
   "features": {
@@ -4713,7 +4594,6 @@
  "pk": 120,
  "fields": {
   "name": "눈꽃치즈떡볶이 / 투움바떡볶이",
-  "display_name": "눈꽃치즈떡볶이",
   "is_food": true,
   "food_group": "분식",
   "features": {
@@ -4751,7 +4631,6 @@
  "pk": 121,
  "fields": {
   "name": "밀크치즈볼 5조각",
-  "display_name": "밀크치즈볼",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -4789,7 +4668,6 @@
  "pk": 122,
  "fields": {
   "name": "치즈스틱 2조각",
-  "display_name": "치즈스틱",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -4827,7 +4705,6 @@
  "pk": 123,
  "fields": {
   "name": "양념감자(소)",
-  "display_name": "양념감자",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -4865,7 +4742,6 @@
  "pk": 124,
  "fields": {
   "name": "팝콘볼박스",
-  "display_name": "팝콘치킨박스",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -4903,7 +4779,6 @@
  "pk": 125,
  "fields": {
   "name": "매콤김소떡",
-  "display_name": "매콤김소떡",
   "is_food": true,
   "food_group": "분식",
   "features": {
@@ -4941,7 +4816,6 @@
  "pk": 126,
  "fields": {
   "name": "치킨너겟 4조각",
-  "display_name": "치킨너겟",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -4979,7 +4853,6 @@
  "pk": 127,
  "fields": {
   "name": "김말이 10조각",
-  "display_name": "김말이",
   "is_food": false,
   "food_group": "분식",
   "features": {
@@ -5017,7 +4890,6 @@
  "pk": 128,
  "fields": {
   "name": "쉬림프샐러드",
-  "display_name": "쉬림프샐러드",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -5055,7 +4927,6 @@
  "pk": 129,
  "fields": {
   "name": "에그베이컨샐러드",
-  "display_name": "에그베이컨샐러드",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -5093,7 +4964,6 @@
  "pk": 130,
  "fields": {
   "name": "닭가슴살샐러드",
-  "display_name": "닭가슴살샐러드",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -5131,7 +5001,6 @@
  "pk": 131,
  "fields": {
   "name": "치킨샐러드",
-  "display_name": "치킨샐러드",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -5169,7 +5038,6 @@
  "pk": 132,
  "fields": {
   "name": "콘샐러드",
-  "display_name": "콘샐러드",
   "is_food": false,
   "food_group": "샐러드",
   "features": {
@@ -5207,7 +5075,6 @@
  "pk": 133,
  "fields": {
   "name": "탄산음료 M",
-  "display_name": "탄산음료 M",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -5245,7 +5112,6 @@
  "pk": 134,
  "fields": {
   "name": "아메리카노 HOT",
-  "display_name": "아메리카노 HOT",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -5283,7 +5149,6 @@
  "pk": 135,
  "fields": {
   "name": "제주청귤/청포도에이드",
-  "display_name": "청귤/청포도에이드",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -5321,7 +5186,6 @@
  "pk": 136,
  "fields": {
   "name": "쇠고기버섯죽",
-  "display_name": "쇠고기버섯죽",
   "is_food": true,
   "food_group": "죽",
   "features": {
@@ -5359,7 +5223,6 @@
  "pk": 137,
  "fields": {
   "name": "닭갈비볶음밥&고구마맛탕",
-  "display_name": "닭갈비볶음밥",
   "is_food": true,
   "food_group": "볶음밥",
   "features": {
@@ -5397,7 +5260,6 @@
  "pk": 138,
  "fields": {
   "name": "(뚝)어묵매운탕&계란찜",
-  "display_name": "어묵매운탕",
   "is_food": true,
   "food_group": "국/탕",
   "features": {
@@ -5435,7 +5297,6 @@
  "pk": 139,
  "fields": {
   "name": "카프레제샐러드",
-  "display_name": "카프레제샐러드",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -5473,7 +5334,6 @@
  "pk": 140,
  "fields": {
   "name": "헬스팩",
-  "display_name": "헬스팩 샐러드",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -5511,7 +5371,6 @@
  "pk": 141,
  "fields": {
   "name": "닭볶음탕&두부김치",
-  "display_name": "닭볶음탕",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -5549,7 +5408,6 @@
  "pk": 142,
  "fields": {
   "name": "차돌박이된장찌개+바사삭포크후라이드+도토리묵 & 양념장+연근조림+콩나물무침+그린샐러드&오늘의차",
-  "display_name": "차돌된장찌개 정식",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -5587,7 +5445,6 @@
  "pk": 143,
  "fields": {
   "name": "쇠고기육개장",
-  "display_name": "쇠고기육개장",
   "is_food": true,
   "food_group": "국/탕",
   "features": {
@@ -5625,7 +5482,6 @@
  "pk": 144,
  "fields": {
   "name": "야끼도리덮밥",
-  "display_name": "야끼도리덮밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -5663,7 +5519,6 @@
  "pk": 145,
  "fields": {
   "name": "갈릭슈림프샐러드(채식변경가능)",
-  "display_name": "갈릭슈림프샐러드",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -5701,7 +5556,6 @@
  "pk": 146,
  "fields": {
   "name": "1인 목살스테이크샐러드",
-  "display_name": "목살스테이크샐러드",
   "is_food": true,
   "food_group": "샐러드",
   "features": {
@@ -5739,7 +5593,6 @@
  "pk": 147,
  "fields": {
   "name": "치즈미트토마토파스타",
-  "display_name": "토마토파스타",
   "is_food": true,
   "food_group": "파스타",
   "features": {
@@ -5777,7 +5630,6 @@
  "pk": 148,
  "fields": {
   "name": "베이컨까르보나라",
-  "display_name": "까르보나라",
   "is_food": true,
   "food_group": "파스타",
   "features": {
@@ -5815,7 +5667,6 @@
  "pk": 149,
  "fields": {
   "name": "로제베이컨파스타",
-  "display_name": "로제베이컨파스타",
   "is_food": true,
   "food_group": "파스타",
   "features": {
@@ -5853,7 +5704,6 @@
  "pk": 150,
  "fields": {
   "name": "크림리조또",
-  "display_name": "크림리조또",
   "is_food": true,
   "food_group": "볶음밥",
   "features": {
@@ -5891,7 +5741,6 @@
  "pk": 151,
  "fields": {
   "name": "로제리조또",
-  "display_name": "로제리조또",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -5929,7 +5778,6 @@
  "pk": 152,
  "fields": {
   "name": "토마토리조또",
-  "display_name": "토마토리조또",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -5967,7 +5815,6 @@
  "pk": 153,
  "fields": {
   "name": "샐러드파스타",
-  "display_name": "샐러드파스타",
   "is_food": true,
   "food_group": "파스타",
   "features": {
@@ -6005,7 +5852,6 @@
  "pk": 154,
  "fields": {
   "name": "김치 필라프",
-  "display_name": "김치필라프",
   "is_food": true,
   "food_group": "볶음밥",
   "features": {
@@ -6043,7 +5889,6 @@
  "pk": 155,
  "fields": {
   "name": "가라아게 카레",
-  "display_name": "가라아게 카레",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -6081,7 +5926,6 @@
  "pk": 156,
  "fields": {
   "name": "토끼정카레 돈까스",
-  "display_name": "카레 돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -6119,7 +5963,6 @@
  "pk": 157,
  "fields": {
   "name": "해물순두부&비빔밥",
-  "display_name": "순두부 비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -6157,7 +6000,6 @@
  "pk": 158,
  "fields": {
   "name": "해물순두부&공기밥",
-  "display_name": "해물순두부찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -6195,7 +6037,6 @@
  "pk": 159,
  "fields": {
   "name": "고기순두부&비빔밥",
-  "display_name": "고기순두부비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -6233,7 +6074,6 @@
  "pk": 160,
  "fields": {
   "name": "고기순두부&공기밥",
-  "display_name": "고기순두부찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -6271,7 +6111,6 @@
  "pk": 161,
  "fields": {
   "name": "김치순두부&비빔밥",
-  "display_name": "김치순두부비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -6309,7 +6148,6 @@
  "pk": 162,
  "fields": {
   "name": "된장순두부&공기밥",
-  "display_name": "된장순두부",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -6347,7 +6185,6 @@
  "pk": 163,
  "fields": {
   "name": "뚝배기불고기&비빔밥",
-  "display_name": "뚝배기불고기 비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -6385,7 +6222,6 @@
  "pk": 164,
  "fields": {
   "name": "뚝배기불고기&공기밥",
-  "display_name": "뚝배기불고기",
   "is_food": true,
   "food_group": "국/탕",
   "features": {
@@ -6423,7 +6259,6 @@
  "pk": 165,
  "fields": {
   "name": "뚝배기제육&비빔밥",
-  "display_name": "뚝배기제육 비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -6461,7 +6296,6 @@
  "pk": 166,
  "fields": {
   "name": "뚝배기제육&공기밥",
-  "display_name": "뚝배기제육",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -6499,7 +6333,6 @@
  "pk": 167,
  "fields": {
   "name": "김치돈까스뚝배기",
-  "display_name": "김치돈까스나베",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -6537,7 +6370,6 @@
  "pk": 168,
  "fields": {
   "name": "열무고기비빔밥",
-  "display_name": "열무고기비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -6575,7 +6407,6 @@
  "pk": 169,
  "fields": {
   "name": "육회비빔밥",
-  "display_name": "육회비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -6613,7 +6444,6 @@
  "pk": 170,
  "fields": {
   "name": "이공오 돈까스",
-  "display_name": "이공오 돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -6651,7 +6481,6 @@
  "pk": 171,
  "fields": {
   "name": "눈꽃 치즈 돈까스",
-  "display_name": "눈꽃치즈돈까스",
   "is_food": true,
   "food_group": "돈까스",
   "features": {
@@ -6689,7 +6518,6 @@
  "pk": 172,
  "fields": {
   "name": "치킨 마요 덮밥",
-  "display_name": "치킨마요덮밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -6727,7 +6555,6 @@
  "pk": 173,
  "fields": {
   "name": "즉석 마라탕",
-  "display_name": "마라탕",
   "is_food": true,
   "food_group": "중식",
   "features": {
@@ -6765,7 +6592,6 @@
  "pk": 174,
  "fields": {
   "name": "즉석 떡볶이",
-  "display_name": "즉석 떡볶이",
   "is_food": true,
   "food_group": "분식",
   "features": {
@@ -6803,7 +6629,6 @@
  "pk": 175,
  "fields": {
   "name": "즉석 한강 라면",
-  "display_name": "즉석 한강 라면",
   "is_food": true,
   "food_group": "라면",
   "features": {
@@ -6841,7 +6666,6 @@
  "pk": 176,
  "fields": {
   "name": "명태비빔냉면",
-  "display_name": "명태비빔냉면",
   "is_food": true,
   "food_group": "냉면",
   "features": {
@@ -6879,7 +6703,6 @@
  "pk": 177,
  "fields": {
   "name": "모듬 튀김",
-  "display_name": "모듬 튀김",
   "is_food": false,
   "food_group": "분식",
   "features": {
@@ -6917,7 +6740,6 @@
  "pk": 178,
  "fields": {
   "name": "짜파게티",
-  "display_name": "짜파게티",
   "is_food": true,
   "food_group": "라면",
   "features": {
@@ -6955,7 +6777,6 @@
  "pk": 179,
  "fields": {
   "name": "불닭볶음면",
-  "display_name": "불닭볶음면",
   "is_food": true,
   "food_group": "라면",
   "features": {
@@ -6993,7 +6814,6 @@
  "pk": 180,
  "fields": {
   "name": "한강라면(진라면)",
-  "display_name": "한강라면",
   "is_food": true,
   "food_group": "라면",
   "features": {
@@ -7031,7 +6851,6 @@
  "pk": 181,
  "fields": {
   "name": "순두부열라면",
-  "display_name": "순두부열라면",
   "is_food": true,
   "food_group": "라면",
   "features": {
@@ -7069,7 +6888,6 @@
  "pk": 182,
  "fields": {
   "name": "짜장면",
-  "display_name": "짜장면",
   "is_food": true,
   "food_group": "중식",
   "features": {
@@ -7107,7 +6925,6 @@
  "pk": 183,
  "fields": {
   "name": "짬뽕",
-  "display_name": "짬뽕",
   "is_food": true,
   "food_group": "중식",
   "features": {
@@ -7145,7 +6962,6 @@
  "pk": 184,
  "fields": {
   "name": "고기소보로 볶음밥",
-  "display_name": "고기소보로볶음밥",
   "is_food": true,
   "food_group": "볶음밥",
   "features": {
@@ -7183,7 +6999,6 @@
  "pk": 185,
  "fields": {
   "name": "곱빼기메뉴",
-  "display_name": "곱빼기",
   "is_food": false,
   "food_group": "정식/뷔페",
   "features": {
@@ -7221,7 +7036,6 @@
  "pk": 186,
  "fields": {
   "name": "콤비메뉴: 순두부짬뽕",
-  "display_name": "순두부짬뽕",
   "is_food": true,
   "food_group": "중식",
   "features": {
@@ -7259,7 +7073,6 @@
  "pk": 187,
  "fields": {
   "name": "부대짬뽕",
-  "display_name": "부대짬뽕",
   "is_food": true,
   "food_group": "중식",
   "features": {
@@ -7297,7 +7110,6 @@
  "pk": 188,
  "fields": {
   "name": "돈가스비빔면",
-  "display_name": "돈까스 비빔면",
   "is_food": true,
   "food_group": "국수",
   "features": {
@@ -7335,7 +7147,6 @@
  "pk": 189,
  "fields": {
   "name": "탄탄비빔면",
-  "display_name": "탄탄비빔면",
   "is_food": true,
   "food_group": "국수",
   "features": {
@@ -7373,7 +7184,6 @@
  "pk": 190,
  "fields": {
   "name": "중화제육덮밥",
-  "display_name": "중화제육덮밥",
   "is_food": true,
   "food_group": "중식",
   "features": {
@@ -7411,7 +7221,6 @@
  "pk": 191,
  "fields": {
   "name": "마라탕",
-  "display_name": "마라탕",
   "is_food": true,
   "food_group": "중식",
   "features": {
@@ -7449,7 +7258,6 @@
  "pk": 192,
  "fields": {
   "name": "호구세트",
-  "display_name": "호구세트",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -7487,7 +7295,6 @@
  "pk": 193,
  "fields": {
   "name": "치킨탕수육 (大)",
-  "display_name": "치킨탕수육",
   "is_food": true,
   "food_group": "중식",
   "features": {
@@ -7525,7 +7332,6 @@
  "pk": 194,
  "fields": {
   "name": "우삼겹짬뽕",
-  "display_name": "우삼겹짬뽕",
   "is_food": true,
   "food_group": "중식",
   "features": {
@@ -7563,7 +7369,6 @@
  "pk": 195,
  "fields": {
   "name": "공기밥",
-  "display_name": "공기밥",
   "is_food": false,
   "food_group": "정식/뷔페",
   "features": {
@@ -7601,7 +7406,6 @@
  "pk": 196,
  "fields": {
   "name": "탄산음료",
-  "display_name": "탄산음료",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -7639,7 +7443,6 @@
  "pk": 197,
  "fields": {
   "name": "찐만두",
-  "display_name": "찐만두",
   "is_food": true,
   "food_group": "분식",
   "features": {
@@ -7677,7 +7480,6 @@
  "pk": 198,
  "fields": {
   "name": "찹쌀 팥 도나쓰",
-  "display_name": "찹쌀 팥도너츠",
   "is_food": false,
   "food_group": "디저트",
   "features": {
@@ -7715,7 +7517,6 @@
  "pk": 199,
  "fields": {
   "name": "미니탕수육",
-  "display_name": "미니탕수육",
   "is_food": false,
   "food_group": "중식",
   "features": {
@@ -7753,7 +7554,6 @@
  "pk": 200,
  "fields": {
   "name": "닭목살양념구이",
-  "display_name": "닭목살양념구이",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -7791,7 +7591,6 @@
  "pk": 201,
  "fields": {
   "name": "돈사태단호박조림&옥수수전",
-  "display_name": "돈사태조림",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -7829,7 +7628,6 @@
  "pk": 202,
  "fields": {
   "name": "숯불쇠고기쌀국수&춘권,사모사",
-  "display_name": "쇠고기쌀국수 세트",
   "is_food": true,
   "food_group": "쌀국수",
   "features": {
@@ -7867,7 +7665,6 @@
  "pk": 203,
  "fields": {
   "name": "사골우거지국",
-  "display_name": "사골우거지국",
   "is_food": true,
   "food_group": "국/탕",
   "features": {
@@ -7905,7 +7702,6 @@
  "pk": 204,
  "fields": {
   "name": "마제소바&가라아게튀김",
-  "display_name": "마제소바",
   "is_food": true,
   "food_group": "국수",
   "features": {
@@ -7943,7 +7739,6 @@
  "pk": 205,
  "fields": {
   "name": "잡곡밥+육짬뽕탕+통삼겹동파육+매콤소스깐풍볼+고구마치즈떡볶이+단무지+포기김치+그린샐러드+오늘의차",
-  "display_name": "동파육과 짬뽕탕",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -7981,7 +7776,6 @@
  "pk": 206,
  "fields": {
   "name": "고등어 소금구이",
-  "display_name": "고등어구이",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -8019,7 +7813,6 @@
  "pk": 207,
  "fields": {
   "name": "철판주꾸미 볶음",
-  "display_name": "철판주꾸미볶음",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -8057,7 +7850,6 @@
  "pk": 208,
  "fields": {
   "name": "철판제육볶음",
-  "display_name": "철판제육볶음",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -8095,7 +7887,6 @@
  "pk": 209,
  "fields": {
   "name": "떡갈비 구이",
-  "display_name": "떡갈비 구이",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -8133,7 +7924,6 @@
  "pk": 210,
  "fields": {
   "name": "소갈비탕",
-  "display_name": "소갈비탕",
   "is_food": true,
   "food_group": "국/탕",
   "features": {
@@ -8171,7 +7961,6 @@
  "pk": 211,
  "fields": {
   "name": "7선 산채비빔밥",
-  "display_name": "산채비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -8209,7 +7998,6 @@
  "pk": 212,
  "fields": {
   "name": "소불고기뚝배기",
-  "display_name": "소불고기뚝배기",
   "is_food": true,
   "food_group": "국/탕",
   "features": {
@@ -8247,7 +8035,6 @@
  "pk": 213,
  "fields": {
   "name": "차돌순두부",
-  "display_name": "차돌순두부",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -8285,7 +8072,6 @@
  "pk": 214,
  "fields": {
   "name": "냉면",
-  "display_name": "냉면",
   "is_food": true,
   "food_group": "냉면",
   "features": {
@@ -8323,7 +8109,6 @@
  "pk": 215,
  "fields": {
   "name": "초계국수",
-  "display_name": "초계국수",
   "is_food": true,
   "food_group": "국수",
   "features": {
@@ -8361,7 +8146,6 @@
  "pk": 216,
  "fields": {
   "name": "솥밥(추가)",
-  "display_name": "솥밥 추가",
   "is_food": false,
   "food_group": "정식/뷔페",
   "features": {
@@ -8399,7 +8183,6 @@
  "pk": 217,
  "fields": {
   "name": "마파두부덮밥",
-  "display_name": "마파두부덮밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -8437,7 +8220,6 @@
  "pk": 218,
  "fields": {
   "name": "베테랑칼국수, 미니열무보리비빔밥, 옥수수야채전",
-  "display_name": "베테랑칼국수",
   "is_food": true,
   "food_group": "국수",
   "features": {
@@ -8475,7 +8257,6 @@
  "pk": 219,
  "fields": {
   "name": "닭갈비볶음밥, 비빔야채만두, 감자채볶음",
-  "display_name": "닭갈비볶음밥 세트",
   "is_food": true,
   "food_group": "볶음밥",
   "features": {
@@ -8513,7 +8294,6 @@
  "pk": 220,
  "fields": {
   "name": "셀프라면,밥,김치",
-  "display_name": "셀프라면",
   "is_food": true,
   "food_group": "라면",
   "features": {
@@ -8551,7 +8331,6 @@
  "pk": 221,
  "fields": {
   "name": "미나리곰탕",
-  "display_name": "미나리곰탕",
   "is_food": true,
   "food_group": "국/탕",
   "features": {
@@ -8589,7 +8368,6 @@
  "pk": 222,
  "fields": {
   "name": "직화제육덮밥",
-  "display_name": "직화제육덮밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -8627,7 +8405,6 @@
  "pk": 223,
  "fields": {
   "name": "뚝배기순두부",
-  "display_name": "뚝배기순두부",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -8665,7 +8442,6 @@
  "pk": 224,
  "fields": {
   "name": "시나몬치킨스테이크",
-  "display_name": "치킨스테이크",
   "is_food": true,
   "food_group": "치킨",
   "features": {
@@ -8703,7 +8479,6 @@
  "pk": 225,
  "fields": {
   "name": "알감자조림+해파리냉채+그린샐러드+얼갈이된장국+후식",
-  "display_name": "알감자백반",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -8741,7 +8516,6 @@
  "pk": 226,
  "fields": {
   "name": "삼겹살덮밥",
-  "display_name": "삼겹살덮밥",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -8779,7 +8553,6 @@
  "pk": 227,
  "fields": {
   "name": "육개장",
-  "display_name": "육개장",
   "is_food": true,
   "food_group": "국/탕",
   "features": {
@@ -8817,7 +8590,6 @@
  "pk": 228,
  "fields": {
   "name": "닭칼국수",
-  "display_name": "닭칼국수",
   "is_food": true,
   "food_group": "국수",
   "features": {
@@ -8855,7 +8627,6 @@
  "pk": 229,
  "fields": {
   "name": "매운갈비떡찜+감자고로케+매콤두부자박조림+상추겉절이+미역국+그린샐러드&오늘의차",
-  "display_name": "매운갈비떡찜 세트",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -8893,7 +8664,6 @@
  "pk": 230,
  "fields": {
   "name": "나주식맑은돼지곰탕",
-  "display_name": "나주식돼지곰탕",
   "is_food": true,
   "food_group": "국밥",
   "features": {
@@ -8931,7 +8701,6 @@
  "pk": 231,
  "fields": {
   "name": "묵은지닭볶음탕&미역줄기볶음",
-  "display_name": "묵은지닭볶음탕",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -8969,7 +8738,6 @@
  "pk": 232,
  "fields": {
   "name": "새우튀김카레라이스&단호박샐러드",
-  "display_name": "새우튀김카레",
   "is_food": true,
   "food_group": "덮밥",
   "features": {
@@ -9007,7 +8775,6 @@
  "pk": 233,
  "fields": {
   "name": "포테이토핫도그",
-  "display_name": "포테이토핫도그",
   "is_food": true,
   "food_group": "분식",
   "features": {
@@ -9045,7 +8812,6 @@
  "pk": 234,
  "fields": {
   "name": "잡곡밥+북어콩나물해장국+춘천순살닭갈비+청양마요떡갈비구이+오이지무침+크리미카라멜팝콘+깍두기+그린샐러드+오늘의차",
-  "display_name": "순살닭갈비 정식",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -9083,7 +8849,6 @@
  "pk": 235,
  "fields": {
   "name": "뚝배기)스팸고추장찌개, 치킨까스, 볼어묵볶음",
-  "display_name": "스팸고추장찌개",
   "is_food": true,
   "food_group": "찌개",
   "features": {
@@ -9121,7 +8886,6 @@
  "pk": 236,
  "fields": {
   "name": "쇠고기장조림버터비빔밥",
-  "display_name": "장조림버터비빔밥",
   "is_food": true,
   "food_group": "비빔밥",
   "features": {
@@ -9159,7 +8923,6 @@
  "pk": 237,
  "fields": {
   "name": "안동식찜닭",
-  "display_name": "안동식찜닭",
   "is_food": true,
   "food_group": "정식/뷔페",
   "features": {
@@ -9197,7 +8960,6 @@
  "pk": 238,
  "fields": {
   "name": "소떡소떡채소볶음",
-  "display_name": "소떡소떡볶음",
   "is_food": false,
   "food_group": "분식",
   "features": {
