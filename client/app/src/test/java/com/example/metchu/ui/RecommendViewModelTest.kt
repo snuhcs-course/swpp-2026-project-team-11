@@ -458,6 +458,13 @@ class RecommendViewModelTest {
     }
 
     @Test
+    fun allRestaurantsWithLlmExplainsWhichEnginesWork() {
+        api.fail(Fixtures.httpError(400, """{"error":{"code":"all_source_llm_unsupported","message":"unsupported"}}"""))
+        viewModel.start("LU", Engine.LLM, source = "all", distanceScope = "any")
+        assertIdle(null, UiError(R.string.error_all_source_llm, canRetry = false))
+    }
+
+    @Test
     fun anOlderServerRejectingRlDoesNotRetryTheSameRequest() {
         api.fail(Fixtures.httpError(400, Fixtures.json("error_invalid_request")))
         viewModel.start("LU", Engine.RL)

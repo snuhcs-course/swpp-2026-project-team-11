@@ -120,3 +120,60 @@ class GeneralSourceTests(TestCase):
     def test_without_a_source_the_session_is_the_cafeteria_menu(self):
         response = post(self.client, "/api/sessions/", {"date": "2026-11-02", "meal": "LU"})
         self.assertEqual(response.json()["candidate_count"], 1)
+
+
+class AllSourceTests(TestCase):
+    setUp = GeneralSourceTests.setUp
+    def start(self, **body):
+        response = post(self.client, "/api/sessions/", {"source": "all", "date": "2026-11-02", "meal": "LU"} | body)
+        self.assertEqual(response.status_code, 201, response.content)
+        return response.json()
+
+    def test_all_combines_campus_and_stores_for_both_engines(self):
+        from recommend import sessions
+        for engine in ("decision_tree", "rl"):
+            with self.subTest(engine=engine):
+                state = self.start(engine=engine)
+                self.assertEqual(state["candidate_count"], 5)
+                session = sessions.get(state["session_id"])
+                self.assertIn("학생회관식당", session.menus)
+                self.assertIn("홍콩반점 낙성대점", session.menus)
+                ids = [dish["food_id"] for dishes in session.menus.values() for dish in dishes]
+                self.assertEqual(len(set(ids)), 5)
+
+    @override_settings(RECOMMEND_MAX_DISTANCE_M=1)
+    def test_all_ignores_the_server_distance_cutoff(self):
+        self.assertEqual(self.start(location=SEOUL_NAT_UNIV_STATION)["candidate_count"], 5)
+
+    def test_all_keeps_both_sources_allergy_filtering(self):
+        state = self.start(allergies=["wheat"])
+        self.assertEqual(state["candidate_count"], 3)
+
+    def test_nearby_filters_both_sources_before_recommendation(self):
+        from recommend import sessions
+        hall = Restaurant.objects.get(code="학생회관식당")
+        hall.lat, hall.lng = SEOUL_NAT_UNIV_STATION["lat"], SEOUL_NAT_UNIV_STATION["lng"]
+        hall.save()
+        state = self.start(distance_scope="near", location=SEOUL_NAT_UNIV_STATION)
+        self.assertEqual(state["candidate_count"], 3)
+        session = sessions.get(state["session_id"])
+        self.assertIn("학생회관식당", session.menus)
+        self.assertIn("북경 서울대입구점", session.menus)
+        self.assertNotIn("홍콩반점 낙성대점", session.menus)
+
+    def test_nearby_excludes_unknown_coordinates_when_user_location_is_known(self):
+        from recommend import sessions
+        state = self.start(distance_scope="near", location=SEOUL_NAT_UNIV_STATION)
+        self.assertNotIn("학생회관식당", sessions.get(state["session_id"]).menus)
+
+    def test_nearby_without_location_retains_both_sources(self):
+        self.assertEqual(self.start(distance_scope="near")["candidate_count"], 5)
+
+    def test_invalid_distance_scope_is_rejected(self):
+        response = post(self.client, "/api/sessions/", {"source": "all", "distance_scope": "remote"})
+        self.assertEqual(response.status_code, 400)
+
+    def test_explicit_llm_is_not_silently_changed(self):
+        response = post(self.client, "/api/sessions/", {"source": "all", "engine": "llm"})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["code"], "all_source_llm_unsupported")
