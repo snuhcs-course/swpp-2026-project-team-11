@@ -394,29 +394,40 @@ class MainActivityTest {
     }
 
     @Test
-    fun aBanLastsUntilStartOver() {
-        val foodId = guess.step.food!!.foodId
-        startWith(guess)
-        api.reply(guess)
+    fun aDishWithoutAGroupCanBeBannedAtOnceUntilStartOver() {
+        val alone = guess.copy(step = guess.step.copy(food = guess.step.food!!.copy(foodGroup = "")))
+        val foodId = alone.step.food!!.foodId
+        startWith(alone)
+        api.reply(alone)
         tapText(R.string.result_ban)
-        assertEquals("ban ${guess.sessionId} $foodId true", api.calls.last())
-        api.reply(guess)
+        assertEquals("ban ${alone.sessionId} $foodId true", api.calls.last())
+        api.reply(alone)
         tapText(R.string.result_unban)
-        assertEquals("ban ${guess.sessionId} $foodId false", api.calls.last())
-        api.reply(guess)
+        assertEquals("ban ${alone.sessionId} $foodId false", api.calls.last())
+        api.reply(alone)
         tapText(R.string.result_ban)
 
         // Start over ends the session, and the next one starts with no ban.
         tapText(R.string.result_home)
-        startWith(guess)
+        startWith(alone)
         compose.onNodeWithText(text(R.string.result_ban)).assertIsDisplayed()
     }
 
     @Test
-    fun aGroupGuessHasNoBan() {
-        startWith(groupGuess)
-        compose.onNodeWithTag("dish").assertIsDisplayed()
+    fun aGroupBanIsOfferedOnceTwoProposalsInARowShareTheGroup() {
+        val group = guess.step.food!!.foodGroup
+        assertEquals(group, groupGuess.step.food!!.foodGroup)
+        startWith(guess)
         compose.onNodeWithTag("ban").assertDoesNotExist()
+
+        api.reply(question)
+        tapText(R.string.result_more)
+        api.reply(groupGuess)
+        answer("yes")
+        api.reply(groupGuess)
+        compose.onNodeWithText(context.getString(R.string.result_ban_group, group)).performClick()
+        assertEquals("ban ${groupGuess.sessionId} $group true", api.calls.last())
+        compose.onNodeWithText(context.getString(R.string.result_unban_group, group)).assertIsDisplayed()
     }
 
     @Test

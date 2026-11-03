@@ -6,6 +6,7 @@ import com.example.metchu.Fixtures
 import com.example.metchu.R
 import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
+import com.example.metchu.data.model.Ban
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.RestaurantMenu
@@ -763,40 +764,41 @@ class RecommendViewModelTest {
         assertIdle(guess)
     }
 
-    // --- banning a dish for the session ---
+    // --- banning a dish or a group for the session ---
 
     @Test
     fun aBanLastsUntilTheSessionEnds() {
-        val foodId = guess.step.food!!.foodId
+        val dish = Ban(foodId = guess.step.food!!.foodId)
+        val group = Ban(foodGroup = "국수")
         startWith(guess)
         api.reply(guess)
-        viewModel.ban(foodId, true)
-        assertEquals(listOf("ban ${guess.sessionId} $foodId true"), api.calls)
-        assertEquals(setOf(foodId), viewModel.banned.value)
+        viewModel.ban(dish, true)
+        api.reply(guess)
+        viewModel.ban(group, true)
+        assertEquals(listOf("ban ${guess.sessionId} ${dish.foodId} true", "ban ${guess.sessionId} 국수 true"), api.calls)
+        assertEquals(setOf(dish, group), viewModel.banned.value)
         assertIdle(guess)
 
         api.reply(guess)
-        viewModel.ban(foodId, false)
-        assertEquals(emptySet<Int>(), viewModel.banned.value)
+        viewModel.ban(dish, false)
+        assertEquals(setOf(group), viewModel.banned.value)
 
-        api.reply(guess)
-        viewModel.ban(foodId, true)
         viewModel.startOver()
-        assertEquals(emptySet<Int>(), viewModel.banned.value)
+        assertEquals(emptySet<Ban>(), viewModel.banned.value)
     }
 
     @Test
     fun aFailedBanIsNotRememberedAndTryAgainSendsIt() {
-        val foodId = guess.step.food!!.foodId
+        val group = Ban(foodGroup = "국수")
         startWith(guess)
         api.fail(IOException("offline"))
-        viewModel.ban(foodId, true)
+        viewModel.ban(group, true)
         assertIdle(guess, noServer)
-        assertEquals(emptySet<Int>(), viewModel.banned.value)
+        assertEquals(emptySet<Ban>(), viewModel.banned.value)
 
         api.reply(guess)
         viewModel.retry()
-        assertEquals(setOf(foodId), viewModel.banned.value)
+        assertEquals(setOf(group), viewModel.banned.value)
         assertEquals(2, api.calls.size)
     }
 
