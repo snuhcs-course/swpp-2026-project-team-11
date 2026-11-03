@@ -144,6 +144,7 @@ console; never commit it. The Maps terms require Google's logo to stay visible; 
 result map keeps it just above the sheet with map padding.
 
 Once per launch until it is allowed, the start screen says why it needs location
+(on the first launch, after the settings tip is closed)
 and, on **Continue**, asks for it. With it, a new session sends where the
 device is: a current fix, or the last known location when none comes within 3
 seconds (the start button shows it is loading meanwhile); the server then gives
