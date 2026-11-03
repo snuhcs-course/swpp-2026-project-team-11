@@ -318,8 +318,10 @@ class MainActivityTest {
         compose.onNodeWithText(question.step.text).assertIsDisplayed()
 
         api.reply(question)
+        val sent = api.calls.size
         compose.onNodeWithText(question.step.text).performClick()
-        compose.waitForIdle()
+        // The row shows itself held for a moment before it goes back.
+        compose.waitUntil(3_000) { api.calls.size > sent }
         assertEquals("undo ${question.sessionId}", api.calls.last())
     }
 
