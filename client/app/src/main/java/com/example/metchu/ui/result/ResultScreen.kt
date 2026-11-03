@@ -101,8 +101,8 @@ import kotlin.math.abs
 /**
  * The proposed dish over a Google map of the cafeterias that serve it. "Find another"
  * turns the dish down and asks on; back returns to the last question. Chips switch
- * between the dishes proposed so far in this session; "Find another" is only offered
- * on the server's current guess, the one it would turn down.
+ * between the dishes proposed so far in this session; "Find another" stays on all of
+ * them and always turns down the server's current guess.
  */
 @Composable
 fun ResultScreen(
@@ -168,9 +168,9 @@ fun ResultScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), { if (!loading) onBack() }, Modifier.testTag("back"))
-                // "Start over" keeps the corner, so it never slides under the finger that tapped "Find another".
+                // "Start over" keeps the corner whether or not "Find another" is offered.
                 Pill {
-                    val more = current.type == Step.GUESS && step.guessId == current.guessId
+                    val more = current.type == Step.GUESS
                     if (more) {
                         PillSegment(stringResource(R.string.result_more), { if (!loading) onMore() }, start = 18.dp, end = 14.dp)
                         PillDivider()
