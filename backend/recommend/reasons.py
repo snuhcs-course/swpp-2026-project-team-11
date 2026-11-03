@@ -18,7 +18,7 @@ import re
 
 from pydantic import BaseModel, Field
 
-from question_engines.decision_tree.contracts import translate
+from question_engines.decision_tree.contracts import FEATURE_PRESENTATION, FEATURE_PRESENTATION_V2, translate
 from question_engines.llm import LLMConfigError
 from question_engines.llm.config import LLMSettings, build_llm
 from question_engines.llm.engine import ANSWER_LABELS
@@ -33,6 +33,18 @@ NO = frozenset({"no", "probably_no"})
 HANGUL = re.compile("[가-힣]")
 LATIN_WORD = re.compile("[A-Za-z]{2,}")
 
+QUESTION_KEYS = {version: {text: key for key, (text, _) in schema.items()}
+                 for version, schema in (("v1", FEATURE_PRESENTATION), ("v2", FEATURE_PRESENTATION_V2))}
+
+
+def answer_facts(answers, features, version):
+    for answer in answers:
+        key = answer["question_id"].removeprefix("q:")
+        if key.startswith("llm-"):  # A free-form question has no feature ID.
+            key = QUESTION_KEYS.get(version, {}).get(answer["text"])
+        yield answer["text"], answer["answer_id"], features.get(key)
+
+
 SYSTEM_PROMPT = """You write the short line shown under the dish that "Metchu!", a meal
 recommendation app, proposes to a user. Say why it suits them, plainly and concretely,
 as a friend would.
@@ -44,7 +56,7 @@ as a friend would.
 - Describe the dish only with its listed traits; do not invent ingredients, tastes
   or prices. Do not guess preferences the user did not state, as in "if you like ...".
 - No hype: no words like "fantastic", "perfect", "wonderfully" or "탁월한".
-- The cafeteria serves the dish, not you: do not write that you made, prepared or
+- The restaurant serves the dish, not you: do not write that you made, prepared or
   served it ("준비했어요"). You only suggest it.
 - In Korean, write natural 해요체 with standard spacing (e.g. "딱이에요", not "딱 이에요").
 - Copy the dish name exactly as written. Do not name any other dish.
@@ -81,18 +93,18 @@ class InvalidReason(ValueError):
 def supports(answer_id, value):
     """Whether an answer points to a dish with `value` of the feature (None: unknown feature)."""
     if answer_id in YES:
-        return value is None or value >= .5
+        return value is not None and value >= .5
     if answer_id in NO:
-        return value is None or value <= .5
+        return value is not None and value <= .5
     return False
 
 
 def build_message(facts, refused=None):
     names = f"{facts.dish} (one of {', '.join(facts.members)})" if facts.members else facts.dish
     answers = "\n".join(
-        f"Q{number}. {question} -> {ANSWER_LABELS[answer_id]}"
-        + ("" if value is None else f" (this dish: {value:.1f} of 1)")
-        for number, (question, answer_id, value) in enumerate(facts.answers, start=1)) or "(none)"
+        f"Q{number}. {question} -> {ANSWER_LABELS[answer_id]} (this dish: {value:.1f} of 1)"
+        for number, (question, answer_id, value) in enumerate(facts.answers, start=1)
+        if supports(answer_id, value)) or "(none)"
     parts = [f"## Dish\n{names}",
              f"## Served at\n{', '.join(facts.restaurants) or '(unknown)'}",
              f"## Traits of the dish\n{', '.join(facts.traits) or '(unknown)'}",
@@ -115,9 +127,15 @@ def check(draft, facts):
     unnamed = reason
     for name in sorted((facts.dish, *facts.members, *facts.restaurants), key=len, reverse=True):
         unnamed = unnamed.replace(name, " ")
+    short_names = []
     for other in facts.others:
-        if len(other) > 1 and other in unnamed:
+        if len(other) <= 1 or other not in unnamed:
+            continue
+        if not any(other in name for name in (facts.dish, *facts.members)):
             raise InvalidReason(f'The reason names another dish, "{other}"')
+        short_names.append(other)
+    for name in sorted(short_names, key=len, reverse=True):
+        unnamed = unnamed.replace(name, " ")
     if facts.language == "ko" and (not HANGUL.search(unnamed) or LATIN_WORD.search(unnamed)):
         raise InvalidReason("The reason is not in Korean; write every word but the dish and cafeteria names in Korean")
     if facts.language == "en" and HANGUL.search(unnamed):
@@ -148,16 +166,12 @@ def template(facts):
         if stems:
             things = ", ".join(stems) + ("을" if has_final_consonant(stems[-1]) else "를")
             return f"{things} 원하셔서 {dish} 골랐어요."
-        if facts.answers:
-            return f"답하신 내용에 가장 잘 맞는 {dish} 골랐어요."
-        return f"오늘 메뉴 중에서 {dish} 골라 봤어요."
+        return f"메뉴 중에서 {dish} 골라 봤어요."
     things = [match.group(1) for match in (re.fullmatch(r"Do you feel like (.+)\?", question)
                                            for question in wanted) if match]
     if things:
         return f"You felt like {' and '.join(things)}, and {facts.dish} is a good match."
-    if facts.answers:
-        return f"{facts.dish} is the best match for your answers among today's menus."
-    return f"{facts.dish} is a good pick from today's menus."
+    return f"{facts.dish} is one of the available dishes."
 
 
 def default_llm():
@@ -184,6 +198,8 @@ def draft_reason(facts, llm, refused=None):
 
 
 def explain(facts, llm):
+    if facts.answers and not any(supports(answer, value) for _, answer, value in facts.answers):
+        return {"reason": template(facts), "source": "template"}
     refused = None
     for attempt in range(1, MAX_ATTEMPTS + 1 if llm is not None else 1):
         try:

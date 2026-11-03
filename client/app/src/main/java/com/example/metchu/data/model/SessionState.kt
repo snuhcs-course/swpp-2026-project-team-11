@@ -51,6 +51,8 @@ data class Step(
     // unavailable
     val reason: String?
 ) {
+    val proposalId: String? get() = guessId ?: group?.groupId ?: food?.let { "food:${it.foodId}" }
+
     companion object {
         const val QUESTION = "question"
         const val GUESS = "guess"
