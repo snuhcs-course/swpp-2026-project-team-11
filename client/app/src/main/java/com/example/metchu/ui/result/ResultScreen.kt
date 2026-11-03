@@ -456,7 +456,8 @@ private fun CafeteriaMap(
     val padding = PaddingValues(start = 14.dp, top = 120.dp, bottom = bottomInset + 6.dp)
 
     // Fits again when the first fix arrives, not on every later one, so the camera does not undo the user's panning.
-    LaunchedEffect(loaded, points, user != null) {
+    // Keyed on the set: a later fix that only reorders the cafeterias by distance does not fit again either.
+    LaunchedEffect(loaded, points.toSet(), user != null) {
         val framed = framedPoints(cafeterias, user).map { LatLng(it.lat, it.lng) }
         if (!loaded || framed.isEmpty()) return@LaunchedEffect
         val update = if (framed.size == 1) {
