@@ -166,7 +166,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                 }
                 Screen.UNAVAILABLE -> if (current != null) {
                     BackHandler { viewModel.startOver() }
-                    UnavailableScreen(current, hasAllergies = allergies.isNotEmpty(), onHome = viewModel::startOver)
+                    UnavailableScreen(current, hasAllergies = allergies.isNotEmpty(), onBack = viewModel::startOver)
                 }
             }
         }
