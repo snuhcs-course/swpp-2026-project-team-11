@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -137,7 +139,7 @@ class MainActivityTest {
             pickMeal(meal)
             api.reply(question)
             tap("start")
-            assertEquals("create $code decision_tree en", api.calls.last())
+            assertEquals("create $code rl en", api.calls.last())
             tap("back")
         }
     }
@@ -151,7 +153,7 @@ class MainActivityTest {
         tap("back")
         api.reply(question)
         tap("start")
-        assertEquals("create ${other.code} decision_tree en", api.calls.last())
+        assertEquals("create ${other.code} rl en", api.calls.last())
     }
 
     @Test
@@ -171,7 +173,7 @@ class MainActivityTest {
         pickMeal(R.string.meal_lunch)
         api.reply(question)
         tap("start")
-        assertEquals("create LU decision_tree egg,pine_nut en", api.calls.last())
+        assertEquals("create LU rl egg,pine_nut en", api.calls.last())
 
         // Done, so the next launch goes straight to the start screen.
         relaunch()
@@ -198,18 +200,14 @@ class MainActivityTest {
         pickMeal(R.string.meal_lunch)
         api.reply(question)
         tap("start")
-        assertEquals("create LU decision_tree @37.45932,126.95058 milk en", api.calls.last())
+        assertEquals("create LU rl @37.45932,126.95058 milk en", api.calls.last())
     }
 
     @Test
-    fun theEngineChosenInTheSettingsRunsTheSession() {
+    fun theLlmEngineCannotBeChosen() {
         tap("settings")
-        compose.onNodeWithTag("engine_llm").performScrollTo().performClick()
-        tap("back")
-        pickMeal(R.string.meal_lunch)
-        api.reply(Fixtures.state("question_llm"))
-        tap("start")
-        assertEquals("create LU llm en", api.calls.last())
+        compose.onNodeWithTag("engine_llm").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("engine_rl").assertIsSelected()
     }
 
     /** The language is the app's, not the test's: it is switched back the same way before the test ends. */
@@ -239,16 +237,15 @@ class MainActivityTest {
     }
 
     @Test
-    fun rlSelectionSurvivesRelaunchAndStartsAnRlSession() {
+    fun theDecisionTreeChosenInTheSettingsSurvivesRelaunch() {
         tap("settings")
-        compose.onNodeWithTag("engine_rl").performScrollTo().performClick()
+        compose.onNodeWithTag("engine_decision_tree").performScrollTo().performClick()
         tap("back")
         relaunch()
         pickMeal(R.string.meal_lunch)
-        api.reply(Fixtures.state("question_rl"))
+        api.reply(question)
         tap("start")
-        assertEquals("create LU rl en", api.calls.last())
-        compose.onNodeWithText(Fixtures.state("question_rl").step.text).assertIsDisplayed()
+        assertEquals("create LU decision_tree en", api.calls.last())
     }
 
     @Test
