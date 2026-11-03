@@ -1,5 +1,7 @@
 package com.example.metchu.ui.result
 
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.requiredSize
 import com.example.metchu.ui.common.fade
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
@@ -589,18 +591,23 @@ private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit,
                 Text(stringResource(R.string.walk_minutes, cafeteria.walkMinutes ?: 1), style = MetchuType.Caption)
             }
         }
-        Box(
-            Modifier
-                .height(32.dp)
-                .chipShadow()
-                .clip(CircleShape)
-                .background(Color.White)
-                .clickable(role = Role.Button, onClick = onMenu)
-                .padding(horizontal = 12.dp)
-                .testTag("menuButton"),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(stringResource(R.string.result_menu), style = MetchuType.Caption.copy(fontWeight = MetchuType.Label.fontWeight), color = MetchuColors.Grey900)
+        // A 24 dp icon at the row's end, its 40 dp touch circle reaching into the margin.
+        Box(Modifier.padding(start = 4.dp).size(24.dp), contentAlignment = Alignment.Center) {
+            val interaction = remember { MutableInteractionSource() }
+            val pressed by interaction.collectIsPressedAsState()
+            val label = stringResource(R.string.result_menu)
+            Box(
+                Modifier
+                    .requiredSize(40.dp)
+                    .clip(CircleShape)
+                    .background(if (pressed) MetchuColors.Grey100 else Color.Transparent)
+                    .clickable(interaction, indication = null, role = Role.Button, onClickLabel = label, onClick = onMenu)
+                    .semantics { contentDescription = label }
+                    .testTag("menuButton"),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(Icons.Menu, null, Modifier.size(24.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey600))
+            }
         }
     }
 }

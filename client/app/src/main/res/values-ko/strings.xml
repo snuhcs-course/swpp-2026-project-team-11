@@ -103,7 +103,7 @@
     <string name="price_unknown">가격 정보 없음</string>
     <string name="walk_minutes">걸어서 %1$d분</string>
     <string name="offer_none">이 메뉴를 파는 식당 정보가 없어요</string>
-    <string name="result_menu">메뉴</string>
+    <string name="result_menu">메뉴 보기</string>
     <string name="result_menu_title">%1$s %2$s 메뉴</string>
     <string name="result_menu_note">Metchu가 추천할 수 있는 메뉴만 보여요</string>
     <string name="result_menu_failed">메뉴를 불러오지 못했어요. 닫고 다시 시도해 주세요.</string>
