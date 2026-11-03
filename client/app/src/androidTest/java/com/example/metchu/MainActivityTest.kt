@@ -144,9 +144,11 @@ class MainActivityTest {
     }
 
     @Test
-    fun theFirstLaunchOpensTheSettingsAndEverySessionAvoidsTheAllergies() {
+    fun theFirstLaunchOpensTheStartScreenAndEverySessionAvoidsTheAllergies() {
         clearPrefs()
         relaunch()
+        compose.onNodeWithTag("start").assertIsDisplayed()
+        tap("settings")
         tap("allergen_${Allergen.EGG.id}")
         tap("allergen_${Allergen.PINE_NUT.id}")
         tap("back")
@@ -156,10 +158,6 @@ class MainActivityTest {
         api.reply(question)
         tap("start")
         assertEquals("create LU decision_tree egg,pine_nut en", api.calls.last())
-
-        // Chosen, so the next launch goes straight to the start screen.
-        relaunch()
-        compose.onNodeWithTag("start").assertIsDisplayed()
     }
 
     @Test
