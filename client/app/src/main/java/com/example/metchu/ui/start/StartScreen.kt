@@ -55,10 +55,12 @@ import com.example.metchu.ui.common.BottomSheetPicker
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.PickerOption
+import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.Wordmark
 import com.example.metchu.ui.common.cssShadow
 import com.example.metchu.ui.common.pressScale
 import com.example.metchu.ui.common.rememberLocationPermission
+import com.example.metchu.ui.common.rememberSlow
 import com.example.metchu.ui.common.rememberUserPoint
 import com.example.metchu.ui.result.Point
 import com.example.metchu.ui.theme.MetchuColors
@@ -196,7 +198,9 @@ private fun StartButton(loading: Boolean, onClick: () -> Unit, modifier: Modifie
             .testTag("start"),
         contentAlignment = Alignment.Center
     ) {
-        Text(stringResource(R.string.start_button), style = MetchuType.Button, color = Color.White, textAlign = TextAlign.Center)
+        // Finding the user and starting the session can take seconds.
+        if (rememberSlow(loading)) Spinner(Color.White, 32.dp)
+        else Text(stringResource(R.string.start_button), style = MetchuType.Button, color = Color.White, textAlign = TextAlign.Center)
     }
 }
 

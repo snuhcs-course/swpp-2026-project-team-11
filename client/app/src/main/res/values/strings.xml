@@ -86,6 +86,7 @@
     <string name="result_caption_lunch">Lunch pick</string>
     <string name="result_caption_dinner">Dinner pick</string>
     <string name="result_caption_any">Today’s pick</string>
+    <string name="reason_writing">Working out why this suits you…</string>
     <string name="result_home">Start over</string>
     <string name="result_more">Find another</string>
     <string name="result_nearby">Nearby cafeterias</string>
