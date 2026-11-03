@@ -32,6 +32,7 @@ import com.example.metchu.ui.start.Meal
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Rule
@@ -403,6 +404,15 @@ class MainActivityTest {
         startWith(groupGuess)
         compose.onNodeWithTag("dish").assertIsDisplayed()
         compose.onNodeWithText(groupGuess.step.group!!.displayName).assertIsDisplayed()
+    }
+
+    @Test
+    fun theDishNameMovesTheSheetLikeItsHandle() {
+        startWith(guess)
+        val before = compose.onNodeWithTag("dish").getBoundsInRoot().top
+        compose.onNodeWithTag("dish").performClick()
+        compose.waitForIdle()
+        assertNotEquals(before, compose.onNodeWithTag("dish").getBoundsInRoot().top)
     }
 
     @Test
