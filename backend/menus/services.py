@@ -32,7 +32,9 @@ from django.utils import timezone
 
 from .allergens import ALLERGEN_VERSION
 from .features.schema import FEATURE_VERSION, FEATURES
-from .models import Food, MenuItem, SalesMenu, StoreMenu
+from .models import Food, MenuItem, MenuLabel, SalesMenu, StoreMenu
+from .labels import LABEL_VERSION, needs_label
+from .normalize import clean_name
 from .menu_profiles import description_digest, equivalent_menu_key, offer_key, recipe_key, title, validate_features
 
 logger = logging.getLogger(__name__)
@@ -152,6 +154,11 @@ def _menu_candidates(menus, groups, *, source):
     profiles = {p.key: p for p in SalesMenu.objects.filter(
         Q(key__in=keys) | (Q(source=source, restaurant_code__in=codes) & ~Q(feature_version="")))}
     annotated_titles = {(p.restaurant_code, p.name) for p in profiles.values() if p.feature_version}
+    names = list({rows[0].raw_name for rows, _, _ in menus if needs_label(rows[0].raw_name)})
+    labels = {}
+    for start in range(0, len(names), 500):
+        labels.update(MenuLabel.objects.filter(name__in=names[start:start + 500], version=LABEL_VERSION)
+                      .values_list("name", "label"))
     combined = {}
     for rows, parts, current in menus:
         row = rows[0]
@@ -187,7 +194,7 @@ def _menu_candidates(menus, groups, *, source):
             components = [part.name for part in parts]
         equivalent = equivalent_menu_key(title(row.raw_name), row.description, components, values, deviations)
         if equivalent not in combined:
-            candidate = {"food_id": registered.pk, "name": title(row.raw_name), "display_name": title(row.raw_name),
+            candidate = {"food_id": registered.pk, "name": row.raw_name, "display_name": labels.get(row.raw_name) or clean_name(row.raw_name)[0],
                          "food_group": parts[0].food_group if len(parts) == 1 else "",
                          "food_groups": sorted({groups[f.pk] for f in parts} - {""}),
                          "menu_profile": "rms-v1", "features": values, "feature_std": deviations, "offers": []}

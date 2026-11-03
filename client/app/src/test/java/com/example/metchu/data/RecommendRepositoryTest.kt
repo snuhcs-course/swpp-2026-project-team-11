@@ -60,6 +60,13 @@ class RecommendRepositoryTest {
     }
 
     @Test
+    fun allRestaurantsIsSentToTheServer() = runTest {
+        reply("question", 201)
+        repository.createSession("LU", source = "all", distanceScope = "near")
+        assertEquals("""{"meal":"LU","source":"all","distance_scope":"near"}""", server.takeRequest().json().toString())
+    }
+
+    @Test
     fun createSessionSendsTheChosenEngine() = runTest {
         for ((engine, fixture) in listOf(Engine.LLM to "question_llm", Engine.RL to "question_rl")) {
             reply(fixture, 201)

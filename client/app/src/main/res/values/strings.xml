@@ -25,9 +25,9 @@
     <string name="place_near_option">Nearby</string>
     <string name="place_any_option">Anywhere</string>
     <string name="place_near_note">Within a 10-minute walk</string>
-    <string name="place_any_note">All cafeterias</string>
+    <string name="place_any_note">All restaurants</string>
     <string name="location_ask_title">Allow location?</string>
-    <string name="location_ask_body">We use your location to show nearby cafeterias and how far each one is. Without it, every cafeteria is listed.</string>
+    <string name="location_ask_body">We use your location to show nearby restaurants and how far each one is. Without it, every restaurant is listed.</string>
     <string name="location_ask_continue">Continue</string>
     <string name="location_ask_later">Not now</string>
     <string name="setup_language_title" translatable="false">언어를 골라 주세요\nChoose your language</string>
@@ -138,6 +138,7 @@
     <string name="error_no_server">You can try again once the server is reachable.</string>
     <string name="error_server">The server couldn’t handle that. You can try again.</string>
     <string name="error_engine_unavailable">The selected question engine is unavailable. Choose another in Settings.</string>
+    <string name="error_all_source_llm">All restaurants is available with Decision tree or RL. Change the engine in Settings.</string>
     <string name="error_session_settings">The server cannot start a session with these settings. Check your choices before starting again.</string>
     <string name="error_session_lost">The session ended on the server. You can start again.</string>
 </resources>

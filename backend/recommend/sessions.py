@@ -23,8 +23,8 @@ not change a session that is already in progress.
 
 `source` is what the dishes come from: "cafeteria", the day's SNU cafeteria menu
 (menus.services.get_catalog), or "general", the restaurants near 서울대입구역 and
-낙성대역 (get_store_catalog). A general session supports the decision tree and RL: the LLM
-engine would send thousands of dish names with every question.
+낙성대역 (get_store_catalog), or "all" for both. General and all sessions support
+the decision tree and RL; the LLM engine would send thousands of dish names per question.
 
 `location` is the user's (lat, lng), if the phone sent one. Each offer then
 carries its `distance_m`, and with RECOMMEND_MAX_DISTANCE_M set, cafeterias
@@ -65,8 +65,9 @@ from question_engines.llm import LLMConfigError, LLMEngine
 from question_engines.rl import RLEngine
 
 ENGINES = ("decision_tree", "llm", "rl")
-SOURCES = ("cafeteria", "general")
+SOURCES = ("cafeteria", "general", "all")
 MAX_SESSIONS = 500
+NEARBY_METERS = 800
 
 
 class StaleStep(Exception):
@@ -80,7 +81,7 @@ class EngineUnavailable(Exception):
 class RecommendSession:
     def __init__(self, date: datetime.date, meal: str | None, engine: str,
                  location: tuple[float, float] | None, allergies: frozenset[str],
-                 source: str = "cafeteria", language: str = "en"):
+                 source: str = "cafeteria", language: str = "en", distance_scope: str | None = None):
         self.session_id = uuid.uuid4().hex
         self.engine_name = engine
         self.date = date
@@ -90,11 +91,19 @@ class RecommendSession:
         try:
             if source == "general":
                 candidates, schema = get_store_catalog(meal, allergies)
+            elif source == "all":
+                campus, schema = get_catalog(date, meal, allergies)
+                stores, _ = get_store_catalog(meal, allergies)
+                candidates = campus + stores
             else:
                 candidates, schema = get_catalog(date, meal, allergies)
         except ValueError as error:
             raise EngineUnavailable("Invalid stored menu features.") from error
-        candidates = with_distances(candidates, location, settings.RECOMMEND_MAX_DISTANCE_M)
+        if distance_scope == "near" and location is not None:
+            candidates = with_distances(candidates, location, NEARBY_METERS, exclude_unknown=True)
+        else:
+            cutoff = None if distance_scope in ("near", "any") or source == "all" else settings.RECOMMEND_MAX_DISTANCE_M
+            candidates = with_distances(candidates, location, cutoff)
         self.candidate_count = len(candidates)
         # Reasons need only dish names and feature means after the engine is built.
         self.reason_data = {c["food_id"]: (c["display_name"], c.get("features") or {}) for c in candidates}
@@ -244,15 +253,15 @@ _sessions_lock = threading.Lock()
 def create(date: datetime.date | None = None, meal: str | None = None,
            engine: str | None = None, location: tuple[float, float] | None = None,
            allergies: frozenset[str] = frozenset(), source: str | None = None,
-           language: str = "en") -> RecommendSession:
+           language: str = "en", distance_scope: str | None = None) -> RecommendSession:
     """General sessions fall back to DT if the configured default is LLM."""
     source = source or "cafeteria"
     if engine is None:
         engine = settings.RECOMMEND_DEFAULT_ENGINE
-        if source == "general" and engine == "llm":
+        if source in ("general", "all") and engine == "llm":
             engine = "decision_tree"
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine, location, allergies, source, language)
+                               meal, engine, location, allergies, source, language, distance_scope)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:

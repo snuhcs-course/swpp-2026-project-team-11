@@ -70,6 +70,14 @@ class SalesMenu(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
+class MenuLabel(models.Model):
+    """A versioned short label for an original sales-menu line."""
+
+    name = models.CharField(max_length=500, unique=True)
+    label = models.CharField(max_length=100)
+    version = models.CharField(max_length=10)
+
+
 class MenuLine(models.Model):
     """A distinct menu line (by normalize.dish_key) and the dishes it stands for.
 

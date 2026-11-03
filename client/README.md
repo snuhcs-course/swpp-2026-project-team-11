@@ -263,7 +263,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 
 | Request | Body | Effect |
 | --- | --- | --- |
-| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?, "source"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), and the app language (`en` or `ko`). Android uses the cafeteria catalogue; API callers can select `source: "general"` with DT or RL. `location` is the user's `{"lat", "lng"}`. With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
+| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?, "source"?, "distance_scope"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), and the app language (`en` or `ko`). Both distance choices send `source: "all"` to combine cafeteria and restaurant menus for DT or RL. `distance_scope: "near"` filters offers within 800 m straight-line distance before recommendation when location is known; without location it includes all. `distance_scope: "any"` applies no cutoff. General and all sources reject the LLM engine. `location` is the user's `{"lat", "lng"}`. With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |

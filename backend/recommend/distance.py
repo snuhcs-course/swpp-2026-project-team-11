@@ -19,11 +19,12 @@ def distance_m(lat1: float, lng1: float, lat2: float, lng2: float) -> int:
 
 
 def with_distances(candidates: list[dict], location: tuple[float, float] | None,
-                   max_distance_m: int | None = None) -> list[dict]:
+                   max_distance_m: int | None = None, *, exclude_unknown: bool = False) -> list[dict]:
     """Adds `distance_m` (null when unknown) to every offer and returns the candidates.
 
     With `max_distance_m`, offers known to be farther are dropped, and so are
-    candidates left without an offer. An offer of unknown distance is kept.
+    candidates left without an offer. Unknown distances remain unless
+    `exclude_unknown` is true.
     """
     located = []
     for candidate in candidates:
@@ -32,7 +33,8 @@ def with_distances(candidates: list[dict], location: tuple[float, float] | None,
             offer["distance_m"] = distance_m(*location, offer["lat"], offer["lng"]) if known else None
         if max_distance_m is not None:
             candidate["offers"] = [offer for offer in candidate["offers"]
-                                   if offer["distance_m"] is None or offer["distance_m"] <= max_distance_m]
+                                   if (offer["distance_m"] is None and not exclude_unknown)
+                                   or (offer["distance_m"] is not None and offer["distance_m"] <= max_distance_m)]
             if not candidate["offers"]:
                 continue
         located.append(candidate)
