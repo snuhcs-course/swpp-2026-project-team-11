@@ -138,6 +138,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                         onAnswer = viewModel::answer,
                         onBack = { if (current.canUndo) viewModel.undo() else viewModel.startOver() },
                         onRecommendNow = viewModel::recommendNow,
+                        onHome = viewModel::startOver,
                         onRevisit = viewModel::revisit
                     )
                 }
