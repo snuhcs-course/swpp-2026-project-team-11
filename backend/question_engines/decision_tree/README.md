@@ -74,8 +74,7 @@ engine is not intended to be mutated concurrently by multiple requests.
 
 `candidates` is the shape returned by `get_catalog`: positive integer
 `food_id`, `name`, `display_name`, `food_group`, a complete `features` dictionary,
-and `offers` containing cafeteria name, meal and price. Numeric food IDs remain
-the identity boundary; display names are not unique. Feature values must be
+and `offers` containing cafeteria name, meal and price. Numeric candidate IDs are opaque menu identities for HTTP sessions; display names are not unique. Feature values must be
 finite scores in `[0,1]`. Each also carries a complete `feature_std` dictionary.
 Std must be finite, in `[0,0.5]`, and satisfy `std² <= mean * (1-mean)`.
 An explicitly supplied partial/empty std map is rejected. A custom schema may omit
@@ -160,7 +159,8 @@ Each food occurs once under its `food_group`; groups with at least two foods
 receive internal parent nodes. This is a shallow classification hierarchy from
 the current meal candidates, not a verified culinary ontology. Free-form group
 quality depends on the DB annotations. Internal group IDs are never presented
-as real database food IDs.
+as database row identities. HTTP menu candidates have no family proposals; the
+hierarchy remains available when replaying historical dish-level inputs.
 
 The latent state distinguishes a specific food from indifference within a
 menu group. 35% of a grouped food's prior is allocated to its generic group

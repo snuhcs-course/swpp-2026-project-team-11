@@ -81,7 +81,8 @@ class IntentModel:
         self.node_ids = tuple(self.tree.proposal_ids)
         self.node_index = {node_id: i for i, node_id in enumerate(self.node_ids)}
         self.names = tuple(self.tree.nodes[node_id].label for node_id in self.node_ids)
-        normalized = [" ".join(name.split()).casefold() for name in self.names]
+        normalized = (list(self.node_ids) if catalog.context.get("candidate_kind") == "menu-rms-v1"
+                      else [" ".join(name.split()).casefold() for name in self.names])
         alias_index = {label: index for index, label in enumerate(sorted(set(normalized)))}
         self.alias_ids = np.array([alias_index[label] for label in normalized])
         n, m = len(catalog.foods), len(self.node_ids)

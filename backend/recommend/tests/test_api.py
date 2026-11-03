@@ -22,7 +22,7 @@ class SessionApiTests(TestCase):
     def test_create_returns_first_question(self):
         state = self.start()
         self.assertEqual((state["engine"], state["date"], state["meal"]), ("decision_tree", DAY, "LU"))
-        self.assertEqual(state["candidate_count"], 107)
+        self.assertEqual(state["candidate_count"], 103)
         self.assertFalse(state["can_undo"])
         self.assertEqual(state["step"]["type"], "question")
         self.assertEqual(len(state["step"]["options"]), 6)

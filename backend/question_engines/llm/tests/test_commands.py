@@ -8,7 +8,7 @@ from unittest import mock
 from django.core.management import CommandError, call_command
 from django.test import TestCase
 
-from menus.services import get_candidates
+from menus.services import get_catalog
 
 from .. import engine as llm_engine
 from .helpers import FakeLLM, ask, recommend
@@ -18,7 +18,7 @@ class DemoCommandTests(TestCase):
     fixtures = ["menus_2026-11-02"]
 
     def setUp(self):
-        rows = get_candidates(datetime.date(2026, 11, 2), "LU")
+        rows = get_catalog(datetime.date(2026, 11, 2), "LU")[0]
         self.first, self.second = rows[0]["display_name"], rows[1]["display_name"]
 
     def run_demo(self, llm, *args, answers=()):

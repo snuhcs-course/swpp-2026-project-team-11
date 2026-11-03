@@ -78,8 +78,10 @@ alone is too strict for people (wanting 햄버거, a person takes 치즈버거),
 no, the simulated user is asked whether they would take the proposal anyway: only
 if it is essentially the same dish, not any decent meal. When the wanted menu is not
 served, the question is whether the proposal would do instead (same craving: a pork
-cutlet for a fish cutlet, not jjajangmyeon). A dish's set and single version get one
-verdict. The report also keeps the strict view, "first pick (exact)": the rule alone
+cutlet for a fish cutlet, not jjajangmyeon). Actual menus are judged with their full names and offers. A set and a standalone
+dish receive separate verdicts; same-named menus also have distinct cache identities.
+New scenario files use version 3 and match actual-menu targets by candidate ID.
+Name-containment rules remain available for archived dish-level scenarios. The report also keeps the strict view, "first pick (exact)": the rule alone
 (not defined when the wanted menu is not served).
 
 Each scenario has a **certainty** level, taken in turn: the share of answers that
