@@ -140,6 +140,8 @@ fun ResultScreen(
     val cafeterias = remember(food, user, place) { cafeteriaList(food, user, place) }
     // By restaurant: the list re-sorts as the user moves, and one restaurant can have several lines.
     var selected by remember(food) { mutableStateOf(cafeterias.cafeterias.firstOrNull()?.offer?.restaurant) }
+    // Counts taps on a cafeteria, so tapping the one already chosen brings the map back to it.
+    var focus by remember { mutableIntStateOf(0) }
 
     // Everything enters in a short sequence each time a dish is shown.
     val key = step.guessId ?: food.foodId.toString()
@@ -184,7 +186,7 @@ fun ResultScreen(
             if (BuildConfig.HAS_MAPS_KEY) {
                 // The padding follows the resting sheet, not the finger, so the map does not slide while dragging.
                 CafeteriaMap(
-                    cafeterias.cafeterias.distinctBy { it.offer.restaurant }, selected, permission.granted,
+                    cafeterias.cafeterias.distinctBy { it.offer.restaurant }, selected, focus, permission.granted,
                     // It opens on the user, then glides to the cafeteria.
                     start = user ?: cafeterias.cafeterias.firstNotNullOfOrNull { it.point } ?: CampusCenter,
                     user = user,
@@ -193,7 +195,7 @@ fun ResultScreen(
                     // Above the dish chips when they are shown, so they never cover the logo.
                     bottomInset = with(density) { (heightPx - topOf(stop)).toDp() } + if (chips) ChipRowHeight else 0.dp,
                     onMovedByHand = { locate = Locate.FREE }
-                ) { selected = it; locate = Locate.FREE }
+                ) { selected = it; focus++; locate = Locate.FREE }
             }
         }
 
@@ -234,7 +236,7 @@ fun ResultScreen(
             cafeterias = cafeterias,
             chosen = chosen,
             selected = selected,
-            onSelect = { selected = it; locate = Locate.FREE },
+            onSelect = { selected = it; focus++; locate = Locate.FREE },
             revealed = revealed,
             stop = stop,
             onTap = { settle(tappedStop(stops, stop)) },
@@ -550,6 +552,7 @@ private fun distanceText(meters: Int): String =
 private fun CafeteriaMap(
     cafeterias: List<Cafeteria>,
     selected: String?,
+    focus: Int,
     showUser: Boolean,
     start: Point,
     user: Point?,
@@ -566,8 +569,8 @@ private fun CafeteriaMap(
     // The SDK draws Google's logo in the padded corner, a few dp in; this lines it up with the 20 dp screen margin.
     val padding = PaddingValues(start = 14.dp, top = 120.dp, bottom = bottomInset + 6.dp)
 
-    // The chosen cafeteria glides to the middle of the map above the sheet.
-    LaunchedEffect(loaded, selected) {
+    // The chosen cafeteria glides to the middle of the map above the sheet, again on every tap.
+    LaunchedEffect(loaded, selected, focus) {
         val point = cafeterias.firstOrNull { it.offer.restaurant == selected }?.point ?: return@LaunchedEffect
         if (loaded) camera.animate(CameraUpdateFactory.newCameraPosition(CameraPosition(LatLng(point.lat, point.lng), 16f, 0f, 0f)), 750)
     }
