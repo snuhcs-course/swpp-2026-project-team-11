@@ -379,6 +379,12 @@ them **or a dish without current tags**, before the selected engine sees the can
 though it can still be offered where it is served alone. The feature version is chosen among
 the dishes that are left. Without allergies nothing changes. The phone keeps the allergies; the server stores nothing about the user.
 
+The result screen can also ban a dish for the rest of the session (i3-A19):
+`POST /api/sessions/<id>/ban/` adds its food ID to the session's bans. Rather than
+changing the engines, the session turns down any guess of a banned dish with `feedback`
+as soon as an action reaches it, and an undo that reaches one goes back further, so
+the dish does not return after Back either. A new session starts with no bans.
+
 `extract_allergens` asks the menu model which allergens each dish name may contain, sauces,
 broths and batters included; the prompt tells it to leave a key out only when it is sure.
 It runs once per name (about one call per 25 new names) and stores `Food.allergens` with
