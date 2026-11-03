@@ -27,6 +27,7 @@ object MetchuColors {
     val Primary = Color(0xFFD2440C)
     val Grey900 = Color(0xFF1A1F26)
     val Grey700 = Color(0xFF4E5762)
+    /** The lightest grey for text: 4.7:1 on white. Grey400 and lighter are for lines and fills. */
     val Grey600 = Color(0xFF6B7480)
     val Grey400 = Color(0xFFA8B0B9)
     val Grey300 = Color(0xFFCED3D9)
@@ -60,7 +61,7 @@ object MetchuType {
     val Label = base.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
     val Body = base.copy(fontSize = 15.sp, lineHeight = 22.sp, color = MetchuColors.Grey700)
     val Lead = base.copy(fontSize = 17.sp, lineHeight = 26.sp, color = MetchuColors.Grey700)
-    val Caption = base.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, color = MetchuColors.Grey400)
+    val Caption = base.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, color = MetchuColors.Grey600)
 }
 
 /** White at the top half, darkening to grey-200 at the bottom: every screen and sheet. */

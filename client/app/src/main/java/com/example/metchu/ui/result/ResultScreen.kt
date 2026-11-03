@@ -383,7 +383,7 @@ private fun Modifier.rise(progress: Float, density: Density): Modifier =
 
 @Composable
 private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit) {
-    val ink by animateColorAsState(if (on) MetchuColors.Primary else MetchuColors.Grey400, tween(300), label = "row")
+    val ink by animateColorAsState(if (on) MetchuColors.Primary else MetchuColors.Grey600, tween(300), label = "row")
     val offer = cafeteria.offer
     Row(
         Modifier

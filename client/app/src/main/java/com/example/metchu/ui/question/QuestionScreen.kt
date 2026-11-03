@@ -106,19 +106,19 @@ private const val ANSWER_FADE_MILLIS = 250L
 /** How long a picked answer stays before it is sent and the next question can appear. */
 private const val ANSWER_HOLD_MILLIS = 450L
 
-/** One circle of the five-step scale, left (no) to right (yes). */
-private class Level(val id: String, val size: Dp, val color: Color, @StringRes val label: Int, val icon: ImageVector?)
+/** One circle of the five-step scale, left (no) to right (yes). [ink] colors its texts. */
+private class Level(val id: String, val size: Dp, val color: Color, @StringRes val label: Int, val icon: ImageVector?, val ink: Color = color)
 
 private val Levels = listOf(
     Level(AnswerId.NO, 70.dp, MetchuColors.Grey700, R.string.level_no, Icons.Cross),
     Level(AnswerId.PROBABLY_NO, 58.dp, MetchuColors.Grey700, R.string.level_probably_no, null),
-    Level(AnswerId.ANY, 58.dp, MetchuColors.Grey400, R.string.level_any, null),
+    Level(AnswerId.ANY, 58.dp, MetchuColors.Grey400, R.string.level_any, null, ink = MetchuColors.Grey600),
     Level(AnswerId.PROBABLY_YES, 58.dp, MetchuColors.Primary, R.string.level_probably_yes, null),
     Level(AnswerId.YES, 70.dp, MetchuColors.Primary, R.string.level_yes, Icons.Check)
 )
 
 /** The color a past question keeps: the color of its answer. */
-fun answerColor(answerId: String): Color = Levels.firstOrNull { it.id == answerId }?.color ?: MetchuColors.Grey600
+fun answerColor(answerId: String): Color = Levels.firstOrNull { it.id == answerId }?.ink ?: MetchuColors.Grey600
 
 @StringRes
 private fun answerLabel(answerId: String): Int =
