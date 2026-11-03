@@ -1,4 +1,16 @@
+import json
+from pathlib import Path
+
 from ..catalog import CandidateCatalog
+
+
+def october_menu():
+    """(rows, schema) of the 2026-10-13 lunch fixture: 146 dishes with all 33 v2 features."""
+    data = json.loads((Path(__file__).parent / "fixtures/lunch_20261013.json").read_text(encoding="utf-8"))
+    rows = [{"food_id": i, "name": name, "display_name": label,
+             "features": dict(zip(data["keys"], means)), "feature_std": dict(zip(data["keys"], stds))}
+            for i, name, label, means, stds in data["foods"]]
+    return rows, [{"key": key} for key in data["keys"]]
 
 
 def candidate(food_id, name, group, beef, soupy):
