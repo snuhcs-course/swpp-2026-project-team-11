@@ -84,7 +84,6 @@ class RecommendSession:
                  source: str = "cafeteria", language: str = "en", distance_scope: str | None = None):
         self.session_id = uuid.uuid4().hex
         self.interaction_id = uuid.uuid4().hex
-        self.interaction_test = False
         self.source = source
         self.distance_scope = distance_scope
         self.location_available = location is not None

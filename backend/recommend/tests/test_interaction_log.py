@@ -56,7 +56,7 @@ class InteractionLogTests(TestCase):
         self.assertTrue(events[2]["after"]["display_name"])
         self.assertTrue(events[2]["after"]["restaurants"])
         self.assertIs(events[3]["accepted"], False)
-        self.assertTrue(all(e["engine"] == "rl" and e["outcome"] == "ok" and e["test"] is False for e in events))
+        self.assertTrue(all(e["engine"] == "rl" and e["outcome"] == "ok" for e in events))
         self.assertTrue(all("allergies" not in e and "location" not in e for e in events[1:]))
 
     def test_location_and_allergies_are_logged_without_api_session_token(self):
@@ -93,14 +93,6 @@ class InteractionLogTests(TestCase):
             with self.assertLogs("recommend.interaction_log", level="WARNING"):
                 self.start()
 
-    def test_synthetic_marker_follows_the_session(self):
-        response = self.client.post("/api/sessions/", data=json.dumps({"date": DAY, "meal": "LU", "engine": "rl"}),
-                                    content_type="application/json", HTTP_X_METCHU_TEST="1")
-        self.assertEqual(response.status_code, 201)
-        state = response.json()
-        post(self.client, f"/api/sessions/{state['session_id']}/recommend-now/")
-        self.assertTrue(all(e["test"] is True for e in self.events()))
-
     def test_disabled_does_not_create_a_log(self):
         with override_settings(INTERACTION_LOG_DIR=""):
             self.start()
@@ -119,7 +111,7 @@ class InteractionLogTests(TestCase):
         self.assertTrue((self.root / "interactions-bad.jsonl").exists())
 
     def test_concurrent_requests_do_not_interleave_json(self):
-        session = SimpleNamespace(interaction_id="independent-id", engine_name="rl", meal="LU", date=datetime.date(2026, 11, 2), source="all", interaction_test=False,
+        session = SimpleNamespace(interaction_id="independent-id", engine_name="rl", meal="LU", date=datetime.date(2026, 11, 2), source="all",
                                   distance_scope="near", location_available=True,
                                   candidates_before_distance=12, candidate_count=3)
         with ThreadPoolExecutor(max_workers=8) as pool:
