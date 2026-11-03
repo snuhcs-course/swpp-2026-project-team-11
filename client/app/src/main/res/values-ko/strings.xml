@@ -119,6 +119,7 @@
     <string name="error_no_server">서버에 연결되면 다시 시도할 수 있어요.</string>
     <string name="error_server">서버가 요청을 처리하지 못했어요. 다시 시도할 수 있어요.</string>
     <string name="error_engine_unavailable">지금은 선택한 질문 방식을 사용할 수 없어요. 설정에서 다른 방식을 골라 주세요.</string>
+    <string name="error_all_source_llm">모든 식당 추천은 결정 트리 또는 RL을 지원해요. 설정에서 엔진을 바꿔 주세요.</string>
     <string name="error_session_settings">현재 설정으로는 시작할 수 없어요. 선택한 내용을 확인한 뒤 다시 시작해 주세요.</string>
     <string name="error_session_lost">서버에서 추천이 끝났어요. 처음부터 다시 시작할 수 있어요.</string>
 </resources>

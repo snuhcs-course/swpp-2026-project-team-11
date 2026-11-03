@@ -41,6 +41,7 @@ import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.AllergyStore
+import com.example.metchu.data.repository.Place
 import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.data.repository.Setup
 import com.example.metchu.ui.common.PillSegment
@@ -149,7 +150,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                     onSettings = { settingsOpen = true },
                     onTipDone = { advance(Setup.DONE) },
                     onLocationAsked = { locationAsked = true },
-                    onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language) }
+                    onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = if (place == Place.NEAR) "near" else "any") }
                 )
                 Screen.SETTINGS -> {
                     BackHandler(onBack = closeSettings)
