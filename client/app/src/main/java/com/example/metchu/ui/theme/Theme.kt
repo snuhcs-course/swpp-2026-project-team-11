@@ -8,7 +8,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
@@ -26,6 +25,8 @@ object MetchuColors {
     /** Start button and whatever the user has picked. */
     val Primary = Color(0xFFD2440C)
     val Grey900 = Color(0xFF1A1F26)
+    /** "No" answers: a step darker than grey-700, so they part from the grey of "doesn't matter". */
+    val Grey800 = Color(0xFF2B323B)
     val Grey700 = Color(0xFF4E5762)
     /** The lightest grey for text: 4.7:1 on white. Grey400 and lighter are for lines and fills. */
     val Grey600 = Color(0xFF6B7480)
@@ -34,6 +35,8 @@ object MetchuColors {
     val Grey200 = Color(0xFFE4E7EB)
     val Grey100 = Color(0xFFF2F4F6)
     val MapBlank = Color(0xFFECEEF1)
+    /** The map's "you are here" blue, for the locate button once it follows the user. */
+    val LocationBlue = Color(0xFF2F80ED)
     val Shadow = Color(0xFF1A1F26)
 }
 
@@ -61,13 +64,11 @@ object MetchuType {
     val Label = base.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
     val Body = base.copy(fontSize = 15.sp, lineHeight = 22.sp, color = MetchuColors.Grey700)
     val Lead = base.copy(fontSize = 17.sp, lineHeight = 26.sp, color = MetchuColors.Grey700)
-    val Caption = base.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, color = MetchuColors.Grey600)
+    val Caption = base.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, color = MetchuColors.Grey600)
 }
 
-/** White at the top half, darkening to grey-200 at the bottom: every screen and sheet. */
-val ScreenGradient = Brush.verticalGradient(0.45f to Color.White, 1f to MetchuColors.Grey200)
-
-fun Modifier.screenBackground(): Modifier = background(ScreenGradient)
+/** Every screen and sheet is plain white. */
+fun Modifier.screenBackground(): Modifier = background(Color.White)
 
 @Composable
 fun MetchuTheme(content: @Composable () -> Unit) {

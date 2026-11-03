@@ -1,28 +1,43 @@
 package com.example.metchu.ui.common
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
@@ -47,15 +63,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.metchu.R
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 import kotlinx.coroutines.delay
@@ -74,6 +86,15 @@ fun Modifier.cssShadow(shape: Shape, offsetY: Dp, blur: Dp, alpha: Float): Modif
         setShadowLayer(blur.toPx() * 0.87f, 0f, offsetY.toPx(), MetchuColors.Shadow.copy(alpha = alpha).toArgb())
     }
     drawIntoCanvas { it.drawOutline(outline, paint) }
+}
+
+/**
+ * Fades by [alpha] without an offscreen layer, which would clip the drop shadows of what it
+ * holds to its bounds while the fade runs.
+ */
+fun Modifier.fade(alpha: () -> Float): Modifier = graphicsLayer {
+    this.alpha = alpha()
+    compositingStrategy = CompositingStrategy.ModulateAlpha
 }
 
 /** The shadow of buttons that float over the screen: 0 2 10, 16 %. */
@@ -136,13 +157,58 @@ fun CircleIconButton(icon: ImageVector, description: String, onClick: () -> Unit
     }
 }
 
-/** One white pill with a shadow, holding one or more [PillSegment]s split by thin lines. */
+val TopRowHeight = 64.dp
+
+/** The 64 dp row under the status bar: 44 dp buttons centered, 20 dp from the edges. */
 @Composable
-fun Pill(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun TopRow(
+    modifier: Modifier = Modifier,
+    arrangement: Arrangement.Horizontal = Arrangement.SpaceBetween,
+    content: @Composable RowScope.() -> Unit
+) {
     Row(
-        modifier.height(44.dp).floating().clip(CircleShape).background(Color.White),
+        modifier.fillMaxWidth().height(TopRowHeight).padding(horizontal = 20.dp),
+        horizontalArrangement = arrangement,
+        verticalAlignment = Alignment.CenterVertically,
+        content = content
+    )
+}
+
+/**
+ * The screen's next step, bottom-right 16 dp above the navigation bar: a 48 dp capsule with
+ * a label and an icon. [filled] is the orange main action; otherwise white with orange ink.
+ * [expanded] false folds it to the icon alone, as a Material extended FAB does.
+ */
+@Composable
+fun ActionCapsule(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    filled: Boolean,
+    modifier: Modifier = Modifier,
+    expanded: Boolean = true
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val start by animateDpAsState(if (expanded) 22.dp else 15.dp, tween(260, easing = SheetEasing), label = "start")
+    val end by animateDpAsState(if (expanded) 18.dp else 15.dp, tween(260, easing = SheetEasing), label = "end")
+    val ink = if (filled) Color.White else MetchuColors.Primary
+    Row(
+        modifier
+            .height(48.dp)
+            .pressScale(interaction)
+            .then(if (filled) Modifier.cssShadow(CircleShape, 6.dp, 20.dp, 0.2f) else Modifier.floating())
+            .clip(CircleShape)
+            .background(if (filled) MetchuColors.Primary else Color.White)
+            .clickable(interaction, indication = null, role = Role.Button, onClickLabel = text, onClick = onClick)
+            .semantics { contentDescription = text }
+            .padding(start = start, end = end),
         verticalAlignment = Alignment.CenterVertically
-    ) { content() }
+    ) {
+        AnimatedVisibility(expanded, enter = fadeIn(tween(200)) + expandHorizontally(tween(260, easing = SheetEasing)), exit = fadeOut(tween(120)) + shrinkHorizontally(tween(260, easing = SheetEasing))) {
+            Text(text, Modifier.padding(end = 6.dp), style = MetchuType.Label, color = ink, maxLines = 1)
+        }
+        Image(icon, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(ink))
+    }
 }
 
 /** A disabled segment stays in place, greyed, so the pill never changes shape under a finger. */
@@ -168,20 +234,36 @@ fun PillSegment(
     ) { Text(text, style = MetchuType.Label, color = if (enabled) color else MetchuColors.Grey400, maxLines = 1) }
 }
 
+/**
+ * Keeps the transparent navigation bar's buttons readable where content scrolls under it:
+ * white through the bar, fading out 32 dp above it.
+ */
 @Composable
-fun PillDivider() {
-    Box(Modifier.width(1.dp).height(20.dp).background(MetchuColors.Grey200))
+fun NavigationBarFade(modifier: Modifier = Modifier) {
+    val bar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val height = bar + 32.dp
+    val white = Color.White.copy(alpha = 0.94f)
+    Box(modifier.fillMaxWidth().height(height).background(Brush.verticalGradient(0f to Color.Transparent, 32.dp / height to white, 1f to white)))
 }
 
-/** The light lowercase name in the bottom-left corner of every screen except the result. */
+/**
+ * A [TopRow] that stays while [scroll] moves the screen under it. Once scrolled, white fills
+ * behind the status bar and the buttons and fades out 32 dp below them, so text passing under
+ * is veiled, not cut; at the top nothing covers the title.
+ */
 @Composable
-fun Wordmark(modifier: Modifier = Modifier) {
-    Text(
-        stringResource(R.string.wordmark),
-        modifier.clearAndSetSemantics {},
-        style = MetchuType.Label.copy(fontWeight = FontWeight.Bold),
-        color = MetchuColors.Grey300
-    )
+fun PinnedTopRow(scroll: ScrollState, modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+    val bar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val height = bar + TopRowHeight + 32.dp
+    val white = Color.White.copy(alpha = 0.94f)
+    Box(modifier.fillMaxWidth().height(height)) {
+        Box(
+            Modifier.matchParentSize()
+                .graphicsLayer { alpha = (scroll.value / 24.dp.toPx()).coerceIn(0f, 1f) }
+                .background(Brush.verticalGradient(0f to white, (bar + TopRowHeight) / height to white, 1f to Color.Transparent))
+        )
+        TopRow(Modifier.statusBarsPadding(), content = content)
+    }
 }
 
 /** Fades the top and/or bottom [edge] of a scrolling area into the background. */
@@ -204,9 +286,36 @@ object Icons {
         ).build()
 
     val Back = line("back", "M15 5l-7 7 7 7", 2.2f)
+    val Forward = line("forward", "M9 5l7 7-7 7", 2.2f)
+    val Home = line("home", "M3.5 11L12 3.8 20.5 11M6 9.2V20h12V9.2M10 20v-5.5h4V20", 2.1f)
+    val FastForward = line("fastForward", "M6 6l6 6-6 6M13 6l6 6-6 6", 2.2f)
+    val Plus = line("plus", "M12 5v14M5 12h14", 2.2f)
+    /** A menu card: a rounded sheet with three lines, the last one short. */
+    val Menu = line("menu", "M7.5 3h9A2.5 2.5 0 0 1 19 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18.5v-13A2.5 2.5 0 0 1 7.5 3zM8.5 8h7M8.5 12h7M8.5 16h4", 2f)
+    val Resume = line("resume", "M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11", 2.1f)
+
+    /** Locate: a target with four ticks. */
+    val Locate = line("locate", "M18.5 12a6.5 6.5 0 1 1-13 0 6.5 6.5 0 1 1 13 0M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3", 2f)
+
+    /** The direction the phone faces: a filled arrowhead. */
+    val Heading = ImageVector.Builder("heading", 24.dp, 24.dp, 24f, 24f).addPath(
+        pathData = addPathNodes("M12 3l6.5 17-6.5-3.8L5.5 20z"),
+        fill = SolidColor(Color.Black)
+    ).build()
+
+    /** A map pin with a hole: filled, unlike the line icons. */
+    val Pin = ImageVector.Builder("pin", 24.dp, 24.dp, 24f, 24f).addPath(
+        pathData = addPathNodes("M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11zM14.4 10a2.4 2.4 0 1 0-4.8 0 2.4 2.4 0 1 0 4.8 0z"),
+        fill = SolidColor(Color.Black),
+        pathFillType = PathFillType.EvenOdd
+    ).build()
     val ChevronDown = line("down", "M7 10l5 5 5-5", 2.4f)
-    val Check = line("check", "M5 12.5l4.5 4.5L19 7.5", 2.4f)
-    val Cross = line("cross", "M6.5 6.5l11 11M17.5 6.5l-11 11", 2.4f)
+    val Check = check(2.4f)
+    val Cross = cross(2.4f)
+
+    /** The check and cross with a stroke [width] in the 24-unit grid, for icons drawn at other sizes. */
+    fun check(width: Float) = line("check", "M5 12.5l4.5 4.5L19 7.5", width)
+    fun cross(width: Float) = line("cross", "M6.5 6.5l11 11M17.5 6.5l-11 11", width)
     val Globe = line(
         "globe",
         "M21 12a9 9 0 1 1-18 0 9 9 0 1 1 18 0M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z",

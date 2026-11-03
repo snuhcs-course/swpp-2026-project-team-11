@@ -4,10 +4,12 @@ import android.Manifest
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -33,6 +35,11 @@ import com.example.metchu.ui.start.Meal
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.performTouchInput
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -216,13 +223,19 @@ class MainActivityTest {
         pickLanguage("언어", "English", "Language")
     }
 
-    /** The locale switch arrives a moment later, which Compose does not wait for. */
+    /**
+     * The words fade out before the locale changes, which Compose does not wait for. The
+     * activity redraws in the new language instead of being recreated, which flashes black.
+     */
     private fun pickLanguage(button: String, language: String, buttonAfter: String) {
+        var before: MainActivity? = null
+        scenario.onActivity { before = it }
         compose.onNodeWithContentDescription(button).performClick()
         compose.onNodeWithText(language).performClick()
         compose.waitUntil(5_000) {
             compose.onAllNodes(hasContentDescription(buttonAfter)).fetchSemanticsNodes().isNotEmpty()
         }
+        scenario.onActivity { assertSame(before, it) }
     }
 
     @Test
@@ -285,9 +298,8 @@ class MainActivityTest {
         startWith(question)
         compose.onNodeWithTag("question").assertIsDisplayed()
         compose.onNodeWithText(question.step.text).assertIsDisplayed()
-        // First question: "Recommend now" waits in its corner, and Back leaves the session instead of undoing.
-        compose.onNodeWithText(text(R.string.recommend_now)).assertIsNotEnabled()
-        tap("recommendNow")
+        // First question: there is nothing to recommend from yet, and Back leaves the session instead of undoing.
+        compose.onNodeWithTag("recommendNow").assertDoesNotExist()
         tap("back")
         compose.onNodeWithTag("start").assertIsDisplayed()
         assertEquals(emptyList<String>(), api.calls.toList())
@@ -329,9 +341,26 @@ class MainActivityTest {
         compose.onNodeWithText(question.step.text).assertIsDisplayed()
 
         api.reply(question)
+        val sent = api.calls.size
         compose.onNodeWithText(question.step.text).performClick()
-        compose.waitForIdle()
+        // The row shows itself held for a moment before it goes back.
+        compose.waitUntil(3_000) { api.calls.size > sent }
         assertEquals("undo ${question.sessionId}", api.calls.last())
+    }
+
+    @Test
+    fun theDishsStepNeverShowsAsAQuestionWhileTheScreenFades() {
+        startWith(question)
+        api.reply(guess)
+        val sent = api.calls.size
+        tap("answer_yes")
+        compose.waitUntil(3_000) { api.calls.size > sent }
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeByFrame()
+        compose.onAllNodes(hasText(guess.step.text)).assertCountEquals(0)
+        compose.onNodeWithTag("question").assertTextEquals(question.step.text)
+        compose.mainClock.autoAdvance = true
+        compose.onNodeWithTag("dish").assertIsDisplayed()
     }
 
     @Test
@@ -449,6 +478,25 @@ class MainActivityTest {
     }
 
     @Test
+    fun theDishNameMovesTheSheetLikeItsHandle() {
+        startWith(guess)
+        val before = compose.onNodeWithTag("dish").getBoundsInRoot().top
+        compose.onNodeWithTag("dish").performClick()
+        compose.waitForIdle()
+        assertNotEquals(before, compose.onNodeWithTag("dish").getBoundsInRoot().top)
+    }
+
+    @Test
+    fun draggingTheHeaderUpRaisesTheSheet() {
+        // One cafeteria, and still the sheet rises from half to full.
+        startWith(guess)
+        val before = compose.onNodeWithTag("dish").getBoundsInRoot().top
+        compose.onNodeWithTag("dish").performTouchInput { swipeUp(startY = centerY, endY = centerY - 300f, durationMillis = 400) }
+        compose.waitForIdle()
+        assertTrue(compose.onNodeWithTag("dish").getBoundsInRoot().top < before)
+    }
+
+    @Test
     fun findAnotherTurnsTheDishDownAndBackUndoes() {
         startWith(guess)
         api.reply(question)
@@ -480,10 +528,12 @@ class MainActivityTest {
     }
 
     @Test
-    fun startOverLeavesTheResult() {
+    fun startOverLeavesTheResultAndResumeBringsItBack() {
         startWith(guess)
-        tapText(R.string.result_home)
+        tap("home")
         compose.onNodeWithTag("start").assertIsDisplayed()
+        tap("resume")
+        compose.onNodeWithTag("dish").assertIsDisplayed()
         assertEquals(emptyList<String>(), api.calls.toList())
     }
 
@@ -491,7 +541,7 @@ class MainActivityTest {
     fun nothingToRecommendSaysWhy() {
         startWith(unavailable)
         compose.onNodeWithTag("unavailable").assertIsDisplayed()
-        tap("home")
+        tap("back")
         compose.onNodeWithTag("start").assertIsDisplayed()
     }
 

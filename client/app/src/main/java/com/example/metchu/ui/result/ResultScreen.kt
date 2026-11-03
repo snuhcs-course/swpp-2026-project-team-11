@@ -1,5 +1,8 @@
 package com.example.metchu.ui.result
 
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.requiredSize
+import com.example.metchu.ui.common.fade
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
@@ -10,8 +13,29 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import com.example.metchu.ui.common.floating
+import com.example.metchu.ui.common.pressScale
+import com.example.metchu.ui.common.rememberHeading
+import com.google.maps.android.compose.CameraMoveStartedReason
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,6 +45,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
@@ -37,8 +62,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -48,14 +74,12 @@ import com.example.metchu.ui.start.CampusCenter
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -79,9 +103,9 @@ import com.example.metchu.data.repository.Place
 import com.example.metchu.ui.common.BottomSheet
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
-import com.example.metchu.ui.common.Pill
-import com.example.metchu.ui.common.PillDivider
-import com.example.metchu.ui.common.PillSegment
+import com.example.metchu.ui.common.NavigationBarFade
+import com.example.metchu.ui.common.ActionCapsule
+import com.example.metchu.ui.common.TopRow
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.chipShadow
@@ -90,7 +114,6 @@ import com.example.metchu.ui.common.rememberLocationPermission
 import com.example.metchu.ui.common.rememberUserPoint
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
-import com.example.metchu.ui.theme.ScreenGradient
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -140,6 +163,9 @@ fun ResultScreen(
     val cafeterias = remember(food, user, place) { cafeteriaList(food, user, place) }
     // By restaurant: the list re-sorts as the user moves, and one restaurant can have several lines.
     var selected by remember(food) { mutableStateOf(cafeterias.cafeterias.firstOrNull()?.offer?.restaurant) }
+    // Counts taps on a cafeteria, so tapping the one already chosen brings the map back to it.
+    var focus by remember { mutableIntStateOf(0) }
+
     var menuOf by remember(food) { mutableStateOf<Offer?>(null) }
     BackHandler(menuOf != null) { menuOf = null }
 
@@ -164,56 +190,82 @@ fun ResultScreen(
         val height = maxHeight
         val density = LocalDensity.current
         val heightPx = constraints.maxHeight.toFloat()
+        val statusPx = WindowInsets.statusBars.getTop(density).toFloat()
+        val navPx = WindowInsets.navigationBars.getBottom(density).toFloat()
+        // Full stops under the top row; peek leaves two lines above the navigation bar.
+        val topOf = { stop: SheetStop ->
+            with(density) {
+                when (stop) {
+                    SheetStop.FULL -> statusPx + 73.dp.toPx()
+                    SheetStop.HALF -> heightPx * 0.474f
+                    SheetStop.PEEK -> heightPx - navPx - 80.dp.toPx()
+                }
+            }
+        }
         val scope = rememberCoroutineScope()
-        var stop by remember(key) { mutableStateOf(SheetStop.MIDDLE) }
-        val top = remember(key) { Animatable(SheetStop.MIDDLE.fraction * heightPx) }
+        var stop by remember(key) { mutableStateOf(SheetStop.HALF) }
+        val top = remember(key) { Animatable(topOf(SheetStop.HALF)) }
         val sheetTop = with(density) { top.value.toDp() }
         val settle: (SheetStop) -> Unit = { next ->
             stop = next
-            scope.launch { top.animateTo(next.fraction * heightPx, tween(380, easing = SheetEasing)) }
+            scope.launch { top.animateTo(topOf(next), tween(380, easing = SheetEasing)) }
         }
         val drag: (Float) -> Unit = { dy ->
-            scope.launch { top.snapTo((top.value + dy).coerceIn(SheetStop.HIGH.fraction * heightPx, SheetStop.LOW.fraction * heightPx)) }
+            scope.launch { top.snapTo((top.value + dy).coerceIn(topOf(SheetStop.FULL), topOf(SheetStop.PEEK))) }
         }
+        val chips = shown.size > 1 && stop != SheetStop.FULL
+        // The locate button: off the user, centered on the user, or turned to where the phone faces.
+        var locate by remember { mutableStateOf(Locate.FREE) }
+        val heading = rememberHeading(locate == Locate.HEADING)
 
         val mapIn by animateFloatAsState(if (revealed) 1f else 0f, tween(380, easing = SheetEasing), label = "map")
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = mapIn; scaleX = 1.06f - 0.06f * mapIn; scaleY = scaleX }) {
             if (BuildConfig.HAS_MAPS_KEY) {
                 // The padding follows the resting sheet, not the finger, so the map does not slide while dragging.
                 CafeteriaMap(
-                    cafeterias.cafeterias.distinctBy { it.offer.restaurant }, selected, user,
+                    cafeterias.cafeterias.distinctBy { it.offer.restaurant }, selected, focus,
                     start = cafeterias.cafeterias.firstNotNullOfOrNull { it.point } ?: user ?: CampusCenter,
+                    user = user,
+                    locate = locate,
+                    heading = heading,
                     // Above the dish chips when they are shown, so they never cover the logo.
-                    bottomInset = height * (1f - stop.fraction) + if (shown.size > 1) ChipRowHeight else 0.dp
-                ) { selected = it }
+                    bottomInset = with(density) { (heightPx - topOf(stop)).toDp() } + if (chips) ChipRowHeight else 0.dp,
+                    onMovedByHand = { locate = Locate.FREE }
+                ) { selected = it; focus++; locate = Locate.FREE }
             }
         }
 
         val topIn by animateFloatAsState(if (revealed) 1f else 0f, tween(220, delayMillis = 400), label = "top")
-        Column(Modifier.statusBarsPadding().alpha(topIn)) {
-            Row(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(Modifier.statusBarsPadding().fade { topIn }) {
+            TopRow {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), { if (!loading) onBack() }, Modifier.testTag("back"))
-                // "Start over" keeps the corner whether or not "Find another" is offered.
-                Pill {
-                    val more = current.type == Step.GUESS
-                    if (more) {
-                        PillSegment(stringResource(R.string.result_more), { if (!loading) onMore() }, start = 18.dp, end = 14.dp)
-                        PillDivider()
+                CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
+            }
+        }
+
+        // What rides on the sheet fades out as it rises from half to full, following the finger.
+        val above = ((top.value - topOf(SheetStop.FULL)) / (topOf(SheetStop.HALF) - topOf(SheetStop.FULL))).coerceIn(0f, 1f)
+        // The dishes shown so far ride just above the sheet, centered 40 dp over it.
+        if (shown.size > 1 && above > 0f) {
+            ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight - 10.dp).fade { topIn * above }) { viewing = it }
+        }
+        if (above > 0f && BuildConfig.HAS_MAPS_KEY) {
+            LocateButton(
+                locate,
+                Modifier.align(Alignment.TopEnd).offset(y = sheetTop - 64.dp).padding(end = 20.dp).fade { topIn * above }
+            ) {
+                when {
+                    !permission.granted -> permission.request()
+                    else -> locate = when (locate) {
+                        Locate.FREE, Locate.HEADING -> Locate.CENTER
+                        Locate.CENTER -> Locate.HEADING
                     }
-                    PillSegment(stringResource(R.string.result_home), onHome, start = if (more) 14.dp else 18.dp, modifier = Modifier.testTag("home"))
                 }
             }
         }
 
-        // The dishes shown so far ride just above the sheet.
-        if (shown.size > 1) {
-            ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight).alpha(topIn)) { viewing = it }
-        }
-
+        val peek = stop == SheetStop.PEEK
+        val chosen = cafeterias.cafeterias.firstOrNull { it.offer.restaurant == selected } ?: cafeterias.cafeterias.firstOrNull()
         ResultSheet(
             step = step,
             reason = reasons[step.proposalId],
@@ -222,26 +274,62 @@ fun ResultScreen(
             banLabel = banLabel,
             onBan = { if (!loading) onBan(ban, !isBanned) },
             cafeterias = cafeterias,
-            place = place,
+            chosen = chosen,
             selected = selected,
-            onSelect = { selected = it },
+            onSelect = { selected = it; focus++; locate = Locate.FREE },
             onMenu = { offer ->
                 onMenu(offer.restaurant)
                 menuOf = offer
             },
             revealed = revealed,
             stop = stop,
-            onStop = settle,
+            onTap = { settle(tappedStop(stop)) },
             onDrag = drag,
             onRelease = { moved ->
-                // Snap to the nearest stop, but always move on once the finger has gone far enough.
-                val nearest = SheetStop.entries.minBy { abs(it.fraction * heightPx - top.value) }
-                settle(if (nearest == stop && abs(moved) > with(density) { 40.dp.toPx() }) stop.step(moved > 0) else nearest)
+                val nearest = SheetStop.entries.minBy { abs(topOf(it) - top.value) }
+                settle(draggedStop(stop, nearest, down = moved > 0, far = abs(moved) > with(density) { 40.dp.toPx() }))
             },
             modifier = Modifier.offset(y = sheetTop).height(height - sheetTop)
         )
+        val fade by animateFloatAsState(if (peek) 0f else 1f, tween(200), label = "fade")
+        NavigationBarFade(Modifier.align(Alignment.BottomCenter).alpha(fade))
+        // Folded, the sheet's right half tells where and how far, next to the + button.
+        val factsIn by animateFloatAsState(if (peek && chosen != null) 1f else 0f, tween(200), label = "facts")
+        if (chosen != null && factsIn > 0f) {
+            PeekFacts(chosen, Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 80.dp, bottom = 20.dp).alpha(factsIn))
+        }
+        // "Find another" comes in a little after the dish, so the dish is read first.
+        if (current.type == Step.GUESS) {
+            val moreIn by animateFloatAsState(if (revealed) 1f else 0f, tween(320, delayMillis = 600, easing = SheetEasing), label = "more")
+            ActionCapsule(
+                stringResource(R.string.result_more), Icons.Plus, { if (!loading) onMore() }, filled = true,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(end = 20.dp, bottom = 16.dp)
+                    .graphicsLayer { alpha = moreIn; translationY = 12.dp.toPx() * (1f - moreIn); compositingStrategy = CompositingStrategy.ModulateAlpha }
+                    .testTag("more"),
+                expanded = !peek
+            )
+        }
 
         MenuSheet(menuOf, menus, food.foodId) { menuOf = null }
+    }
+}
+
+/** The chosen cafeteria and how far it is, right-aligned beside the folded + button. */
+@Composable
+private fun PeekFacts(cafeteria: Cafeteria, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.End) {
+        Text(cafeteria.offer.restaurant, style = MetchuType.Label.copy(lineHeight = 22.sp), maxLines = 1)
+        val meters = cafeteria.meters
+        if (meters != null) {
+            Text(
+                "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, cafeteria.walkMinutes ?: 1)}",
+                style = PeekSecondStyle,
+                color = MetchuColors.Grey600
+            )
+        }
     }
 }
 
@@ -253,15 +341,7 @@ private fun captionFor(meal: String?): Int = when (meal) {
     else -> R.string.result_caption_any
 }
 
-/** Where the result sheet rests: high (expanded), middle (as designed) or low (title only). */
-private enum class SheetStop(val fraction: Float) {
-    HIGH(0.197f), MIDDLE(0.474f), LOW(0.74f);
-
-    /** The next stop down ([down]) or up, or this one at the end. */
-    fun step(down: Boolean): SheetStop = entries.getOrElse(ordinal + if (down) 1 else -1) { this }
-}
-
-/** 36 dp chips with room for their shadow above and below. */
+/** 40 dp chips with room for their shadow above and below. */
 private val ChipRowHeight = 60.dp
 
 /** The dishes shown so far, newest first; [viewing] and [onView] use indices into [shown]. */
@@ -270,9 +350,19 @@ private fun ShownChips(shown: List<Step>, viewing: Int, modifier: Modifier = Mod
     val row = rememberLazyListState()
     LaunchedEffect(shown.size) { row.animateScrollToItem(0) }
     LazyRow(
-        modifier.height(ChipRowHeight),
+        modifier
+            .height(ChipRowHeight)
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                val fade = 104.dp.toPx()
+                drawRect(
+                    Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fade, endX = size.width - 68.dp.toPx()),
+                    blendMode = BlendMode.DstIn
+                )
+            },
         state = row,
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 84.dp, top = 10.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(shown.indices.reversed().toList(), key = { shown[it].guessId ?: it.toString() }) { index ->
@@ -281,7 +371,7 @@ private fun ShownChips(shown: List<Step>, viewing: Int, modifier: Modifier = Mod
             val background by animateColorAsState(if (on) MetchuColors.Grey900 else Color.White, label = "chip")
             Box(
                 Modifier
-                    .height(36.dp)
+                    .height(40.dp)
                     .chipShadow()
                     .clip(CircleShape)
                     .background(background)
@@ -309,13 +399,13 @@ private fun ResultSheet(
     banLabel: String?,
     onBan: () -> Unit,
     cafeterias: CafeteriaList,
-    place: Place,
+    chosen: Cafeteria?,
     selected: String?,
     onSelect: (String) -> Unit,
     onMenu: (Offer) -> Unit,
     revealed: Boolean,
     stop: SheetStop,
-    onStop: (SheetStop) -> Unit,
+    onTap: () -> Unit,
     onDrag: (Float) -> Unit,
     onRelease: (Float) -> Unit,
     modifier: Modifier = Modifier
@@ -327,49 +417,68 @@ private fun ResultSheet(
     val titleIn by animateFloatAsState(if (revealed) 1f else 0f, tween(300, delayMillis = 260), label = "title")
     val listIn by animateFloatAsState(if (revealed) 1f else 0f, tween(300, delayMillis = 320), label = "list")
     val toggle = stringResource(R.string.result_sheet_toggle)
+    val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    val peek = stop == SheetStop.PEEK
 
     Column(
         modifier
             .fillMaxWidth()
             .graphicsLayer { translationY = size.height * slide }
-            .cssShadow(RectangleShape, (-6).dp, 20.dp, 0.12f)
-            .background(ScreenGradient)
+            .cssShadow(shape, (-2).dp, 12.dp, 0.10f)
+            .clip(shape)
+            .background(Color.White)
     ) {
+        // The handle and everything above the cafeterias move the sheet: drag it, or tap for the next stop.
+        val tap by rememberUpdatedState(onTap)
+        val drag by rememberUpdatedState(onDrag)
+        val release by rememberUpdatedState(onRelease)
         var moved by remember { mutableFloatStateOf(0f) }
+        val grip = Modifier
+            .pointerInput(Unit) { detectTapGestures { tap() } }
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onDragStart = { moved = 0f },
+                    onDragEnd = { release(moved) },
+                    onDragCancel = { release(moved) }
+                ) { change, dy ->
+                    change.consume()
+                    moved += dy
+                    drag(dy)
+                }
+            }
         Box(
-            Modifier
+            grip
                 .fillMaxWidth()
-                .height(36.dp)
-                .clickable(role = Role.Button, onClickLabel = toggle) {
-                    onStop(if (stop == SheetStop.MIDDLE) SheetStop.HIGH else SheetStop.MIDDLE)
-                }
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures(
-                        onDragStart = { moved = 0f },
-                        onDragEnd = { onRelease(moved) },
-                        onDragCancel = { onRelease(moved) }
-                    ) { change, dy ->
-                        change.consume()
-                        moved += dy
-                        onDrag(dy)
-                    }
-                }
-                .semantics { contentDescription = toggle },
+                .height(20.dp)
+                .semantics {
+                    contentDescription = toggle
+                    role = Role.Button
+                    onClick(toggle) { onTap(); true }
+                },
             contentAlignment = Alignment.Center
         ) {
-            Box(Modifier.width(56.dp).height(4.dp).clip(CircleShape).background(MetchuColors.Grey300))
+            Box(Modifier.width(38.dp).height(3.5.dp).clip(CircleShape).background(MetchuColors.Grey300))
+        }
+        val dish = group?.displayName ?: food.displayName
+        if (peek) {
+            // Folded: what and how much on the left, clear of the facts and the + button on the right.
+            Column(grip.fillMaxWidth().padding(start = 20.dp, end = 200.dp).testTag("dish")) {
+                Text(dish, style = MetchuType.Item.copy(fontSize = 18.sp, lineHeight = 22.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                chosen?.let { Text(priceText(it.offer.price), style = PeekSecondStyle, color = MetchuColors.Grey700) }
+            }
+            return@Column
         }
         Column(
             Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState(), enabled = stop == SheetStop.HIGH)
-                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp)
+                .verticalScroll(rememberScrollState(), enabled = stop == SheetStop.FULL)
+                .padding(bottom = 16.dp)
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Column(Modifier.rise(titleIn, density), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(stringResource(caption), style = MetchuType.Caption.copy(fontWeight = MetchuType.Label.fontWeight), color = MetchuColors.Primary)
-                Text(group?.displayName ?: food.displayName, Modifier.testTag("dish"), style = MetchuType.Title)
+            Column(grip.fillMaxWidth().padding(horizontal = 20.dp).rise(titleIn, density)) {
+                Text(stringResource(caption), Modifier.padding(bottom = 2.dp), style = MetchuType.Caption)
+                Text(dish, Modifier.testTag("dish"), style = MetchuType.Title)
                 if (group != null) {
                     val description = listOfNotNull(
                         stringResource(R.string.result_group_example, food.displayName),
@@ -377,19 +486,19 @@ private fun ResultSheet(
                             .joinToString(", ") { it.displayName }.ifEmpty { null }
                             ?.let { stringResource(R.string.result_group_members, it) }
                     ).joinToString(". ")
-                    Text(description, Modifier.padding(top = 6.dp), style = MetchuType.Body)
+                    Text(description, Modifier.padding(top = 10.dp), style = ReasonStyle)
                 }
                 // The reason comes after the dish is drawn: a pulsing line holds its place, then it fades in.
                 val reasonIn by animateFloatAsState(if (reason != null) 1f else 0f, tween(300), label = "reason")
                 if (reason != null) {
-                    Text(reason, Modifier.padding(top = 8.dp).graphicsLayer { alpha = reasonIn }.testTag("reason"), style = MetchuType.Body)
+                    Text(reason, Modifier.padding(top = 10.dp).graphicsLayer { alpha = reasonIn }.testTag("reason"), style = ReasonStyle)
                 } else if (writingReason) {
                     val pulse by rememberInfiniteTransition(label = "writing")
                         .animateFloat(1f, 0.4f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "pulse")
                     Text(
                         stringResource(R.string.reason_writing),
-                        Modifier.padding(top = 8.dp).graphicsLayer { alpha = pulse }.testTag("reasonWriting"),
-                        style = MetchuType.Body,
+                        Modifier.padding(top = 10.dp).graphicsLayer { alpha = pulse }.testTag("reasonWriting"),
+                        style = ReasonStyle,
                         color = MetchuColors.Grey600
                     )
                 }
@@ -408,25 +517,31 @@ private fun ResultSheet(
             }
 
             Column(Modifier.rise(listIn, density)) {
-                Text(
-                    stringResource(if (place == Place.NEAR && cafeterias.allListed == null) R.string.result_nearby else R.string.result_all),
-                    Modifier.padding(bottom = 6.dp).testTag("cafeteriaHeading"),
-                    style = MetchuType.Caption
-                )
+                val count = cafeterias.cafeterias.distinctBy { it.offer.restaurant }.size
+                // One cafeteria needs no heading; several are counted, nearest first.
+                if (count > 1) {
+                    Text(
+                        stringResource(R.string.result_places, count),
+                        Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp).testTag("cafeteriaHeading"),
+                        style = MetchuType.Caption
+                    )
+                }
                 val note = when (cafeterias.allListed) {
                     AllListed.NONE_NEAR -> R.string.result_none_near
                     AllListed.NO_LOCATION -> R.string.result_no_location
                     null -> null
                 }
-                if (note != null) Text(stringResource(note), Modifier.padding(bottom = 6.dp), style = MetchuType.Caption)
-                if (cafeterias.cafeterias.isEmpty()) Text(stringResource(R.string.offer_none), style = MetchuType.Body)
+                if (note != null) Text(stringResource(note), Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp), style = MetchuType.Caption)
+                if (cafeterias.cafeterias.isEmpty()) Text(stringResource(R.string.offer_none), Modifier.padding(horizontal = 20.dp), style = MetchuType.Body)
                 cafeterias.cafeterias.forEach { cafeteria ->
                     CafeteriaRow(
-                        cafeteria, cafeteria.offer.restaurant == selected,
+                        cafeteria, on = cafeteria.offer.restaurant == selected || count == 1,
                         onClick = { onSelect(cafeteria.offer.restaurant) },
                         onMenu = { onMenu(cafeteria.offer) }
                     )
                 }
+                // One empty row at the end, for the logo, so "find another" never covers the last cafeteria.
+                Spacer(Modifier.height(CafeteriaRowHeight))
             }
         }
     }
@@ -435,44 +550,64 @@ private fun ResultSheet(
 private fun Modifier.rise(progress: Float, density: Density): Modifier =
     graphicsLayer { alpha = progress; translationY = with(density) { 12.dp.toPx() } * (1f - progress) }
 
+private val CafeteriaRowHeight = 72.dp
+
+/** The reason and the group's description: 14/20. */
+private val ReasonStyle = MetchuType.Body.copy(fontSize = 14.sp, lineHeight = 20.sp)
+
+/** The second line of the folded sheet, left and right: 13/18. */
+private val PeekSecondStyle = MetchuType.Body.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
+
+/**
+ * A Material two-line list item, edge to edge: a pin in a 40 dp circle (orange for the chosen
+ * cafeteria), the name over the meal and price, and the distance over the walk on the right.
+ */
 @Composable
 private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit, onMenu: () -> Unit) {
-    val ink by animateColorAsState(if (on) MetchuColors.Primary else MetchuColors.Grey600, tween(300), label = "row")
+    val badge by animateColorAsState(if (on) MetchuColors.Primary else MetchuColors.Grey100, tween(200), label = "badge")
+    val pin by animateColorAsState(if (on) Color.White else MetchuColors.Grey600, tween(200), label = "pin")
     val offer = cafeteria.offer
     Row(
         Modifier
             .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .heightIn(min = CafeteriaRowHeight)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 8.dp)
+            .padding(horizontal = 20.dp, vertical = 12.dp)
             .testTag("cafeteria"),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        Box(Modifier.size(40.dp).clip(CircleShape).background(badge), contentAlignment = Alignment.Center) {
+            Image(Icons.Pin, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(pin))
+        }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(offer.restaurant, style = MetchuType.Item, color = ink)
+            Text(offer.restaurant, style = MetchuType.Label.copy(fontSize = 17.sp, lineHeight = 24.sp))
             Text(stringResource(R.string.offer_meta, mealName(offer.meal), priceText(offer.price)), style = MetchuType.Caption)
         }
         val meters = cafeteria.meters
         if (meters != null) {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(distanceText(meters), style = MetchuType.Item, color = ink)
+                Text(distanceText(meters), style = MetchuType.Label)
                 Text(stringResource(R.string.walk_minutes, cafeteria.walkMinutes ?: 1), style = MetchuType.Caption)
             }
         }
-        Box(
-            Modifier
-                .height(32.dp)
-                .chipShadow()
-                .clip(CircleShape)
-                .background(Color.White)
-                .clickable(role = Role.Button, onClick = onMenu)
-                .padding(horizontal = 12.dp)
-                .testTag("menuButton"),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(stringResource(R.string.result_menu), style = MetchuType.Caption.copy(fontWeight = MetchuType.Label.fontWeight), color = MetchuColors.Grey900)
+        // A 24 dp icon at the row's end, its 40 dp touch circle reaching into the margin.
+        Box(Modifier.padding(start = 4.dp).size(24.dp), contentAlignment = Alignment.Center) {
+            val interaction = remember { MutableInteractionSource() }
+            val pressed by interaction.collectIsPressedAsState()
+            val label = stringResource(R.string.result_menu)
+            Box(
+                Modifier
+                    .requiredSize(40.dp)
+                    .clip(CircleShape)
+                    .background(if (pressed) MetchuColors.Grey100 else Color.Transparent)
+                    .clickable(interaction, indication = null, role = Role.Button, onClickLabel = label, onClick = onMenu)
+                    .semantics { contentDescription = label }
+                    .testTag("menuButton"),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(Icons.Menu, null, Modifier.size(24.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey600))
+            }
         }
     }
 }
@@ -547,9 +682,13 @@ private fun distanceText(meters: Int): String =
 private fun CafeteriaMap(
     cafeterias: List<Cafeteria>,
     selected: String?,
-    user: Point?,
+    focus: Int,
     start: Point,
+    user: Point?,
+    locate: Locate,
+    heading: Float?,
     bottomInset: Dp,
+    onMovedByHand: () -> Unit,
     onSelect: (String) -> Unit
 ) {
     val camera = rememberCameraPositionState {
@@ -574,9 +713,19 @@ private fun CafeteriaMap(
         }
         camera.animate(update, 600)
     }
-    LaunchedEffect(selected) {
+    // A tapped cafeteria glides to the middle of the map above the sheet, again on every tap.
+    LaunchedEffect(focus) {
         val point = cafeterias.firstOrNull { it.offer.restaurant == selected }?.point ?: return@LaunchedEffect
-        if (loaded && points.size > 1) camera.animate(CameraUpdateFactory.newLatLng(LatLng(point.lat, point.lng)), 400)
+        if (loaded && focus > 0) camera.animate(CameraUpdateFactory.newCameraPosition(CameraPosition(LatLng(point.lat, point.lng), 16f, 0f, 0f)), 750)
+    }
+    // Centered on the user, north up or turned with the phone.
+    LaunchedEffect(loaded, locate, user, heading) {
+        if (!loaded || user == null || locate == Locate.FREE) return@LaunchedEffect
+        val bearing = if (locate == Locate.HEADING) heading ?: camera.position.bearing else 0f
+        camera.animate(CameraUpdateFactory.newCameraPosition(CameraPosition(LatLng(user.lat, user.lng), camera.position.zoom, 0f, bearing)), 400)
+    }
+    LaunchedEffect(camera.isMoving) {
+        if (camera.isMoving && camera.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) onMovedByHand()
     }
 
     GoogleMap(
@@ -602,6 +751,39 @@ private fun CafeteriaMap(
                     MapPin(cafeteria, on)
                 }
             }
+        }
+    }
+}
+
+/** What the locate button has done to the map. */
+private enum class Locate { FREE, CENTER, HEADING }
+
+/**
+ * Like Google Maps' button: grey while the map shows something else, blue once it is
+ * centered on the user, and an arrow once the map turns with the phone. Each tap moves on.
+ */
+@Composable
+private fun LocateButton(mode: Locate, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val description = stringResource(if (mode == Locate.CENTER) R.string.locate_heading else R.string.locate_me)
+    val interaction = remember { MutableInteractionSource() }
+    Box(
+        modifier
+            .size(48.dp)
+            .pressScale(interaction, 0.92f)
+            .floating()
+            .clip(CircleShape)
+            .background(Color.White)
+            .clickable(interaction, indication = null, role = Role.Button, onClickLabel = description, onClick = onClick)
+            .semantics { contentDescription = description }
+            .testTag("locate"),
+        contentAlignment = Alignment.Center
+    ) {
+        val tint = if (mode == Locate.FREE) MetchuColors.Grey700 else MetchuColors.LocationBlue
+        if (mode == Locate.HEADING) {
+            Image(Icons.Heading, null, Modifier.size(22.dp), colorFilter = ColorFilter.tint(tint))
+        } else {
+            Image(Icons.Locate, null, Modifier.size(24.dp), colorFilter = ColorFilter.tint(tint))
+            if (mode == Locate.CENTER) Box(Modifier.size(6.dp).clip(CircleShape).background(tint))
         }
     }
 }
