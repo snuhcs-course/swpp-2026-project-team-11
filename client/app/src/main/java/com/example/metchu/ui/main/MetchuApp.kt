@@ -132,10 +132,18 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                 }
                 Screen.QUESTION -> if (current != null) {
                     BackHandler { if (current.canUndo) viewModel.undo() else viewModel.startOver() }
+                    // Leaving for a result, this screen keeps the question just answered and the
+                    // list as it was, so the dish's step never shows as a question while it fades.
+                    val asked = current.takeIf { it.step.type == Step.QUESTION }
+                    val kept = remember { Kept(current, history) }
+                    if (asked != null) {
+                        kept.session = asked
+                        kept.history = history
+                    }
                     QuestionScreen(
-                        session = current,
-                        history = history,
-                        loading = loading,
+                        session = kept.session,
+                        history = kept.history,
+                        loading = loading || asked == null,
                         onAnswer = viewModel::answer,
                         onBack = { if (current.canUndo) viewModel.undo() else viewModel.startOver() },
                         onRecommendNow = viewModel::recommendNow,
@@ -200,3 +208,6 @@ private fun ErrorBanner(error: UiError?, onRetry: () -> Unit, modifier: Modifier
         }
     }
 }
+
+/** What the question screen last showed, held while it fades out. */
+private class Kept(var session: SessionState, var history: List<AnsweredQuestion>)
