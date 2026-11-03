@@ -420,9 +420,11 @@ candidate's `food_id`. Rather than changing the engines, the session turns down 
 guess of a banned menu with `feedback` as soon as an action reaches it, and an undo
 that reaches one goes back further, so it does not return after Back either. A new
 session starts with no bans. The phone offers a group ban once the group makes up two
-of the last three proposals. Only a single-dish menu has a `food_group`, and new dishes
-get none (only rows that already had one keep it), so sets and many new dishes can be
-banned only one menu at a time.
+of the last three proposals. A menu is left out when any of its dishes is in a banned
+group: each candidate's `food_groups` lists them, a set dish taking the group of its
+single variant, so banning 버거 also leaves out the 버거운버거 sets. New dishes get no
+`food_group` (only rows that already had one keep it); a menu without any is banned
+one menu at a time.
 
 `extract_allergens` asks the menu model which allergens each dish name may contain, sauces,
 broths and batters included; the prompt tells it to leave a key out only when it is sure.
