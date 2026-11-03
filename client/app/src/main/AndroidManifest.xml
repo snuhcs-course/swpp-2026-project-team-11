@@ -25,8 +25,11 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="${mapsApiKey}" />
 
+        <!-- configChanges: a language switch redraws the screen in place, so it keeps its
+             transitions instead of the activity restarting. -->
         <activity
             android:name=".ui.main.MainActivity"
+            android:configChanges="locale|layoutDirection|screenLayout"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

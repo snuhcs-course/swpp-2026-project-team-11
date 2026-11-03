@@ -143,7 +143,9 @@ apps (package `com.example.metchu` and your signing certificate's SHA-1) in the
 console; never commit it. The Maps terms require Google's logo to stay visible; the
 result map keeps it just above the sheet with map padding.
 
-The start screen asks for location once. With it, a new session sends where the
+Once per launch until it is allowed, the start screen says why it needs location
+(on the first launch, after the settings tip is closed)
+and, on **Continue**, asks for it. With it, a new session sends where the
 device is: a current fix, or the last known location when none comes within 3
 seconds (the start button shows it is loading meanwhile); the server then gives
 each cafeteria's `distance_m`. The start map centers on the user, the result map
@@ -159,8 +161,9 @@ emulator, set a position under Extended controls > Location (for example
 
 | When | Screen | Actions |
 | --- | --- | --- |
-| first launch | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
+| first launch | Language (asked in both), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear, with a tip that both change there anytime | a language goes on at once; ‹ on Allergies returns to Language; on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
+| gear | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
 | `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" (greyed on the first question); "Start over" in the top-right corner |
 | `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one line per cafeteria and meal | "Find another" turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; "Start over", always in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it; the sheet's handle drags or taps it between low, middle and high |
 | `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them and that Settings can change them | "Start over" in the top-right corner |
