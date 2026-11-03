@@ -83,6 +83,15 @@ class RecommendRepositoryTest {
         assertEquals("""{"meal":"LU","language":"ko"}""", server.takeRequest().json().toString())
     }
 
+    @Test
+    fun banSendsTheFoodId() = runTest {
+        reply("guess_food")
+        repository.ban("abc", 7, banned = true)
+        val request = server.takeRequest()
+        assertEquals("/api/sessions/abc/ban/", request.path)
+        assertEquals("""{"food_id":7,"banned":true}""", request.json().toString())
+    }
+
     /** The server refuses the LLM engine when it has no API key; the body says so. */
     @Test
     fun engineUnavailableBodyIsDecoded() = runTest {
