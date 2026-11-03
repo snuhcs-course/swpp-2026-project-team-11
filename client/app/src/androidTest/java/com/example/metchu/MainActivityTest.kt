@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -160,7 +161,7 @@ class MainActivityTest {
     @Test
     fun theEngineChosenInTheSettingsRunsTheSession() {
         tap("settings")
-        tap("engine_llm")
+        compose.onNodeWithTag("engine_llm").performScrollTo().performClick()
         tap("back")
         pickMeal(R.string.meal_lunch)
         api.reply(Fixtures.state("question_llm"))
@@ -189,7 +190,20 @@ class MainActivityTest {
     }
 
     @Test
-    fun anUnavailableLlmEngineSaysSoOnTheStartScreen() {
+    fun rlSelectionSurvivesRelaunchAndStartsAnRlSession() {
+        tap("settings")
+        compose.onNodeWithTag("engine_rl").performScrollTo().performClick()
+        tap("back")
+        relaunch()
+        pickMeal(R.string.meal_lunch)
+        api.reply(Fixtures.state("question_rl"))
+        tap("start")
+        assertEquals("create LU rl en", api.calls.last())
+        compose.onNodeWithText(Fixtures.state("question_rl").step.text).assertIsDisplayed()
+    }
+
+    @Test
+    fun anUnavailableEngineSaysSoOnTheStartScreen() {
         api.fail(Fixtures.httpError(503, Fixtures.json("error_engine_unavailable")))
         tap("start")
         compose.onNodeWithText(text(R.string.error_engine_unavailable)).assertIsDisplayed()

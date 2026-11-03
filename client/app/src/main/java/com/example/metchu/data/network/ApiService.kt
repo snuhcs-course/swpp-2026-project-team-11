@@ -45,8 +45,10 @@ data class ApiErrorResponse(val error: ApiError?, val state: SessionState?)
 
 data class ApiError(val code: String, val message: String) {
     companion object {
-        /** 503: the chosen engine cannot run on this server (the LLM engine has no API key). */
+        /** 503: the chosen engine cannot run with the available configuration or catalogue. */
         const val ENGINE_UNAVAILABLE = "engine_unavailable"
+        /** 400: the server rejected a request field, such as an unsupported engine ID. */
+        const val INVALID_REQUEST = "invalid_request"
     }
 }
 

@@ -32,6 +32,8 @@
     <string name="allergies_disclaimer">알러지 정보는 메뉴 이름을 보고 AI가 추정했어요. 알러지가 심하다면 식당에서 한 번 더 확인해 주세요.</string>
     <string name="settings_engine">질문 방식 · 개발용</string>
     <string name="engine_decision_tree">결정 트리</string>
+    <string name="engine_rl">강화학습 (RL)</string>
+    <string name="engine_rl_hint">음식의 특징과 내 답변을 보고 언제 메뉴를 제안할지 정해요.</string>
     <string name="engine_llm">LLM</string>
     <string name="engine_decision_tree_hint">메뉴 특징으로 질문을 골라요. 바로 답해요.</string>
     <string name="engine_llm_hint">Gemini가 질문을 만들어요. 몇 초 걸릴 수 있어요.</string>
@@ -98,6 +100,7 @@
     <string name="retry">다시 시도</string>
     <string name="error_no_server">서버에 연결되면 다시 시도할 수 있어요.</string>
     <string name="error_server">서버가 요청을 처리하지 못했어요. 다시 시도할 수 있어요.</string>
-    <string name="error_engine_unavailable">이 서버에는 LLM 질문 방식이 준비되지 않았어요. 설정에서 결정 트리를 고를 수 있어요.</string>
+    <string name="error_engine_unavailable">지금은 선택한 질문 방식을 사용할 수 없어요. 설정에서 다른 방식을 골라 주세요.</string>
+    <string name="error_session_settings">현재 설정으로는 시작할 수 없어요. 선택한 내용을 확인한 뒤 다시 시작해 주세요.</string>
     <string name="error_session_lost">서버에서 추천이 끝났어요. 처음부터 다시 시작할 수 있어요.</string>
 </resources>

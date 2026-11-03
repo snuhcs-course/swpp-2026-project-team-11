@@ -28,11 +28,10 @@ file so the ordinary Claude CLI and editor integrations use the same rules.
   every contributor's interaction history before writing the team report. The
   bundle alone is neither the report nor proof that all contributors are covered.
 
-Metchu! picks an SNU cafeteria meal by asking yes/no questions. Two question
-engines share one session API: MVP1, the decision tree (`backend/question_engines/decision_tree`,
-feature-based, no API key), and MVP2, the LLM engine (`backend/question_engines/llm`,
-Gemini writes questions from dish names). `backend/recommend` serves them to the
-Android app in `client/`.
+Metchu! picks a meal by asking about the user's preferences. The decision tree,
+feature-only RL policy and LLM engine in `backend/question_engines/` share the
+session API in `backend/recommend`. The Android client in `client/` selects the
+engine in Settings. RL uses v2 food features; the decision tree and RL run without an API key.
 
 ## Commands
 
@@ -58,9 +57,9 @@ cd client && ./gradlew testDebugUnitTest         # JDK 21; the build fails on JD
 ## Contracts that break silently
 
 - **One engine interface**: `start / answer / feedback / recommend_now / undo / snapshot /
-  from_snapshot / diagnostics`, the step types `question / guess / recommendation /
+  from_snapshot / answered / diagnostics`, the step types `question / guess / recommendation /
   unavailable`, and the answer IDs in `decision_tree/contracts.py`. `recommend/` and
-  the client depend on it: change both engines, the API and the client together.
+  the client depend on it: keep the engines, the API and the client in sync.
 - **REST JSON**: when a reply changes, update the client models and recapture
   `client/app/src/sharedTest/resources/contract/*.json` from the real server.
 - **Feature schema** (`menus/features/schema.py`): a change to keys, questions or
@@ -113,8 +112,8 @@ ask before proceeding. Permission to read or preview does not authorize a write.
 
 - Keep code clean and concise: the simplest change that works, no dead code, no
   speculative options or abstractions, no comments that restate the code.
-- English for code, docs, commits and PRs. App UI text and engine questions are
-  English; dish and cafeteria names stay Korean. Commands under `menus/` print Korean.
+- English for code, docs, commits and PRs. App UI text and engine questions support
+  English and Korean; dish and cafeteria names stay Korean. Commands under `menus/` print Korean.
 - Follow AI Collaboration Report Guidelines v1.1: blanket AI-generated headers are
   not required. For a manual fix discussed in the report, add a nearby marker only
   when useful for locating it. Claim human review only when it actually happened.

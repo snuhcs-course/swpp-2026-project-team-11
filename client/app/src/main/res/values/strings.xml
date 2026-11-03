@@ -38,6 +38,8 @@
     <string name="allergies_disclaimer">AI estimates allergens from dish names. If an allergy is severe, check with the cafeteria too.</string>
     <string name="settings_engine">Question engine · For development</string>
     <string name="engine_decision_tree">Decision tree</string>
+    <string name="engine_rl">Reinforcement learning (RL)</string>
+    <string name="engine_rl_hint">Uses dish features and your answers to decide when to suggest a meal.</string>
     <string name="engine_llm">LLM</string>
     <string name="engine_decision_tree_hint">Picks questions from dish features. Answers instantly.</string>
     <string name="engine_llm_hint">Gemini writes each question. A step can take a few seconds.</string>
@@ -112,6 +114,7 @@
     <string name="retry">Try again</string>
     <string name="error_no_server">You can try again once the server is reachable.</string>
     <string name="error_server">The server couldn’t handle that. You can try again.</string>
-    <string name="error_engine_unavailable">The LLM engine isn’t set up on this server. You can use the decision tree in Settings.</string>
+    <string name="error_engine_unavailable">The selected question engine is unavailable. Choose another in Settings.</string>
+    <string name="error_session_settings">The server cannot start a session with these settings. Check your choices before starting again.</string>
     <string name="error_session_lost">The session ended on the server. You can start again.</string>
 </resources>

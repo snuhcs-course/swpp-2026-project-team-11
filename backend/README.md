@@ -219,8 +219,10 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
   (`services.get_store_catalog`). Offers keep the cafeteria shape, with the session's meal (the
   current one in Seoul when the session has none). The menus are read from the database at most
   every `RECOMMEND_STORE_MENU_CACHE_S` seconds (5 minutes), so an import shows within that time.
-  General sessions run the decision tree only. Starting one takes longer with more dishes: about
-  0.1 s with 500, 1 s with 2,000 and 5 s with 4,000 (the planner's setup).
+  The default general engine is the decision tree. Use `"engine": "rl"` for feature-only
+  RL, or set `METCHU_ENGINE=rl` for clients that omit the engine. General sessions reject
+  the LLM option. DT setup takes about 0.1 s with 500, 1 s with 2,000 and 5 s with 4,000
+  candidates.
 - **Pipeline.** If `import_stores` fails (a quota error), `run_store_pipeline` stops before tagging:
   the lines it stored as they read are replaced by the next run.
 
@@ -343,13 +345,27 @@ candidates, schema, version = services.get_catalog(datetime.date(2026, 10, 13), 
 candidates, schema, version = services.get_store_catalog(meal="DN")
 ```
 
-The low-level readers above default to **v1** for existing callers. Recommendation
-sessions and demo/benchmark commands use `get_catalog`: select whichever version covers
-more candidates on the requested date and meal (`v2` when `v2_count >= total - v2_count`,
-`v1` otherwise), logging the served version and candidate counts with a warning when
-coverage is partial. Candidates and questions always have the same version; legacy
-meanings are never mixed and missing std is never invented. The 9/29 fixture and its
-23 legacy scores remain unchanged.
+The low-level readers above default to **v1**. By default `get_catalog` uses the
+version covering more eligible dishes (v2 on a nonempty tie) and reports partial
+coverage. RL requests v2 whenever any eligible v2 dish exists. Candidates and
+questions always have the same version. The September 29 fixture uses v1.
+
+### Feature-only RL
+
+Select **Reinforcement learning (RL)** in Android Settings or send `"engine": "rl"`
+to `POST /api/sessions/`. Both cafeteria and general sessions use v2 dish features
+after allergy and distance filtering. An empty catalogue returns an unavailable
+step; a nonempty v1-only cafeteria catalogue returns HTTP 503.
+
+The frozen v20 policy ranks dishes from their features and the user's answers.
+After a refusal it excludes that dish and updates the scores of similar dishes
+before choosing whether to ask or propose again. Matching catalogues share
+numeric arrays; answers, refusals, offers and undo history belong to the session.
+Inference uses NumPy on CPU. The source checkpoint hash is in
+[`weights.json`](question_engines/rl/weights.json).
+
+From `backend/`, run `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m question_engines.rl.benchmark`
+to measure preparation and the first decision on synthetic menus of 500–12,000 dishes.
 
 ### Allergens (i3-A1)
 
@@ -358,7 +374,7 @@ keys from `menus/allergens.py` (the 19 allergens Korean food labels must declare
 `milk`, `buckwheat`, `peanut`, `soybean`, `wheat`, `mackerel`, `crab`, `shrimp`, `pork`,
 `peach`, `tomato`, `sulfite`, `walnut`, `chicken`, `beef`, `squid`, `shellfish`, `pine_nut`).
 `get_catalog(date, meal, allergies)` then drops every menu line with a dish tagged with one of
-them **or a dish without current tags**, before either engine sees the candidates. A combo line
+them **or a dish without current tags**, before the selected engine sees the candidates. A combo line
 ("돈가스 카레우동") is bought whole, so 카레우동 is not offered there to someone allergic to pork,
 though it can still be offered where it is served alone. The feature version is chosen among
 the dishes that are left. Without allergies nothing changes. The phone keeps the allergies; the server stores nothing about the user.

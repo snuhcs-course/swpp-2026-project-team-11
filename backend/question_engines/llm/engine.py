@@ -105,6 +105,10 @@ class LLMEngine:
     # Session state, derived from the events
 
     @property
+    def can_undo(self):
+        return bool(self._events)
+
+    @property
     def question_count(self):
         return sum(event["type"] == "answer" for event in self._events)
 

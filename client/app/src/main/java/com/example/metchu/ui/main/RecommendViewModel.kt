@@ -200,7 +200,12 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
                 forgetSession()
                 _error.value = UiError(R.string.error_session_lost, canRetry = false)
             }
-            // The LLM engine has no API key on this server; asking again cannot help.
+            // An older API can reject a new engine ID at session creation.
+            e.code() == 400 && body?.error?.code == ApiError.INVALID_REQUEST && _session.value == null -> {
+                lastRequest = null
+                _error.value = UiError(R.string.error_session_settings, canRetry = false)
+            }
+            // Missing engine configuration or incompatible catalogue features.
             e.code() == 503 && body?.error?.code == ApiError.ENGINE_UNAVAILABLE -> {
                 lastRequest = null
                 _error.value = UiError(R.string.error_engine_unavailable, canRetry = false)

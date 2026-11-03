@@ -77,6 +77,10 @@ class DecisionTreeEngine:
         self._pending = self._descriptor = None
 
     @property
+    def can_undo(self):
+        return bool(self._events)
+
+    @property
     def question_count(self):
         return len(self._asked)
 

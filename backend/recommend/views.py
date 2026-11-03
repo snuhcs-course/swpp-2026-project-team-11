@@ -24,9 +24,9 @@ it is a 409 `stale_step` with the state.
 `health` touches nothing; it is for checking from a browser that the server can
 be reached, for example through the tunnel of `manage.py serve_public`.
 
-`engine` is "decision_tree" or "llm"; without it the server's default runs
-(settings.RECOMMEND_DEFAULT_ENGINE). Asking for "llm" on a server with no API key
-is a 503 `engine_unavailable`. `location` is the user's `{"lat", "lng"}`; it
+`engine` can be "decision_tree", "rl" or "llm". RL requires v2 features for a nonempty
+catalogue. Missing RL features or unavailable LLM configuration return 503
+`engine_unavailable`. `location` is the user's `{"lat", "lng"}`; it
 adds each cafeteria's `distance_m` to the offers (see recommend/distance.py).
 
 `allergies` lists keys of menus/allergens.py ALLERGEN_KEYS, as the phone stores
@@ -34,8 +34,10 @@ them; no dish that may contain one is proposed. `language` is "en" (default) or 
 every text the session sends is in it, except dish and cafeteria names, which stay Korean.
 
 `source` is "cafeteria" (default), the day's SNU cafeteria menu, or "general", the
-restaurants near 서울대입구역 and 낙성대역. A general session runs the decision tree
-only, so it ignores `date` and asking for "llm" is a 400.
+restaurants near 서울대입구역 and 낙성대역. A general session ignores `date` and
+supports "decision_tree" and "rl"; asking for "llm" is a 400. An omitted engine
+uses the server default, falling back to the decision tree for a general session
+if that default is "llm".
 """
 
 from __future__ import annotations
@@ -111,7 +113,7 @@ def create_session(request):
         if source is not None and source not in sessions.SOURCES:
             raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
         if source == "general" and engine == "llm":
-            raise ValueError("source general runs the decision_tree engine only.")
+            raise ValueError("The general source supports the decision_tree and rl engines.")
         language = payload.get("language", "en")
         if language not in LANGUAGES:
             raise ValueError(f"language must be one of {', '.join(LANGUAGES)}.")

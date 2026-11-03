@@ -75,6 +75,7 @@ fun SettingsScreen(
             Section(stringResource(R.string.settings_engine)) {
                 Column {
                     EngineRow(Engine.DECISION_TREE, R.string.engine_decision_tree, R.string.engine_decision_tree_hint, engine, onEngine)
+                    EngineRow(Engine.RL, R.string.engine_rl, R.string.engine_rl_hint, engine, onEngine)
                     EngineRow(Engine.LLM, R.string.engine_llm, R.string.engine_llm_hint, engine, onEngine)
                 }
             }
