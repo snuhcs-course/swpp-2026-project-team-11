@@ -108,7 +108,7 @@
 
     <!-- unavailable -->
     <string name="unavailable_no_menu">There is no %1$s menu for %2$s yet. Try another meal.</string>
-    <string name="unavailable_no_safe_menu">No %1$s dish for %2$s is known to be free of your allergies. Try another meal.</string>
+    <string name="unavailable_no_safe_menu">No %1$s dish for %2$s is confirmed to be free of the allergies you chose. Check them in Settings or try another meal.</string>
     <string name="unavailable_exhausted">You’ve seen every dish on today’s menu. Start over to see them again.</string>
 
     <!-- errors -->
