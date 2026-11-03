@@ -414,15 +414,15 @@ them **or a dish without current tags**, before the selected engine sees the can
 though it can still be offered where it is served alone. The feature version is chosen among
 the dishes that are left. Without allergies nothing changes. The phone keeps the allergies; the server stores nothing about the user.
 
-The result screen can also ban a food group, or a dish without one, for the rest of
-the session (i3-A19): `POST /api/sessions/<id>/ban/` takes a `food_group` or a
-`food_id`. Rather than changing the engines, the session turns down any guess of a
-banned dish (a decision tree group guess counts as its `food_group`) with `feedback` as
-soon as an action reaches it, and an undo that reaches one goes back further, so it
-does not return after Back either. A new session starts with no bans. The phone offers
-a group ban once the group makes up two of the last three proposals. New dishes get no
-`food_group` (only rows that already had one keep it), so on 2026-11-03 about 60% of
-the cafeteria dishes could be banned by group.
+The result screen can also ban a food group, or a menu without one, for the rest of
+the session (i3-A19): `POST /api/sessions/<id>/ban/` takes a `food_group` or the
+candidate's `food_id`. Rather than changing the engines, the session turns down any
+guess of a banned menu with `feedback` as soon as an action reaches it, and an undo
+that reaches one goes back further, so it does not return after Back either. A new
+session starts with no bans. The phone offers a group ban once the group makes up two
+of the last three proposals. Only a single-dish menu has a `food_group`, and new dishes
+get none (only rows that already had one keep it), so sets and many new dishes can be
+banned only one menu at a time.
 
 `extract_allergens` asks the menu model which allergens each dish name may contain, sauces,
 broths and batters included; the prompt tells it to leave a key out only when it is sure.
