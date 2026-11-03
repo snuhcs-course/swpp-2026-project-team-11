@@ -81,6 +81,7 @@ import com.example.metchu.data.model.Step
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Pill
+import com.example.metchu.ui.common.PillDivider
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.Spinner
@@ -137,6 +138,7 @@ fun QuestionScreen(
     onAnswer: (String, Step) -> Unit,
     onBack: () -> Unit,
     onRecommendNow: () -> Unit,
+    onHome: () -> Unit,
     onRevisit: (Int) -> Unit
 ) {
     val step = session.step
@@ -183,8 +185,16 @@ fun QuestionScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
-                // Shown from the first question, so the corner does not change when it can be used.
-                Pill(Modifier.testTag("recommendNow")) { PillSegment(stringResource(R.string.recommend_now), onRecommendNow, enabled = count > 0) }
+                // Shown from the first question, so the pill does not change when it can be used;
+                // "Start over" keeps the corner it has on the result screen.
+                Pill {
+                    PillSegment(
+                        stringResource(R.string.recommend_now), onRecommendNow, start = 18.dp, end = 14.dp,
+                        enabled = count > 0, modifier = Modifier.testTag("recommendNow")
+                    )
+                    PillDivider()
+                    PillSegment(stringResource(R.string.result_home), onHome, start = 14.dp, modifier = Modifier.testTag("home"))
+                }
             }
 
             Column(
