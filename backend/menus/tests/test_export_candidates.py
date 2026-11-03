@@ -51,7 +51,7 @@ class SeedFixtureTests(TestCase):
     def test_snapshot_gives_a_full_candidate_set(self):
         from menus import services
 
-        candidates = services.get_candidates(DAY, meal="LU")
+        candidates = services.get_catalog(DAY, meal="LU")[0]
         self.assertGreater(len(candidates), 100)
         for candidate in candidates:
             self.assertEqual(set(candidate["features"]), set(LEGACY_KEYS), candidate["name"])

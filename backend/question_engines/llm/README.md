@@ -26,10 +26,10 @@ The demo needs `OPENROUTER_API_KEY` in the repo-root `.env` (see
 
 ```python
 import datetime
-from menus.services import get_candidates
+from menus.services import get_catalog
 from question_engines.llm import LLMEngine
 
-candidates = get_candidates(datetime.date(2026, 9, 29), meal="LU")
+candidates, _, _ = get_catalog(datetime.date(2026, 9, 29), meal="LU")
 engine = LLMEngine(candidates, config={"max_questions": 10})   # OpenRouter model from the environment
 step = engine.start()
 step = engine.answer(step["question_id"], "probably_yes")       # one of the six P10 answer IDs
@@ -59,8 +59,10 @@ P10, with these differences:
   shows. The English stays in the session (`english` in the recorded step, never
   shown): the LLM reads the history in English and the repeat check works on it.
   The fixed fallback questions and the other texts come from `contracts.KOREAN`.
-- Dishes with the same `display_name` are one choice for the LLM. The first one's
-  `food_id` and offers stand for them.
+- Actual menus with the same `display_name` use distinct internal labels, including
+  their restaurant and candidate ID. The public step retains the original name.
+  Historical dish inputs without a menu profile retain their name-alias behavior.
+- Snapshots use `llm-v4` for the actual-menu identity change.
 - The default `max_questions` is 10 (`None` lets the LLM decide alone). At the
   limit, the next step is always a guess. The session API passes the server's
   `METCHU_MAX_QUESTIONS` instead, which is no limit unless it is set.

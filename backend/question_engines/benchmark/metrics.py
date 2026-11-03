@@ -1,7 +1,7 @@
 # AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Per-session metrics, from a results row and its scenario. No LLM call.
 
-- success:         the final menu is a wanted menu or a kind of one. Undefined (None)
+- success:         the final candidate is wanted (historical inputs allow name aliases). Undefined (None)
                    when the wanted menu is not served: there, use similarity with a
                    threshold chosen from the distributions in the report.
 - similarity:      1 - mean absolute feature difference between the final menu and the
@@ -79,10 +79,14 @@ def llm_calls(record) -> int:
 def baselines(record, scenario, foods) -> dict:
     if scenario["situation"] == "not_in_menu":
         return {"random_pick": None, "no_question_pick": None}
-    names = {food["display_name"] for food in foods.values()}
-    wanted = {name for target in scenario["targets"] for name in target["match_names"]}
+    if foods and all(c.get("menu_profile") == "rms-v1" for c in foods.values()):
+        choices = set(foods)
+        wanted = {mid for target in scenario["targets"] for mid in target["matches"]}
+    else:  # Historical dish-level scenario files used unique names.
+        choices = {food["display_name"] for food in foods.values()}
+        wanted = {name for target in scenario["targets"] for name in target["match_names"]}
     first = (record.get("anytime") or {}).get("0")
-    return {"random_pick": round(len(names & wanted) / len(names), 4) if names else None,
+    return {"random_pick": round(len(choices & wanted) / len(choices), 4) if choices else None,
             "no_question_pick": is_wanted(scenario, first["food_id"], first.get("group")) if first else None}
 
 

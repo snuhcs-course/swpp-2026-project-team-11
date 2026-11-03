@@ -132,7 +132,7 @@ KOREAN = {
     "Do you feel like Western food?": "양식이 당기나요?",
     "Do you feel like Southeast Asian food?": "동남아 음식이 당기나요?",
     "Do you feel like Indian food?": "인도 음식이 당기나요?",
-    "Do you feel like several dishes in one meal?": "여러 가지 반찬이 나오는 식사가 당기나요?",
+    "Do you feel like several dishes in one meal?": "여러 요리를 함께 먹는 식사가 당기나요?",
 }
 
 
