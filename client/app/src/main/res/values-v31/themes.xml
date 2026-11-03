@@ -1,0 +1,8 @@
+<resources>
+
+    <!-- The launch screen is plain white, without the icon Android puts on it by default. -->
+    <style name="Theme.Metchu" parent="Theme.Metchu.Base">
+        <item name="android:windowSplashScreenBackground">@android:color/white</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+    </style>
+</resources>
