@@ -69,15 +69,15 @@ class RLSessions(TestCase):
         dt = post(self.client, "/api/sessions/", {"date":DAY, "meal":"LU", "engine":"decision_tree"})
         self.assertEqual(dt.json()["candidate_count"], 1)
 
-    def test_invalid_stored_v2_values_use_the_api_error_contract(self):
+    def test_invalid_stored_v2_menu_is_withheld_without_breaking_the_session(self):
         food = add_food("Invalid v2 menu")
         food.feature_version = "v2"
         food.features = {"rice": 2.0}
         food.feature_std = {}
         food.save()
         result = post(self.client, "/api/sessions/", {"date": DAY, "engine": "rl"})
-        self.assertEqual(result.status_code, 503)
-        self.assertEqual(result.json()["error"]["code"], "engine_unavailable")
+        self.assertEqual(result.status_code, 201)
+        self.assertEqual(result.json()["step"]["type"], "unavailable")
 
     def test_shares_only_numeric_state_and_can_undo_a_question(self):
         self.assertEqual(tuple(FEATURE_KEYS), RL_KEYS)

@@ -1,5 +1,6 @@
 """A dish or group banned on the result screen is not proposed again in that session, even after undo."""
 from menus.models import MenuItem
+from menus.menu_registry import register_menu_ids
 
 from .helpers import add_food
 from .test_edge_cases import SmallMenuTestCase
@@ -38,6 +39,7 @@ class BannedDishTests(SmallMenuTestCase):
         add_food("Beef noodles", is_set=True, price=8000)
         add_food("Dumplings", is_set=True, price=8000)
         MenuItem.objects.filter(food__is_set=True).update(raw_name="Beef noodles + Dumplings")
+        register_menu_ids("cafeteria")
         state, url = self.start()
         self.assertEqual(state["candidate_count"], 4)
         self.call(url + "ban/", {"food_group": "Noodles", "banned": True})
