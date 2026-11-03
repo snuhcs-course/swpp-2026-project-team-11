@@ -444,7 +444,8 @@ private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit,
 
 /**
  * What [offer]'s cafeteria serves at its meal, from [menus]: a spinner while the list
- * loads, a note if it could not. The dish on screen, [foodId], is orange.
+ * loads, a note if it could not. The list holds only the session's candidates, which
+ * the note under the title says. The dish on screen, [foodId], is orange.
  */
 @Composable
 private fun MenuSheet(offer: Offer?, menus: Map<String, List<MenuDish>?>, foodId: Int, onDismiss: () -> Unit) {
@@ -454,6 +455,7 @@ private fun MenuSheet(offer: Offer?, menus: Map<String, List<MenuDish>?>, foodId
     val shown = last
     val title = shown?.let { stringResource(R.string.result_menu_title, it.restaurant, mealName(it.meal)) }.orEmpty()
     BottomSheet(offer != null, title, onDismiss) {
+        Text(stringResource(R.string.result_menu_note), Modifier.padding(bottom = 4.dp), style = MetchuType.Caption)
         if (shown != null) {
             val dishes = menus[shown.restaurant]
             when {
