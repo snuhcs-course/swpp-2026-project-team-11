@@ -35,6 +35,8 @@ object MetchuColors {
     val Grey200 = Color(0xFFE4E7EB)
     val Grey100 = Color(0xFFF2F4F6)
     val MapBlank = Color(0xFFECEEF1)
+    /** The map's "you are here" blue, for the locate button once it follows the user. */
+    val LocationBlue = Color(0xFF2F80ED)
     val Shadow = Color(0xFF1A1F26)
 }
 

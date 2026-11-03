@@ -86,6 +86,8 @@
     <string name="result_no_location">위치를 알 수 없어서 모든 식당을 보여드려요.</string>
     <string name="result_group_example">예를 들면 %1$s</string>
     <string name="result_group_members">%1$s도 있어요</string>
+    <string name="locate_me">내 위치로 이동</string>
+    <string name="locate_heading">바라보는 방향으로 지도 돌리기</string>
     <string name="result_sheet_toggle">식당 목록 펼치거나 접기</string>
     <string name="result_map">식당 지도</string>
     <string name="price_won">%1$s원</string>

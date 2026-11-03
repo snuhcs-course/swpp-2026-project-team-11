@@ -93,6 +93,8 @@
     <string name="result_no_location">Your location is unknown, so every cafeteria is listed.</string>
     <string name="result_group_example">For example %1$s</string>
     <string name="result_group_members">Also %1$s</string>
+    <string name="locate_me">Go to my location</string>
+    <string name="locate_heading">Turn the map to where you face</string>
     <string name="result_sheet_toggle">Show more or fewer cafeterias</string>
     <string name="result_map">Map of the cafeterias</string>
     <string name="result_pick_aria">%1$s, %2$s</string>

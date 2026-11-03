@@ -256,6 +256,15 @@ object Icons {
     val FastForward = line("fastForward", "M6 6l6 6-6 6M13 6l6 6-6 6", 2.2f)
     val Plus = line("plus", "M12 5v14M5 12h14", 2.2f)
 
+    /** Locate: a target with four ticks. */
+    val Locate = line("locate", "M18.5 12a6.5 6.5 0 1 1-13 0 6.5 6.5 0 1 1 13 0M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3", 2f)
+
+    /** The direction the phone faces: a filled arrowhead. */
+    val Heading = ImageVector.Builder("heading", 24.dp, 24.dp, 24f, 24f).addPath(
+        pathData = addPathNodes("M12 3l6.5 17-6.5-3.8L5.5 20z"),
+        fill = SolidColor(Color.Black)
+    ).build()
+
     /** A map pin with a hole: filled, unlike the line icons. */
     val Pin = ImageVector.Builder("pin", 24.dp, 24.dp, 24f, 24f).addPath(
         pathData = addPathNodes("M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11zM14.4 10a2.4 2.4 0 1 0-4.8 0 2.4 2.4 0 1 0 4.8 0z"),

@@ -9,6 +9,15 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import com.example.metchu.ui.common.floating
+import com.example.metchu.ui.common.pressScale
+import com.example.metchu.ui.common.rememberHeading
+import com.google.maps.android.compose.CameraMoveStartedReason
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
@@ -93,7 +102,6 @@ import com.example.metchu.ui.theme.MetchuType
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -166,6 +174,9 @@ fun ResultScreen(
             scope.launch { top.snapTo((top.value + dy).coerceIn(topOf(stops.first()), topOf(SheetStop.PEEK))) }
         }
         val chips = shown.size > 1 && stop != SheetStop.FULL
+        // The locate button: off the user, centered on the user, or turned to where the phone faces.
+        var locate by remember { mutableStateOf(Locate.FREE) }
+        val heading = rememberHeading(locate == Locate.HEADING)
 
         val mapIn by animateFloatAsState(if (revealed) 1f else 0f, tween(380, easing = SheetEasing), label = "map")
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = mapIn; scaleX = 1.06f - 0.06f * mapIn; scaleY = scaleX }) {
@@ -173,10 +184,15 @@ fun ResultScreen(
                 // The padding follows the resting sheet, not the finger, so the map does not slide while dragging.
                 CafeteriaMap(
                     cafeterias.cafeterias.distinctBy { it.offer.restaurant }, selected, permission.granted,
-                    start = cafeterias.cafeterias.firstNotNullOfOrNull { it.point } ?: user ?: CampusCenter,
+                    // It opens on the user, then glides to the cafeteria.
+                    start = user ?: cafeterias.cafeterias.firstNotNullOfOrNull { it.point } ?: CampusCenter,
+                    user = user,
+                    locate = locate,
+                    heading = heading,
                     // Above the dish chips when they are shown, so they never cover the logo.
-                    bottomInset = with(density) { (heightPx - topOf(stop)).toDp() } + if (chips) ChipRowHeight else 0.dp
-                ) { selected = it }
+                    bottomInset = with(density) { (heightPx - topOf(stop)).toDp() } + if (chips) ChipRowHeight else 0.dp,
+                    onMovedByHand = { locate = Locate.FREE }
+                ) { selected = it; locate = Locate.FREE }
             }
         }
 
@@ -192,6 +208,20 @@ fun ResultScreen(
         if (chips) {
             ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight - 10.dp).alpha(topIn)) { viewing = it }
         }
+        if (stop != SheetStop.FULL && BuildConfig.HAS_MAPS_KEY) {
+            LocateButton(
+                locate,
+                Modifier.align(Alignment.TopEnd).offset(y = sheetTop - 64.dp).padding(end = 20.dp).alpha(topIn)
+            ) {
+                when {
+                    !permission.granted -> permission.request()
+                    else -> locate = when (locate) {
+                        Locate.FREE, Locate.HEADING -> Locate.CENTER
+                        Locate.CENTER -> Locate.HEADING
+                    }
+                }
+            }
+        }
 
         val peek = stop == SheetStop.PEEK
         val chosen = cafeterias.cafeterias.firstOrNull { it.offer.restaurant == selected } ?: cafeterias.cafeterias.firstOrNull()
@@ -203,7 +233,7 @@ fun ResultScreen(
             cafeterias = cafeterias,
             chosen = chosen,
             selected = selected,
-            onSelect = { selected = it },
+            onSelect = { selected = it; locate = Locate.FREE },
             revealed = revealed,
             stop = stop,
             onTap = { settle(tappedStop(stops, stop)) },
@@ -271,9 +301,19 @@ private fun ShownChips(shown: List<Step>, viewing: Int, modifier: Modifier = Mod
     val row = rememberLazyListState()
     LaunchedEffect(shown.size) { row.animateScrollToItem(0) }
     LazyRow(
-        modifier.height(ChipRowHeight),
+        modifier
+            .height(ChipRowHeight)
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                val fade = 104.dp.toPx()
+                drawRect(
+                    Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fade, endX = size.width - 68.dp.toPx()),
+                    blendMode = BlendMode.DstIn
+                )
+            },
         state = row,
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 84.dp, top = 10.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(shown.indices.reversed().toList(), key = { shown[it].guessId ?: it.toString() }) { index ->
@@ -507,31 +547,33 @@ private fun CafeteriaMap(
     selected: String?,
     showUser: Boolean,
     start: Point,
+    user: Point?,
+    locate: Locate,
+    heading: Float?,
     bottomInset: Dp,
+    onMovedByHand: () -> Unit,
     onSelect: (String) -> Unit
 ) {
     val camera = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(start.lat, start.lng), 16f)
     }
     var loaded by remember { mutableStateOf(false) }
-    val points = cafeterias.mapNotNull { it.point?.let { p -> LatLng(p.lat, p.lng) } }
-    val density = LocalDensity.current
     // The SDK draws Google's logo in the padded corner, a few dp in; this lines it up with the 20 dp screen margin.
     val padding = PaddingValues(start = 14.dp, top = 120.dp, bottom = bottomInset + 6.dp)
 
-    LaunchedEffect(loaded, points) {
-        if (!loaded || points.isEmpty()) return@LaunchedEffect
-        val update = if (points.size == 1) {
-            CameraUpdateFactory.newLatLngZoom(points.single(), 16f)
-        } else {
-            val bounds = LatLngBounds.builder().apply { points.forEach(::include) }.build()
-            CameraUpdateFactory.newLatLngBounds(bounds, with(density) { 48.dp.roundToPx() })
-        }
-        camera.animate(update, 600)
-    }
-    LaunchedEffect(selected) {
+    // The chosen cafeteria glides to the middle of the map above the sheet.
+    LaunchedEffect(loaded, selected) {
         val point = cafeterias.firstOrNull { it.offer.restaurant == selected }?.point ?: return@LaunchedEffect
-        if (loaded && points.size > 1) camera.animate(CameraUpdateFactory.newLatLng(LatLng(point.lat, point.lng)), 400)
+        if (loaded) camera.animate(CameraUpdateFactory.newCameraPosition(CameraPosition(LatLng(point.lat, point.lng), 16f, 0f, 0f)), 750)
+    }
+    // Centered on the user, north up or turned with the phone.
+    LaunchedEffect(loaded, locate, user, heading) {
+        if (!loaded || user == null || locate == Locate.FREE) return@LaunchedEffect
+        val bearing = if (locate == Locate.HEADING) heading ?: camera.position.bearing else 0f
+        camera.animate(CameraUpdateFactory.newCameraPosition(CameraPosition(LatLng(user.lat, user.lng), camera.position.zoom, 0f, bearing)), 400)
+    }
+    LaunchedEffect(camera.isMoving) {
+        if (camera.isMoving && camera.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) onMovedByHand()
     }
 
     GoogleMap(
@@ -557,6 +599,39 @@ private fun CafeteriaMap(
                     MapPin(cafeteria, on)
                 }
             }
+        }
+    }
+}
+
+/** What the locate button has done to the map. */
+private enum class Locate { FREE, CENTER, HEADING }
+
+/**
+ * Like Google Maps' button: grey while the map shows something else, blue once it is
+ * centered on the user, and an arrow once the map turns with the phone. Each tap moves on.
+ */
+@Composable
+private fun LocateButton(mode: Locate, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val description = stringResource(if (mode == Locate.CENTER) R.string.locate_heading else R.string.locate_me)
+    val interaction = remember { MutableInteractionSource() }
+    Box(
+        modifier
+            .size(48.dp)
+            .pressScale(interaction, 0.92f)
+            .floating()
+            .clip(CircleShape)
+            .background(Color.White)
+            .clickable(interaction, indication = null, role = Role.Button, onClickLabel = description, onClick = onClick)
+            .semantics { contentDescription = description }
+            .testTag("locate"),
+        contentAlignment = Alignment.Center
+    ) {
+        val tint = if (mode == Locate.FREE) MetchuColors.Grey700 else MetchuColors.LocationBlue
+        if (mode == Locate.HEADING) {
+            Image(Icons.Heading, null, Modifier.size(22.dp), colorFilter = ColorFilter.tint(tint))
+        } else {
+            Image(Icons.Locate, null, Modifier.size(24.dp), colorFilter = ColorFilter.tint(tint))
+            if (mode == Locate.CENTER) Box(Modifier.size(6.dp).clip(CircleShape).background(tint))
         }
     }
 }
