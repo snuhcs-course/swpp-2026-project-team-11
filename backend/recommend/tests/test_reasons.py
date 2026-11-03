@@ -1,4 +1,5 @@
 """The reason under the proposed dish (i3-A5), with a fake LLM: no API key, no network."""
+from dataclasses import replace
 from unittest import mock
 
 from django.test import SimpleTestCase
@@ -42,6 +43,12 @@ class CheckTests(SimpleTestCase):
         self.assertIn("not in Korean", self.refuses("soupy한 국물이 있어서 짬뽕을 골랐어요.", language="ko"))
         self.assertIn("English", self.refuses("짬뽕 is 매운 and hot."))
 
+    def test_a_shortened_name_is_allowed_but_an_unrelated_dish_is_not(self):
+        target = replace(facts(), dish="매운양념치킨", others=("양념치킨", "간장양념치킨"))
+        check(ReasonDraft(**draft("The 양념치킨 fits your preference for spice.", [1])), target)
+        with self.assertRaises(InvalidReason):
+            check(ReasonDraft(**draft("Try the 간장양념치킨.", [1])), target)
+
     def test_refuses_evidence_that_does_not_point_to_the_dish(self):
         self.assertIn("Q4", self.refuses("It is spicy.", [4]))
         lacking = facts(answers=((SPICY, "yes", .1),))
@@ -80,16 +87,9 @@ class TemplateTests(SimpleTestCase):
         self.assertEqual(template(beef), "소고기를 원하셔서 짬뽕을 골랐어요.")
 
     def test_without_such_an_answer_it_stays_general_in_the_session_language(self):
-        expected = {
-            ("en", True): "짬뽕 is the best match for your answers among today's menus.",
-            ("en", False): "짬뽕 is a good pick from today's menus.",
-            ("ko", True): "답하신 내용에 가장 잘 맞는 짬뽕을 골랐어요.",
-            ("ko", False): "오늘 메뉴 중에서 짬뽕을 골라 봤어요.",
-        }
-        for (language, answered), reason in expected.items():
-            with self.subTest(language=language, answered=answered):
-                answers = ((SPICY, "no", .9),) if answered else ()
-                self.assertEqual(template(facts(language, answers=answers)), reason)
+        for answers in ((), ((SPICY, "no", .9),), ((SPICY, "yes", None),), ((SPICY, "any", .9),)):
+            self.assertEqual(template(facts("en", answers)), "짬뽕 is one of the available dishes.")
+            self.assertEqual(template(facts("ko", answers)), "메뉴 중에서 짬뽕을 골라 봤어요.")
 
     def test_the_korean_object_particle_follows_the_dish_name(self):
         for dish, reason in (("짜장면", "짜장면을"), ("돈까스", "돈까스를"), ("제육덮밥(L)", "제육덮밥(L)을")):
@@ -132,7 +132,7 @@ class ReasonApiTests(SmallMenuTestCase):
             self.call(url + "recommend-now/")
             reason = self.client.get(url + "reason/").json()
         self.assertEqual(reason["source"], "template")
-        self.assertRegex(reason["reason"], "^오늘 메뉴 중에서 .+ 골라 봤어요\\.$")
+        self.assertRegex(reason["reason"], "^메뉴 중에서 .+ 골라 봤어요\\.$")
 
     def test_no_dish_on_screen_is_stale_and_an_unknown_session_404(self):
         state, url = self.start()
@@ -154,4 +154,16 @@ class LLMSessionReasonTests(LLMSessionTestCase):
             self.call(url + "answer/", {"question_id": state["step"]["question_id"], "answer_id": "yes"})
             reason = self.client.get(url + "reason/").json()
         self.assertEqual(reason["reason"], "Noodles, as you wanted.")
-        self.assertIn("Q1. Do you feel like noodles? -> Yes, sounds good\n", reason_llm.prompt())
+        self.assertIn("Q1. Do you feel like noodles? -> Yes, sounds good (this dish: 0.9 of 1)", reason_llm.prompt())
+
+    def test_unmapped_question_does_not_explain_a_dish_fit(self):
+        self.use_llm(ask("In the mood for chili heat?", "Rice bowl"),
+                     {"action": "recommend", "question": "", "food": "Rice bowl"})
+        reason_llm = FakeLLM()
+        with mock.patch("recommend.reasons.default_llm", return_value=reason_llm):
+            state, url = self.start()
+            self.call(url + "answer/", {"question_id": state["step"]["question_id"], "answer_id": "yes"})
+            reason = self.client.get(url + "reason/").json()
+        self.assertEqual(reason["reason"], "Rice bowl is one of the available dishes.")
+        self.assertEqual(reason["source"], "template")
+        self.assertFalse(reason_llm.calls)
