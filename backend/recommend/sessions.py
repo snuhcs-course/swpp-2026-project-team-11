@@ -35,8 +35,7 @@ an allergy or left out by distance are not listed either.
 
 A banned dish, or a dish of a banned `food_group`, is never proposed again in the
 session, even after undo: a guess of one is turned down with `feedback` as soon as an
-action reaches it, and an undo that reaches one goes back further. A decision tree
-group guess is banned with its group: its groups are `food_group`s. Bans last only as
+action reaches it, and an undo that reaches one goes back further. Bans last only as
 long as the session.
 
 `reason()` calls the LLM outside the session lock, so a tap on the result screen
@@ -173,11 +172,8 @@ class RecommendSession:
             bans.discard(key)
 
     def _banned(self, step: dict) -> bool:
-        if step["type"] != "guess":
-            return False
-        if "group" in step:
-            return step["group"]["display_name"] in self.banned_groups
-        return step["food"]["food_id"] in self.banned_foods or step["food"]["food_group"] in self.banned_groups
+        return step["type"] == "guess" and (step["food"]["food_id"] in self.banned_foods
+                                            or step["food"]["food_group"] in self.banned_groups)
 
     def _skip_banned(self, back: bool = False) -> None:
         """Turns down each banned guess, or with `back` undoes past it while it can."""
