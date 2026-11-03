@@ -2,7 +2,9 @@ package com.example.metchu.ui.settings
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -38,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.example.metchu.R
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
+import com.example.metchu.data.repository.BannedDish
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.chipShadow
@@ -46,14 +50,17 @@ import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.screenBackground
 
 /**
- * Allergies to avoid and, for development, which engine asks the questions. Every
- * change is kept at once, so there is no save button.
+ * Allergies to avoid, the dishes banned from the result screen (once there are any) and,
+ * for development, which engine asks the questions. Every change is kept at once, so
+ * there is no save button.
  */
 @Composable
 fun SettingsScreen(
     allergies: List<Allergen>,
+    banned: List<BannedDish>,
     engine: String,
     onAllergies: (List<Allergen>) -> Unit,
+    onBanned: (List<BannedDish>) -> Unit,
     onEngine: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -68,6 +75,13 @@ fun SettingsScreen(
                 Text(stringResource(R.string.allergies_body), style = MetchuType.Item)
                 AllergenChips(allergies, onAllergies)
                 Text(stringResource(R.string.allergies_disclaimer), style = MetchuType.Caption.copy(lineHeight = MetchuType.Caption.fontSize * 1.55f))
+            }
+
+            if (banned.isNotEmpty()) {
+                Section(stringResource(R.string.settings_banned)) {
+                    Text(stringResource(R.string.banned_body), style = MetchuType.Caption)
+                    BannedChips(banned, onBanned)
+                }
             }
 
             Section(stringResource(R.string.settings_engine)) {
@@ -116,6 +130,31 @@ private fun AllergenChips(picked: List<Allergen>, onChange: (List<Allergen>) -> 
                     style = MetchuType.Label.copy(fontWeight = MetchuType.Caption.fontWeight),
                     color = if (on) Color.White else MetchuColors.Grey900
                 )
+            }
+        }
+    }
+}
+
+/** Tapping a chip lets its dish be suggested again. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BannedChips(banned: List<BannedDish>, onChange: (List<BannedDish>) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        banned.forEach { dish ->
+            Row(
+                Modifier
+                    .height(40.dp)
+                    .chipShadow()
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .clickable(role = Role.Button) { onChange(banned - dish) }
+                    .padding(start = 14.dp, end = 12.dp)
+                    .testTag("banned_${dish.foodId}"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(dish.name, style = MetchuType.Label.copy(fontWeight = MetchuType.Caption.fontWeight), color = MetchuColors.Grey900)
+                Image(Icons.Cross, null, Modifier.size(14.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey600))
             }
         }
     }

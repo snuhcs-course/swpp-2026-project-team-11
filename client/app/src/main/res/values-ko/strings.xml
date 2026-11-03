@@ -30,6 +30,8 @@
     <string name="settings_allergies">알러지</string>
     <string name="allergies_body">고른 재료가 없는 메뉴만 추천해요.</string>
     <string name="allergies_disclaimer">알러지 정보는 메뉴 이름을 보고 AI가 추정했어요. 알러지가 심하다면 식당에서 한 번 더 확인해 주세요.</string>
+    <string name="settings_banned">추천하지 않는 메뉴</string>
+    <string name="banned_body">누르면 다시 추천받을 수 있어요.</string>
     <string name="settings_engine">질문 방식 · 개발용</string>
     <string name="engine_decision_tree">결정 트리</string>
     <string name="engine_rl">강화학습 (RL)</string>
@@ -96,6 +98,8 @@
     <string name="result_menu">메뉴</string>
     <string name="result_menu_title">%1$s %2$s 메뉴</string>
     <string name="result_menu_failed">메뉴를 불러오지 못했어요. 닫고 다시 시도해 주세요.</string>
+    <string name="result_ban">이 메뉴 다시 추천하지 않기</string>
+    <string name="result_unban">다음부터 추천하지 않아요 · 되돌리기</string>
 
     <string name="unavailable_no_menu">%2$s %1$s 메뉴가 아직 없어요. 다른 식사로 추천받을 수 있어요.</string>
     <string name="unavailable_no_safe_menu">%2$s %1$s 메뉴 중에 고른 알러지 재료가 없다고 확인된 메뉴가 없어요. 설정에서 알러지를 확인하거나 다른 식사를 골라 보세요.</string>

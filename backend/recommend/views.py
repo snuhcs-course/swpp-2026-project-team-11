@@ -1,7 +1,7 @@
 """HTTP glue between the Android client and the question engine.
 
-    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?,
-                          "language"?}                                       -> 201 state
+    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "banned"?,
+                          "source"?, "language"?}                            -> 201 state
     GET  /api/sessions/<id>/                                               -> state
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
@@ -36,7 +36,8 @@ catalogue. Missing RL features or unavailable LLM configuration return 503
 adds each cafeteria's `distance_m` to the offers (see recommend/distance.py).
 
 `allergies` lists keys of menus/allergens.py ALLERGEN_KEYS, as the phone stores
-them; no dish that may contain one is proposed. `language` is "en" (default) or "ko":
+them; no dish that may contain one is proposed. `banned` lists food IDs the user never
+wants proposed. `language` is "en" (default) or "ko":
 every text the session sends is in it, except dish and cafeteria names, which stay Korean.
 
 `source` is "cafeteria" (default), the day's SNU cafeteria menu, or "general", the
@@ -115,6 +116,10 @@ def create_session(request):
         if allergies is not None and (not isinstance(allergies, list)
                                       or any(key not in ALLERGEN_KEYS for key in allergies)):
             raise ValueError(f"allergies must be a list of {', '.join(ALLERGEN_KEYS)}.")
+        banned = payload.get("banned")
+        if banned is not None and (not isinstance(banned, list)
+                                   or any(type(food_id) is not int for food_id in banned)):
+            raise ValueError("banned must be a list of food IDs.")
         source = payload.get("source")
         if source is not None and source not in sessions.SOURCES:
             raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
@@ -126,7 +131,8 @@ def create_session(request):
     except ValueError as error:  # includes json.JSONDecodeError
         return _error(400, "invalid_request", str(error))
     try:
-        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language)
+        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language,
+                                  frozenset(banned or ()))
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     return JsonResponse(session.public_state(), status=201)
