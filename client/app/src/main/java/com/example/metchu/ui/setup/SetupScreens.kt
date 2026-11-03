@@ -1,7 +1,6 @@
 package com.example.metchu.ui.setup
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,14 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
@@ -32,6 +28,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.metchu.R
 import com.example.metchu.data.model.Allergen
+import com.example.metchu.ui.common.ActionCapsule
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Languages
@@ -81,20 +78,9 @@ fun AllergySetupScreen(allergies: List<Allergen>, onAllergies: (List<Allergen>) 
             }
             Box(Modifier.navigationBarsPadding().height(120.dp))
         }
-        Box(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp)
-                .fillMaxWidth()
-                .height(56.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MetchuColors.Primary)
-                .clickable(role = Role.Button, onClick = onNext)
-                .testTag("setupNext"),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(stringResource(R.string.setup_next), style = MetchuType.Button, color = Color.White)
-        }
+        ActionCapsule(
+            stringResource(R.string.setup_next), Icons.Forward, onNext, filled = true,
+            modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp).testTag("setupNext")
+        )
     }
 }

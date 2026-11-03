@@ -252,6 +252,7 @@ object Icons {
         ).build()
 
     val Back = line("back", "M15 5l-7 7 7 7", 2.2f)
+    val Forward = line("forward", "M9 5l7 7-7 7", 2.2f)
     val Home = line("home", "M3.5 11L12 3.8 20.5 11M6 9.2V20h12V9.2M10 20v-5.5h4V20", 2.1f)
     val FastForward = line("fastForward", "M6 6l6 6-6 6M13 6l6 6-6 6", 2.2f)
     val Plus = line("plus", "M12 5v14M5 12h14", 2.2f)
