@@ -1,5 +1,9 @@
 # Metchu! backend
 
+The live team deployment now uses the Windows mini PC and its local SQLite database.
+See [host updates and rollback](../docs/mini-pc-host.md); the Supabase instructions
+below describe the earlier deployment and recovery reference.
+
 Django 5.2 server, on local SQLite or the team's shared Supabase Postgres
 ([Shared database](#shared-database-supabase-p8)). For now it holds the MVP's candidate set:
 **the SNU cafeteria dishes of a given day**, split and merged into real dishes
@@ -44,7 +48,7 @@ This loads `menus/fixtures/menus_2026-09-29.json`:
 - all features already filled in
 
 > **주의:** 스냅샷에는 2026-09-29 데이터만 있습니다. 날짜를 생략하면 "오늘" 기준이라 빈 목록이 나오니, 반드시 날짜를 넘기세요.
-> 예: `--date 2026-09-29`, `services.get_candidates(datetime.date(2026, 9, 29))`
+> 예: `--date 2026-09-29`, `services.get_catalog(datetime.date(2026, 9, 29))[0]`
 
 ## B. Build a day's DB with your own API key
 
@@ -333,11 +337,8 @@ from menus import services
 services.get_feature_schema()
 # [{"key": "spicy", "question": "매콤한 게 당겨요?"}, ...]  (23 features)
 
-services.get_candidates(datetime.date(2026, 9, 29), meal="LU")   # meal=None: whole day, date=None: today
-# [{"food_id", "name", "display_name", "food_group",
-#   "features": {"spicy": 0.9, "soupy": 1.0, ...},
-#   "offers": [{"restaurant": "학생회관식당", "meal": "LU", "price": 3000,
-#               "lat": 37.45932, "lng": 126.95058}, ...]}, ...]
+candidates, schema, version = services.get_catalog(datetime.date(2026, 9, 29), meal="LU")
+# candidates use the original sales-menu name, RMS features and complete offers.
 
 # New sessions load one matching version of candidates and questions together:
 candidates, schema, version = services.get_catalog(datetime.date(2026, 10, 13), meal="LU")
@@ -349,6 +350,32 @@ The low-level readers above default to **v1**. By default `get_catalog` uses the
 version covering more eligible dishes (v2 on a nonempty tie) and reports partial
 coverage. RL requests v2 whenever any eligible v2 dish exists. Candidates and
 questions always have the same version. The September 29 fixture uses v1.
+
+### Actual menu candidates and set composition
+
+`get_catalog` and `get_store_catalog` return the original purchasable menu,
+including its original name, price and restaurant offers. Main dishes remain
+internal feature records; they are not separate proposals for the same set.
+Each feature of a menu containing n main dishes is
+`sqrt(sum(x_i ** 2) / n)`. A singleton keeps its original feature values.
+
+Recipe spread is carried as an RMS dispersion proxy, not an independently
+measured standard deviation for the set. Valid bounded component moments keep
+this proxy bounded too: the mean squared deviations are at most
+`mean(x) - mean(x ** 2) <= rms(x) * (1 - rms(x))`.
+No assumption that the component recipes vary independently is made.
+
+A partially tagged set is withheld whole. Allergy and distance filtering happen
+at the complete sale-offer boundary. Equal menu names with different components
+remain distinct; identical original menus can list multiple restaurant offers.
+The transport key `food_id` is an opaque menu-candidate identifier derived from
+sales rows, not a `Food` primary key. It stays fixed within a session.
+Generic cuisine/group proposals are disabled for these menu candidates.
+
+`get_catalog`, `get_store_catalog` and `export_candidates` share the actual-menu
+candidate path; explicit feature-version exports use the same path.
+Inference reuses the frozen feature policy; composition correctness does not
+establish preference accuracy for real users.
 
 ### Feature-only RL
 
@@ -428,8 +455,9 @@ measurements across variants served on the target date (reusing any cached v2
 variant from another date without modifying rows not served on the target date).
 `features` remains a scalar mean dictionary; `feature_std` stores the matching
 std dictionary. `meal_variety` is 1 for sets and 0 otherwise, always with std 0.
-Set display names end in ` (세트)`. Existing food groups are preserved; new groups
-are left empty rather than introducing a second model task.
+Tagging leaves `display_name` unchanged. Existing component display metadata
+is retained, while recommendation labels come from the original menu line.
+Food groups remain available for historical evaluations.
 
 Valid v2 data on an existing variant supplies a new variant without an API call.
 `--force` reevaluates each name once, `--limit` counts distinct names, and failed
@@ -440,15 +468,11 @@ For explicit v2 inspection, use:
 
 ```python
 services.get_feature_schema("v2")
-services.get_candidates(date, meal="LU", feature_version="v2", include_std=True)
+services.get_catalog(date, meal="LU", feature_version="v2")
 ```
 
-`export_candidates` selects `v2` (including std) when every candidate on the
-requested date/meal is `v2`, and falls back to `v1` otherwise; `--feature-version`
-(`v1` or `v2`) forces a specific version. The default candidate reader
-keeps its original keys. The DT integration uses `get_catalog` to enable v2
-serving and std-aware question selection and answer updates. Its internal
-candidate dictionaries carry std; REST reply shapes stay unchanged.
+`export_candidates` follows `get_catalog`'s eligible-menu version selection;
+`--feature-version` (`v1` or `v2`) selects a specific version. V2 candidate dictionaries include the composed recipe-spread proxy; REST reply shapes stay unchanged.
 
 - Only real meals (`is_food=True`) are returned. Drinks, 공기밥 and side orders are excluded.
 - Working in plain Python without Django? Read the JSON written by `export_candidates`.
