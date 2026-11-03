@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -42,8 +43,9 @@ class PickerOption(val label: String, val note: String?, val selected: Boolean, 
 val SheetEasing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f)
 
 /**
- * A modal list that rises from the bottom over a dimmed screen. The picked option is
- * dark with a check; the others are grey, like past questions.
+ * A modal list that rises from the bottom over a dimmed screen, one line per option. The
+ * picked option is dark with a check on the right; the others are grey, like past
+ * questions, with their note where the check would be.
  */
 @Composable
 fun BottomSheetPicker(visible: Boolean, title: String, options: List<PickerOption>, onDismiss: () -> Unit) {
@@ -79,12 +81,18 @@ fun BottomSheetPicker(visible: Boolean, title: String, options: List<PickerOptio
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(option.label, style = MetchuType.Item, color = if (option.selected) MetchuColors.Grey900 else MetchuColors.Grey600)
-                            if (option.note != null) Text(option.note, style = MetchuType.Caption)
-                        }
+                        Text(
+                            option.label,
+                            Modifier.weight(1f),
+                            style = MetchuType.Item,
+                            color = if (option.selected) MetchuColors.Grey900 else MetchuColors.Grey600,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         if (option.selected) {
                             Image(Icons.Check, null, Modifier.size(24.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900))
+                        } else if (option.note != null) {
+                            Text(option.note, Modifier.padding(start = 12.dp), style = MetchuType.Caption, maxLines = 1)
                         }
                     }
                 }
