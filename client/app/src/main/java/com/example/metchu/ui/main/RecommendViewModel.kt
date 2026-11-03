@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.metchu.R
 import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
+import com.example.metchu.data.model.Ban
 import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
@@ -43,8 +44,8 @@ data class AnsweredQuestion(val text: String, val answerId: String)
  * written; changing the answers invalidates that proposal's explanation.
  * [menus] holds the dishes of each restaurant asked for in this session, null while
  * they load; a failed request leaves no entry, so asking again retries it.
- * [banned] lists the food IDs the user banned in this session; the server keeps them
- * out of its later proposals until the session ends.
+ * [banned] lists the dishes and groups the user banned in this session; the server
+ * keeps them out of its later proposals until the session ends.
  */
 class RecommendViewModel(private val repository: RecommendRepository) : ViewModel() {
 
@@ -68,8 +69,8 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     val reasons: LiveData<Map<String, String?>> = _reasons
     private val reasonContexts = mutableMapOf<String, ReasonContext>()
 
-    private val _banned = MutableLiveData<Set<Int>>(emptySet())
-    val banned: LiveData<Set<Int>> = _banned
+    private val _banned = MutableLiveData<Set<Ban>>(emptySet())
+    val banned: LiveData<Set<Ban>> = _banned
 
     private val _menus = MutableLiveData<Map<String, List<MenuDish>?>>(emptyMap())
     val menus: LiveData<Map<String, List<MenuDish>?>> = _menus
@@ -120,12 +121,12 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         request { repository.recommendNow(current.sessionId) }
     }
 
-    /** Keeps the dish with [foodId] out of the rest of the session, or with [banned] false lets it back. */
-    fun ban(foodId: Int, banned: Boolean) {
+    /** Keeps what [ban] covers out of the rest of the session, or with [banned] false lets it back. */
+    fun ban(ban: Ban, banned: Boolean) {
         val current = _session.value ?: return
         request {
-            repository.ban(current.sessionId, foodId, banned).also {
-                _banned.value = if (banned) _banned.value.orEmpty() + foodId else _banned.value.orEmpty() - foodId
+            repository.ban(current.sessionId, ban, banned).also {
+                _banned.value = if (banned) _banned.value.orEmpty() + ban else _banned.value.orEmpty() - ban
             }
         }
     }
