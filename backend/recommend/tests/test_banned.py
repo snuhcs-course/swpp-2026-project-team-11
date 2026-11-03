@@ -1,5 +1,5 @@
 """A dish or group banned on the result screen is not proposed again in that session, even after undo."""
-from menus.models import Food
+from menus.models import MenuItem
 
 from .test_edge_cases import SmallMenuTestCase
 
@@ -26,11 +26,11 @@ class BannedDishTests(SmallMenuTestCase):
         self.assertEqual(len(proposed), 2)
         self.assertNotIn(food_id, proposed)
 
-    def test_a_banned_group_leaves_out_its_dishes_and_its_group_guess(self):
+    def test_a_banned_group_leaves_out_its_dishes(self):
         state, url = self.start()
         self.call(url + "ban/", {"food_group": "Noodles", "banned": True})
         proposed = self.propose_until_exhausted(url, state["step"])
-        self.assertEqual(proposed, [Food.objects.get(name="Rice bowl").id])
+        self.assertEqual(proposed, [MenuItem.objects.get(raw_name="Rice bowl").id])
 
     def propose_until_exhausted(self, url, step):
         """The dishes proposed from `step` on, each turned down, until none is left."""
@@ -39,7 +39,7 @@ class BannedDishTests(SmallMenuTestCase):
             if step["type"] == "question":
                 step = self.call(url + "recommend-now/")["step"]
                 continue
-            proposed.append(step.get("group", {}).get("display_name") or step["food"]["food_id"])
+            proposed.append(step["food"]["food_id"])
             step = self.call(url + "feedback/", {"guess_id": step["guess_id"], "accepted": False})["step"]
         self.assertEqual(step["reason"], "candidates_exhausted")
         return proposed
