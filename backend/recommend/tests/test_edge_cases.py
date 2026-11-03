@@ -259,7 +259,7 @@ class MenuDataTests(SmallMenuTestCase):
         final = None
         for _ in range(8):
             step = self.call(url + "recommend-now/")["step"]
-            if step["food"]["display_name"] == "Bibimbap":
+            if step["food"]["display_name"] in ("Bibimbap A", "Bibimbap B"):
                 final = self.call(url + "feedback/", {"guess_id": step["guess_id"], "accepted": True})["step"]
                 self.assertEqual(final["food"], step["food"])
                 break
@@ -279,7 +279,7 @@ class MenuDataTests(SmallMenuTestCase):
         state, url = self.start(meal="DN")
         step = self.call(url + "recommend-now/")["step"]
         self.assertEqual((step["food"]["name"], step["food"]["display_name"]),
-                         ("닭갈비볶음밥&고구마맛탕", "닭갈비볶음밥"))
+                         ("닭갈비볶음밥&고구마맛탕", "닭갈비볶음밥&고구마맛탕"))
         self.assertEqual(step["food"]["offers"][0]["restaurant"], "301동식당")
 
 
