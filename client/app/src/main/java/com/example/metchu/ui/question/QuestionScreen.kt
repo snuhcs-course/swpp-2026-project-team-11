@@ -12,6 +12,8 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntOffset
@@ -161,6 +163,13 @@ fun QuestionScreen(
     LaunchedEffect(loading) { if (!loading) chosen = null }
     val active = chosen ?: pressing
     if (active != null) lastShown = active
+    // Going back (Back or a tapped past question), the question returned to grows out of its
+    // past line and lets go of its old answer.
+    var before by remember { mutableStateOf(history) }
+    val returning = remember(step.questionId, count) {
+        before.getOrNull(history.size)?.takeIf { history.size < before.size && it.text == step.text }?.answerId
+    }
+    SideEffect { before = history }
 
     // Scrolled from the bottom: 0 shows the newest past question.
     val list = rememberScrollState()
@@ -206,7 +215,7 @@ fun QuestionScreen(
                     }
                 }
                 key(step.questionId, count) {
-                    CurrentQuestion(step.text, lastShown, shown = active != null, done = chosen != null)
+                    CurrentQuestion(step.text, lastShown, shown = active != null, done = chosen != null, returning = returning)
                 }
             }
 
@@ -284,29 +293,36 @@ private fun PastQuestion(past: AnsweredQuestion, onRevisit: () -> Unit) {
  * The question being asked, in large type, with the answer under it on the right while a
  * circle is pressed. [done] (an answer picked) shrinks both, without a fade, into the
  * line the question will have in the list: the answer moves up to the question's line.
+ * A question gone back to ([returning] is its old answer) plays this backwards: it grows
+ * out of that line while the old answer fades out.
  */
 @Composable
-private fun CurrentQuestion(text: String, answer: String?, shown: Boolean, done: Boolean) {
-    val appear = remember { Animatable(0f) }
+private fun CurrentQuestion(text: String, answer: String?, shown: Boolean, done: Boolean, returning: String?) {
+    val back = returning != null
+    val appear = remember { Animatable(if (back) 1f else 0f) }
     LaunchedEffect(Unit) { appear.animateTo(1f, tween(300)) }
-    val shrink by animateFloatAsState(if (done) 1f else 0f, tween(380, easing = SheetEasing), label = "shrink")
-    val ink by animateColorAsState(if (done) MetchuColors.Grey600 else MetchuColors.Grey900, tween(380), label = "ink")
-    val answerAlpha by animateFloatAsState(if (shown) 1f else 0f, tween(160), label = "answer")
+    val shrinkState = remember { Animatable(if (back) 1f else 0f) }
+    LaunchedEffect(done) { shrinkState.animateTo(if (done) 1f else 0f, tween(380, easing = SheetEasing)) }
+    val shrink = shrinkState.value
+    val answerState = remember { Animatable(if (back) 1f else 0f) }
+    LaunchedEffect(shown) { answerState.animateTo(if (shown) 1f else 0f, tween(if (back && !shown) 300 else 160)) }
+    val answerAlpha = answerState.value
     val density = LocalDensity.current
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 6.dp).alpha(appear.value)) {
         Text(
             text,
             Modifier.fillMaxWidth().testTag("question"),
             style = lerpStyle(MetchuType.Title, PastStyle, shrink),
-            color = ink,
-            maxLines = if (done) 1 else Int.MAX_VALUE,
-            softWrap = !done
+            color = lerp(MetchuColors.Grey900, MetchuColors.Grey600, shrink),
+            maxLines = if (shrink > 0.5f) 1 else Int.MAX_VALUE,
+            softWrap = shrink <= 0.5f
         )
-        if (answer != null) {
+        val label = answer ?: returning
+        if (label != null) {
             // 12 dp under the question at first; at the end it sits on the question's line.
             val gap = lerp(12.dp, -PastLine, shrink)
             Text(
-                stringResource(answerLabel(answer)),
+                stringResource(answerLabel(label)),
                 Modifier
                     .align(Alignment.End)
                     .layout { measurable, constraints ->
@@ -319,7 +335,7 @@ private fun CurrentQuestion(text: String, answer: String?, shown: Boolean, done:
                     .padding(start = AnswerRoom * shrink)
                     .semantics { liveRegion = LiveRegionMode.Polite },
                 style = lerpStyle(MetchuType.Title, PastAnswerStyle, shrink),
-                color = answerColor(answer),
+                color = answerColor(label),
                 maxLines = 1
             )
         } else {
