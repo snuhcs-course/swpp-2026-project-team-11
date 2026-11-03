@@ -1,5 +1,6 @@
 package com.example.metchu.ui.result
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
@@ -63,20 +64,26 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
+import com.example.metchu.data.model.Ban
+import com.example.metchu.data.model.MenuDish
+import com.example.metchu.data.model.Offer
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.Place
+import com.example.metchu.ui.common.BottomSheet
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Pill
 import com.example.metchu.ui.common.PillDivider
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
+import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.common.cssShadow
 import com.example.metchu.ui.common.rememberLocationPermission
@@ -102,18 +109,26 @@ import kotlin.math.abs
  * The proposed dish over a Google map of the cafeterias that serve it. "Find another"
  * turns the dish down and asks on; back returns to the last question. Chips switch
  * between the dishes proposed so far in this session; "Find another" stays on all of
- * them and always turns down the server's current guess.
+ * them and always turns down the server's current guess. "Menu" on a cafeteria lists
+ * what else it serves at that meal; [menus] holds those lists, null while one loads.
+ * Under the dish, [onBan] keeps its group out of the rest of the session once the group
+ * makes up two of the last three proposals; a dish without a group can be banned alone at
+ * any time. A ban in [banned] can be lifted the same way.
  */
 @Composable
 fun ResultScreen(
     session: SessionState,
     shown: List<Step>,
     reasons: Map<String, String?>,
+    menus: Map<String, List<MenuDish>?>,
+    banned: Set<Ban>,
     place: Place,
     loading: Boolean,
     onBack: () -> Unit,
     onHome: () -> Unit,
-    onMore: () -> Unit
+    onMore: () -> Unit,
+    onMenu: (restaurant: String) -> Unit,
+    onBan: (Ban, banned: Boolean) -> Unit
 ) {
     val current = session.step
     var viewing by remember(shown.size, current.guessId) { mutableIntStateOf(shown.indexOfFirst { it.guessId == current.guessId }) }
@@ -125,6 +140,20 @@ fun ResultScreen(
     val cafeterias = remember(food, user, place) { cafeteriaList(food, user, place) }
     // By restaurant: the list re-sorts as the user moves, and one restaurant can have several lines.
     var selected by remember(food) { mutableStateOf(cafeterias.cafeterias.firstOrNull()?.offer?.restaurant) }
+    var menuOf by remember(food) { mutableStateOf<Offer?>(null) }
+    BackHandler(menuOf != null) { menuOf = null }
+
+    // Gson leaves a missing group null.
+    val kind = food.foodGroup.orEmpty().ifBlank { null }
+    val ban = if (kind != null) Ban(foodGroup = kind) else Ban(foodId = food.foodId)
+    val isBanned = ban in banned
+    val banLabel = when {
+        kind == null -> stringResource(if (isBanned) R.string.result_unban else R.string.result_ban)
+        isBanned -> stringResource(R.string.result_unban_group, kind)
+        (maxOf(viewing - 2, 0) until viewing).any { shown[it].food?.foodGroup == kind } ->
+            stringResource(R.string.result_ban_group, kind)
+        else -> null
+    }
 
     // Everything enters in a short sequence each time a dish is shown.
     val key = step.guessId ?: food.foodId.toString()
@@ -190,10 +219,16 @@ fun ResultScreen(
             reason = reasons[step.proposalId],
             writingReason = step.proposalId in reasons && reasons[step.proposalId] == null,
             caption = captionFor(session.meal),
+            banLabel = banLabel,
+            onBan = { if (!loading) onBan(ban, !isBanned) },
             cafeterias = cafeterias,
             place = place,
             selected = selected,
             onSelect = { selected = it },
+            onMenu = { offer ->
+                onMenu(offer.restaurant)
+                menuOf = offer
+            },
             revealed = revealed,
             stop = stop,
             onStop = settle,
@@ -205,6 +240,8 @@ fun ResultScreen(
             },
             modifier = Modifier.offset(y = sheetTop).height(height - sheetTop)
         )
+
+        MenuSheet(menuOf, menus, food.foodId) { menuOf = null }
     }
 }
 
@@ -269,10 +306,13 @@ private fun ResultSheet(
     reason: String?,
     writingReason: Boolean,
     @StringRes caption: Int,
+    banLabel: String?,
+    onBan: () -> Unit,
     cafeterias: CafeteriaList,
     place: Place,
     selected: String?,
     onSelect: (String) -> Unit,
+    onMenu: (Offer) -> Unit,
     revealed: Boolean,
     stop: SheetStop,
     onStop: (SheetStop) -> Unit,
@@ -353,6 +393,18 @@ private fun ResultSheet(
                         color = MetchuColors.Grey600
                     )
                 }
+                if (banLabel != null) {
+                    Text(
+                        banLabel,
+                        Modifier
+                            .padding(top = 2.dp)
+                            .clickable(role = Role.Button, onClick = onBan)
+                            .padding(vertical = 6.dp)
+                            .testTag("ban"),
+                        style = MetchuType.Caption.copy(textDecoration = TextDecoration.Underline),
+                        color = MetchuColors.Grey600
+                    )
+                }
             }
 
             Column(Modifier.rise(listIn, density)) {
@@ -369,7 +421,11 @@ private fun ResultSheet(
                 if (note != null) Text(stringResource(note), Modifier.padding(bottom = 6.dp), style = MetchuType.Caption)
                 if (cafeterias.cafeterias.isEmpty()) Text(stringResource(R.string.offer_none), style = MetchuType.Body)
                 cafeterias.cafeterias.forEach { cafeteria ->
-                    CafeteriaRow(cafeteria, cafeteria.offer.restaurant == selected) { onSelect(cafeteria.offer.restaurant) }
+                    CafeteriaRow(
+                        cafeteria, cafeteria.offer.restaurant == selected,
+                        onClick = { onSelect(cafeteria.offer.restaurant) },
+                        onMenu = { onMenu(cafeteria.offer) }
+                    )
                 }
             }
         }
@@ -380,7 +436,7 @@ private fun Modifier.rise(progress: Float, density: Density): Modifier =
     graphicsLayer { alpha = progress; translationY = with(density) { 12.dp.toPx() } * (1f - progress) }
 
 @Composable
-private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit) {
+private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit, onMenu: () -> Unit) {
     val ink by animateColorAsState(if (on) MetchuColors.Primary else MetchuColors.Grey600, tween(300), label = "row")
     val offer = cafeteria.offer
     Row(
@@ -403,6 +459,58 @@ private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit)
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(distanceText(meters), style = MetchuType.Item, color = ink)
                 Text(stringResource(R.string.walk_minutes, cafeteria.walkMinutes ?: 1), style = MetchuType.Caption)
+            }
+        }
+        Box(
+            Modifier
+                .height(32.dp)
+                .chipShadow()
+                .clip(CircleShape)
+                .background(Color.White)
+                .clickable(role = Role.Button, onClick = onMenu)
+                .padding(horizontal = 12.dp)
+                .testTag("menuButton"),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(stringResource(R.string.result_menu), style = MetchuType.Caption.copy(fontWeight = MetchuType.Label.fontWeight), color = MetchuColors.Grey900)
+        }
+    }
+}
+
+/**
+ * What [offer]'s cafeteria serves at its meal, from [menus]: a spinner while the list
+ * loads, a note if it could not. The list holds only the session's candidates, which
+ * the note under the title says. The dish on screen, [foodId], is orange.
+ */
+@Composable
+private fun MenuSheet(offer: Offer?, menus: Map<String, List<MenuDish>?>, foodId: Int, onDismiss: () -> Unit) {
+    // Kept while the sheet slides away.
+    var last by remember { mutableStateOf(offer) }
+    if (offer != null) last = offer
+    val shown = last
+    val title = shown?.let { stringResource(R.string.result_menu_title, it.restaurant, mealName(it.meal)) }.orEmpty()
+    BottomSheet(offer != null, title, onDismiss) {
+        Text(stringResource(R.string.result_menu_note), Modifier.padding(bottom = 4.dp), style = MetchuType.Caption)
+        if (shown != null) {
+            val dishes = menus[shown.restaurant]
+            when {
+                shown.restaurant !in menus -> Text(stringResource(R.string.result_menu_failed), style = MetchuType.Body)
+                dishes == null -> Spinner(MetchuColors.Primary, 28.dp, Modifier.align(Alignment.CenterHorizontally))
+                else -> Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()).testTag("menu")) {
+                    dishes.filter { it.meal == shown.meal }.forEach { dish ->
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Text(
+                                dish.displayName, Modifier.weight(1f), style = MetchuType.Item,
+                                color = if (dish.foodId == foodId) MetchuColors.Primary else MetchuColors.Grey900
+                            )
+                            Text(priceText(dish.price), style = MetchuType.Caption)
+                        }
+                    }
+                }
             }
         }
     }
