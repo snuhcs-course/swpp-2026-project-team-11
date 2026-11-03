@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -146,6 +147,17 @@ class MainActivityTest {
         // Chosen, so the next launch goes straight to the start screen.
         relaunch()
         compose.onNodeWithTag("start").assertIsDisplayed()
+    }
+
+    @Test
+    fun pickingAnAllergyMovesNoChip() {
+        tap("settings")
+        val chips = Allergen.entries.map { "allergen_${it.id}" }
+        fun bounds() = chips.map { compose.onNodeWithTag(it).getBoundsInRoot() }
+        val before = bounds()
+        tap("allergen_${Allergen.EGG.id}")
+        tap("allergen_${Allergen.SOYBEAN.id}")
+        assertEquals(before, bounds())
     }
 
     @Test
