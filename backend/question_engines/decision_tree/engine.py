@@ -88,7 +88,7 @@ class DecisionTreeEngine:
     def probabilities(self):
         if self.model is None:
             return {}
-        values = np.einsum("zf,z->f", self.model.intent_to_food, self.belief)
+        values = self.model.food_belief(self.belief)
         return {c.food_id: float(value) for c, value in zip(self.catalog.candidates, values)}
 
     @property
@@ -170,7 +170,7 @@ class DecisionTreeEngine:
         return copy.deepcopy(self._pending)
 
     def _greedy_action(self):
-        acceptance = np.einsum("vz,z->v", self.model.acceptance, self.belief)
+        acceptance = self.model.acceptance_probabilities(self.belief)
         allowed = self.model.proposal_mask(self._rejected)
         if not np.any(allowed):
             return None
@@ -236,7 +236,7 @@ class DecisionTreeEngine:
             if before["type"] != "guess" or before["guess_id"] != event["guess_id"] or type(event["accepted"]) is not bool:
                 raise ValueError("Feedback does not match the recorded guess")
             pi = self.model.node_index[event["guess_id"]]
-            acceptance = self.model.acceptance[pi]
+            acceptance = self.model.acceptance_row(pi)
             self.belief *= acceptance if event["accepted"] else 1 - acceptance
             self.belief = np.maximum(self.belief, np.finfo(float).tiny)
             self.belief /= self.belief.sum()
