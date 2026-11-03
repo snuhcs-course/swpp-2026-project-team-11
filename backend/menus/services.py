@@ -1,12 +1,12 @@
 """What the question engines read from the menu DB.
 
-    get_catalog(date, meal, allergies) -> candidates, feature schema
+    get_catalog(date, meal, allergies) -> matching candidates, schema
     get_store_catalog(meal, allergies) -> the same for the restaurants near the stations
-    get_feature_schema()          -> feature schema
+    get_feature_schema()         -> current schema
 
-Session candidates are actual sales menus, named exactly as the restaurant lists
-them. Preprocessing's main-dish vectors are RMS-composed for each whole menu; a menu
-is served only when every main dish has current (FEATURE_VERSION) features.
+These readers perform SELECTs only; source writers and imports prepare IDs.
+Session candidates are actual sales menus. Source prices/notices are removed
+from their titles. Imported whole-menu profiles take precedence over RMS mains.
 
 `allergies` (menus/allergens.py keys) is a hard rule: a menu line is never offered when
 one of its dishes is tagged with one of them or has no current allergen tags. A combo
@@ -27,11 +27,13 @@ from typing import NamedTuple
 import time
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 
 from .allergens import ALLERGEN_VERSION
 from .features.schema import FEATURE_VERSION, FEATURES
-from .models import Food, MenuItem, StoreMenu
+from .models import Food, MenuItem, SalesMenu, StoreMenu
+from .menu_profiles import description_digest, equivalent_menu_key, offer_key, recipe_key, title, validate_features
 
 logger = logging.getLogger(__name__)
 MEAL_ORDER = {"BR": 0, "LU": 1, "DN": 2}
@@ -50,6 +52,7 @@ class SalesLine(NamedTuple):
     food_id: int | None
     allergens: list
     allergen_version: str
+    restaurant_code: str
 
 
 def get_feature_schema() -> list[dict]:
@@ -75,12 +78,12 @@ def get_catalog(date: datetime.date | None = None, meal: str | None = None,
         records.append(SalesLine(item.pk, place.pk, place.name, place.lat, place.lng, item.meal,
                         item.raw_name, "", item.price, item.food_id,
                         item.food.allergens if item.food_id else [],
-                        item.food.allergen_version if item.food_id else ""))
+                        item.food.allergen_version if item.food_id else "", place.code))
     menus = _menu_lines(records, foods, allergies)
-    rows = _menu_candidates(menus, _dish_groups(foods))
-    log = logger.warning if len(rows) < len(menus) else logger.info
-    log("%s %s: serving %d/%d actual menus with feature_version=%s",
-        date, meal or "ALL", len(rows), len(menus), FEATURE_VERSION)
+    version = FEATURE_VERSION
+    rows = _menu_candidates(menus, _dish_groups(foods), source="cafeteria")
+    logger.info("%s %s: serving %d recommendations from %d source menus with feature_version=%s",
+        date, meal or "ALL", len(rows), len(menus), version)
     return rows, get_feature_schema()
 
 
@@ -91,13 +94,12 @@ def _menu_lines(records, foods, allergies):
         grouped[(row.restaurant_id, row.meal, row.raw_name, row.description, row.price)].append(row)
     menus = []
     for rows in grouped.values():
-        if any(not row.food_id or row.food_id not in foods or foods[row.food_id].is_food is not True for row in rows):
-            continue
         if allergies and any(row.allergen_version != ALLERGEN_VERSION or not allergies.isdisjoint(row.allergens) for row in rows):
             continue
-        parts = {row.food_id: foods[row.food_id] for row in rows}
+        complete = all(row.food_id in foods and foods[row.food_id].is_food is True for row in rows)
+        parts = {row.food_id: foods[row.food_id] for row in rows if row.food_id in foods}
         versions = {f.feature_version for f in parts.values()}
-        version = versions.pop() if len(versions) == 1 else None
+        version = versions.pop() if complete and len(versions) == 1 else None
         menus.append((rows, list(parts.values()), version))
     return menus
 
@@ -107,9 +109,6 @@ def rms_components(components):
     if not components or any(not isinstance(f.features, dict) or
                              not isinstance(f.feature_std, dict) for f in components):
         raise ValueError("A menu requires keyed features for every main dish")
-    if len(components) == 1:
-        f = components[0]
-        return dict(f.features), dict(f.feature_std)
     means = [f.features for f in components]
     if any(set(row) != set(means[0]) for row in means):
         raise ValueError("All components of a menu must have the same feature keys")
@@ -123,9 +122,13 @@ def rms_components(components):
             if (isinstance(std, bool) or not isinstance(std, (int, float)) or not math.isfinite(std)
                     or not 0 <= std <= .5 or std * std > value * (1-value) + 1e-12):
                 raise ValueError("Invalid component recipe spread")
+    if len(components) == 1:
+        return dict(components[0].features), dict(components[0].feature_std)
     def rms(rows):
         return {key: math.sqrt(math.fsum(row[key] ** 2 for row in rows) / len(rows)) for key in means[0]}
-    return rms(means), rms([f.feature_std for f in components])
+    values = rms(means)
+    deviations = rms([f.feature_std for f in components])
+    return values, deviations
 
 
 def _dish_groups(foods: dict) -> dict[int, str]:
@@ -135,22 +138,63 @@ def _dish_groups(foods: dict) -> dict[int, str]:
     return {pk: f.food_group or singles.get(f.name, "") for pk, f in foods.items()}
 
 
-def _menu_candidates(menus, groups):
+def _menu_candidates(menus, groups, *, source):
+    """Imported whole-menu profiles take precedence; otherwise compose complete mains.
+
+    The durable registry is separate from replaceable source rows. Profile keys
+    are restaurant-scoped; equal computed recipes can still share several offers.
+    """
+    keys = {offer_key(source, rows[0].restaurant_code, rows[0].raw_name, rows[0].description)
+            for rows, _, _ in menus}
+    keys.update(recipe_key(source, rows[0].raw_name, rows[0].description, parts)
+                for rows, parts, _ in menus)
+    codes = {rows[0].restaurant_code for rows, _, _ in menus}
+    profiles = {p.key: p for p in SalesMenu.objects.filter(
+        Q(key__in=keys) | (Q(source=source, restaurant_code__in=codes) & ~Q(feature_version="")))}
+    annotated_titles = {(p.restaurant_code, p.name) for p in profiles.values() if p.feature_version}
     combined = {}
-    for rows, parts, version in menus:
-        if version != FEATURE_VERSION:
-            continue
+    for rows, parts, current in menus:
         row = rows[0]
-        identity = (row.raw_name, row.description, tuple(sorted(f.pk for f in parts)))
-        if identity not in combined:
-            values, deviations = rms_components(parts)
-            candidate = {"food_id": min(r.id for r in rows), "name": row.raw_name, "display_name": row.raw_name,
+        profile = profiles.get(offer_key(source, row.restaurant_code, row.raw_name, row.description))
+        annotated = profile is not None and bool(profile.feature_version)
+        try:
+            if annotated:
+                if (profile.feature_version != FEATURE_VERSION
+                        or profile.description_sha256 != description_digest(row.description)):
+                    logger.warning("Withholding changed/stale menu profile: %s %s", row.restaurant_code, row.raw_name)
+                    continue
+                values, deviations = dict(profile.features), dict(profile.feature_std)
+                identity = profile.key
+            else:
+                if (row.restaurant_code, title(row.raw_name)) in annotated_titles:
+                    logger.warning("Withholding changed menu description: %s %s", row.restaurant_code, row.raw_name)
+                    continue
+                if current != FEATURE_VERSION:
+                    logger.warning("Withholding untagged/partial menu: %s %s", row.restaurant_code, row.raw_name)
+                    continue
+                values, deviations = rms_components(parts)
+                identity = recipe_key(source, row.raw_name, row.description, parts)
+            validate_features(values, deviations)
+        except (ValueError, TypeError, KeyError) as error:
+            logger.warning("Withholding invalid menu profile: %s %s (%s)", row.restaurant_code, row.raw_name, error)
+            continue
+        registered = profiles.get(identity)
+        if registered is None:
+            logger.warning("Unregistered menu; run register_menu_ids: %s %s", row.restaurant_code, row.raw_name)
+            continue
+        components = profile.annotation_metadata.get("components") if annotated else None
+        if not isinstance(components, list) or not components or not all(isinstance(c, str) for c in components):
+            components = [part.name for part in parts]
+        equivalent = equivalent_menu_key(title(row.raw_name), row.description, components, values, deviations)
+        if equivalent not in combined:
+            candidate = {"food_id": registered.pk, "name": title(row.raw_name), "display_name": title(row.raw_name),
                          "food_group": parts[0].food_group if len(parts) == 1 else "",
                          "food_groups": sorted({groups[f.pk] for f in parts} - {""}),
                          "menu_profile": "rms-v1", "features": values, "feature_std": deviations, "offers": []}
-            combined[identity] = candidate
-        candidate = combined[identity]
-        candidate["food_id"] = min(candidate["food_id"], *(r.id for r in rows))
+            combined[equivalent] = candidate
+        candidate = combined[equivalent]
+        candidate["food_id"] = min(candidate["food_id"], registered.pk)
+        candidate["food_groups"] = sorted(set(candidate["food_groups"]) | {groups[f.pk] for f in parts} - {""})
         offer = {"restaurant": row.restaurant, "meal": row.meal, "price": row.price, "lat": row.lat, "lng": row.lng}
         if offer not in candidate["offers"]:
             candidate["offers"].append(offer)
@@ -175,7 +219,7 @@ def _read_store_menus() -> tuple[list[tuple], dict, dict]:
     if _store_menus is None or now - _store_menus[0] >= settings.RECOMMEND_STORE_MENU_CACHE_S:
         rows = list(StoreMenu.objects.order_by("pk").values_list(
             "pk", "restaurant_id", "restaurant__name", "restaurant__lat", "restaurant__lng",
-            "raw_name", "description", "price", "food_id", "allergens", "allergen_version"))
+            "raw_name", "description", "price", "food_id", "allergens", "allergen_version", "restaurant__code"))
         foods = Food.objects.filter(pk__in=StoreMenu.objects.values("food_id")).in_bulk()
         _store_menus = (now, rows, foods, _dish_groups(foods))
     return _store_menus[1:]
@@ -188,4 +232,5 @@ def get_store_catalog(meal: str | None = None,
     meal = meal or current_meal()
     records = [SalesLine(*row[:5], meal, *row[5:]) for row in rows]
     menus = _menu_lines(records, foods, allergies)
-    return _menu_candidates(menus, groups), get_feature_schema()
+    candidates = _menu_candidates(menus, groups, source="general")
+    return candidates, get_feature_schema()

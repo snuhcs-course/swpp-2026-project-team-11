@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 
 class Restaurant(models.Model):
@@ -50,6 +50,26 @@ class Food(models.Model):
         return self.name
 
 
+class SalesMenu(models.Model):
+    """Durable recommendation ID and optional externally annotated whole-menu profile.
+
+    Keys exclude dates, prices and replaceable MenuItem/StoreMenu primary keys.
+    Empty profiles register a computed recipe; annotated profiles belong to a
+    source restaurant and title and retain the source description fingerprint.
+    """
+
+    key = models.CharField(max_length=64, unique=True)
+    source = models.CharField(max_length=20)
+    restaurant_code = models.CharField(max_length=100, blank=True)
+    name = models.CharField(max_length=500)
+    description_sha256 = models.CharField(max_length=64, blank=True)
+    features = models.JSONField(default=dict, blank=True)
+    feature_std = models.JSONField(default=dict, blank=True)
+    feature_version = models.CharField(max_length=10, blank=True)
+    annotation_metadata = models.JSONField(default=dict, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class MenuLine(models.Model):
     """A distinct menu line (by normalize.dish_key) and the dishes it stands for.
 
@@ -92,6 +112,14 @@ class MenuItem(models.Model):
     price = models.IntegerField(null=True, blank=True)
     no_meat = models.BooleanField(default=False)
 
+    def save(self, *args, **kwargs):
+        from .menu_registry import register_menu_ids
+        using = kwargs.get("using") or self._state.db or "default"
+        with transaction.atomic(using=using):
+            super().save(*args, **kwargs)
+            register_menu_ids("cafeteria", using=using, date=self.date,
+                              restaurant_ids=[self.restaurant_id], raw_name=self.raw_name)
+
     class Meta:
         constraints = [
             # A combo line ("돈가스 카레우동") is stored once per dish it contains, so
@@ -126,6 +154,13 @@ class StoreMenu(models.Model):
     price = models.IntegerField(null=True, blank=True)
     allergens = models.JSONField(default=list, blank=True)
     allergen_version = models.CharField(max_length=10, blank=True)
+
+    def save(self, *args, **kwargs):
+        from .menu_registry import register_menu_ids
+        using = kwargs.get("using") or self._state.db or "default"
+        with transaction.atomic(using=using):
+            super().save(*args, **kwargs)
+            register_menu_ids("general", using=using, restaurant_ids=[self.restaurant_id], raw_name=self.raw_name)
 
     class Meta:
         constraints = [
