@@ -58,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.os.LocaleListCompat
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
@@ -103,6 +104,7 @@ fun StartScreen(
     onMeal: (Meal) -> Unit,
     onPlace: (Place) -> Unit,
     onSettings: () -> Unit,
+    onResume: (() -> Unit)?,
     onStart: (Meal) -> Unit
 ) {
     val nowMeal = remember { Meal.now() }
@@ -130,7 +132,10 @@ fun StartScreen(
         if (BuildConfig.HAS_MAPS_KEY) StartMap(user ?: CampusCenter)
 
         Column(Modifier.statusBarsPadding().alpha(words)) {
-            TopRow(arrangement = Arrangement.End) {}
+            // Home tapped by mistake: the session left is one tap away.
+            TopRow(arrangement = Arrangement.End) {
+                if (onResume != null) ResumeButton(onResume)
+            }
             Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp)) {
                 val title = MetchuType.Title
                 Text(stringResource(R.string.start_line1), style = title)
@@ -218,6 +223,27 @@ private fun StartButton(loading: Boolean, onClick: () -> Unit, modifier: Modifie
         // Finding the user and starting the session can take seconds.
         if (rememberSlow(loading)) Spinner(Color.White, 32.dp)
         else Text(stringResource(R.string.start_button), style = MetchuType.Button, color = Color.White, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun ResumeButton(onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    Row(
+        Modifier
+            .height(44.dp)
+            .pressScale(interaction, 0.95f)
+            .floating()
+            .clip(CircleShape)
+            .background(Color.White)
+            .clickable(interaction, indication = null, role = Role.Button, onClick = onClick)
+            .padding(start = 12.dp, end = 16.dp)
+            .testTag("resume"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Image(Icons.Resume, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900))
+        Text(stringResource(R.string.resume), style = MetchuType.Button.copy(fontSize = 15.sp))
     }
 }
 

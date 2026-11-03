@@ -255,6 +255,7 @@ object Icons {
     val Home = line("home", "M3.5 11L12 3.8 20.5 11M6 9.2V20h12V9.2M10 20v-5.5h4V20", 2.1f)
     val FastForward = line("fastForward", "M6 6l6 6-6 6M13 6l6 6-6 6", 2.2f)
     val Plus = line("plus", "M12 5v14M5 12h14", 2.2f)
+    val Resume = line("resume", "M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11", 2.1f)
 
     /** Locate: a target with four ticks. */
     val Locate = line("locate", "M18.5 12a6.5 6.5 0 1 1-13 0 6.5 6.5 0 1 1 13 0M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3", 2f)
