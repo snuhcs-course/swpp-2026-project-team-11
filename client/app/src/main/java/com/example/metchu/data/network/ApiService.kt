@@ -1,12 +1,14 @@
 package com.example.metchu.data.network
 
 import com.example.metchu.data.model.Reason
+import com.example.metchu.data.model.RestaurantMenu
 import com.example.metchu.data.model.SessionState
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 /**
  * The contract with backend/recommend/views.py. Field names must match its JSON.
@@ -38,6 +40,12 @@ data class AnswerRequest(
 data class FeedbackRequest(
     @SerializedName("guess_id") val guessId: String,
     val accepted: Boolean
+)
+
+data class BanRequest(
+    @SerializedName("food_id") val foodId: Int?,
+    @SerializedName("food_group") val foodGroup: String?,
+    val banned: Boolean
 )
 
 /** Body of a non-2xx response. `state` is only sent with a 409 stale_step. */
@@ -72,6 +80,12 @@ interface ApiService {
     @POST("api/sessions/{id}/undo/")
     suspend fun undo(@Path("id") sessionId: String): SessionState
 
+    @POST("api/sessions/{id}/ban/")
+    suspend fun ban(@Path("id") sessionId: String, @Body request: BanRequest): SessionState
+
     @GET("api/sessions/{id}/reason/")
     suspend fun reason(@Path("id") sessionId: String): Reason
+
+    @GET("api/sessions/{id}/menu/")
+    suspend fun menu(@Path("id") sessionId: String, @Query("restaurant") restaurant: String): RestaurantMenu
 }
