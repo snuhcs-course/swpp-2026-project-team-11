@@ -145,18 +145,27 @@ fun Pill(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     ) { content() }
 }
 
+/** A disabled segment stays in place, greyed, so the pill never changes shape under a finger. */
 @Composable
-fun PillSegment(text: String, onClick: () -> Unit, color: Color = MetchuColors.Grey900, start: Dp = 18.dp, end: Dp = 18.dp) {
+fun PillSegment(
+    text: String,
+    onClick: () -> Unit,
+    color: Color = MetchuColors.Grey900,
+    start: Dp = 18.dp,
+    end: Dp = 18.dp,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
+) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     Box(
-        Modifier
+        modifier
             .height(44.dp)
             .background(if (pressed) MetchuColors.Grey100 else Color.Transparent)
-            .clickable(interaction, indication = null, role = Role.Button, onClick = onClick)
+            .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(start = start, end = end),
         contentAlignment = Alignment.Center
-    ) { Text(text, style = MetchuType.Label, color = color, maxLines = 1) }
+    ) { Text(text, style = MetchuType.Label, color = if (enabled) color else MetchuColors.Grey400, maxLines = 1) }
 }
 
 @Composable
