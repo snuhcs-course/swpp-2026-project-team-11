@@ -285,6 +285,14 @@ class MainActivityTest {
     }
 
     @Test
+    fun startOverLeavesAQuestion() {
+        startWith(question.copy(canUndo = true, step = question.step.copy(questionCount = 1)))
+        tap("home")
+        compose.onNodeWithTag("start").assertIsDisplayed()
+        assertEquals(emptyList<String>(), api.calls.toList())
+    }
+
+    @Test
     fun anAnsweredQuestionStaysAboveAndCanBeRevisited() {
         startWith(question)
         val next = question.copy(
