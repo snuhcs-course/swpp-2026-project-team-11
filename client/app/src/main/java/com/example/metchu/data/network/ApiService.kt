@@ -20,14 +20,16 @@ import retrofit2.http.Query
  * IDs the server must never propose, or is null for none. [CreateSessionRequest.language]
  * is "en" or "ko", the language of every text the server sends, or null for English.
  * Gson leaves a null field out of the body. The menu date is the server's decision, so
- * the phone does not send one.
+ * the phone does not send one. `source=all` combines cafeteria and restaurant menus.
  */
 data class CreateSessionRequest(
     val meal: String?,
     val engine: String? = null,
     val location: UserLocation?,
     val allergies: List<String>?,
-    val language: String? = null
+    val language: String? = null,
+    val source: String? = null,
+    @SerializedName("distance_scope") val distanceScope: String? = null
 )
 
 data class UserLocation(val lat: Double, val lng: Double)
@@ -57,6 +59,7 @@ data class ApiError(val code: String, val message: String) {
         const val ENGINE_UNAVAILABLE = "engine_unavailable"
         /** 400: the server rejected a request field, such as an unsupported engine ID. */
         const val INVALID_REQUEST = "invalid_request"
+        const val ALL_SOURCE_LLM_UNSUPPORTED = "all_source_llm_unsupported"
     }
 }
 

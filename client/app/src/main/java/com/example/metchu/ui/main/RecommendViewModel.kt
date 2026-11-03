@@ -90,11 +90,13 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         engine: String? = null,
         location: LocationSource? = null,
         allergies: List<Allergen> = emptyList(),
-        language: String? = null
+        language: String? = null,
+        source: String? = null,
+        distanceScope: String? = null
     ) {
         if (_loading.value == true) return
         forgetSession()
-        request { repository.createSession(meal, engine, location?.current(), allergies, language) }
+        request { repository.createSession(meal, engine, location?.current(), allergies, language, source, distanceScope) }
     }
 
     /**
@@ -221,6 +223,10 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
                 _session.value = null
                 forgetSession()
                 _error.value = UiError(R.string.error_session_lost, canRetry = false)
+            }
+            e.code() == 400 && body?.error?.code == ApiError.ALL_SOURCE_LLM_UNSUPPORTED && _session.value == null -> {
+                lastRequest = null
+                _error.value = UiError(R.string.error_all_source_llm, canRetry = false)
             }
             // An older API can reject a new engine ID at session creation.
             e.code() == 400 && body?.error?.code == ApiError.INVALID_REQUEST && _session.value == null -> {

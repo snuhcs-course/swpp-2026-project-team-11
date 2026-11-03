@@ -1,6 +1,6 @@
 """HTTP glue between the Android client and the question engine.
 
-    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?,
+    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?, "distance_scope"?,
                           "language"?}                                       -> 201 state
     GET  /api/sessions/<id>/                                               -> state
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
@@ -46,8 +46,8 @@ them; no dish that may contain one is proposed. `language` is "en" (default) or 
 every text the session sends is in it, except dish and cafeteria names, which stay Korean.
 
 `source` is "cafeteria" (default), the day's SNU cafeteria menu, or "general", the
-restaurants near 서울대입구역 and 낙성대역. A general session ignores `date` and
-supports "decision_tree" and "rl"; asking for "llm" is a 400. An omitted engine
+restaurants near 서울대입구역 and 낙성대역, or "all" for both. General and all
+sessions support "decision_tree" and "rl"; asking for "llm" is a 400. An omitted engine
 uses the server default, falling back to the decision tree for a general session
 if that default is "llm".
 """
@@ -126,13 +126,18 @@ def create_session(request):
             raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
         if source == "general" and engine == "llm":
             raise ValueError("The general source supports the decision_tree and rl engines.")
+        distance_scope = payload.get("distance_scope")
+        if distance_scope is not None and distance_scope not in ("near", "any"):
+            raise ValueError("distance_scope must be near or any.")
         language = payload.get("language", "en")
         if language not in LANGUAGES:
             raise ValueError(f"language must be one of {', '.join(LANGUAGES)}.")
     except ValueError as error:  # includes json.JSONDecodeError
         return _error(400, "invalid_request", str(error))
+    if source == "all" and engine == "llm":
+        return _error(400, "all_source_llm_unsupported", "All restaurants supports the decision tree and RL engines.")
     try:
-        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language)
+        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language, distance_scope)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     return JsonResponse(session.public_state(), status=201)
