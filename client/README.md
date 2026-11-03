@@ -147,7 +147,9 @@ The start screen asks for location once. With it, a new session sends where the
 device is: a current fix, or the last known location when none comes within 3
 seconds (the start button shows it is loading meanwhile); the server then gives
 each cafeteria's `distance_m`. The start map centers on the user, the result map
-shows the user's position, and the cafeteria list shows distances and walking
+shows the user's position and fits it with the cafeterias (once, when the first
+fix arrives, and only within 3 km of one, so a phone off campus keeps the
+map on the cafeterias), and the cafeteria list shows distances and walking
 times, nearest first. Without it the start map shows the middle of campus, the
 session starts without a location and the list has no distances. On the
 emulator, set a position under Extended controls > Location (for example
