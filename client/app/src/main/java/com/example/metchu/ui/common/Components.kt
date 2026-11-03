@@ -290,6 +290,8 @@ object Icons {
     val Home = line("home", "M3.5 11L12 3.8 20.5 11M6 9.2V20h12V9.2M10 20v-5.5h4V20", 2.1f)
     val FastForward = line("fastForward", "M6 6l6 6-6 6M13 6l6 6-6 6", 2.2f)
     val Plus = line("plus", "M12 5v14M5 12h14", 2.2f)
+    /** A menu card: a rounded sheet with three lines, the last one short. */
+    val Menu = line("menu", "M7.5 3h9A2.5 2.5 0 0 1 19 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18.5v-13A2.5 2.5 0 0 1 7.5 3zM8.5 8h7M8.5 12h7M8.5 16h4", 2f)
     val Resume = line("resume", "M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11", 2.1f)
 
     /** Locate: a target with four ticks. */
