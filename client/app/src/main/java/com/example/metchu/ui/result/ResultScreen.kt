@@ -28,6 +28,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -161,7 +165,7 @@ fun ResultScreen(
                 when (stop) {
                     SheetStop.FULL -> statusPx + 73.dp.toPx()
                     SheetStop.HALF -> heightPx * 0.474f
-                    SheetStop.PEEK -> heightPx - navPx - 96.dp.toPx()
+                    SheetStop.PEEK -> heightPx - navPx - 80.dp.toPx()
                 }
             }
         }
@@ -379,32 +383,41 @@ private fun ResultSheet(
             .clip(shape)
             .background(Color.White)
     ) {
+        // The handle and everything above the cafeterias move the sheet: drag it, or tap for the next stop.
+        val tap by rememberUpdatedState(onTap)
+        val drag by rememberUpdatedState(onDrag)
+        val release by rememberUpdatedState(onRelease)
         var moved by remember { mutableFloatStateOf(0f) }
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(36.dp)
-                .clickable(role = Role.Button, onClickLabel = toggle, onClick = onTap)
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures(
-                        onDragStart = { moved = 0f },
-                        onDragEnd = { onRelease(moved) },
-                        onDragCancel = { onRelease(moved) }
-                    ) { change, dy ->
-                        change.consume()
-                        moved += dy
-                        onDrag(dy)
-                    }
+        val grip = Modifier
+            .pointerInput(Unit) { detectTapGestures { tap() } }
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onDragStart = { moved = 0f },
+                    onDragEnd = { release(moved) },
+                    onDragCancel = { release(moved) }
+                ) { change, dy ->
+                    change.consume()
+                    moved += dy
+                    drag(dy)
                 }
-                .semantics { contentDescription = toggle },
+            }
+        Box(
+            grip
+                .fillMaxWidth()
+                .height(20.dp)
+                .semantics {
+                    contentDescription = toggle
+                    role = Role.Button
+                    onClick(toggle) { onTap(); true }
+                },
             contentAlignment = Alignment.Center
         ) {
-            Box(Modifier.width(32.dp).height(4.dp).clip(CircleShape).background(MetchuColors.Grey300))
+            Box(Modifier.width(38.dp).height(3.5.dp).clip(CircleShape).background(MetchuColors.Grey300))
         }
         val dish = group?.displayName ?: food.displayName
         if (peek) {
             // Folded: what and how much on the left, clear of the facts and the + button on the right.
-            Column(Modifier.padding(start = 20.dp, end = 200.dp).testTag("dish")) {
+            Column(grip.fillMaxWidth().padding(start = 20.dp, end = 200.dp).testTag("dish")) {
                 Text(dish, style = MetchuType.Item.copy(fontSize = 18.sp, lineHeight = 22.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 chosen?.let { Text(priceText(it.offer.price), style = PeekSecondStyle, color = MetchuColors.Grey700) }
             }
@@ -418,7 +431,7 @@ private fun ResultSheet(
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Column(Modifier.padding(horizontal = 20.dp).rise(titleIn, density)) {
+            Column(grip.fillMaxWidth().padding(horizontal = 20.dp).rise(titleIn, density)) {
                 Text(stringResource(caption), Modifier.padding(bottom = 2.dp), style = MetchuType.Caption)
                 Text(dish, Modifier.testTag("dish"), style = MetchuType.Title)
                 val description = when {
