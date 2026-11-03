@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.metchu.data.location.LocationSource
@@ -373,6 +374,23 @@ class MainActivityTest {
         startWith(guess)
         compose.onNodeWithTag("dish").assertIsDisplayed()
         compose.onNodeWithTag("reasonWriting").assertDoesNotExist()
+    }
+
+    @Test
+    fun menuListsWhatTheCafeteriaServes() {
+        val menu = Fixtures.menu()
+        api.menu = menu
+        startWith(guess)
+        tap("menuButton")
+        assertEquals(listOf("${guess.sessionId} ${menu.restaurant}"), api.menuCalls.toList())
+        compose.onNodeWithTag("menu").assertIsDisplayed()
+        compose.onNodeWithText(menu.dishes.first().displayName).assertIsDisplayed()
+
+        // Back closes the list and stays on the dish.
+        Espresso.pressBack()
+        compose.onNodeWithTag("menu").assertDoesNotExist()
+        compose.onNodeWithTag("dish").assertIsDisplayed()
+        assertEquals(emptyList<String>(), api.calls.toList())
     }
 
     @Test

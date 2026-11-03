@@ -1,6 +1,7 @@
 package com.example.metchu
 
 import com.example.metchu.data.model.Reason
+import com.example.metchu.data.model.RestaurantMenu
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.AnswerRequest
 import com.example.metchu.data.network.ApiService
@@ -13,13 +14,16 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * Records each call as text and answers from a queue of replies. Reason requests are
  * recorded apart, in [reasonCalls], and answered with [reason]; without one they fail
- * as an unreachable server would.
+ * as an unreachable server would. Menu requests likewise go to [menuCalls], as
+ * "<session> <restaurant>", and are answered with [menu].
  */
 class FakeApi : ApiService {
     val calls = CopyOnWriteArrayList<String>()
     val reasonCalls = CopyOnWriteArrayList<String>()
     var reason: Reason? = null
     var heldReason: CompletableDeferred<Reason>? = null
+    val menuCalls = CopyOnWriteArrayList<String>()
+    var menu: RestaurantMenu? = null
     private val replies = ArrayDeque<suspend () -> SessionState>()
 
     fun reply(state: SessionState) { replies.add { state } }
@@ -56,5 +60,9 @@ class FakeApi : ApiService {
         val gate = heldReason
         heldReason = null
         return gate?.await() ?: reason ?: throw IOException("no reason")
+    }
+    override suspend fun menu(sessionId: String, restaurant: String): RestaurantMenu {
+        menuCalls.add("$sessionId $restaurant")
+        return menu ?: throw IOException("no menu")
     }
 }
