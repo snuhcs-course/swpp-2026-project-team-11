@@ -161,6 +161,16 @@ class ContractJsonTest {
         assertEquals(Fixtures.state("question"), parse(json).checked())
     }
 
+    @Test
+    fun restaurantMenu() {
+        val menu = Fixtures.menu()
+        assertEquals("301동식당", menu.restaurant)
+        assertTrue(menu.dishes.size > 1)
+        assertTrue(menu.dishes.all { it.displayName.isNotBlank() && it.meal == "LU" })
+        // A set is one menu at its whole price, not one row per dish in it.
+        assertEquals(6500, menu.dishes.single { it.displayName == "(뚝)삼겹살김치찌개&생선가스" }.price)
+    }
+
     /** Gson leaves a missing field null. [checked] must refuse it before the screen draws. */
     @Test
     fun incompleteRepliesAreRejected() {

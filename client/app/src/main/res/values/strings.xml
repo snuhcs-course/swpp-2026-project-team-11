@@ -115,6 +115,14 @@
     <string name="distance_km">%1$.1f km</string>
     <string name="walk_minutes">%1$d min walk</string>
     <string name="offer_none">No cafeteria listed</string>
+    <string name="result_menu">Menu</string>
+    <string name="result_menu_title">%1$s · %2$s menu</string>
+    <string name="result_menu_note">Only dishes Metchu can suggest</string>
+    <string name="result_menu_failed">Couldn’t load the menu. Close this and try again.</string>
+    <string name="result_ban">Don’t suggest this dish</string>
+    <string name="result_unban">Left out of this session · Undo</string>
+    <string name="result_ban_group">Don’t suggest any %1$s</string>
+    <string name="result_unban_group">No %1$s this session · Undo</string>
 
     <!-- unavailable -->
     <string name="unavailable_no_menu">There is no %1$s menu for %2$s yet. Try another meal.</string>

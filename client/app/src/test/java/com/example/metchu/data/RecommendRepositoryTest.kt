@@ -2,6 +2,7 @@ package com.example.metchu.data
 
 import com.example.metchu.Fixtures
 import com.example.metchu.data.model.Allergen
+import com.example.metchu.data.model.Ban
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.RetrofitInstance
@@ -81,6 +82,19 @@ class RecommendRepositoryTest {
         reply("question", 201)
         repository.createSession("LU", language = "ko")
         assertEquals("""{"meal":"LU","language":"ko"}""", server.takeRequest().json().toString())
+    }
+
+    @Test
+    fun banSendsTheDishOrTheGroup() = runTest {
+        reply("guess_food")
+        repository.ban("abc", Ban(foodId = 7), banned = true)
+        val request = server.takeRequest()
+        assertEquals("/api/sessions/abc/ban/", request.path)
+        assertEquals("""{"food_id":7,"banned":true}""", request.json().toString())
+
+        reply("guess_food")
+        repository.ban("abc", Ban(foodGroup = "국수"), banned = false)
+        assertEquals("""{"food_group":"국수","banned":false}""", server.takeRequest().json().toString())
     }
 
     /** The server refuses the LLM engine when it has no API key; the body says so. */

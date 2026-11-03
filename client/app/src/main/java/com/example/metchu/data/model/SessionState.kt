@@ -27,6 +27,25 @@ data class Reason(
     val reason: String
 )
 
+/** What one restaurant serves in the session (GET .../menu/), breakfast first, then by name. */
+data class RestaurantMenu(
+    val restaurant: String,
+    val dishes: List<MenuDish>
+)
+
+data class MenuDish(
+    @SerializedName("food_id") val foodId: Int,
+    @SerializedName("display_name") val displayName: String,
+    val meal: String,
+    val price: Int?
+)
+
+/** What a ban covers for the rest of a session: one dish ([foodId]) or every dish of a [foodGroup]. */
+data class Ban(
+    val foodId: Int? = null,
+    val foodGroup: String? = null
+)
+
 /** The question engines the server can run a session with; see [SessionState.engine]. */
 object Engine {
     /** P10: picks each question from the dishes' extracted features. Answers at once. */
