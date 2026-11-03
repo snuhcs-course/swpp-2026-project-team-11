@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
+import com.example.metchu.data.model.Ban
 import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.Offer
 import com.example.metchu.data.model.SessionState
@@ -110,8 +111,9 @@ import kotlin.math.abs
  * between the dishes proposed so far in this session; "Find another" stays on all of
  * them and always turns down the server's current guess. "Menu" on a cafeteria lists
  * what else it serves at that meal; [menus] holds those lists, null while one loads.
- * Under the dish, [onBan] keeps it out of the rest of the session, or lets it back if it
- * is among the [banned] food IDs.
+ * Under the dish, [onBan] keeps its group out of the rest of the session once two
+ * proposals in a row share that group; a dish without a group can be banned alone at
+ * any time. A ban in [banned] can be lifted the same way.
  */
 @Composable
 fun ResultScreen(
@@ -119,14 +121,14 @@ fun ResultScreen(
     shown: List<Step>,
     reasons: Map<String, String?>,
     menus: Map<String, List<MenuDish>?>,
-    banned: Set<Int>,
+    banned: Set<Ban>,
     place: Place,
     loading: Boolean,
     onBack: () -> Unit,
     onHome: () -> Unit,
     onMore: () -> Unit,
     onMenu: (restaurant: String) -> Unit,
-    onBan: (foodId: Int, ban: Boolean) -> Unit
+    onBan: (Ban, banned: Boolean) -> Unit
 ) {
     val current = session.step
     var viewing by remember(shown.size, current.guessId) { mutableIntStateOf(shown.indexOfFirst { it.guessId == current.guessId }) }
@@ -140,6 +142,17 @@ fun ResultScreen(
     var selected by remember(food) { mutableStateOf(cafeterias.cafeterias.firstOrNull()?.offer?.restaurant) }
     var menuOf by remember(food) { mutableStateOf<Offer?>(null) }
     BackHandler(menuOf != null) { menuOf = null }
+
+    // Gson leaves a missing group null.
+    val kind = food.foodGroup.orEmpty().ifBlank { null }
+    val ban = if (kind != null) Ban(foodGroup = kind) else Ban(foodId = food.foodId)
+    val isBanned = ban in banned
+    val banLabel = when {
+        kind == null -> stringResource(if (isBanned) R.string.result_unban else R.string.result_ban)
+        isBanned -> stringResource(R.string.result_unban_group, kind)
+        shown.getOrNull(viewing - 1)?.food?.foodGroup == kind -> stringResource(R.string.result_ban_group, kind)
+        else -> null
+    }
 
     // Everything enters in a short sequence each time a dish is shown.
     val key = step.guessId ?: food.foodId.toString()
@@ -205,8 +218,8 @@ fun ResultScreen(
             reason = reasons[step.proposalId],
             writingReason = step.proposalId in reasons && reasons[step.proposalId] == null,
             caption = captionFor(session.meal),
-            banned = food.foodId in banned,
-            onBan = { if (!loading) onBan(food.foodId, it) },
+            banLabel = banLabel,
+            onBan = { if (!loading) onBan(ban, !isBanned) },
             cafeterias = cafeterias,
             place = place,
             selected = selected,
@@ -292,8 +305,8 @@ private fun ResultSheet(
     reason: String?,
     writingReason: Boolean,
     @StringRes caption: Int,
-    banned: Boolean,
-    onBan: (Boolean) -> Unit,
+    banLabel: String?,
+    onBan: () -> Unit,
     cafeterias: CafeteriaList,
     place: Place,
     selected: String?,
@@ -381,13 +394,12 @@ private fun ResultSheet(
                         color = MetchuColors.Grey600
                     )
                 }
-                // A group stands for several dishes, so only a single dish can be banned.
-                if (group == null) {
+                if (banLabel != null) {
                     Text(
-                        stringResource(if (banned) R.string.result_unban else R.string.result_ban),
+                        banLabel,
                         Modifier
                             .padding(top = 2.dp)
-                            .clickable(role = Role.Button) { onBan(!banned) }
+                            .clickable(role = Role.Button, onClick = onBan)
                             .padding(vertical = 6.dp)
                             .testTag("ban"),
                         style = MetchuType.Caption.copy(textDecoration = TextDecoration.Underline),

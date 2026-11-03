@@ -98,6 +98,8 @@
     <string name="result_menu_failed">메뉴를 불러오지 못했어요. 닫고 다시 시도해 주세요.</string>
     <string name="result_ban">이 메뉴 추천하지 않기</string>
     <string name="result_unban">이번 추천에서 뺐어요 · 되돌리기</string>
+    <string name="result_ban_group">%1$s 종류는 추천하지 않기</string>
+    <string name="result_unban_group">%1$s 종류는 이번 추천에서 뺐어요 · 되돌리기</string>
 
     <string name="unavailable_no_menu">%2$s %1$s 메뉴가 아직 없어요. 다른 식사로 추천받을 수 있어요.</string>
     <string name="unavailable_no_safe_menu">%2$s %1$s 메뉴 중에 고른 알러지 재료가 없다고 확인된 메뉴가 없어요. 설정에서 알러지를 확인하거나 다른 식사를 골라 보세요.</string>

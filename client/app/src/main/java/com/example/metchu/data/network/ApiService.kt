@@ -43,7 +43,8 @@ data class FeedbackRequest(
 )
 
 data class BanRequest(
-    @SerializedName("food_id") val foodId: Int,
+    @SerializedName("food_id") val foodId: Int?,
+    @SerializedName("food_group") val foodGroup: String?,
     val banned: Boolean
 )
 
