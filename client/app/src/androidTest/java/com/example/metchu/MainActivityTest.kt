@@ -392,6 +392,7 @@ class MainActivityTest {
         tap("menuButton")
         assertEquals(listOf("${guess.sessionId} ${guess.step.food!!.offers.single().restaurant}"), api.menuCalls.toList())
         compose.onNodeWithTag("menu").assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.result_menu_note)).assertIsDisplayed()
         compose.onNodeWithText(menu.dishes.first().displayName).assertIsDisplayed()
 
         // Back closes the list and stays on the dish.
