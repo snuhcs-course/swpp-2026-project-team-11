@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
@@ -411,7 +412,7 @@ private fun ResultSheet(
             Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState(), enabled = stop == SheetStop.FULL)
-                .padding(bottom = 88.dp)
+                .padding(bottom = 16.dp)
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -465,6 +466,8 @@ private fun ResultSheet(
                 cafeterias.cafeterias.forEach { cafeteria ->
                     CafeteriaRow(cafeteria, on = cafeteria.offer.restaurant == selected || count == 1) { onSelect(cafeteria.offer.restaurant) }
                 }
+                // One empty row at the end, for the logo, so "find another" never covers the last cafeteria.
+                Spacer(Modifier.height(CafeteriaRowHeight))
             }
         }
     }
@@ -472,6 +475,8 @@ private fun ResultSheet(
 
 private fun Modifier.rise(progress: Float, density: Density): Modifier =
     graphicsLayer { alpha = progress; translationY = with(density) { 12.dp.toPx() } * (1f - progress) }
+
+private val CafeteriaRowHeight = 72.dp
 
 /** The reason and the group's description: 14/20. */
 private val ReasonStyle = MetchuType.Body.copy(fontSize = 14.sp, lineHeight = 20.sp)
@@ -491,7 +496,7 @@ private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit)
     Row(
         Modifier
             .fillMaxWidth()
-            .heightIn(min = 72.dp)
+            .heightIn(min = CafeteriaRowHeight)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 12.dp)
             .testTag("cafeteria"),
