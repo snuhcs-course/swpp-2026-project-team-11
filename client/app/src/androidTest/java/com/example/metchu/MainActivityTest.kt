@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -24,6 +26,8 @@ import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.MainActivity
+import com.example.metchu.ui.start.Meal
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -129,6 +133,18 @@ class MainActivityTest {
     }
 
     @Test
+    fun theMealPickedStaysAfterASession() {
+        val other = Meal.entries.first { it != Meal.now() }
+        pickMeal(other.label)
+        api.reply(question)
+        tap("start")
+        tap("back")
+        api.reply(question)
+        tap("start")
+        assertEquals("create ${other.code} decision_tree en", api.calls.last())
+    }
+
+    @Test
     fun theFirstLaunchOpensTheSettingsAndEverySessionAvoidsTheAllergies() {
         clearPrefs()
         relaunch()
@@ -145,6 +161,17 @@ class MainActivityTest {
         // Chosen, so the next launch goes straight to the start screen.
         relaunch()
         compose.onNodeWithTag("start").assertIsDisplayed()
+    }
+
+    @Test
+    fun pickingAnAllergyMovesNoChip() {
+        tap("settings")
+        val chips = Allergen.entries.map { "allergen_${it.id}" }
+        fun bounds() = chips.map { compose.onNodeWithTag(it).getBoundsInRoot() }
+        val before = bounds()
+        tap("allergen_${Allergen.EGG.id}")
+        tap("allergen_${Allergen.SOYBEAN.id}")
+        assertEquals(before, bounds())
     }
 
     @Test
@@ -203,6 +230,16 @@ class MainActivityTest {
     }
 
     @Test
+    fun aSlowStartShowsASpinnerInTheButton() {
+        val gate = api.hold()
+        tap("start")
+        compose.waitUntil(3_000) { compose.onAllNodesWithTag("loading").fetchSemanticsNodes().isNotEmpty() }
+        gate.complete(question)
+        compose.onNodeWithTag("question").assertIsDisplayed()
+        compose.onNodeWithTag("loading").assertDoesNotExist()
+    }
+
+    @Test
     fun anUnavailableEngineSaysSoOnTheStartScreen() {
         api.fail(Fixtures.httpError(503, Fixtures.json("error_engine_unavailable")))
         tap("start")
@@ -225,13 +262,32 @@ class MainActivityTest {
     }
 
     @Test
+    fun aSlowAnswerShowsASpinnerUnderTheBar() {
+        startWith(question)
+        val gate = api.hold()
+        answer("yes")
+        compose.waitUntil(3_000) { compose.onAllNodesWithTag("loading").fetchSemanticsNodes().isNotEmpty() }
+        gate.complete(guess)
+        compose.onNodeWithTag("dish").assertIsDisplayed()
+    }
+
+    @Test
     fun theQuestionTextComesFromTheServer() {
         startWith(question)
         compose.onNodeWithTag("question").assertIsDisplayed()
         compose.onNodeWithText(question.step.text).assertIsDisplayed()
-        // First question: Back leaves the session instead of undoing.
-        compose.onNodeWithTag("recommendNow").assertDoesNotExist()
+        // First question: "Recommend now" waits in its corner, and Back leaves the session instead of undoing.
+        compose.onNodeWithText(text(R.string.recommend_now)).assertIsNotEnabled()
+        tap("recommendNow")
         tap("back")
+        compose.onNodeWithTag("start").assertIsDisplayed()
+        assertEquals(emptyList<String>(), api.calls.toList())
+    }
+
+    @Test
+    fun startOverLeavesAQuestion() {
+        startWith(question.copy(canUndo = true, step = question.step.copy(questionCount = 1)))
+        tap("home")
         compose.onNodeWithTag("start").assertIsDisplayed()
         assertEquals(emptyList<String>(), api.calls.toList())
     }
@@ -302,6 +358,24 @@ class MainActivityTest {
     }
 
     @Test
+    fun aReasonBeingWrittenHoldsItsPlace() {
+        val held = CompletableDeferred<Reason>()
+        api.heldReason = held
+        startWith(guess)
+        compose.onNodeWithTag("reasonWriting").assertIsDisplayed()
+        held.complete(Reason(guess.step.food!!.foodId, "Spicy, as you wanted."))
+        compose.onNodeWithText("Spicy, as you wanted.").assertIsDisplayed()
+        compose.onNodeWithTag("reasonWriting").assertDoesNotExist()
+    }
+
+    @Test
+    fun aFailedReasonLeavesNoPlaceholder() {
+        startWith(guess)
+        compose.onNodeWithTag("dish").assertIsDisplayed()
+        compose.onNodeWithTag("reasonWriting").assertDoesNotExist()
+    }
+
+    @Test
     fun aGroupGuessNamesTheGroup() {
         startWith(groupGuess)
         compose.onNodeWithTag("dish").assertIsDisplayed()
@@ -324,7 +398,7 @@ class MainActivityTest {
     }
 
     @Test
-    fun findAnotherIsOnlyOfferedOnTheDishTheServerProposes() {
+    fun findAnotherStaysOnEveryDishAndTurnsDownTheCurrentOne() {
         startWith(guess)
         api.reply(question)
         tapText(R.string.result_more)
@@ -334,9 +408,9 @@ class MainActivityTest {
 
         // The chips list the newest first; the second is the dish turned down.
         compose.onAllNodesWithTag("dishChip")[1].performClick()
-        compose.onNodeWithText(text(R.string.result_more)).assertDoesNotExist()
-        compose.onAllNodesWithTag("dishChip")[0].performClick()
-        compose.onNodeWithText(text(R.string.result_more)).assertIsDisplayed()
+        api.reply(question)
+        tapText(R.string.result_more)
+        assertEquals("feedback ${groupGuess.sessionId} ${groupGuess.step.guessId} false", api.calls.last())
     }
 
     @Test
@@ -351,7 +425,7 @@ class MainActivityTest {
     fun nothingToRecommendSaysWhy() {
         startWith(unavailable)
         compose.onNodeWithTag("unavailable").assertIsDisplayed()
-        tapText(R.string.result_home)
+        tap("home")
         compose.onNodeWithTag("start").assertIsDisplayed()
     }
 

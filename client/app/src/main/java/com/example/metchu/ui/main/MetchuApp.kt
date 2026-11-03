@@ -49,6 +49,7 @@ import com.example.metchu.ui.question.QuestionScreen
 import com.example.metchu.ui.result.ResultScreen
 import com.example.metchu.ui.result.UnavailableScreen
 import com.example.metchu.ui.settings.SettingsScreen
+import com.example.metchu.ui.start.Meal
 import com.example.metchu.ui.start.StartScreen
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -77,6 +78,8 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
     var engine by remember { mutableStateOf(settings.engine) }
     var place by remember { mutableStateOf(settings.place) }
+    // Kept while the app runs, so coming back from a session keeps the meal the user picked.
+    var meal by rememberSaveable { mutableStateOf(Meal.now()) }
     // The server writes its questions in the language the app is showing.
     val language = if (LocalConfiguration.current.locales[0].language == "ko") "ko" else "en"
 
@@ -108,8 +111,10 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
             val current = session
             when (target) {
                 Screen.START -> StartScreen(
+                    meal = meal,
                     place = place,
                     loading = loading,
+                    onMeal = { meal = it },
                     onPlace = { place = it; settings.place = it },
                     onSettings = { settingsOpen = true },
                     onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language) }
@@ -133,6 +138,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                         onAnswer = viewModel::answer,
                         onBack = { if (current.canUndo) viewModel.undo() else viewModel.startOver() },
                         onRecommendNow = viewModel::recommendNow,
+                        onHome = viewModel::startOver,
                         onRevisit = viewModel::revisit
                     )
                 }

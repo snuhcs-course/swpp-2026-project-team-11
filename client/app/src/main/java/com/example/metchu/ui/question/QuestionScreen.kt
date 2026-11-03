@@ -82,10 +82,13 @@ import com.example.metchu.data.model.Step
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Pill
+import com.example.metchu.ui.common.PillDivider
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
+import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.Wordmark
 import com.example.metchu.ui.common.fadeEdges
+import com.example.metchu.ui.common.rememberSlow
 import com.example.metchu.ui.main.AnsweredQuestion
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -105,19 +108,19 @@ private const val ANSWER_FADE_MILLIS = 250L
 /** How long a picked answer stays before it is sent and the next question can appear. */
 private const val ANSWER_HOLD_MILLIS = 450L
 
-/** One circle of the five-step scale, left (no) to right (yes). */
-private class Level(val id: String, val size: Dp, val color: Color, @StringRes val label: Int, val icon: ImageVector?)
+/** One circle of the five-step scale, left (no) to right (yes). [ink] colors its texts. */
+private class Level(val id: String, val size: Dp, val color: Color, @StringRes val label: Int, val icon: ImageVector?, val ink: Color = color)
 
 private val Levels = listOf(
     Level(AnswerId.NO, 70.dp, MetchuColors.Grey700, R.string.level_no, Icons.Cross),
     Level(AnswerId.PROBABLY_NO, 58.dp, MetchuColors.Grey700, R.string.level_probably_no, null),
-    Level(AnswerId.ANY, 58.dp, MetchuColors.Grey400, R.string.level_any, null),
+    Level(AnswerId.ANY, 58.dp, MetchuColors.Grey400, R.string.level_any, null, ink = MetchuColors.Grey600),
     Level(AnswerId.PROBABLY_YES, 58.dp, MetchuColors.Primary, R.string.level_probably_yes, null),
     Level(AnswerId.YES, 70.dp, MetchuColors.Primary, R.string.level_yes, Icons.Check)
 )
 
 /** The color a past question keeps: the color of its answer. */
-fun answerColor(answerId: String): Color = Levels.firstOrNull { it.id == answerId }?.color ?: MetchuColors.Grey600
+fun answerColor(answerId: String): Color = Levels.firstOrNull { it.id == answerId }?.ink ?: MetchuColors.Grey600
 
 @StringRes
 private fun answerLabel(answerId: String): Int =
@@ -136,6 +139,7 @@ fun QuestionScreen(
     onAnswer: (String, Step) -> Unit,
     onBack: () -> Unit,
     onRecommendNow: () -> Unit,
+    onHome: () -> Unit,
     onRevisit: (Int) -> Unit
 ) {
     val step = session.step
@@ -182,7 +186,16 @@ fun QuestionScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
-                if (count > 0) Pill(Modifier.testTag("recommendNow")) { PillSegment(stringResource(R.string.recommend_now), onRecommendNow) }
+                // Shown from the first question, so the pill does not change when it can be used;
+                // "Start over" keeps the corner it has on the result screen.
+                Pill {
+                    PillSegment(
+                        stringResource(R.string.recommend_now), onRecommendNow, start = 18.dp, end = 14.dp,
+                        enabled = count > 0, modifier = Modifier.testTag("recommendNow")
+                    )
+                    PillDivider()
+                    PillSegment(stringResource(R.string.result_home), onHome, start = 14.dp, modifier = Modifier.testTag("home"))
+                }
             }
 
             Column(
@@ -220,7 +233,7 @@ fun QuestionScreen(
             }
 
             AnswerScale(offered, active, pressing, loading, pick, press)
-            ProgressBlock(session)
+            ProgressBlock(session, loading)
         }
         Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
     }
@@ -343,7 +356,8 @@ private fun AnswerScale(
             Spacer(Modifier.height(4.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Caption(R.string.answer_no, MetchuColors.Grey700, scale)
-                Caption(R.string.answer_any, MetchuColors.Grey600, scale)
+                // Twice as wide, so "Doesn't matter" is not cut off; the outer captions keep it centered.
+                Caption(R.string.answer_any, MetchuColors.Grey600, scale, width = 140.dp)
                 Caption(R.string.answer_yes, MetchuColors.Primary, scale)
             }
         }
@@ -351,8 +365,8 @@ private fun AnswerScale(
 }
 
 @Composable
-private fun Caption(@StringRes text: Int, color: Color, scale: Float) {
-    Text(stringResource(text), Modifier.width(70.dp * scale), style = MetchuType.Label, color = color, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
+private fun Caption(@StringRes text: Int, color: Color, scale: Float, width: Dp = 70.dp) {
+    Text(stringResource(text), Modifier.width(width * scale), style = MetchuType.Label, color = color, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
 }
 
 /**
@@ -420,9 +434,12 @@ private fun ScaleCircle(
     }
 }
 
-/** The grey bar and the phase under it; it fills fast at first and slower later. */
+/**
+ * The grey bar and the phase under it; it fills fast at first and slower later. A spinner
+ * at the end of the phase line shows that the next step is on its way.
+ */
 @Composable
-private fun ProgressBlock(session: SessionState) {
+private fun ProgressBlock(session: SessionState, loading: Boolean) {
     val fill = progressFill(session.step.questionCount, session.maxQuestions)
     val width by animateFloatAsState(fill, tween(450, easing = SheetEasing), label = "progress")
     val label = stringResource(R.string.progress)
@@ -441,10 +458,13 @@ private fun ProgressBlock(session: SessionState) {
             Box(Modifier.fillMaxHeight().fillMaxWidth(width).background(MetchuColors.Grey400))
         }
         Spacer(Modifier.height(6.dp))
-        Text(
-            stringResource(phaseText(fill)),
-            Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("phase"),
-            style = MetchuType.Caption
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(phaseText(fill)),
+                Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }.testTag("phase"),
+                style = MetchuType.Caption
+            )
+            if (rememberSlow(loading)) Spinner(MetchuColors.Grey600, 14.dp)
+        }
     }
 }
