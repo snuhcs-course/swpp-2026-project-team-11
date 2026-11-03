@@ -7,6 +7,7 @@
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
     POST /api/sessions/<id>/recommend-now/                                 -> state
     POST /api/sessions/<id>/undo/                                          -> state
+    POST /api/sessions/<id>/ban/  {"food_id" | "food_group", "banned"}     -> state
     GET  /api/sessions/<id>/reason/              -> {"food_id", "reason", "source"}
     GET  /api/sessions/<id>/menu/?restaurant=<name>  -> {"restaurant", "dishes"}
     GET  /api/health/                                                      -> {"status": "ok"}
@@ -26,6 +27,11 @@ it is a 409 `stale_step` with the state.
 screen: each dish is {"food_id", "display_name", "meal", "price"}, breakfast first and
 by name within a meal. A restaurant the session does not know has no dishes; a
 missing `restaurant` is a 400.
+
+`ban` keeps one dish (`food_id`) or every dish of a `food_group` out of the rest of the
+session (`banned` true), or lets it back (false). The step on screen does not change;
+the next action that would show a banned dish skips it, and an undo that would goes
+back further (recommend/sessions.py).
 
 `health` touches nothing; it is for checking from a browser that the server can
 be reached, for example through the tunnel of `manage.py serve_public`.
@@ -208,3 +214,10 @@ def recommend_now(request, session_id: str):
 @require_POST
 def undo(request, session_id: str):
     return _action(request, session_id, lambda s, body: s.undo())
+
+
+@csrf_exempt
+@require_POST
+def ban(request, session_id: str):
+    return _action(request, session_id,
+                   lambda s, body: s.ban(body.get("food_id"), body.get("food_group"), body["banned"]))

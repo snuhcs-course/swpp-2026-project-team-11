@@ -42,6 +42,12 @@ data class FeedbackRequest(
     val accepted: Boolean
 )
 
+data class BanRequest(
+    @SerializedName("food_id") val foodId: Int?,
+    @SerializedName("food_group") val foodGroup: String?,
+    val banned: Boolean
+)
+
 /** Body of a non-2xx response. `state` is only sent with a 409 stale_step. */
 data class ApiErrorResponse(val error: ApiError?, val state: SessionState?)
 
@@ -73,6 +79,9 @@ interface ApiService {
 
     @POST("api/sessions/{id}/undo/")
     suspend fun undo(@Path("id") sessionId: String): SessionState
+
+    @POST("api/sessions/{id}/ban/")
+    suspend fun ban(@Path("id") sessionId: String, @Body request: BanRequest): SessionState
 
     @GET("api/sessions/{id}/reason/")
     suspend fun reason(@Path("id") sessionId: String): Reason

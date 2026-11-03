@@ -403,6 +403,45 @@ class MainActivityTest {
     }
 
     @Test
+    fun aDishWithoutAGroupCanBeBannedAtOnceUntilStartOver() {
+        val alone = guess.copy(step = guess.step.copy(food = guess.step.food!!.copy(foodGroup = "")))
+        val foodId = alone.step.food!!.foodId
+        startWith(alone)
+        api.reply(alone)
+        tapText(R.string.result_ban)
+        assertEquals("ban ${alone.sessionId} $foodId true", api.calls.last())
+        api.reply(alone)
+        tapText(R.string.result_unban)
+        assertEquals("ban ${alone.sessionId} $foodId false", api.calls.last())
+        api.reply(alone)
+        tapText(R.string.result_ban)
+
+        // Start over ends the session, and the next one starts with no ban.
+        tapText(R.string.result_home)
+        startWith(alone)
+        compose.onNodeWithText(text(R.string.result_ban)).assertIsDisplayed()
+    }
+
+    @Test
+    fun aGroupBanIsOfferedOnceTheGroupMakesUpTwoOfTheLastThreeProposals() {
+        val group = guess.step.food!!.foodGroup
+        assertEquals(group, groupGuess.step.food!!.foodGroup)
+        val other = guess.copy(step = guess.step.copy(guessId = "food:999", food = guess.step.food!!.copy(foodId = 999, foodGroup = "덮밥")))
+        startWith(guess)
+        compose.onNodeWithTag("ban").assertDoesNotExist()
+
+        api.reply(other)
+        tapText(R.string.result_more)
+        compose.onNodeWithTag("ban").assertDoesNotExist()
+        api.reply(groupGuess)
+        tapText(R.string.result_more)
+        api.reply(groupGuess)
+        compose.onNodeWithText(context.getString(R.string.result_ban_group, group)).performClick()
+        assertEquals("ban ${groupGuess.sessionId} $group true", api.calls.last())
+        compose.onNodeWithText(context.getString(R.string.result_unban_group, group)).assertIsDisplayed()
+    }
+
+    @Test
     fun aGroupGuessNamesTheGroup() {
         startWith(groupGuess)
         compose.onNodeWithTag("dish").assertIsDisplayed()

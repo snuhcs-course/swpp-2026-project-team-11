@@ -40,6 +40,12 @@ data class MenuDish(
     val price: Int?
 )
 
+/** What a ban covers for the rest of a session: one dish ([foodId]) or every dish of a [foodGroup]. */
+data class Ban(
+    val foodId: Int? = null,
+    val foodGroup: String? = null
+)
+
 /** The question engines the server can run a session with; see [SessionState.engine]. */
 object Engine {
     /** P10: picks each question from the dishes' extracted features. Answers at once. */

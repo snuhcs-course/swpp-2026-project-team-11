@@ -11,6 +11,10 @@ is served only when every main dish has current (FEATURE_VERSION) features.
 `allergies` (menus/allergens.py keys) is a hard rule: a menu line is never offered when
 one of its dishes is tagged with one of them or has no current allergen tags. A combo
 line ("돈가스 카레우동") is bought whole, so this covers every dish it lists.
+
+`food_group` is a single-dish menu's group; `food_groups` lists the groups of every dish
+a menu holds, a set dish taking that of its single variant (the same name), so a
+session can ban a group with the sets that contain it.
 """
 
 from __future__ import annotations
@@ -73,7 +77,7 @@ def get_catalog(date: datetime.date | None = None, meal: str | None = None,
                         item.food.allergens if item.food_id else [],
                         item.food.allergen_version if item.food_id else ""))
     menus = _menu_lines(records, foods, allergies)
-    rows = _menu_candidates(menus)
+    rows = _menu_candidates(menus, _dish_groups(foods))
     log = logger.warning if len(rows) < len(menus) else logger.info
     log("%s %s: serving %d/%d actual menus with feature_version=%s",
         date, meal or "ALL", len(rows), len(menus), FEATURE_VERSION)
@@ -124,7 +128,14 @@ def rms_components(components):
     return rms(means), rms([f.feature_std for f in components])
 
 
-def _menu_candidates(menus):
+def _dish_groups(foods: dict) -> dict[int, str]:
+    """Each dish's group; a set dish has none of its own, so it takes its single variant's."""
+    singles = dict(Food.objects.filter(name__in={f.name for f in foods.values() if not f.food_group}, is_set=False)
+                   .exclude(food_group="").values_list("name", "food_group"))
+    return {pk: f.food_group or singles.get(f.name, "") for pk, f in foods.items()}
+
+
+def _menu_candidates(menus, groups):
     combined = {}
     for rows, parts, version in menus:
         if version != FEATURE_VERSION:
@@ -135,6 +146,7 @@ def _menu_candidates(menus):
             values, deviations = rms_components(parts)
             candidate = {"food_id": min(r.id for r in rows), "name": row.raw_name, "display_name": row.raw_name,
                          "food_group": parts[0].food_group if len(parts) == 1 else "",
+                         "food_groups": sorted({groups[f.pk] for f in parts} - {""}),
                          "menu_profile": "rms-v1", "features": values, "feature_std": deviations, "offers": []}
             combined[identity] = candidate
         candidate = combined[identity]
@@ -153,10 +165,10 @@ def current_meal(now: datetime.datetime | None = None) -> str:
     return "BR" if hour < 10 else "LU" if hour < 16 else "DN"
 
 
-_store_menus = None  # (read at, rows, foods) of _read_store_menus
+_store_menus = None  # (read at, rows, foods, dish groups) of _read_store_menus
 
 
-def _read_store_menus() -> tuple[list[tuple], dict]:
+def _read_store_menus() -> tuple[list[tuple], dict, dict]:
     """Cache complete sales lines, including untagged components."""
     global _store_menus
     now = time.monotonic()
@@ -165,15 +177,15 @@ def _read_store_menus() -> tuple[list[tuple], dict]:
             "pk", "restaurant_id", "restaurant__name", "restaurant__lat", "restaurant__lng",
             "raw_name", "description", "price", "food_id", "allergens", "allergen_version"))
         foods = Food.objects.filter(pk__in=StoreMenu.objects.values("food_id")).in_bulk()
-        _store_menus = (now, rows, foods)
-    return _store_menus[1], _store_menus[2]
+        _store_menus = (now, rows, foods, _dish_groups(foods))
+    return _store_menus[1:]
 
 
 def get_store_catalog(meal: str | None = None,
                       allergies: frozenset[str] = frozenset()) -> tuple[list, list]:
     """One original restaurant menu with RMS features, never its separate dishes."""
-    rows, foods = _read_store_menus()
+    rows, foods, groups = _read_store_menus()
     meal = meal or current_meal()
     records = [SalesLine(*row[:5], meal, *row[5:]) for row in rows]
     menus = _menu_lines(records, foods, allergies)
-    return _menu_candidates(menus), get_feature_schema()
+    return _menu_candidates(menus, groups), get_feature_schema()
