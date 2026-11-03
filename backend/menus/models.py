@@ -29,9 +29,9 @@ class Food(models.Model):
     is_food = models.BooleanField(null=True)  # preprocessing verdict; legacy rows may be null
     food_group = models.CharField(max_length=30, blank=True)  # 국밥, 덮밥, 돈까스, ...
 
-    # v2: expected feature intensity; v1: legacy response score.
+    # Expected feature intensity.
     features = models.JSONField(default=dict, blank=True)
-    feature_std = models.JSONField(default=dict, blank=True)  # recipe variation; absent in v1
+    feature_std = models.JSONField(default=dict, blank=True)  # recipe variation
     feature_version = models.CharField(max_length=10, blank=True)
     extraction_model = models.CharField(max_length=50, blank=True)
     extracted_at = models.DateTimeField(null=True, blank=True)

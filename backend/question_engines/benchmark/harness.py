@@ -69,7 +69,7 @@ class EngineFactory:
     def __init__(self, engine, menu, llm=None):
         self.engine, self.menu, self.llm = engine, menu, llm
         self.config = {"max_questions": settings.RECOMMEND_MAX_QUESTIONS}
-        self.schema = get_feature_schema(menu["feature_version"])
+        self.schema = get_feature_schema()
         self.context = {"date": menu["date"], "meal": menu["meal"], "feature_version": menu["feature_version"]}
 
     def build(self):
