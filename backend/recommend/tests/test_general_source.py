@@ -80,7 +80,7 @@ class GeneralSourceTests(TestCase):
         services._store_menus = None
         self.addCleanup(setattr, services, "_store_menus", None)
         services.get_store_catalog("LU")
-        with self.assertNumQueries(0):
+        with mock.patch.object(StoreMenu.objects, "order_by", side_effect=AssertionError("Source cache miss")):
             self.assertEqual(len(services.get_store_catalog("LU")[0]), 4)
 
     def test_location_adds_distances(self):

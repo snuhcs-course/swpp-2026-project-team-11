@@ -150,11 +150,38 @@ class OriginalMenuTests(TestCase):
             if n == 1:
                 self.assertEqual((means, stds), (parts[0].features, parts[0].feature_std))
 
-    def test_original_whitespace_and_punctuation_survive_the_api(self):
+    def test_original_title_keeps_dish_identity_but_cleans_source_decoration(self):
         a = self.food("pork", 0.8)
         original = "  [A] 삼겹살 + 떡볶이  "
         self.menu(original, [a])
         for engine in ("rl", "decision_tree"):
             r = post(self.client, "/api/sessions/", {"date": str(DAY), "meal": "LU", "engine": engine})
             self.assertEqual(r.status_code, 201)
-            self.assertEqual(r.json()["step"]["food"]["display_name"], original)
+            self.assertEqual(r.json()["step"]["food"]["display_name"], "[A] 삼겹살 + 떡볶이")
+
+    def test_prices_and_source_notices_do_not_reach_the_title(self):
+        self.menu("<A코너>삼겹살+떡볶이 : 12,000원 /", [self.food("pork", .8)])
+        [menu], _ = services.get_catalog(DAY, "LU")
+        self.assertEqual(menu["display_name"], "삼겹살+떡볶이")
+
+    def test_one_invalid_component_does_not_break_other_menus(self):
+        good, broken = self.food("good", .8), self.food("broken", .2)
+        broken.features = {"pork": 2.0}
+        broken.save()
+        self.menu("Valid meal", [good])
+        self.menu("Invalid meal", [broken])
+        with self.assertLogs("menus.services", level="WARNING"):
+            rows, _ = services.get_catalog(DAY, "LU")
+        self.assertEqual([r["name"] for r in rows], ["Valid meal"])
+
+    def test_registry_id_survives_source_row_replacement_and_date_and_price_changes(self):
+        food = self.food("pork", .8)
+        self.menu("Pork set", [food], price=10000)
+        original = services.get_catalog(DAY, "LU")[0][0]["food_id"]
+        MenuItem.objects.all().delete()
+        MenuItem.objects.create(date=DAY + datetime.timedelta(days=1), meal="DN",
+                                restaurant=self.place, raw_name="Pork set", food=food, price=13000)
+        new = services.get_catalog(DAY + datetime.timedelta(days=1), "DN")[0][0]
+        self.assertEqual(new["food_id"], original)
+        self.menu("Pork set", [food], source="general")
+        self.assertNotEqual(services.get_store_catalog("LU")[0][0]["food_id"], original)

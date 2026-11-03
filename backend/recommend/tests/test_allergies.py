@@ -6,6 +6,7 @@ from unittest import mock
 from menus import services
 from menus.allergens import ALLERGEN_VERSION
 from menus.models import Food, MenuItem, Restaurant
+from menus.menu_registry import register_menu_ids
 from question_engines.llm import LLMEngine
 from question_engines.llm.tests.helpers import FakeLLM, ask
 
@@ -41,6 +42,7 @@ class AllergyTests(SmallMenuTestCase):
             add_food(name, price=7000)
             Food.objects.filter(name=name).update(allergens=tags, allergen_version=ALLERGEN_VERSION)
         MenuItem.objects.filter(food__name__in=["Pork cutlet", "Curry udon"]).update(raw_name="Pork cutlet curry udon")
+        register_menu_ids("cafeteria", date=DAY)
         self.assertIn("Pork cutlet curry udon", self.served("egg"))
         self.assertNotIn("Pork cutlet curry udon", self.served("pork"))
 
