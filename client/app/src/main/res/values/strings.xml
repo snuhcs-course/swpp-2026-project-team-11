@@ -117,6 +117,7 @@
     <string name="offer_none">No cafeteria listed</string>
     <string name="result_menu">Menu</string>
     <string name="result_menu_title">%1$s · %2$s menu</string>
+    <string name="result_menu_note">Only dishes Metchu can suggest</string>
     <string name="result_menu_failed">Couldn’t load the menu. Close this and try again.</string>
 
     <!-- unavailable -->
