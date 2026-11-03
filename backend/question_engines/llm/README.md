@@ -13,9 +13,9 @@ and the P19 client can run either one.
 
 ```bash
 python backend/manage.py migrate
-python backend/manage.py loaddata menus_2026-09-29
-python backend/manage.py demo_llm_engine --date 2026-09-29 --meal LU          # interactive
-python backend/manage.py demo_llm_engine --date 2026-09-29 --smoke --output /tmp/llm_session.json
+python backend/manage.py loaddata menus_2026-11-02
+python backend/manage.py demo_llm_engine --date 2026-11-02 --meal LU          # interactive
+python backend/manage.py demo_llm_engine --date 2026-11-02 --smoke --output /tmp/llm_session.json
 python -m pytest backend/question_engines/llm                                # no API key needed
 ```
 
@@ -108,7 +108,7 @@ The LLM sometimes asks a topic again in other words, mostly after "Not sure",
 ### Benchmark
 
 ```bash
-python backend/manage.py benchmark_llm_engine --date 2026-09-29 --trials 20 --max-questions 0 --output /tmp/llm.json
+python backend/manage.py benchmark_llm_engine --date 2026-11-02 --trials 20 --max-questions 0 --output /tmp/llm.json
 ```
 
 An LLM (`anthropic/claude-haiku-5.5`, another family than the engine) plays a
