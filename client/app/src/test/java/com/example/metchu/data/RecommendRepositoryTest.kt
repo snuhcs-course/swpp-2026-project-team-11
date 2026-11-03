@@ -77,13 +77,6 @@ class RecommendRepositoryTest {
     }
 
     @Test
-    fun createSessionSendsTheBannedDishes() = runTest {
-        reply("question", 201)
-        repository.createSession("LU", banned = listOf(3, 8))
-        assertEquals("""{"meal":"LU","banned":[3,8]}""", server.takeRequest().json().toString())
-    }
-
-    @Test
     fun createSessionSendsTheLanguage() = runTest {
         reply("question", 201)
         repository.createSession("LU", language = "ko")

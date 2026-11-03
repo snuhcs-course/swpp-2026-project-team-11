@@ -43,6 +43,8 @@ data class AnsweredQuestion(val text: String, val answerId: String)
  * written; changing the answers invalidates that proposal's explanation.
  * [menus] holds the dishes of each restaurant asked for in this session, null while
  * they load; a failed request leaves no entry, so asking again retries it.
+ * [banned] lists the food IDs the user banned in this session; the server keeps them
+ * out of its later proposals until the session ends.
  */
 class RecommendViewModel(private val repository: RecommendRepository) : ViewModel() {
 
@@ -66,6 +68,9 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     val reasons: LiveData<Map<String, String?>> = _reasons
     private val reasonContexts = mutableMapOf<String, ReasonContext>()
 
+    private val _banned = MutableLiveData<Set<Int>>(emptySet())
+    val banned: LiveData<Set<Int>> = _banned
+
     private val _menus = MutableLiveData<Map<String, List<MenuDish>?>>(emptyMap())
     val menus: LiveData<Map<String, List<MenuDish>?>> = _menus
 
@@ -76,20 +81,19 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
      * [meal] is "BR", "LU", "DN" or null for the whole day. [engine] is one of the
      * Engine IDs, or null for the server's default. [location] says where the user is; finding
      * that can take a few seconds, so it is part of the request and shows as [loading]. No dish
-     * with one of [allergies] is proposed, nor any of the [banned] food IDs. [language] ("en"
-     * or "ko") is the language of every text the server sends.
+     * with one of [allergies] is proposed. [language] ("en" or "ko") is the language of every
+     * text the server sends.
      */
     fun start(
         meal: String?,
         engine: String? = null,
         location: LocationSource? = null,
         allergies: List<Allergen> = emptyList(),
-        language: String? = null,
-        banned: List<Int> = emptyList()
+        language: String? = null
     ) {
         if (_loading.value == true) return
         forgetSession()
-        request { repository.createSession(meal, engine, location?.current(), allergies, language, banned) }
+        request { repository.createSession(meal, engine, location?.current(), allergies, language) }
     }
 
     /**
@@ -114,6 +118,16 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     fun recommendNow() {
         val current = _session.value ?: return
         request { repository.recommendNow(current.sessionId) }
+    }
+
+    /** Keeps the dish with [foodId] out of the rest of the session, or with [banned] false lets it back. */
+    fun ban(foodId: Int, banned: Boolean) {
+        val current = _session.value ?: return
+        request {
+            repository.ban(current.sessionId, foodId, banned).also {
+                _banned.value = if (banned) _banned.value.orEmpty() + foodId else _banned.value.orEmpty() - foodId
+            }
+        }
     }
 
     /**
@@ -286,6 +300,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         _reasons.value = emptyMap()
         reasonContexts.clear()
         _menus.value = emptyMap()
+        _banned.value = emptySet()
     }
 
     private companion object {

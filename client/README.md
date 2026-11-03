@@ -157,10 +157,10 @@ emulator, set a position under Extended controls > Location (for example
 
 | When | Screen | Actions |
 | --- | --- | --- |
-| first launch | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the banned dishes once there are any, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button; a banned dish's chip lets it be suggested again |
+| first launch | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
 | `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" (greyed on the first question); "Start over" in the top-right corner |
-| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user, a "Don't suggest this dish again" link (not for a kind of dish) and the cafeterias, one line per cafeteria and meal | "Find another" turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; "Start over", always in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it, and its "Menu" lists what that cafeteria serves at that meal, the proposed dish in orange; the ban link keeps the dish out of later sessions and turns into Undo; the sheet's handle drags or taps it between low, middle and high |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one line per cafeteria and meal | "Find another" turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; "Start over", always in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it, and its "Menu" lists what that cafeteria serves at that meal, the proposed dish in orange; the sheet's handle drags or taps it between low, middle and high |
 | `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them and that Settings can change them | "Start over" in the top-right corner |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
@@ -194,7 +194,7 @@ all are listed under a note that the location is unknown. The selected cafeteria
 is kept by name, so it stays put when the list re-sorts as the user moves.
 
 The meal starts at the next one the cafeterias serve (breakfast before 10,
-lunch before 15, dinner after); one the user picks is kept until the app closes. The distance, engine, allergies and banned dishes are kept on
+lunch before 15, dinner after); one the user picks is kept until the app closes. The distance, engine and allergies are kept on
 the phone (`SettingsStore`, `AllergyStore`, SharedPreferences). The language
 follows the phone until the globe picks one (`AppCompatDelegate` per-app
 locales). A new session asks the server for the app's language (`en` or `ko`), so
@@ -223,13 +223,13 @@ data/network/ApiService.kt          Retrofit endpoints and request bodies
 data/network/RetrofitInstance.kt    server address and HTTP client
 data/location/LocationSource.kt     where the device is when a session starts
 data/repository/RecommendRepository.kt   the only class that calls Retrofit
-data/repository/AllergyStore.kt     the user's allergies and banned dishes, on this device
+data/repository/AllergyStore.kt     the user's allergies, on this device
 data/repository/SettingsStore.kt    the engine and the distance choice, on this device
 ui/main/MainActivity.kt             hosts the Compose app
 ui/main/MetchuApp.kt                picks the screen for the session's step; the error banner
 ui/main/RecommendViewModel.kt       session state, question history, loading and error LiveData
 ui/start/                           start screen and the meal choice
-ui/settings/                        allergies, banned dishes and engine
+ui/settings/                        allergies and engine
 ui/question/                        question history, five-step scale, progress
 ui/result/                          result map and sheet, cafeteria distances, nothing to recommend
 ui/common/                          shared buttons, pills, bottom and picker sheets, location
@@ -245,7 +245,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 
 | Request | Body | Effect |
 | --- | --- | --- |
-| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "banned"?, "language"?, "source"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), and the app language (`en` or `ko`). Android uses the cafeteria catalogue; API callers can select `source: "general"` with DT or RL. `location` is the user's `{"lat", "lng"}`. With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. `banned` lists food IDs the user banned on the result screen; they are withheld too. |
+| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?, "source"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), and the app language (`en` or `ko`). Android uses the cafeteria catalogue; API callers can select `source: "general"` with DT or RL. `location` is the user's `{"lat", "lng"}`. With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |

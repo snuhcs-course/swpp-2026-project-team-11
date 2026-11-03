@@ -1,12 +1,13 @@
 """HTTP glue between the Android client and the question engine.
 
-    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "banned"?,
-                          "source"?, "language"?}                            -> 201 state
+    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?,
+                          "language"?}                                       -> 201 state
     GET  /api/sessions/<id>/                                               -> state
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
     POST /api/sessions/<id>/recommend-now/                                 -> state
     POST /api/sessions/<id>/undo/                                          -> state
+    POST /api/sessions/<id>/ban/             {"food_id", "banned"}         -> state
     GET  /api/sessions/<id>/reason/              -> {"food_id", "reason", "source"}
     GET  /api/sessions/<id>/menu/?restaurant=<name>  -> {"restaurant", "dishes"}
     GET  /api/health/                                                      -> {"status": "ok"}
@@ -27,6 +28,10 @@ screen: each dish is {"food_id", "display_name", "meal", "price"}, breakfast fir
 by name within a meal. A restaurant the session does not know has no dishes; a
 missing `restaurant` is a 400.
 
+`ban` keeps a dish out of the rest of the session (`banned` true) or lets it back
+(false). The step on screen does not change; the next action that would show a banned
+dish skips it, and an undo that would goes back further (recommend/sessions.py).
+
 `health` touches nothing; it is for checking from a browser that the server can
 be reached, for example through the tunnel of `manage.py serve_public`.
 
@@ -36,8 +41,7 @@ catalogue. Missing RL features or unavailable LLM configuration return 503
 adds each cafeteria's `distance_m` to the offers (see recommend/distance.py).
 
 `allergies` lists keys of menus/allergens.py ALLERGEN_KEYS, as the phone stores
-them; no dish that may contain one is proposed. `banned` lists food IDs the user never
-wants proposed. `language` is "en" (default) or "ko":
+them; no dish that may contain one is proposed. `language` is "en" (default) or "ko":
 every text the session sends is in it, except dish and cafeteria names, which stay Korean.
 
 `source` is "cafeteria" (default), the day's SNU cafeteria menu, or "general", the
@@ -116,10 +120,6 @@ def create_session(request):
         if allergies is not None and (not isinstance(allergies, list)
                                       or any(key not in ALLERGEN_KEYS for key in allergies)):
             raise ValueError(f"allergies must be a list of {', '.join(ALLERGEN_KEYS)}.")
-        banned = payload.get("banned")
-        if banned is not None and (not isinstance(banned, list)
-                                   or any(type(food_id) is not int for food_id in banned)):
-            raise ValueError("banned must be a list of food IDs.")
         source = payload.get("source")
         if source is not None and source not in sessions.SOURCES:
             raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
@@ -131,8 +131,7 @@ def create_session(request):
     except ValueError as error:  # includes json.JSONDecodeError
         return _error(400, "invalid_request", str(error))
     try:
-        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language,
-                                  frozenset(banned or ()))
+        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     return JsonResponse(session.public_state(), status=201)
@@ -214,3 +213,9 @@ def recommend_now(request, session_id: str):
 @require_POST
 def undo(request, session_id: str):
     return _action(request, session_id, lambda s, body: s.undo())
+
+
+@csrf_exempt
+@require_POST
+def ban(request, session_id: str):
+    return _action(request, session_id, lambda s, body: s.ban(body["food_id"], body["banned"]))

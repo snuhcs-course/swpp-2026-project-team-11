@@ -17,8 +17,7 @@ import retrofit2.http.Query
  * [CreateSessionRequest.engine] is one of the [Engine] IDs, or null for the server's
  * default. [CreateSessionRequest.location] is where the user is, if known; the server
  * then adds each cafeteria's distance. [CreateSessionRequest.allergies] lists Allergen
- * IDs the server must never propose, or is null for none; [CreateSessionRequest.banned]
- * likewise lists food IDs the user banned. [CreateSessionRequest.language]
+ * IDs the server must never propose, or is null for none. [CreateSessionRequest.language]
  * is "en" or "ko", the language of every text the server sends, or null for English.
  * Gson leaves a null field out of the body. The menu date is the server's decision, so
  * the phone does not send one.
@@ -28,8 +27,7 @@ data class CreateSessionRequest(
     val engine: String? = null,
     val location: UserLocation?,
     val allergies: List<String>?,
-    val language: String? = null,
-    val banned: List<Int>? = null
+    val language: String? = null
 )
 
 data class UserLocation(val lat: Double, val lng: Double)
@@ -42,6 +40,11 @@ data class AnswerRequest(
 data class FeedbackRequest(
     @SerializedName("guess_id") val guessId: String,
     val accepted: Boolean
+)
+
+data class BanRequest(
+    @SerializedName("food_id") val foodId: Int,
+    val banned: Boolean
 )
 
 /** Body of a non-2xx response. `state` is only sent with a 409 stale_step. */
@@ -75,6 +78,9 @@ interface ApiService {
 
     @POST("api/sessions/{id}/undo/")
     suspend fun undo(@Path("id") sessionId: String): SessionState
+
+    @POST("api/sessions/{id}/ban/")
+    suspend fun ban(@Path("id") sessionId: String, @Body request: BanRequest): SessionState
 
     @GET("api/sessions/{id}/reason/")
     suspend fun reason(@Path("id") sessionId: String): Reason

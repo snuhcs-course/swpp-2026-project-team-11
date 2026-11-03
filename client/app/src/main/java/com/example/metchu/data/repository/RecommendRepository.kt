@@ -6,6 +6,7 @@ import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.AnswerRequest
+import com.example.metchu.data.network.BanRequest
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.ApiService
 import com.example.metchu.data.network.CreateSessionRequest
@@ -25,12 +26,10 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
         engine: String? = null,
         location: UserLocation? = null,
         allergies: List<Allergen> = emptyList(),
-        language: String? = null,
-        banned: List<Int> = emptyList()
+        language: String? = null
     ): SessionState =
-        api.createSession(
-            CreateSessionRequest(meal, engine, location, allergies.map { it.id }.ifEmpty { null }, language, banned.ifEmpty { null })
-        ).checked()
+        api.createSession(CreateSessionRequest(meal, engine, location, allergies.map { it.id }.ifEmpty { null }, language))
+            .checked()
 
     suspend fun answer(sessionId: String, questionId: String, answerId: String): SessionState =
         api.answer(sessionId, AnswerRequest(questionId, answerId)).checked()
@@ -42,6 +41,10 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
         api.recommendNow(sessionId).checked()
 
     suspend fun undo(sessionId: String): SessionState = api.undo(sessionId).checked()
+
+    /** Keeps the dish out of the rest of the session, or with [banned] false lets it back. */
+    suspend fun ban(sessionId: String, foodId: Int, banned: Boolean): SessionState =
+        api.ban(sessionId, BanRequest(foodId, banned)).checked()
 
     suspend fun reason(sessionId: String): Reason = api.reason(sessionId)
 
