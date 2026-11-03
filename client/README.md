@@ -330,7 +330,8 @@ Server behavior to know about:
 and `resources/contract/*.json`, replies captured from the real server on the
 2026-09-29 snapshot, since replaced by 2026-11-02 (the reply shape has not changed),
 with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
-scripted LLM in place of Gemini). The RL question fixture was captured from Django with three v2 cafeteria dishes.
+scripted LLM in place of Gemini). `menu.json` was captured on 2026-11-02 (301동식당, lunch), so
+it includes a set listed once at its whole price. The RL question fixture was captured from Django with three v2 cafeteria dishes.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 
