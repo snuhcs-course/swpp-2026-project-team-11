@@ -1,6 +1,7 @@
 """A dish or group banned on the result screen is not proposed again in that session, even after undo."""
 from menus.models import MenuItem
 
+from .helpers import add_food
 from .test_edge_cases import SmallMenuTestCase
 
 
@@ -28,6 +29,17 @@ class BannedDishTests(SmallMenuTestCase):
 
     def test_a_banned_group_leaves_out_its_dishes(self):
         state, url = self.start()
+        self.call(url + "ban/", {"food_group": "Noodles", "banned": True})
+        proposed = self.propose_until_exhausted(url, state["step"])
+        self.assertEqual(proposed, [MenuItem.objects.get(raw_name="Rice bowl").id])
+
+    def test_a_banned_group_leaves_out_the_sets_holding_one_of_its_dishes(self):
+        # A set dish has no group of its own; it takes that of its single variant.
+        add_food("Beef noodles", is_set=True, price=8000)
+        add_food("Dumplings", is_set=True, price=8000)
+        MenuItem.objects.filter(food__is_set=True).update(raw_name="Beef noodles + Dumplings")
+        state, url = self.start()
+        self.assertEqual(state["candidate_count"], 4)
         self.call(url + "ban/", {"food_group": "Noodles", "banned": True})
         proposed = self.propose_until_exhausted(url, state["step"])
         self.assertEqual(proposed, [MenuItem.objects.get(raw_name="Rice bowl").id])
