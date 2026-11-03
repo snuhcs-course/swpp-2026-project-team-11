@@ -4,8 +4,9 @@ The app plays a recommendation session against the Django server. The question
 engine runs on the server; the app draws whatever step the engine is on and
 sends the user's taps back. The screens follow the first UI/UX design (i3-P4,
 11/02): Jetpack Compose, the Pretendard font, one orange key color, English and
-Korean text. In Settings, choose the decision tree, reinforcement learning (RL)
-or LLM engine. The app remembers the choice for the next session.
+Korean text. The reinforcement learning (RL) engine asks by default; Settings can switch to
+the decision tree. The LLM engine is shown but cannot be picked for now. The app
+remembers the choice for the next session.
 
 ## Run it
 
