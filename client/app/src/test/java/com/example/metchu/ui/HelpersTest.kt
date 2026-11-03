@@ -7,10 +7,12 @@ import com.example.metchu.data.repository.Place
 import com.example.metchu.ui.question.phaseText
 import com.example.metchu.ui.question.progressFill
 import com.example.metchu.ui.result.AllListed
+import com.example.metchu.ui.result.Cafeteria
 import com.example.metchu.ui.result.NEAR_METERS
 import com.example.metchu.ui.result.Point
 import com.example.metchu.ui.result.cafeteriaList
 import com.example.metchu.ui.result.distanceMeters
+import com.example.metchu.ui.result.framedPoints
 import com.example.metchu.ui.start.Meal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -112,6 +114,15 @@ class CafeteriasTest {
         val list = cafeteriaList(food.copy(offers = offers), null, Place.NEAR)
         assertEquals(listOf(120), list.cafeterias.map { it.meters })
         assertEquals(listOf(near.restaurant, far.restaurant), cafeteriaList(food.copy(offers = offers), user, Place.ANY).cafeterias.map { it.offer.restaurant })
+    }
+
+    @Test
+    fun theMapFramesTheUserWithTheCafeteriasOnlyWhenNearOne() {
+        val cafeterias = listOf(Cafeteria(near, null), Cafeteria(far, null), Cafeteria(unlocated, null))
+        val points = listOf(Point(near.lat!!, near.lng!!), Point(far.lat!!, far.lng!!))
+        assertEquals(points + user, framedPoints(cafeterias, user))
+        assertEquals(points, framedPoints(cafeterias, Point(37.3861, -122.0839)))
+        assertEquals(points, framedPoints(cafeterias, null))
     }
 
     @Test
