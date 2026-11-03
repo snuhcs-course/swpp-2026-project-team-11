@@ -5,7 +5,7 @@ questions and proposes a dish from that day's menu. This branch is the working
 prototype at the end of Iteration 1.
 
 For the current app, see the [Android setup](client/README.md). Settings also offers a
-[feature-only RL engine](backend/README.md#feature-only-rl) on v2-tagged menus.
+[feature-only RL engine](backend/README.md#feature-only-rl).
 
 ## Demo video
 
@@ -45,12 +45,12 @@ python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
 python -m pip install -r backend/requirements.txt
 python backend/manage.py migrate
-python backend/manage.py loaddata menus_2026-09-29
-METCHU_MENU_DATE=2026-09-29 python backend/manage.py runserver 0.0.0.0:8000
+python backend/manage.py loaddata menus_2026-11-02
+METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
 ```
 
 `loaddata` fills the local database with the shared menu snapshot, so no API key
-is needed for the menu. The snapshot only has September 29, 2026, which is why
+is needed for the menu. The snapshot only has November 2, 2026, which is why
 the server is started with `METCHU_MENU_DATE`.
 
 Leave this terminal open. To check the server from a second terminal:
@@ -114,7 +114,7 @@ forwarding or Cloudflare account:
 
 ```bash
 brew install cloudflared                 # once; Windows: winget install Cloudflare.cloudflared
-METCHU_MENU_DATE=2026-09-29 python backend/manage.py serve_public --write-client-config
+METCHU_MENU_DATE=2026-11-02 python backend/manage.py serve_public --write-client-config
 ```
 
 It prints a public `https://<random>.trycloudflare.com/` address and writes it to
@@ -127,10 +127,10 @@ covers the details and a fixed address with a named tunnel.
 The video shows the earlier screens; the steps below are for the current app
 (the i3-P4 redesign).
 
-1. The first launch opens Settings: pick any allergies and tap ‹. On the start
-   screen, set the sentence to **Lunch** (tap the orange word) and tap the round
+1. The first launch asks for the language, then any allergies (tap **Next**),
+   and points to where both change later. On the start screen, set the sentence to **Lunch** (tap the orange word) and tap the round
    **Start** button. The meal starts at the next one by the clock; the fixture
-   has breakfast, lunch and dinner for 2026-09-29.
+   has breakfast, lunch and dinner for 2026-11-02.
 2. Answer with the five circles (no … yes) or **I'm not sure**. ‹ undoes the
    last step, and tapping an earlier question goes back to it. There is no fixed
    number of questions: the engine proposes something when it is confident
@@ -147,8 +147,8 @@ answers, and the LLM engine words its questions differently every time.
 Without the app, the same engines run in a terminal:
 
 ```bash
-python backend/manage.py demo_decision_tree --date 2026-09-29 --meal LU
-python backend/manage.py demo_llm_engine --date 2026-09-29 --meal LU     # needs the key
+python backend/manage.py demo_decision_tree --date 2026-11-02 --meal LU
+python backend/manage.py demo_llm_engine --date 2026-11-02 --meal LU     # needs the key
 ```
 
 ### Tests
@@ -200,7 +200,7 @@ cd client && ./gradlew connectedDebugAndroidTest                    # 14 UI test
 
 ### Known limits
 
-- Only the 2026-09-29 menu is included. Other dates need a menu fetch and a
+- Only the 2026-11-02 menu is included. Other dates need a menu fetch and a
   Gemini key for tagging.
 - Sessions live in server memory; restarting the server ends them.
 - The API has no login. It is meant for a local demo, not a public server.

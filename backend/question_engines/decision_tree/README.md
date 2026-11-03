@@ -20,22 +20,22 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r backend/requirements.txt
 python backend/manage.py migrate
-python backend/manage.py loaddata menus_2026-09-29
-python backend/manage.py demo_decision_tree --date 2026-09-29 --meal LU
+python backend/manage.py loaddata menus_2026-11-02
+python backend/manage.py demo_decision_tree --date 2026-11-02 --meal LU
 ```
 
 On Windows, activate with `.venv\Scripts\Activate.ps1` instead. The shared fixture
-contains September 29 only: always pass the fixture date during development.
-This dataset provides 193 lunch candidates with 23 features. A day without data
+contains November 2 only: always pass the fixture date during development.
+This dataset provides 107 lunch candidates with 33 features. A day without data
 returns an explicit `unavailable` step. No API key or additional feature-extraction
 call is needed.
 
 Automated end-to-end smoke and optional planning:
 
 ```bash
-python backend/manage.py demo_decision_tree --date 2026-09-29 --meal LU --smoke
-python backend/manage.py demo_decision_tree --date 2026-09-29 --meal LU --policy lookahead --smoke
-python backend/manage.py demo_decision_tree --date 2026-09-29 --meal LU --output /tmp/session.json
+python backend/manage.py demo_decision_tree --date 2026-11-02 --meal LU --smoke
+python backend/manage.py demo_decision_tree --date 2026-11-02 --meal LU --policy lookahead --smoke
+python backend/manage.py demo_decision_tree --date 2026-11-02 --meal LU --output /tmp/session.json
 python -m pytest backend/menus backend/question_engines/decision_tree
 ```
 
@@ -43,12 +43,13 @@ python -m pytest backend/menus backend/question_engines/decision_tree
 
 ```python
 import datetime
+from menus.features.schema import FEATURE_VERSION
 from menus.services import get_catalog
 from question_engines.decision_tree import DecisionTreeEngine
 
-date = datetime.date(2026, 9, 29)
-candidates, schema, version = get_catalog(date, meal="LU")
-context = {"date": date.isoformat(), "meal": "LU", "feature_version": version}
+date = datetime.date(2026, 11, 2)
+candidates, schema = get_catalog(date, meal="LU")
+context = {"date": date.isoformat(), "meal": "LU", "feature_version": FEATURE_VERSION}
 
 engine = DecisionTreeEngine(candidates, schema, context=context)
 step = engine.start()
@@ -73,16 +74,15 @@ engine is not intended to be mutated concurrently by multiple requests.
 
 `candidates` is the shape returned by `get_catalog`: positive integer
 `food_id`, `name`, `display_name`, `food_group`, a complete `features` dictionary,
-and `offers` containing cafeteria name, meal and price. Numeric food IDs remain
-the identity boundary; display names are not unique. Feature values must be
-finite scores in `[0,1]`. V2 also carries a complete `feature_std` dictionary.
+and `offers` containing cafeteria name, meal and price. Numeric candidate IDs are opaque menu identities for HTTP sessions; display names are not unique. Feature values must be
+finite scores in `[0,1]`. Each also carries a complete `feature_std` dictionary.
 Std must be finite, in `[0,0.5]`, and satisfy `std² <= mean * (1-mean)`.
-An explicitly supplied partial/empty std map is rejected. V1 omits the map:
-this retains legacy behavior, without asserting that its recipes have zero
-variation. Candidate count and feature count are dynamic.
+An explicitly supplied partial/empty std map is rejected. A custom schema may omit
+the map; the candidates are then scored on their means alone. Candidate count and
+feature count are dynamic.
 
 `schema` uses the existing `[{"key", "question"}, ...]` shape. English presentation
-text is supplied for the legacy 23 keys and the v2 33 keys. V2 keeps grilled
+text is supplied for the 33 feature keys, which keep grilled
 and stir-fried, oily and greasy, large portion and filling, and the individual
 seafood/cuisine features separate. A custom schema can provide
 `question_en` and `family`. Families share session-level importance estimates.
@@ -159,15 +159,15 @@ Each food occurs once under its `food_group`; groups with at least two foods
 receive internal parent nodes. This is a shallow classification hierarchy from
 the current meal candidates, not a verified culinary ontology. Free-form group
 quality depends on the DB annotations. Internal group IDs are never presented
-as real database food IDs.
+as database row identities. HTTP menu candidates have no family proposals; the
+hierarchy remains available when replaying historical dish-level inputs.
 
 The latent state distinguishes a specific food from indifference within a
 menu group. 35% of a grouped food's prior is allocated to its generic group
 intent; the rest stays specific. Marginalizing back to foods reproduces the
 original normalized prior, so adding a parent does not duplicate probability.
 
-V1 scores retain their original binary-yes interpretation. V2 means describe
-feature intensity across ordinary recipes and serving styles; std describes
+Feature means describe intensity across ordinary recipes and serving styles; std describes
 that recipe variation, not model confidence, a standard error, or user preference.
 The two moments alone do not identify a distribution or a calibrated response
 likelihood. Policy `decision-tree.2.0` therefore makes an explicit, provisional
@@ -180,8 +180,8 @@ response_score = (1 - u) * mean + u * 0.5
 
 The factor 4 normalizes variance by the maximum possible variance on [0,1].
 It reduces directional contrast toward a neutral response score as ordinary
-recipes vary more. It never modifies the stored mean/std. Zero std (or missing
-legacy std) reproduces the old channel; scores are not sharpened. Family intent
+recipes vary more. It never modifies the stored mean/std. Zero (or missing) std
+reproduces the mean-only channel; scores are not sharpened. Family intent
 scores average these food-level response scores. Existing within-family
 differences between food means still control the generic-intent resolution.
 Recipe std does not itself raise the probability of `any` or `unknown`.
@@ -298,7 +298,7 @@ question ordering, both directions of posterior attenuation, channel normalizati
 snapshot/undo behavior, dated schema selection, and unchanged API reply keys.
 
 ```bash
-python backend/manage.py benchmark_decision_tree --date 2026-09-29 --meal LU --trials 24 --output /tmp/engine-benchmark.json
+python backend/manage.py benchmark_decision_tree --date 2026-11-02 --meal LU --trials 24 --output /tmp/engine-benchmark.json
 ```
 
 Both policies use the same fixed targets and order-independent answer oracle.

@@ -89,7 +89,7 @@ internal fun SessionState.checked(): SessionState {
         }
         Step.GUESS, Step.RECOMMENDATION -> {
             val food = step.food
-            check(food != null && food.displayName != null && food.name != null &&
+            check(food != null && food.displayName != null &&
                     food.offers != null && food.offers.none { it == null || it.restaurant == null }) {
                 "Proposed dish is incomplete"
             }

@@ -31,8 +31,12 @@ def seed_llm(name, dishes, is_meal=True, version=PREPROCESS_VERSION):
 
 
 def tag(*names):
-    Food.objects.filter(name__in=names).update(
-        is_food=True, feature_version=FEATURE_VERSION, features={k: 0.5 for k in FEATURE_KEYS})
+    for food in Food.objects.filter(name__in=names):
+        food.is_food = True
+        food.feature_version = FEATURE_VERSION
+        food.features = {k: .5 for k in FEATURE_KEYS} | {"meal_variety": float(food.is_set)}
+        food.feature_std = {k: .1 for k in FEATURE_KEYS} | {"meal_variety": 0.}
+        food.save()
 
 
 @without_committed_rules
@@ -66,19 +70,15 @@ class CachedMappingTests(TestCase):
         items = MenuItem.objects.filter(raw_name="돈가스 카레우동")
         self.assertEqual(sorted(i.food.name for i in items), ["돈까스", "카레우동"])
 
-    def test_both_dishes_offer_the_combo_and_the_contract_is_unchanged(self):
+    def test_component_rows_produce_one_original_combo_candidate(self):
         seed_llm("돈가스 카레우동", ["돈까스", "카레우동"])
         run([record("돈가스 카레우동"), record("마라탕", "공대간이식당", price=7700)])
         tag("돈까스", "카레우동", "마라탕")
-        candidates = {c["name"]: c for c in services.get_candidates(DAY, "LU", feature_version=FEATURE_VERSION)}
-        self.assertEqual(set(candidates), {"돈까스", "카레우동", "마라탕"})
-        for name in ("돈까스", "카레우동"):
-            self.assertEqual(candidates[name]["offers"],
-                             [{"restaurant": "220동식당", "meal": "LU", "price": 6500, "lat": None, "lng": None}])
-        for candidate in candidates.values():
-            self.assertEqual(set(candidate),
-                             {"food_id", "name", "display_name", "food_group", "features", "offers"})
-            self.assertTrue(all(set(o) == {"restaurant", "meal", "price", "lat", "lng"} for o in candidate["offers"]))
+        candidates = {c["name"]: c for c in services.get_catalog(DAY, "LU")[0]}
+        self.assertEqual(set(candidates), {"돈가스 카레우동", "마라탕"})
+        self.assertEqual(candidates["돈가스 카레우동"]["offers"],
+                         [{"restaurant": "220동식당", "meal": "LU", "price": 6500, "lat": None, "lng": None}])
+        self.assertEqual(candidates["돈가스 카레우동"]["menu_profile"], "rms-v1")
 
     def test_a_merged_dish_lists_every_cafeteria(self):
         seed_llm("즉석 마라탕", ["마라탕"])
@@ -93,20 +93,21 @@ class CachedMappingTests(TestCase):
         run([record("마라탕", "공대간이식당", price=7700, lat=37.45727, lng=126.95079),
              record("마라탕", "220동식당")])
         tag("마라탕")
-        [mala] = services.get_candidates(DAY, "LU", feature_version=FEATURE_VERSION)
+        [mala] = services.get_catalog(DAY, "LU")[0]
         self.assertEqual({o["restaurant"]: (o["lat"], o["lng"]) for o in mala["offers"]},
                          {"공대간이식당": (37.45727, 126.95079), "220동식당": (None, None)})
 
-    def test_two_lines_of_one_cafeteria_merged_into_one_dish_offer_it_once(self):
+    def test_original_menu_variants_keep_their_own_offers(self):
         seed_llm("눈꽃치즈 돈까스", ["치즈돈까스"])
         seed_llm("치즈돈까스", ["치즈돈까스"])
         run([record("눈꽃치즈 돈까스", price=7900), record("치즈돈까스", price=7900),
              record("치즈돈까스", meal="DN", price=7900)])
         tag("치즈돈까스")
-        [candidate] = services.get_candidates(DAY, feature_version=FEATURE_VERSION)
-        self.assertEqual(candidate["offers"],
-                         [{"restaurant": "220동식당", "meal": "LU", "price": 7900, "lat": None, "lng": None},
-                          {"restaurant": "220동식당", "meal": "DN", "price": 7900, "lat": None, "lng": None}])
+        candidates, _ = services.get_catalog(DAY)
+        by_name = {c["name"]: c for c in candidates}
+        self.assertEqual(set(by_name), {"눈꽃치즈 돈까스", "치즈돈까스"})
+        self.assertEqual([o["meal"] for o in by_name["눈꽃치즈 돈까스"]["offers"]], ["LU"])
+        self.assertEqual([o["meal"] for o in by_name["치즈돈까스"]["offers"]], ["LU", "DN"])
 
     def test_lines_that_are_not_meals_are_not_stored(self):
         seed_llm("공기밥", [], is_meal=False)

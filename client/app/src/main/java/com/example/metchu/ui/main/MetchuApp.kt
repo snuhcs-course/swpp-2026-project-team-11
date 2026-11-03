@@ -42,23 +42,35 @@ import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.SettingsStore
+import com.example.metchu.data.repository.Setup
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.floating
+import com.example.metchu.ui.common.setLanguage
 import com.example.metchu.ui.question.QuestionScreen
 import com.example.metchu.ui.result.ResultScreen
 import com.example.metchu.ui.result.UnavailableScreen
 import com.example.metchu.ui.settings.SettingsScreen
+import com.example.metchu.ui.setup.AllergySetupScreen
+import com.example.metchu.ui.setup.LanguageSetupScreen
 import com.example.metchu.ui.start.Meal
 import com.example.metchu.ui.start.StartScreen
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 
-/** Which screen is up. Before a session: start or settings. During one: the step's screen. */
-private enum class Screen { START, SETTINGS, QUESTION, RESULT, UNAVAILABLE }
+/**
+ * Which screen is up. Before a session: the first launch's steps, then start or settings.
+ * During one: the step's screen.
+ */
+private enum class Screen { LANGUAGE, ALLERGIES, START, SETTINGS, QUESTION, RESULT, UNAVAILABLE }
 
-private fun screenOf(session: SessionState?, settingsOpen: Boolean): Screen = when (session?.step?.type) {
-    null -> if (settingsOpen) Screen.SETTINGS else Screen.START
+private fun screenOf(session: SessionState?, setup: Setup, settingsOpen: Boolean): Screen = when (session?.step?.type) {
+    null -> when {
+        setup == Setup.LANGUAGE -> Screen.LANGUAGE
+        setup == Setup.ALLERGIES -> Screen.ALLERGIES
+        settingsOpen -> Screen.SETTINGS
+        else -> Screen.START
+    }
     Step.QUESTION -> Screen.QUESTION
     Step.GUESS, Step.RECOMMENDATION -> Screen.RESULT
     else -> Screen.UNAVAILABLE
@@ -74,8 +86,12 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     val reasons by viewModel.reasons.observeAsState(emptyMap())
     val menus by viewModel.menus.observeAsState(emptyMap())
 
-    // The first launch opens the settings, where the allergies are picked.
-    var settingsOpen by rememberSaveable { mutableStateOf(!allergyStore.chosen) }
+    // Stored at once, so a launch picks up where the last one stopped.
+    var setup by remember { mutableStateOf(settings.setup) }
+    val advance = { next: Setup -> setup = next; settings.setup = next }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    // Once per launch: kept here, so leaving the start screen does not bring the location notice back.
+    var locationAsked by rememberSaveable { mutableStateOf(false) }
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
     var engine by remember { mutableStateOf(settings.engine) }
     var place by remember { mutableStateOf(settings.place) }
@@ -84,7 +100,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     // The server writes its questions in the language the app is showing.
     val language = if (LocalConfiguration.current.locales[0].language == "ko") "ko" else "en"
 
-    val screen = screenOf(session, settingsOpen)
+    val screen = screenOf(session, setup, settingsOpen)
     val closeSettings = {
         allergyStore.allergies = allergies
         settingsOpen = false
@@ -111,13 +127,27 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
         ) { target ->
             val current = session
             when (target) {
+                Screen.LANGUAGE -> LanguageSetupScreen(onPick = { tag -> advance(Setup.ALLERGIES); setLanguage(tag) })
+                Screen.ALLERGIES -> {
+                    BackHandler { advance(Setup.LANGUAGE) }
+                    AllergySetupScreen(
+                        allergies = allergies,
+                        onAllergies = { allergies = it; allergyStore.allergies = it },
+                        onBack = { advance(Setup.LANGUAGE) },
+                        onNext = { advance(Setup.TIP) }
+                    )
+                }
                 Screen.START -> StartScreen(
                     meal = meal,
                     place = place,
                     loading = loading,
+                    tip = setup == Setup.TIP,
+                    askForLocation = !locationAsked,
                     onMeal = { meal = it },
                     onPlace = { place = it; settings.place = it },
                     onSettings = { settingsOpen = true },
+                    onTipDone = { advance(Setup.DONE) },
+                    onLocationAsked = { locationAsked = true },
                     onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language) }
                 )
                 Screen.SETTINGS -> {

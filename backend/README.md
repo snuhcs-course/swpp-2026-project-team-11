@@ -1,5 +1,9 @@
 # Metchu! backend
 
+The live team deployment now uses the Windows mini PC and its local SQLite database.
+See [host updates and rollback](../docs/mini-pc-host.md); the Supabase instructions
+below describe the earlier deployment and recovery reference.
+
 Django 5.2 server, on local SQLite or the team's shared Supabase Postgres
 ([Shared database](#shared-database-supabase-p8)). For now it holds the MVP's candidate set:
 **the SNU cafeteria dishes of a given day**, split and merged into real dishes
@@ -36,15 +40,15 @@ pytest                           # every backend test; no API key needed
 ## A. Load the shared snapshot (no API key)
 
 ```bash
-python manage.py loaddata menus_2026-09-29
+python manage.py loaddata menus_2026-11-02
 ```
 
-This loads `menus/fixtures/menus_2026-09-29.json`:
-- 17 restaurants and 238 dishes, 208 of which are meal candidates
-- all features already filled in
+This loads `menus/fixtures/menus_2026-11-02.json`:
+- 15 cafeterias and 127 dishes, all meal candidates
+- v2 features (means and std) and allergen tags already filled in
 
-> **주의:** 스냅샷에는 2026-09-29 데이터만 있습니다. 날짜를 생략하면 "오늘" 기준이라 빈 목록이 나오니, 반드시 날짜를 넘기세요.
-> 예: `--date 2026-09-29`, `services.get_candidates(datetime.date(2026, 9, 29))`
+> **주의:** 스냅샷에는 2026-11-02 데이터만 있습니다. 날짜를 생략하면 "오늘" 기준이라 빈 목록이 나오니, 반드시 날짜를 넘기세요.
+> 예: `--date 2026-11-02`, `services.get_catalog(datetime.date(2026, 11, 2))[0]`
 
 ## B. Build a day's DB with your own API key
 
@@ -105,7 +109,8 @@ python manage.py extract_allergens --date 2026-09-30
 ```
 
 - Try a small batch first: `python manage.py extract_features --limit 25 --dry-run` prints tags without saving.
-- On days with no menu (weekends, holidays), `fetch_menus` prints `오늘 운영 메뉴 없음` and exits.
+- On days with no menu (no Siksha menu and no fixed board, e.g. Sundays), `fetch_menus` prints
+  `오늘 운영 메뉴 없음` and exits. A fixed board does not know holidays: it is added on each of its weekdays.
 - `fetch_menus` is safe to re-run; it replaces that day's menu items.
 - `extract_features` and `extract_allergens` skip dishes that are already tagged. Use `--force` to re-tag them.
 
@@ -158,6 +163,13 @@ catalog does not know, `fetch_menus` warns; rebuild then (hand corrections in th
 ```bash
 python manage.py build_fixed_menus --start 2026-09-28 --end 2026-10-13 --review fixed_review.csv
 ```
+
+**Cafeterias Siksha does not list.** `menus/data/fixed_cafeterias.json` holds their boards: 구시아푸드마켓
+(300동) from 2026-11-03, every meal Monday to Saturday. `fetch_menus` adds a board's lines to every
+day it serves, so they go through the same preprocessing, tagging and allergy filter, and a session
+offers them like any cafeteria. A corner is named like Siksha's 자하연식당>2층 (구시아푸드마켓>비비고고);
+the map shows one pin at 300동. When a board changes, edit the file; when Siksha starts listing a cafeteria, delete its entry, or its
+lines are offered twice. The SETs with a plate of 제육 are split in `overrides.json`.
 
 **Human review.** Check the day's results in Excel and record corrections:
 
@@ -257,7 +269,7 @@ DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-<n>-ap-northeast
 
 ```bash
 python manage.py migrate                       # creates the tables in Supabase
-python manage.py loaddata menus_2026-09-29     # the shared demo snapshot
+python manage.py loaddata menus_2026-11-02     # the shared demo snapshot
 python manage.py run_daily_pipeline            # today's menu
 ```
 
@@ -331,31 +343,54 @@ import datetime
 from menus import services
 
 services.get_feature_schema()
-# [{"key": "spicy", "question": "매콤한 게 당겨요?"}, ...]  (23 features)
+# [{"key": "spicy", "question": "Do you feel like something spicy?",
+#   "question_en": "...", "family": "taste"}, ...]  (33 features)
 
-services.get_candidates(datetime.date(2026, 9, 29), meal="LU")   # meal=None: whole day, date=None: today
-# [{"food_id", "name", "display_name", "food_group",
-#   "features": {"spicy": 0.9, "soupy": 1.0, ...},
+candidates, schema = services.get_catalog(datetime.date(2026, 11, 2), meal="LU")   # meal=None: whole day, date=None: today
+# One candidate per sales menu, named as the restaurant lists it:
+# [{"food_id", "name", "display_name", "food_group", "menu_profile": "rms-v1",
+#   "features": {"spicy": 0.9, "soupy": 1.0, ...}, "feature_std": {"spicy": 0.1, ...},
 #   "offers": [{"restaurant": "학생회관식당", "meal": "LU", "price": 3000,
 #               "lat": 37.45932, "lng": 126.95058}, ...]}, ...]
 
-# New sessions load one matching version of candidates and questions together:
-candidates, schema, version = services.get_catalog(datetime.date(2026, 10, 13), meal="LU")
-# The same for the restaurants near the stations (v2 only; offers carry the given meal):
-candidates, schema, version = services.get_store_catalog(meal="DN")
+# The same for the restaurants near the stations (offers carry the given meal):
+candidates, schema = services.get_store_catalog(meal="DN")
 ```
 
-The low-level readers above default to **v1**. By default `get_catalog` uses the
-version covering more eligible dishes (v2 on a nonempty tie) and reports partial
-coverage. RL requests v2 whenever any eligible v2 dish exists. Candidates and
-questions always have the same version. The September 29 fixture uses v1.
+A menu is a candidate only when every main dish is tagged with the current
+`FEATURE_VERSION` (v2); `get_catalog` logs how many of the served menus it kept.
+
+### Actual menu candidates and set composition
+
+`get_catalog` and `get_store_catalog` return the original purchasable menu,
+including its original name, price and restaurant offers. Main dishes remain
+internal feature records; they are not separate proposals for the same set.
+Each feature of a menu containing n main dishes is
+`sqrt(sum(x_i ** 2) / n)`. A singleton keeps its original feature values.
+
+Recipe spread is carried as an RMS dispersion proxy, not an independently
+measured standard deviation for the set. Valid bounded component moments keep
+this proxy bounded too: the mean squared deviations are at most
+`mean(x) - mean(x ** 2) <= rms(x) * (1 - rms(x))`.
+No assumption that the component recipes vary independently is made.
+
+A partially tagged set is withheld whole. Allergy and distance filtering happen
+at the complete sale-offer boundary. Equal menu names with different components
+remain distinct; identical original menus can list multiple restaurant offers.
+The transport key `food_id` is an opaque menu-candidate identifier derived from
+sales rows, not a `Food` primary key. It stays fixed within a session.
+Generic cuisine/group proposals are disabled for these menu candidates.
+
+`get_catalog`, `get_store_catalog` and `export_candidates` share the actual-menu
+candidate path; explicit feature-version exports use the same path.
+Inference reuses the frozen feature policy; composition correctness does not
+establish preference accuracy for real users.
 
 ### Feature-only RL
 
 Select **Reinforcement learning (RL)** in Android Settings or send `"engine": "rl"`
 to `POST /api/sessions/`. Both cafeteria and general sessions use v2 dish features
-after allergy and distance filtering. An empty catalogue returns an unavailable
-step; a nonempty v1-only cafeteria catalogue returns HTTP 503.
+after allergy and distance filtering. An empty catalogue returns an unavailable step.
 
 The frozen v20 policy ranks dishes from their features and the user's answers.
 After a refusal it excludes that dish and updates the scores of similar dishes
@@ -385,9 +420,6 @@ It runs once per name (about one call per 25 new names) and stores `Food.allerge
 `Food.allergen_version`. Changing the list or the prompt bumps `ALLERGEN_VERSION`, after
 which every food counts as untagged until it is tagged again. The tags are an estimate from
 names, not cafeteria data, and the app says so.
-
-The 2026-09-29 snapshot has no allergen tags yet, so on it a session with any allergy has
-no candidates.
 
 ### Feature extraction v2 (P11)
 
@@ -428,27 +460,16 @@ measurements across variants served on the target date (reusing any cached v2
 variant from another date without modifying rows not served on the target date).
 `features` remains a scalar mean dictionary; `feature_std` stores the matching
 std dictionary. `meal_variety` is 1 for sets and 0 otherwise, always with std 0.
-Set display names end in ` (세트)`. Existing food groups are preserved; new groups
-are left empty rather than introducing a second model task.
+Existing food groups are preserved; new groups are left empty rather than
+introducing a second model task. Recommendation names come from the original menu line.
 
 Valid v2 data on an existing variant supplies a new variant without an API call.
 `--force` reevaluates each name once, `--limit` counts distinct names, and failed
 names keep their old version while the command exits with an error. `--dry-run`
 still calls the model when needed, but writes nothing. Tests use fake responses.
 
-For explicit v2 inspection, use:
-
-```python
-services.get_feature_schema("v2")
-services.get_candidates(date, meal="LU", feature_version="v2", include_std=True)
-```
-
-`export_candidates` selects `v2` (including std) when every candidate on the
-requested date/meal is `v2`, and falls back to `v1` otherwise; `--feature-version`
-(`v1` or `v2`) forces a specific version. The default candidate reader
-keeps its original keys. The DT integration uses `get_catalog` to enable v2
-serving and std-aware question selection and answer updates. Its internal
-candidate dictionaries carry std; REST reply shapes stay unchanged.
+`export_candidates` writes the same candidates, std included. The decision tree uses
+the std for question selection and answer updates; REST reply shapes do not carry it.
 
 - Only real meals (`is_food=True`) are returned. Drinks, 공기밥 and side orders are excluded.
 - Working in plain Python without Django? Read the JSON written by `export_candidates`.
@@ -542,15 +563,27 @@ python manage.py benchmark_features --runs runs.jsonl --ratings kim.xlsx lee.xls
 
 ## Making a new shared snapshot
 
-Use this to share your DB with the team. The file contains **every day** currently in your DB.
+The snapshot holds one day: its menu items and the cafeterias and dishes they use. Every
+dish must already carry v2 features. To make one from the DB you use (the shared Supabase
+is only read):
 
 ```bash
-python -X utf8 manage.py dumpdata menus --indent 1 -o menus/fixtures/menus_2026-09-30.json
+python -X utf8 manage.py shell -c "
+import datetime
+from django.core import serializers
+from menus.models import Food, MenuItem, Restaurant
+items = MenuItem.objects.filter(date=datetime.date(2026, 11, 2)).order_by('pk')
+objects = [*Restaurant.objects.filter(pk__in=items.values('restaurant_id')).order_by('pk'),
+           *Food.objects.filter(pk__in=items.values('food_id')).order_by('pk'), *items]
+with open('menus/fixtures/menus_2026-11-02.json', 'w', encoding='utf-8') as f:
+    serializers.serialize('json', objects, indent=1, ensure_ascii=False, stream=f)
+"
 ```
 
 > **Windows 주의:** `-X utf8`을 빼면 파일이 cp949로 저장되어 한글이 깨질 수 있습니다.
 
-Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`.
+Replace the old snapshot, update the date in the tests, docs and `METCHU_MENU_DATE` examples,
+and commit. Teammates then run `python manage.py loaddata menus_<date>`.
 
 ## Command reference
 
@@ -584,7 +617,7 @@ Commit the file. Teammates then run `python manage.py loaddata menus_2026-09-30`
 | Model | One row per | Notes |
 |---|---|---|
 | `Restaurant` | cafeteria or restaurant | `source` `siksha`: `code` is the Siksha id, e.g. `220동식당`; `lat`/`lng` come from Siksha and are null when it has none. `source` `naver`: `code` is the 상가업소번호, with `category`, `address` and the Naver `place_id` |
-| `Food` | distinct (dish name, set status) | recommendation unit; holds mean `features`, `feature_std`, preprocessing `is_food`, `display_name`, `food_group`, `allergens` |
+| `Food` | distinct (dish name, set status) | a main dish of a sales menu; holds mean `features`, `feature_std`, preprocessing `is_food`, `food_group`, `allergens`. Users see the menu line's `raw_name`, never this name |
 | `MenuItem` | dish x restaurant x meal x day | `meal` is `BR` / `LU` / `DN`; `price` in won. A combo line has one row per dish |
 | `StoreMenu` | dish x restaurant menu line | the menu boards of the restaurants near the stations; no date or meal. A set has one row per dish; `allergens` are the whole line's |
 | `MenuLine` | distinct menu line (`dish_key`) | cache of the dishes a line stands for (`is_meal`, `dishes`, `source`); restaurant lines use `store:` keys |

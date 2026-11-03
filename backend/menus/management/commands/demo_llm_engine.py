@@ -21,7 +21,7 @@ class Command(BaseCommand):
         parser.add_argument("--output", type=Path, help="Save steps, timings, diagnostics and a replayable snapshot")
 
     def handle(self, *args, **options):
-        rows, _, _ = get_catalog(options["date"], options["meal"])
+        rows, _ = get_catalog(options["date"], options["meal"])
         try:
             engine = LLMEngine(rows, config={"max_questions": options["max_questions"]})
         except (LLMConfigError, ValueError) as error:

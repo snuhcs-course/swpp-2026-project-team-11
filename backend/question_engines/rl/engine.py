@@ -7,7 +7,7 @@ from functools import cached_property
 import numpy as np
 
 from question_engines.decision_tree.contracts import (
-    ANSWER_OPTIONS, FEATURE_PRESENTATION_V2, GUESS_TEXT, LANGUAGES, RECOMMENDATION_TEXT,
+    ANSWER_OPTIONS, FEATURE_PRESENTATION, GUESS_TEXT, LANGUAGES, RECOMMENDATION_TEXT,
     UNAVAILABLE_TEXT, answer_options, translate,
 )
 from .policy import CHECKPOINT_SHA256, FEATURE_KEYS, MODEL_VERSION, prepare
@@ -79,7 +79,7 @@ class RLEngine:
             return {**step, "reason": reason, "text": translate(UNAVAILABLE_TEXT, self.language)}
         if kind == "question":
             key = FEATURE_KEYS[index]
-            return {**step, "question_id": "q:"+key, "text": translate(FEATURE_PRESENTATION_V2[key][0], self.language),
+            return {**step, "question_id": "q:"+key, "text": translate(FEATURE_PRESENTATION[key][0], self.language),
                     "options": answer_options(self.language)}
         food = copy.deepcopy(self._foods[index])
         step.update(food=food, target_kind="food")
@@ -128,7 +128,7 @@ class RLEngine:
         return self.next_step()
 
     def answered(self):
-        return [{"question_id": event[1], "answer_id": event[2], "text": FEATURE_PRESENTATION_V2[FEATURE_KEYS[index]][0]}
+        return [{"question_id": event[1], "answer_id": event[2], "text": FEATURE_PRESENTATION[FEATURE_KEYS[index]][0]}
                 for (_, index), event in self._events if event[0] == "answer"]
 
     def diagnostics(self):

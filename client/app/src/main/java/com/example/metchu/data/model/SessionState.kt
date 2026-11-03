@@ -94,7 +94,6 @@ object AnswerId {
 
 data class Food(
     @SerializedName("food_id") val foodId: Int,
-    val name: String,
     @SerializedName("display_name") val displayName: String,
     @SerializedName("food_group") val foodGroup: String,
     val offers: List<Offer>
