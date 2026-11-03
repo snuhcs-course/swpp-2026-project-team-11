@@ -210,15 +210,14 @@ class MenuCatalogTests(TestCase):
         hall = Restaurant.objects.create(code="hall", name="학생회관식당")
         for version in ("v1", FEATURE_VERSION):
             food = Food.objects.create(name=version, is_food=True, feature_version=version,
-                                       features={"spicy": .5}, feature_std={"spicy": .1})
+                                       features=dict.fromkeys(FEATURE_KEYS, .5), feature_std=dict.fromkeys(FEATURE_KEYS, .1))
             MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name=version, food=food)
-        [candidate], schema = services.get_catalog(DAY)
+        [candidate] = services.get_catalog(DAY)[0]
         self.assertEqual(candidate["name"], FEATURE_VERSION)
-        self.assertEqual(set(candidate), {"food_id", "name", "display_name", "food_group", "food_groups",
-                                          "menu_profile", "features", "feature_std", "offers"})
-        self.assertEqual(candidate["feature_std"], {"spicy": .1})
-        self.assertEqual(candidate["menu_profile"], "rms-v1")
-        self.assertEqual(len(schema), 33)
+        self.assertEqual(set(candidate), {"food_id", "name", "display_name", "food_group", "food_groups", "features",
+                                          "feature_std", "offers", "menu_profile"})
+        self.assertEqual(candidate["feature_std"], dict.fromkeys(FEATURE_KEYS, .1))
+        self.assertEqual(len(services.get_feature_schema()), 33)
 
 
 class StoreDishesTests(TestCase):

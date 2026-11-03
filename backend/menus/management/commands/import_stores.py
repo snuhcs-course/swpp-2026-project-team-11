@@ -31,6 +31,7 @@ from menus import llm as menu_llm
 from menus.allergens import ALLERGEN_VERSION
 from menus.management.commands.fetch_menus import ensure_foods
 from menus.models import Restaurant, StoreMenu
+from menus.menu_registry import register_menu_ids
 from menus.preprocess import mapper, store_lines
 from menus.preprocess.mapper import NAME_MAX
 from menus.preprocess.review import line_rows, write_csv
@@ -100,6 +101,7 @@ def store(stores, entries, mappings, replace_codes: set[str] | None = None) -> C
                 food=food, price=entry.price,
                 allergens=allergens or [], allergen_version=ALLERGEN_VERSION if allergens is not None else ""))
     StoreMenu.objects.bulk_create(items, batch_size=1000)
+    register_menu_ids("general", restaurant_ids=[place.pk for place in restaurants.values()])
 
     stats["restaurants"] = len(restaurants)
     stats["menu_items"] = len(items)

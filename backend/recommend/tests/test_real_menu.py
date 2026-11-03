@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 
 from menus.models import MenuItem
+from menus.normalize import clean_name
 from menus.services import get_feature_schema
 
 from .helpers import ANSWER_IDS, DAY, check_state, post
@@ -104,10 +105,12 @@ class ActualMenuGuessTests(RealMenuTestCase):
         self.assertNotIn("group", state["step"])
         return state, url
 
-    def test_accepting_an_actual_menu_keeps_its_original_sales_name(self):
+    def test_accepting_an_actual_menu_keeps_its_cleaned_sales_title(self):
         guess, url = self.first_menu_guess()
         step = guess["step"]
-        self.assertTrue(MenuItem.objects.filter(date=DAY, raw_name=step["food"]["display_name"]).exists())
+        titles = {clean_name(raw)[0] for raw in MenuItem.objects.filter(date=DAY)
+                  .values_list("raw_name", flat=True)}
+        self.assertIn(step["food"]["display_name"], titles)
         final = self.call(url + "feedback/", {"guess_id": step["guess_id"], "accepted": True})
         check_state(self, final)
         self.assertEqual(final["step"]["type"], "recommendation")

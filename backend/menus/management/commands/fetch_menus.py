@@ -21,6 +21,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from menus.models import Food, MenuItem, Restaurant
+from menus.menu_registry import register_menu_ids
 from menus.normalize import clean_name, dish_key, is_noise
 from menus import llm as menu_llm
 from menus.features.extractor import api_key_available
@@ -101,6 +102,7 @@ def store(date: datetime.date, records: list[siksha.MenuRecord],
                 price=price_in_name or record.price, no_meat=record.no_meat,
             ))
     MenuItem.objects.bulk_create(items)
+    register_menu_ids("cafeteria", date=date)
 
     stats["menu_items"] = len(items)
     stats["restaurants"] = len(restaurants)
