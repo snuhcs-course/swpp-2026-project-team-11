@@ -70,7 +70,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
-import com.example.metchu.data.model.Food
 import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.Offer
 import com.example.metchu.data.model.SessionState
@@ -111,8 +110,8 @@ import kotlin.math.abs
  * between the dishes proposed so far in this session; "Find another" stays on all of
  * them and always turns down the server's current guess. "Menu" on a cafeteria lists
  * what else it serves at that meal; [menus] holds those lists, null while one loads.
- * Under the dish, [onBan] keeps it out of later sessions, or lets it back in if it is
- * among the [banned] food IDs.
+ * Under the dish, [onBan] keeps it out of the rest of the session, or lets it back if it
+ * is among the [banned] food IDs.
  */
 @Composable
 fun ResultScreen(
@@ -127,7 +126,7 @@ fun ResultScreen(
     onHome: () -> Unit,
     onMore: () -> Unit,
     onMenu: (restaurant: String) -> Unit,
-    onBan: (Food, ban: Boolean) -> Unit
+    onBan: (foodId: Int, ban: Boolean) -> Unit
 ) {
     val current = session.step
     var viewing by remember(shown.size, current.guessId) { mutableIntStateOf(shown.indexOfFirst { it.guessId == current.guessId }) }
@@ -207,7 +206,7 @@ fun ResultScreen(
             writingReason = step.proposalId in reasons && reasons[step.proposalId] == null,
             caption = captionFor(session.meal),
             banned = food.foodId in banned,
-            onBan = { onBan(food, it) },
+            onBan = { if (!loading) onBan(food.foodId, it) },
             cafeterias = cafeterias,
             place = place,
             selected = selected,

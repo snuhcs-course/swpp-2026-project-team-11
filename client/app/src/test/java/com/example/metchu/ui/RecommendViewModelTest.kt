@@ -128,13 +128,6 @@ class RecommendViewModelTest {
     }
 
     @Test
-    fun startSendsTheBannedDishes() {
-        api.reply(question)
-        viewModel.start("LU", Engine.DECISION_TREE, banned = listOf(3, 8))
-        assertEquals(listOf("create LU decision_tree -3,8"), api.calls)
-    }
-
-    @Test
     fun startSendsTheUsersLocationWhenThereIsOne() {
         api.reply(question)
         viewModel.start("LU", Engine.DECISION_TREE, LocationSource { UserLocation(37.45932, 126.95058) })
