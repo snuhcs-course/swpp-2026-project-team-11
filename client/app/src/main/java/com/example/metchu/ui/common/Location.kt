@@ -1,6 +1,11 @@
 package com.example.metchu.ui.common
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +24,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import kotlin.math.abs
 
 /** Whether the user allows location, and how to ask. Declining keeps the app working without distances. */
 class LocationPermission(val granted: Boolean, val request: () -> Unit)
@@ -61,3 +67,36 @@ fun rememberUserPoint(granted: Boolean): Point? {
 }
 
 private const val UPDATE_MILLIS = 10_000L
+
+/**
+ * Which way the phone points, in degrees clockwise from north, while [enabled]; null when it
+ * is off or the phone has no rotation sensor. Small wobbles under 2 degrees are ignored.
+ */
+@Composable
+fun rememberHeading(enabled: Boolean): Float? {
+    val context = LocalContext.current
+    var heading by remember { mutableStateOf<Float?>(null) }
+    DisposableEffect(enabled) {
+        val sensors = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val sensor = sensors.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        if (!enabled || sensor == null) {
+            heading = null
+            return@DisposableEffect onDispose {}
+        }
+        val matrix = FloatArray(9)
+        val angles = FloatArray(3)
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                SensorManager.getRotationMatrixFromVector(matrix, event.values)
+                SensorManager.getOrientation(matrix, angles)
+                val degrees = (Math.toDegrees(angles[0].toDouble()).toFloat() + 360f) % 360f
+                val last = heading
+                if (last == null || abs(((degrees - last + 540f) % 360f) - 180f) > 2f) heading = degrees
+            }
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+        }
+        sensors.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_UI)
+        onDispose { sensors.unregisterListener(listener) }
+    }
+    return heading
+}

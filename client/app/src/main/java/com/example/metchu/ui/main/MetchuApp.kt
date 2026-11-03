@@ -1,5 +1,8 @@
 package com.example.metchu.ui.main
 
+import com.example.metchu.ui.common.fade
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.animateFloat
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -85,6 +88,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     val history by viewModel.history.observeAsState(emptyList())
     val shown by viewModel.shown.observeAsState(emptyList())
     val reasons by viewModel.reasons.observeAsState(emptyMap())
+    val canResume by viewModel.canResume.observeAsState(false)
     val menus by viewModel.menus.observeAsState(emptyMap())
     val banned by viewModel.banned.observeAsState(emptySet())
 
@@ -148,6 +152,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                     onMeal = { meal = it },
                     onPlace = { place = it; settings.place = it },
                     onSettings = { settingsOpen = true },
+                    onResume = viewModel::resume.takeIf { canResume },
                     onTipDone = { advance(Setup.DONE) },
                     onLocationAsked = { locationAsked = true },
                     onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = if (place == Place.NEAR) "near" else "any") }
@@ -164,10 +169,18 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                 }
                 Screen.QUESTION -> if (current != null) {
                     BackHandler { if (current.canUndo) viewModel.undo() else viewModel.startOver() }
+                    // Leaving for a result, this screen keeps the question just answered and the
+                    // list as it was, so the dish's step never shows as a question while it fades.
+                    val asked = current.takeIf { it.step.type == Step.QUESTION }
+                    val kept = remember { Kept(current, history) }
+                    if (asked != null) {
+                        kept.session = asked
+                        kept.history = history
+                    }
                     QuestionScreen(
-                        session = current,
-                        history = history,
-                        loading = loading,
+                        session = kept.session,
+                        history = kept.history,
+                        loading = loading || asked == null,
                         onAnswer = viewModel::answer,
                         onBack = { if (current.canUndo) viewModel.undo() else viewModel.startOver() },
                         onRecommendNow = viewModel::recommendNow,
@@ -194,7 +207,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                 }
                 Screen.UNAVAILABLE -> if (current != null) {
                     BackHandler { viewModel.startOver() }
-                    UnavailableScreen(current, hasAllergies = allergies.isNotEmpty(), onHome = viewModel::startOver)
+                    UnavailableScreen(current, hasAllergies = allergies.isNotEmpty(), onBack = viewModel::startOver)
                 }
             }
         }
@@ -211,14 +224,17 @@ private fun ErrorBanner(error: UiError?, onRetry: () -> Unit, modifier: Modifier
     AnimatedVisibility(
         visible = error != null,
         modifier = modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 60.dp),
-        enter = fadeIn(tween(200)) + slideInVertically(tween(200)) { -it / 4 },
-        exit = fadeOut(tween(200)) + slideOutVertically(tween(200)) { -it / 4 }
+        enter = slideInVertically(tween(200)) { -it / 4 },
+        exit = slideOutVertically(tween(200)) { -it / 4 }
     ) {
+        // Faded here rather than with fadeIn, whose layer would clip the banner's shadow.
+        val alpha by transition.animateFloat({ tween(200) }, label = "banner") { if (it == EnterExitState.Visible) 1f else 0f }
         val shown = last ?: return@AnimatedVisibility
         val shape = RoundedCornerShape(16.dp)
         Row(
             Modifier
                 .fillMaxWidth()
+                .fade { alpha }
                 .floating(shape)
                 .clip(shape)
                 .background(Color.White)
@@ -236,3 +252,6 @@ private fun ErrorBanner(error: UiError?, onRetry: () -> Unit, modifier: Modifier
         }
     }
 }
+
+/** What the question screen last showed, held while it fades out. */
+private class Kept(var session: SessionState, var history: List<AnsweredQuestion>)
