@@ -293,8 +293,8 @@ private fun PastQuestion(past: AnsweredQuestion, onRevisit: () -> Unit) {
  * The question being asked, in large type, with the answer under it on the right while a
  * circle is pressed. [done] (an answer picked) shrinks both, without a fade, into the
  * line the question will have in the list: the answer moves up to the question's line.
- * A question gone back to ([returning] is its old answer) plays this backwards: it grows
- * out of that line while the old answer fades out.
+ * A question gone back to ([returning] is its old answer) grows out of that line while the
+ * old answer fades out where it is.
  */
 @Composable
 private fun CurrentQuestion(text: String, answer: String?, shown: Boolean, done: Boolean, returning: String?) {
@@ -304,25 +304,36 @@ private fun CurrentQuestion(text: String, answer: String?, shown: Boolean, done:
     val shrinkState = remember { Animatable(if (back) 1f else 0f) }
     LaunchedEffect(done) { shrinkState.animateTo(if (done) 1f else 0f, tween(380, easing = SheetEasing)) }
     val shrink = shrinkState.value
-    val answerState = remember { Animatable(if (back) 1f else 0f) }
-    LaunchedEffect(shown) { answerState.animateTo(if (shown) 1f else 0f, tween(if (back && !shown) 300 else 160)) }
-    val answerAlpha = answerState.value
+    val answerAlpha by animateFloatAsState(if (shown) 1f else 0f, tween(160), label = "answer")
+    // The old answer fades where it stood in the list, on the question's first line.
+    val oldAnswer = remember { Animatable(if (back) 1f else 0f) }
+    LaunchedEffect(Unit) { oldAnswer.animateTo(0f, tween(250)) }
     val density = LocalDensity.current
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 6.dp).alpha(appear.value)) {
-        Text(
-            text,
-            Modifier.fillMaxWidth().testTag("question"),
-            style = lerpStyle(MetchuType.Title, PastStyle, shrink),
-            color = lerp(MetchuColors.Grey900, MetchuColors.Grey600, shrink),
-            maxLines = if (shrink > 0.5f) 1 else Int.MAX_VALUE,
-            softWrap = shrink <= 0.5f
-        )
-        val label = answer ?: returning
-        if (label != null) {
+        Box(Modifier.fillMaxWidth()) {
+            Text(
+                text,
+                Modifier.fillMaxWidth().testTag("question"),
+                style = lerpStyle(MetchuType.Title, PastStyle, shrink),
+                color = lerp(MetchuColors.Grey900, MetchuColors.Grey600, shrink),
+                maxLines = if (shrink > 0.5f) 1 else Int.MAX_VALUE,
+                softWrap = shrink <= 0.5f
+            )
+            if (returning != null && oldAnswer.value > 0f) {
+                Text(
+                    stringResource(answerLabel(returning)),
+                    Modifier.align(Alignment.TopEnd).alpha(oldAnswer.value).answerFade(Color.White).padding(start = AnswerRoom),
+                    style = PastAnswerStyle,
+                    color = answerColor(returning),
+                    maxLines = 1
+                )
+            }
+        }
+        if (answer != null) {
             // 12 dp under the question at first; at the end it sits on the question's line.
             val gap = lerp(12.dp, -PastLine, shrink)
             Text(
-                stringResource(answerLabel(label)),
+                stringResource(answerLabel(answer)),
                 Modifier
                     .align(Alignment.End)
                     .layout { measurable, constraints ->
@@ -335,7 +346,7 @@ private fun CurrentQuestion(text: String, answer: String?, shown: Boolean, done:
                     .padding(start = AnswerRoom * shrink)
                     .semantics { liveRegion = LiveRegionMode.Polite },
                 style = lerpStyle(MetchuType.Title, PastAnswerStyle, shrink),
-                color = answerColor(label),
+                color = answerColor(answer),
                 maxLines = 1
             )
         } else {
