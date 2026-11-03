@@ -2,6 +2,19 @@ package com.example.metchu.ui.start
 
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.Image
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.unit.Dp
+import com.example.metchu.ui.common.TopRow
+import com.example.metchu.ui.common.floating
+import com.example.metchu.ui.common.SheetEasing
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,8 +36,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -100,6 +111,7 @@ fun StartScreen(
     var shownSheet by rememberSaveable { mutableStateOf(Sheet.MEAL) }
     sheet?.let { shownSheet = it }
     val english = LocalConfiguration.current.locales[0].language != "ko"
+    val scope = rememberCoroutineScope()
 
     val permission = rememberLocationPermission()
     var askedForLocation by rememberSaveable { mutableStateOf(false) }
@@ -110,19 +122,16 @@ fun StartScreen(
         }
     }
     val user = rememberUserPoint(permission.granted)
+    // A new language recreates the screen; the words fade out first instead of jumping.
+    var switching by remember { mutableStateOf(false) }
+    val words by animateFloatAsState(if (switching) 0f else 1f, tween(150), label = "words")
 
     Box(Modifier.fillMaxSize().screenBackground()) {
         if (BuildConfig.HAS_MAPS_KEY) StartMap(user ?: CampusCenter)
 
-        Column(Modifier.statusBarsPadding()) {
-            Row(
-                Modifier.fillMaxWidth().height(56.dp).padding(start = 20.dp, end = 20.dp, top = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)
-            ) {
-                LanguageButton()
-                CircleIconButton(Icons.Gear, stringResource(R.string.settings), onSettings, Modifier.testTag("settings"))
-            }
-            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
+        Column(Modifier.statusBarsPadding().alpha(words)) {
+            TopRow(arrangement = Arrangement.End) {}
+            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp)) {
                 val title = MetchuType.Title
                 Text(stringResource(R.string.start_line1), style = title)
                 // Every line keeps the title's 39 dp, also the lines holding a choice.
@@ -147,8 +156,20 @@ fun StartScreen(
             loading = loading,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
-                .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2)
+                .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).alpha(words)
         )
+        // Things set once sit low on the left, out of the way of the sentence and the button.
+        CircleIconButton(
+            Icons.Gear, stringResource(R.string.settings), onSettings,
+            Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 74.dp, bottom = CornerButtonBottom).testTag("settings")
+        )
+        LanguageMenu(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = CornerButtonBottom)) { tag ->
+            scope.launch {
+                switching = true
+                delay(160)
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+            }
+        }
 
         BottomSheetPicker(
             visible = sheet != null,
@@ -176,6 +197,8 @@ fun StartScreen(
 }
 
 private val StartButtonSize = 140.dp
+/** The language and settings buttons stand this far above the navigation bar. */
+private val CornerButtonBottom = 18.dp
 private val TitleLine = 39.dp
 
 @Composable
@@ -226,16 +249,16 @@ private fun StartMap(center: Point) {
         position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f)
     }
     LaunchedEffect(center) { camera.position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f) }
-    // Google's logo sits in the bottom-left corner, 20 dp in like everything else (the SDK adds ~6 dp
-    // itself). The top padding then puts the user's position under the start button's center.
+    // Google's logo sits right of the language and settings buttons, level with them (the SDK adds
+    // ~6 dp itself). The top padding then puts the user's position under the start button's center.
     val navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val bottom = navigation + 8.dp
+    val bottom = navigation + CornerButtonBottom + 6.dp
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val top = maxHeight + bottom - (ActionCenterFromBottom + navigation) * 2
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = camera,
-            contentPadding = PaddingValues(start = 14.dp, top = top.coerceAtLeast(0.dp), bottom = bottom),
+            contentPadding = PaddingValues(start = 122.dp, top = top.coerceAtLeast(0.dp), bottom = bottom),
             uiSettings = MapUiSettings(
                 compassEnabled = false, mapToolbarEnabled = false, myLocationButtonEnabled = false,
                 rotationGesturesEnabled = false, scrollGesturesEnabled = false, tiltGesturesEnabled = false,
@@ -253,30 +276,59 @@ private fun StartMap(center: Point) {
     }
 }
 
+/**
+ * The globe button grows into the language menu where it stands, and shrinks back when a
+ * language is picked or the user taps elsewhere.
+ */
 @Composable
-private fun LanguageButton() {
+private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     val current = LocalConfiguration.current.locales[0].language
-    Box {
-        CircleIconButton(Icons.Globe, stringResource(R.string.language), { open = true })
-        DropdownMenu(
-            expanded = open,
-            onDismissRequest = { open = false },
-            shape = RoundedCornerShape(16.dp),
-            containerColor = Color.White
-        ) {
-            listOf("ko" to R.string.language_ko, "en" to R.string.language_en).forEach { (tag, name) ->
-                val on = current == tag
-                DropdownMenuItem(
-                    text = { Text(stringResource(name), style = if (on) MetchuType.Item.copy(fontSize = MetchuType.Button.fontSize) else MetchuType.Button) },
-                    trailingIcon = if (on) {
-                        { Image(Icons.Check, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900)) }
-                    } else null,
-                    onClick = {
-                        open = false
-                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+    val motion = tween<Dp>(260, easing = SheetEasing)
+    val width by animateDpAsState(if (open) 168.dp else 44.dp, motion, label = "width")
+    val height by animateDpAsState(if (open) 108.dp else 44.dp, motion, label = "height")
+    val corner by animateDpAsState(if (open) 16.dp else 22.dp, motion, label = "corner")
+    val globe by animateFloatAsState(if (open) 0f else 1f, tween(120), label = "globe")
+    val items by animateFloatAsState(if (open) 1f else 0f, tween(160, delayMillis = if (open) 100 else 0), label = "items")
+    if (open) {
+        Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null) { open = false })
+    }
+    val shape = RoundedCornerShape(corner)
+    Box(
+        modifier
+            .size(width, height)
+            .then(if (open) Modifier.cssShadow(shape, 6.dp, 24.dp, 0.18f) else Modifier.floating(shape))
+            .clip(shape)
+            .background(Color.White)
+    ) {
+        if (globe > 0f) {
+            CircleIconButton(
+                Icons.Globe, stringResource(R.string.language), { open = true },
+                Modifier.align(Alignment.BottomStart).alpha(globe).testTag("language")
+            )
+        }
+        if (items > 0f) {
+            Column(Modifier.requiredWidth(168.dp).align(Alignment.BottomStart).padding(6.dp).alpha(items)) {
+                listOf("ko" to R.string.language_ko, "en" to R.string.language_en).forEach { (tag, name) ->
+                    val on = current == tag
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (on) MetchuColors.Grey100 else Color.White)
+                            .selectable(on, role = Role.RadioButton) {
+                                open = false
+                                if (!on) onPick(tag)
+                            }
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(name), style = if (on) MetchuType.Item.copy(fontSize = MetchuType.Button.fontSize) else MetchuType.Button)
+                        if (on) Image(Icons.Check, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900))
                     }
-                )
+                }
             }
         }
     }
