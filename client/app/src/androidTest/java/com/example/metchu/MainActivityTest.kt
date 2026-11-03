@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -262,8 +263,9 @@ class MainActivityTest {
         startWith(question)
         compose.onNodeWithTag("question").assertIsDisplayed()
         compose.onNodeWithText(question.step.text).assertIsDisplayed()
-        // First question: Back leaves the session instead of undoing.
-        compose.onNodeWithTag("recommendNow").assertDoesNotExist()
+        // First question: "Recommend now" waits in its corner, and Back leaves the session instead of undoing.
+        compose.onNodeWithText(text(R.string.recommend_now)).assertIsNotEnabled()
+        tap("recommendNow")
         tap("back")
         compose.onNodeWithTag("start").assertIsDisplayed()
         assertEquals(emptyList<String>(), api.calls.toList())
@@ -369,8 +371,10 @@ class MainActivityTest {
         compose.onNodeWithText(text(R.string.result_more)).assertIsDisplayed()
 
         // The chips list the newest first; the second is the dish turned down.
+        val home = compose.onNodeWithTag("home").getBoundsInRoot()
         compose.onAllNodesWithTag("dishChip")[1].performClick()
         compose.onNodeWithText(text(R.string.result_more)).assertDoesNotExist()
+        assertEquals(home.right, compose.onNodeWithTag("home").getBoundsInRoot().right)
         compose.onAllNodesWithTag("dishChip")[0].performClick()
         compose.onNodeWithText(text(R.string.result_more)).assertIsDisplayed()
     }
@@ -387,7 +391,7 @@ class MainActivityTest {
     fun nothingToRecommendSaysWhy() {
         startWith(unavailable)
         compose.onNodeWithTag("unavailable").assertIsDisplayed()
-        tapText(R.string.result_home)
+        tap("home")
         compose.onNodeWithTag("start").assertIsDisplayed()
     }
 
