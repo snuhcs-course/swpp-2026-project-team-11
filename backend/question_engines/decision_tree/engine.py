@@ -321,10 +321,6 @@ class DecisionTreeEngine:
         engine = cls(candidates, feature_schema, priors=priors, context=context,
                      config=snapshot["config"], planner_config=snapshot["planner_config"])
         expected = engine.fingerprint
-        if "language" not in snapshot["config"]:  # Earlier 3.0 snapshots were English-only.
-            old_config = asdict(engine.config)
-            del old_config["language"]
-            expected = engine._fingerprint(old_config)
         if snapshot.get("fingerprint") != expected:
             raise ValueError("Snapshot data, context, prior, or configuration differs")
         for event in snapshot["events"]:
