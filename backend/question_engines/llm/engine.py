@@ -3,7 +3,7 @@
 It has the same session API and step shapes as the P10 DecisionTreeEngine, so the
 P17 session wrapper and the P19 client can run either engine:
 
-    engine = LLMEngine(get_candidates(date, "LU"), llm=chat_model)
+    engine = LLMEngine(get_catalog(date, "LU")[0], llm=chat_model)
     step = engine.start()
     step = engine.answer(step["question_id"], "probably_yes")
     step = engine.feedback(step["guess_id"], accepted=False)   # "another menu"
@@ -38,7 +38,7 @@ from .schema import build_turn_model
 
 logger = logging.getLogger(__name__)
 
-ENGINE_VERSION = "llm-v3"  # v3: `language`, and a question step keeps its English
+ENGINE_VERSION = "llm-v4"  # v4: disambiguate separate menus sharing an original name
 ANSWER_LABELS = {option["id"]: option["label"] for option in ANSWER_OPTIONS}
 
 
@@ -90,11 +90,20 @@ class LLMEngine:
         self.llm = llm if llm is not None else build_llm(LLMSettings.from_env())
         self.rng = rng or random.Random()
         self.config = config if isinstance(config, EngineConfig) else EngineConfig(**(config or {}))
-        # Dishes sharing a display name are one choice: the LLM cannot tell them apart.
-        self.choices = {}
+        # The same original menu name can denote different sets in different stores.
+        counts = {}
         for candidate in candidates:
-            self.choices.setdefault(candidate["display_name"], candidate)
-        identity = sorted((c["food_id"], c["display_name"]) for c in candidates)
+            counts[candidate["display_name"]] = counts.get(candidate["display_name"], 0) + 1
+        self.choices = {}
+        self._choice_labels = {}
+        for c in candidates:
+            label = c["display_name"]
+            if counts[label] > 1 and c.get("menu_profile") == "rms-v1":
+                stores = ", ".join(dict.fromkeys(o["restaurant"] for o in c.get("offers", [])))
+                label += f" [{stores}; menu {c['food_id']}]"
+            self.choices.setdefault(label, c)
+            self._choice_labels[c["food_id"]] = label
+        identity = sorted((c["food_id"], self._choice_labels[c["food_id"]]) for c in candidates)
         self.fingerprint = hashlib.sha256(json.dumps(
             {"version": ENGINE_VERSION, "candidates": identity, "config": asdict(self.config)},
             ensure_ascii=False).encode()).hexdigest()
@@ -116,7 +125,7 @@ class LLMEngine:
         return [(answer["text"], ANSWER_LABELS[answer["answer_id"]]) for answer in self.answered()]
 
     def _rejected(self):
-        return [event["before"]["food"]["display_name"] for event in self._events
+        return [self._choice_labels[event["before"]["food"]["food_id"]] for event in self._events
                 if event["type"] == "feedback" and not event["accepted"]]
 
     def _accepted_food(self):

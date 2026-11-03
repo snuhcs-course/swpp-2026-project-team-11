@@ -2,7 +2,7 @@
 """Scenarios: what the user wants, on which menu. Built once and shared by both
 engines and the human test, so every engine faces the same users.
 
-    {"version": 2, "seed": 0,
+    {"version": 3, "seed": 0,
      "menus": {"2026-10-20/LU": {"date", "meal", "feature_version", "candidates": [get_catalog() rows]}},
      "scenarios": [{"id": "in_menu-001", "situation": "in_menu", "certainty": "high",
                     "menu": "2026-10-20/LU",
@@ -10,9 +10,9 @@ engines and the human test, so every engine faces the same users.
                                  "close": [display names]}]}]}
 
 The candidate lists are frozen in the file, so a later menu fetch cannot change a
-scenario. A target's `matches` are the candidates that satisfy it: the menu
-itself and its kinds (돈까스 -> 치즈돈까스), found by name containment after
-ignoring spacing and size markers.
+scenario. Actual sales-menu targets match their candidate IDs; sets and
+standalone dishes do not implicitly satisfy one another. Historical dish-level
+inputs retain their original name-containment matching.
 
 - in_menu:           one target served that day
 - multiple:          two or three served targets with no candidate in common
@@ -20,7 +20,7 @@ ignoring spacing and size markers.
 - close_alternative: one served target with another served dish whose features differ
                      by at most CLOSE_GAP on average (`close`), so no question tells
                      them apart (양념치킨 next to 매운양념치킨); only the target is accepted.
-                     A dish's set and single version are the same dish, not alternatives.
+                     A complete set and a standalone dish are separate sales-menu alternatives.
 
 A user (the wanted menus) is repeated within a situation only when new ones run out.
 """
@@ -51,7 +51,11 @@ def _keys(candidate) -> set[str]:
 def matches(name: str, candidates) -> list[int]:
     """Food IDs of the candidates that are `name` or a kind of it."""
     wanted = dish_key(name)
-    return sorted(c["food_id"] for c in candidates if any(wanted and wanted in key for key in _keys(c)))
+    exact = " ".join(name.split()).casefold()
+    return sorted(c["food_id"] for c in candidates
+                  if (exact == " ".join(c["display_name"].split()).casefold()
+                      if c.get("menu_profile") == "rms-v1"
+                      else any(wanted and wanted in key for key in _keys(c))))
 
 
 def is_wanted(scenario, food_id, group=None) -> bool:
@@ -60,18 +64,19 @@ def is_wanted(scenario, food_id, group=None) -> bool:
     return set(group) <= ids if group else food_id in ids
 
 
-def target(name, features, food_group, candidates) -> dict:
-    ids = matches(name, candidates)
+def target(name, features, food_group, candidates, *, candidate_id=None) -> dict:
+    ids = [candidate_id] if candidate_id is not None else matches(name, candidates)
     by_id = {c["food_id"]: c for c in candidates}
     return {"name": name, "features": features, "food_group": food_group, "matches": ids,
             "match_names": sorted({by_id[i]["display_name"] for i in ids})}
 
 
 def _choices(candidates) -> list[dict]:
-    """One candidate per display name: the engines show dishes by that name."""
+    """Keep actual menus distinct; retain name aliases only for historical dish inputs."""
     seen = {}
     for candidate in sorted(candidates, key=lambda c: c["food_id"]):
-        seen.setdefault(candidate["display_name"], candidate)
+        seen.setdefault(("menu", candidate["food_id"]) if candidate.get("menu_profile") == "rms-v1"
+                        else candidate["display_name"], candidate)
     return list(seen.values())
 
 
@@ -107,7 +112,7 @@ def build(menus: dict, others: list[dict], counts: dict, seed: int = 0) -> dict:
                               "targets": targets})
         if made < count:
             raise ValueError(f"Only {made} {situation} scenarios could be made; add menus or lower the count.")
-    return {"version": 2, "seed": seed, "menus": menus, "scenarios": scenarios}
+    return {"version": 3, "seed": seed, "menus": menus, "scenarios": scenarios}
 
 
 def _targets(situation, candidates, others, rng):
@@ -116,7 +121,8 @@ def _targets(situation, candidates, others, rng):
         return None
     if situation == "in_menu":
         pick = rng.choice(choices)
-        return [target(pick["display_name"], pick["features"], pick["food_group"], candidates)]
+        return [target(pick["display_name"], pick["features"], pick["food_group"], candidates,
+                      candidate_id=pick["food_id"] if pick.get("menu_profile") == "rms-v1" else None)]
     if situation == "not_in_menu":
         pool = [dish for dish in others if not matches(dish["name"], candidates)]
         if not pool:
@@ -126,7 +132,8 @@ def _targets(situation, candidates, others, rng):
     if situation == "close_alternative":
         pairs = []
         for pick in choices:
-            made = target(pick["display_name"], pick["features"], pick["food_group"], candidates)
+            made = target(pick["display_name"], pick["features"], pick["food_group"], candidates,
+                      candidate_id=pick["food_id"] if pick.get("menu_profile") == "rms-v1" else None)
             close = sorted(other["display_name"] for other in choices if other["food_id"] not in made["matches"]
                            and other["name"] != pick["name"] and gap(pick["features"], other["features"]) <= CLOSE_GAP)
             if close:
@@ -135,8 +142,10 @@ def _targets(situation, candidates, others, rng):
     count = rng.choice((2, 3))
     picks, used = [], set()
     for pick in rng.sample(choices, len(choices)):
-        made = target(pick["display_name"], pick["features"], pick["food_group"], candidates)
-        if used.isdisjoint(made["matches"]) and pick["food_group"] not in {p["food_group"] for p in picks}:
+        made = target(pick["display_name"], pick["features"], pick["food_group"], candidates,
+                      candidate_id=pick["food_id"] if pick.get("menu_profile") == "rms-v1" else None)
+        if used.isdisjoint(made["matches"]) and (not pick["food_group"] or
+                pick["food_group"] not in {p["food_group"] for p in picks}):
             picks.append(made)
             used.update(made["matches"])
         if len(picks) == count:
