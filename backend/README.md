@@ -609,7 +609,7 @@ and commit. Teammates then run `python manage.py loaddata menus_<date>`.
 | Model | One row per | Notes |
 |---|---|---|
 | `Restaurant` | cafeteria or restaurant | `source` `siksha`: `code` is the Siksha id, e.g. `220동식당`; `lat`/`lng` come from Siksha and are null when it has none. `source` `naver`: `code` is the 상가업소번호, with `category`, `address` and the Naver `place_id` |
-| `Food` | distinct (dish name, set status) | recommendation unit; holds mean `features`, `feature_std`, preprocessing `is_food`, `food_group`, `allergens`; `display_name` is the name shown to users, ending in ` (세트)` for a set |
+| `Food` | distinct (dish name, set status) | a main dish of a sales menu; holds mean `features`, `feature_std`, preprocessing `is_food`, `food_group`, `allergens`. Users see the menu line's `raw_name`, never this name |
 | `MenuItem` | dish x restaurant x meal x day | `meal` is `BR` / `LU` / `DN`; `price` in won. A combo line has one row per dish |
 | `StoreMenu` | dish x restaurant menu line | the menu boards of the restaurants near the stations; no date or meal. A set has one row per dish; `allergens` are the whole line's |
 | `MenuLine` | distinct menu line (`dish_key`) | cache of the dishes a line stands for (`is_meal`, `dishes`, `source`); restaurant lines use `store:` keys |

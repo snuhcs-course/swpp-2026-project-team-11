@@ -18,7 +18,8 @@ class Restaurant(models.Model):
 
 
 class Food(models.Model):
-    """A distinct dish - the unit the question engines recommend.
+    """A distinct dish. The engines recommend sales menus (MenuItem.raw_name),
+    each made of one or more of these.
 
     One row per (cleaned name, set status), shared across days and restaurants.
     Both variants share name-based measurements; meal variety is deterministic.
@@ -45,12 +46,8 @@ class Food(models.Model):
             fields=["name", "is_set"], name="unique_food_name_and_set",
         )]
 
-    @property
-    def display_name(self) -> str:
-        return f"{self.name} (세트)" if self.is_set else self.name
-
     def __str__(self):
-        return self.display_name
+        return self.name
 
 
 class MenuLine(models.Model):
