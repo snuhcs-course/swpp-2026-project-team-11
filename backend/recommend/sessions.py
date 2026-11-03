@@ -156,8 +156,7 @@ class RecommendSession:
             members=members,
             restaurants=tuple(dict.fromkeys(offer["restaurant"] for offer in food["offers"])),
             traits=tuple(key.replace("_", " ") for key, value in features.items() if value is not None and value >= .6),
-            answers=tuple((answer["text"], answer["answer_id"], features.get(answer["question_id"].removeprefix("q:")))
-                          for answer in answered),
+            answers=tuple(reasons.answer_facts(answered, features, self.feature_version)),
             others=tuple({name for name, _ in self.reason_data.values()} - names),
         )
 

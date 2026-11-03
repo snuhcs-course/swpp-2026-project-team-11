@@ -104,7 +104,7 @@ import kotlin.math.abs
 fun ResultScreen(
     session: SessionState,
     shown: List<Step>,
-    reasons: Map<Int, String>,
+    reasons: Map<String, String>,
     place: Place,
     loading: Boolean,
     onBack: () -> Unit,
@@ -181,7 +181,7 @@ fun ResultScreen(
 
         ResultSheet(
             step = step,
-            reason = reasons[food.foodId],
+            reason = reasons[step.proposalId],
             caption = captionFor(session.meal),
             cafeterias = cafeterias,
             place = place,

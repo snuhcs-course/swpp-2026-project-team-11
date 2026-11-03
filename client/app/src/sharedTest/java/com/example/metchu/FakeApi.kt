@@ -19,6 +19,7 @@ class FakeApi : ApiService {
     val calls = CopyOnWriteArrayList<String>()
     val reasonCalls = CopyOnWriteArrayList<String>()
     var reason: Reason? = null
+    var heldReason: CompletableDeferred<Reason>? = null
     private val replies = ArrayDeque<suspend () -> SessionState>()
 
     fun reply(state: SessionState) { replies.add { state } }
@@ -52,6 +53,8 @@ class FakeApi : ApiService {
     override suspend fun undo(sessionId: String) = next("undo $sessionId")
     override suspend fun reason(sessionId: String): Reason {
         reasonCalls.add(sessionId)
-        return reason ?: throw IOException("no reason")
+        val gate = heldReason
+        heldReason = null
+        return gate?.await() ?: reason ?: throw IOException("no reason")
     }
 }

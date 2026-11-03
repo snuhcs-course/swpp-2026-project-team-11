@@ -41,6 +41,19 @@ class KoreanTextTests(unittest.TestCase):
         self.assertEqual(restored.next_step(), engine.next_step())
         self.assertTrue(HANGUL.search(restored.next_step()["text"]))
 
+    def test_pre_language_snapshot_restores_only_with_its_original_config(self):
+        engine = DecisionTreeEngine(small_catalog(), config={"policy": "greedy"})
+        engine.answer(engine.start()["question_id"], "yes")
+        saved = engine.snapshot()
+        del saved["config"]["language"]
+        # Captured on main (5fcdf55), before a session had a language.
+        saved["fingerprint"] = "766e12e08afe92eedfb41e3b7833eaad65121ef5699638b0c22faa93282d2e93"
+        restored = DecisionTreeEngine.from_snapshot(small_catalog(), None, saved)
+        self.assertEqual(restored.next_step(), engine.next_step())
+        saved["config"]["language"] = "ko"
+        with self.assertRaisesRegex(ValueError, "differs"):
+            DecisionTreeEngine.from_snapshot(small_catalog(), None, saved)
+
     def test_unknown_language_is_refused(self):
         with self.assertRaises(ValueError):
             EngineConfig(language="ja")

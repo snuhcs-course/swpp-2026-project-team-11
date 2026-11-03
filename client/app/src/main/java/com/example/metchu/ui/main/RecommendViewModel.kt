@@ -38,9 +38,8 @@ data class AnsweredQuestion(val text: String, val answerId: String)
  * no question texts, so the phone remembers them, and trims the list to the
  * server's `question_count` after every reply so the two never disagree.
  * [shown] lists the guesses this session has proposed, for the result screen.
- * [reasons] holds the reason under each proposed dish by food ID. It is asked for
- * once per dish after the dish is shown, as it can take an LLM call, and a failure
- * only leaves the reason out.
+ * [reasons] holds the latest explanation for each proposal; changing the answers
+ * invalidates that proposal's explanation.
  */
 class RecommendViewModel(private val repository: RecommendRepository) : ViewModel() {
 
@@ -59,9 +58,10 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     private val _shown = MutableLiveData<List<Step>>(emptyList())
     val shown: LiveData<List<Step>> = _shown
 
-    private val _reasons = MutableLiveData<Map<Int, String>>(emptyMap())
-    val reasons: LiveData<Map<Int, String>> = _reasons
-    private val askedReasons = mutableSetOf<Int>()
+    private data class ReasonContext(val foodId: Int, val answers: List<AnsweredQuestion>)
+    private val _reasons = MutableLiveData<Map<String, String>>(emptyMap())
+    val reasons: LiveData<Map<String, String>> = _reasons
+    private val reasonContexts = mutableMapOf<String, ReasonContext>()
 
     private var lastRequest: (suspend () -> SessionState)? = null
     private var lastAnswered: AnsweredQuestion? = null
@@ -218,19 +218,29 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
 
     private fun show(state: SessionState, answered: AnsweredQuestion? = null) {
         _history.value = (_history.value.orEmpty() + listOfNotNull(answered)).take(state.step.questionCount)
-        if (state.step.type == Step.GUESS && _shown.value.orEmpty().none { it.guessId == state.step.guessId }) {
-            _shown.value = _shown.value.orEmpty() + state.step
+        if (state.step.type == Step.GUESS) {
+            val shown = _shown.value.orEmpty()
+            _shown.value = if (shown.none { it.guessId == state.step.guessId }) shown + state.step
+                else shown.map { if (it.guessId == state.step.guessId) state.step else it }
         }
         _session.value = state
-        val food = state.step.food
-        if (food != null && askedReasons.add(food.foodId)) explain(state.sessionId)
+        val proposal = state.step.proposalId ?: return
+        val food = state.step.food ?: return
+        val context = ReasonContext(food.foodId, _history.value.orEmpty())
+        if (reasonContexts[proposal] == context) return
+        reasonContexts[proposal] = context
+        _reasons.value = _reasons.value.orEmpty() - proposal
+        explain(state.sessionId, proposal, context)
     }
 
-    private fun explain(sessionId: String) {
+    private fun explain(sessionId: String, proposal: String, context: ReasonContext) {
         viewModelScope.launch {
             try {
                 val reason = repository.reason(sessionId)
-                if (_session.value?.sessionId == sessionId) _reasons.value = _reasons.value.orEmpty() + (reason.foodId to reason.reason)
+                if (_session.value?.sessionId == sessionId && reasonContexts[proposal] === context &&
+                    reason.foodId == context.foodId) {
+                    _reasons.value = _reasons.value.orEmpty() + (proposal to reason.reason)
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -243,7 +253,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         _history.value = emptyList()
         _shown.value = emptyList()
         _reasons.value = emptyMap()
-        askedReasons.clear()
+        reasonContexts.clear()
     }
 
     private companion object {

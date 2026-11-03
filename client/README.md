@@ -176,9 +176,11 @@ it. A picked answer is held for 0.45 s before it is sent, and is dropped if Back
 moved the session meanwhile. The progress bar fills by `1 − 0.72^answers` (at least answers ÷
 `max_questions` when the server caps them), up to 95 %.
 
-The reason under the dish is asked for after the result is drawn, once per dish,
-as it can take an LLM call (`GET .../reason/`). It fades in when it arrives; a
-failure only leaves it out.
+The app fetches a reason after displaying a proposal and fetches it again if
+the user changes the answers and sees the same proposal. With `OPENROUTER_API_KEY`
+set, a reason request for any engine can make up to two model calls. Without the
+key, or without evidence that a dish fits the user's answers, the server can
+give a template explanation. A network failure leaves the reason out.
 
 "Find another" is `feedback` with `accepted: false`: the result screen shows a
 `guess`, and the app never accepts one. Leaving with "Start over" simply drops

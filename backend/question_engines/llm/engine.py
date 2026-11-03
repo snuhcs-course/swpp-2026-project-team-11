@@ -213,7 +213,7 @@ class LLMEngine:
         if reply["parsing_error"] is not None:
             raise reply["parsing_error"]
         turn = reply["parsed"]
-        check_turn(turn, history, questions_left, self.config.language)
+        check_turn(turn, history, questions_left, self.config.language, food_names)
         return turn
 
     def _fallback_step(self, available, questions_left):
@@ -333,7 +333,7 @@ def topic_words(question):
                      for word in words if word not in FRAME_WORDS)
 
 
-def check_turn(turn, history, questions_left, language="en"):
+def check_turn(turn, history, questions_left, language="en", food_names=()):
     if turn is None:
         raise InvalidTurn("The structured response was empty")
     if turn.action == "recommend" or questions_left == 0:
@@ -341,8 +341,12 @@ def check_turn(turn, history, questions_left, language="en"):
     question = turn.question.strip()
     if not question:
         raise InvalidTurn("action=ask with an empty question")
-    if language == "ko" and not turn.question_ko.strip():
-        raise InvalidTurn("action=ask with an empty question_ko")
+    if language == "ko":
+        wording = turn.question_ko
+        for name in sorted(food_names, key=len, reverse=True):
+            wording = wording.replace(name, "")
+        if not re.search(r"[가-힣]", wording):
+            raise InvalidTurn("Write question_ko in Korean, apart from menu names")
     words = topic_words(question)
     for number, (asked, answer) in enumerate(history, start=1):
         earlier = topic_words(asked)

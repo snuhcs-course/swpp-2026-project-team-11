@@ -708,7 +708,7 @@ class RecommendViewModelTest {
         startWith(question)
         assertEquals(emptyList<String>(), api.reasonCalls.toList())
         answerTo(guess)
-        assertEquals(mapOf(food.foodId to "Spicy, as you wanted."), viewModel.reasons.value)
+        assertEquals(mapOf(guess.step.guessId to "Spicy, as you wanted."), viewModel.reasons.value)
 
         api.reply(question)
         viewModel.undo()
@@ -717,11 +717,28 @@ class RecommendViewModelTest {
     }
 
     @Test
+    fun changingAnAnswerReplacesTheReasonAndIgnoresALateReply() {
+        val target = guess.copy(step = guess.step.copy(questionCount = 1))
+        val food = target.step.food!!
+        val old = CompletableDeferred<Reason>()
+        api.heldReason = old
+        startWith(question)
+        answerTo(target, "yes")
+        api.reply(question)
+        viewModel.undo()
+        api.reason = Reason(food.foodId, "Available at this restaurant.")
+        answerTo(target, "any")
+        old.complete(Reason(food.foodId, "Because you wanted chicken."))
+        assertEquals(2, api.reasonCalls.size)
+        assertEquals("Available at this restaurant.", viewModel.reasons.value!![target.step.guessId])
+    }
+
+    @Test
     fun aFailedReasonIsLeftOutWithoutAnError() {
         startWith(question)
         answerTo(guess)
         assertEquals(listOf(guess.sessionId), api.reasonCalls.toList())
-        assertEquals(emptyMap<Int, String>(), viewModel.reasons.value)
+        assertEquals(emptyMap<String, String>(), viewModel.reasons.value)
         assertIdle(guess)
     }
 
@@ -730,7 +747,7 @@ class RecommendViewModelTest {
         api.reason = Reason(guess.step.food!!.foodId, "Spicy, as you wanted.")
         startWith(guess)
         viewModel.startOver()
-        assertEquals(emptyMap<Int, String>(), viewModel.reasons.value)
+        assertEquals(emptyMap<String, String>(), viewModel.reasons.value)
         startWith(guess)
         assertEquals(2, api.reasonCalls.size)
     }
