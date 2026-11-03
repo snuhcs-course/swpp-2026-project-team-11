@@ -91,7 +91,8 @@ private enum class Sheet { MEAL, PLACE }
  * sentence, and the round button starts a session. The map behind the button fades in
  * from the background; the button stands where the user is. With [tip], a tip over the
  * screen points to the globe and the gear, where the language and the allergies change.
- * With [askForLocation] and no permission yet, a notice says why before the system asks.
+ * With [askForLocation] and no permission yet, a notice says why before the system asks,
+ * once the tip is closed.
  */
 @Composable
 fun StartScreen(
@@ -182,7 +183,7 @@ fun StartScreen(
 
         if (tip) SetupTip(onDone = onTipDone, onSettings = { onTipDone(); onSettings() })
 
-        if (askForLocation && !permission.granted) {
+        if (askForLocation && !permission.granted && !tip) {
             LocationNotice(
                 onContinue = { onLocationAsked(); permission.request() },
                 onLater = onLocationAsked
