@@ -45,6 +45,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -368,19 +369,26 @@ private fun Caption(@StringRes text: Int, color: Color, scale: Float, width: Dp 
     Text(stringResource(text), Modifier.width(width * scale), style = MetchuType.Label, color = color, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
 }
 
-/** Shows the answer while held, picks it on release. */
-private fun Modifier.pressPreview(id: String, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit) =
-    pointerInput(id, loading) {
+/**
+ * Shows the answer while held, picks it on release. The gesture outlives a question when
+ * `loading` never shows as true (a reply within a frame), so it reads the current callbacks.
+ */
+@Composable
+private fun Modifier.pressPreview(id: String, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit): Modifier {
+    val pick by rememberUpdatedState(onPick)
+    val press by rememberUpdatedState(onPress)
+    return pointerInput(id, loading) {
         if (loading) return@pointerInput
         detectTapGestures(
             onPress = {
-                onPress(id)
+                press(id)
                 tryAwaitRelease()
-                onPress(null)
+                press(null)
             },
-            onTap = { onPick(id) }
+            onTap = { pick(id) }
         )
     }
+}
 
 @Composable
 private fun ScaleCircle(
