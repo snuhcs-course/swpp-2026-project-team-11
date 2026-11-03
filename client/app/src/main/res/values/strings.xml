@@ -81,15 +81,14 @@
     <string name="phase_found">Found your dish</string>
 
     <!-- result -->
-    <string name="result_caption_breakfast">Breakfast pick</string>
-    <string name="result_caption_lunch">Lunch pick</string>
-    <string name="result_caption_dinner">Dinner pick</string>
-    <string name="result_caption_any">Today’s pick</string>
+    <string name="result_caption_breakfast">For breakfast today</string>
+    <string name="result_caption_lunch">For lunch today</string>
+    <string name="result_caption_dinner">For dinner today</string>
+    <string name="result_caption_any">For today</string>
     <string name="reason_writing">Working out why this suits you…</string>
     <string name="result_home">Start over</string>
     <string name="result_more">Find another</string>
-    <string name="result_nearby">Nearby cafeterias</string>
-    <string name="result_all">Cafeterias serving it</string>
+    <string name="result_places">%1$d places · nearest first</string>
     <string name="result_none_near">None within a 10-minute walk, so all are listed.</string>
     <string name="result_no_location">Your location is unknown, so every cafeteria is listed.</string>
     <string name="result_group_example">For example %1$s</string>

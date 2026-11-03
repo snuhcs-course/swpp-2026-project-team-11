@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
@@ -254,6 +255,13 @@ object Icons {
     val Home = line("home", "M3.5 11L12 3.8 20.5 11M6 9.2V20h12V9.2M10 20v-5.5h4V20", 2.1f)
     val FastForward = line("fastForward", "M6 6l6 6-6 6M13 6l6 6-6 6", 2.2f)
     val Plus = line("plus", "M12 5v14M5 12h14", 2.2f)
+
+    /** A map pin with a hole: filled, unlike the line icons. */
+    val Pin = ImageVector.Builder("pin", 24.dp, 24.dp, 24f, 24f).addPath(
+        pathData = addPathNodes("M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11zM14.4 10a2.4 2.4 0 1 0-4.8 0 2.4 2.4 0 1 0 4.8 0z"),
+        fill = SolidColor(Color.Black),
+        pathFillType = PathFillType.EvenOdd
+    ).build()
     val ChevronDown = line("down", "M7 10l5 5 5-5", 2.4f)
     val Check = line("check", "M5 12.5l4.5 4.5L19 7.5", 2.4f)
     val Cross = line("cross", "M6.5 6.5l11 11M17.5 6.5l-11 11", 2.4f)
