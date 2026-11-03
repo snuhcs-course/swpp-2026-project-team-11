@@ -5,6 +5,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
+from menus.features.schema import FEATURE_VERSION
 from menus.services import get_catalog
 from question_engines.decision_tree.evaluation import compare_policies
 
@@ -20,10 +21,9 @@ class Command(BaseCommand):
         parser.add_argument("--output", type=Path)
 
     def handle(self, *args, **options):
-        context = {"date": options["date"].isoformat(), "meal": options["meal"]}
+        context = {"date": options["date"].isoformat(), "meal": options["meal"], "feature_version": FEATURE_VERSION}
         try:
-            rows, schema, version = get_catalog(options["date"], options["meal"])
-            context["feature_version"] = version
+            rows, schema = get_catalog(options["date"], options["meal"])
             report = compare_policies(rows, schema,
                 trials=options["trials"], seed=options["seed"], context=context)
         except ValueError as error:

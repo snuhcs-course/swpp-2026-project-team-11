@@ -108,7 +108,7 @@ def create_session(request):
         date = payload.get("date")
         if date is not None:
             if not isinstance(date, str):
-                raise ValueError("date must be an ISO date string such as 2026-09-29.")
+                raise ValueError("date must be an ISO date string such as 2026-11-02.")
             date = datetime.date.fromisoformat(date)
         meal = payload.get("meal")
         if meal is not None and meal not in MEALS:

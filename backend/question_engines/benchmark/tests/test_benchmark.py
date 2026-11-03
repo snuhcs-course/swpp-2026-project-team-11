@@ -5,6 +5,7 @@ import io
 import json
 import os
 import pathlib
+import random
 import tempfile
 from collections import Counter
 from types import SimpleNamespace
@@ -68,6 +69,32 @@ class ScenarioTests(SimpleTestCase):
             self.assertEqual(wanted["close"], ["볶음밥"])
             self.assertLessEqual(scenarios.gap(wanted["features"], by_name["볶음밥"]["features"]), scenarios.CLOSE_GAP)
             self.assertFalse(harness.accepted_by_rule(item, {"food": {"food_id": 1, "display_name": "볶음밥"}}))
+
+    def test_actual_menu_targets_do_not_accept_a_set_by_component_name(self):
+        original = [{**c, "menu_profile": "rms-v1"} for c in CANDIDATES[:2]]
+        original[0] = {**original[0], "name": "삼겹살", "display_name": "삼겹살"}
+        original[1] = {**original[1], "name": "삼겹살+떡볶이", "display_name": "삼겹살+떡볶이"}
+        self.assertEqual(scenarios.matches("삼겹살", original), [original[0]["food_id"]])
+        self.assertEqual(scenarios.matches("삼겹살+떡볶이", original), [original[1]["food_id"]])
+
+    def test_same_named_actual_sets_survive_scenario_selection(self):
+        original = [{**c, "name": "A세트", "display_name": "A세트", "menu_profile": "rms-v1"}
+                    for c in CANDIDATES[:2]]
+        self.assertEqual(len(scenarios._choices(original)), 2)
+        choice = scenarios.target("A세트", original[1]["features"], "", original,
+                                  candidate_id=original[1]["food_id"])
+        self.assertEqual(choice["matches"], [original[1]["food_id"]])
+        baseline = metrics.baselines({}, {"situation": "in_menu", "targets": [choice]},
+                                     {c["food_id"]: c for c in original})
+        self.assertEqual(baseline["random_pick"], .5)
+
+    def test_distinct_sets_with_no_dish_family_can_form_multiple_targets(self):
+        menus = [{**c, "name": str(c["food_id"]), "display_name": str(c["food_id"]),
+                  "food_group": "", "menu_profile": "rms-v1"} for c in CANDIDATES[:3]]
+        made = scenarios._targets("multiple", menus, [], random.Random(0))
+        self.assertIn(len(made), (2, 3))
+        ids = [m["matches"][0] for m in made]
+        self.assertEqual(len(ids), len(set(ids)))
 
     def test_build_refuses_what_it_cannot_make(self):
         with self.assertRaisesMessage(ValueError, "not_in_menu"):
@@ -292,13 +319,20 @@ class JudgeTests(SimpleTestCase):
         plain = {"food_id": 1, "name": "볶음밥", "display_name": "볶음밥"}
         self.assertEqual(self.judge(item, plain, True), (False, "rule_only", []))
 
-    def test_a_set_and_its_single_dish_get_one_verdict(self):
+    def test_a_set_and_its_single_dish_get_separate_verdicts(self):
         llm = FakeUserLLM(accept=False)
         user = harness.SimulatedUser(scenario("in_menu", "물냉면"), simulator.Simulator(llm))
         for display in ("짬뽕", "짬뽕 (세트)"):
             self.assertFalse(user.judge({"food": {"food_id": 4, "name": "짬뽕", "display_name": display}})["accepted"])
-        self.assertEqual(len(llm.calls), 1)
-        self.assertIn("The app proposes: 짬뽕\n", llm.calls[0][1])
+        self.assertEqual(len(llm.calls), 2)
+        self.assertIn("The app proposes: 짬뽕 (세트)\n", llm.calls[1][1])
+
+    def test_same_named_menu_ids_do_not_share_a_simulator_verdict(self):
+        llm = FakeUserLLM(accept=False)
+        user = harness.SimulatedUser(scenario("in_menu", "물냉면"), simulator.Simulator(llm))
+        for mid in (101, 102, 101):
+            user.judge({"food": {"food_id": mid, "name": "A세트", "display_name": "A세트"}})
+        self.assertEqual(len(llm.calls), 2)
 
     def test_the_verdict_prompt_is_strict_and_a_new_prompt_asks_again(self):
         llm = FakeUserLLM(accept=True)
@@ -514,7 +548,7 @@ class CommandTests(TestCase):
         self.sessions = self.folder / "sessions.jsonl"
         hall = Restaurant.objects.create(code="hall", name="학생회관식당")
         for c in CANDIDATES:
-            food = Food.objects.create(name=c["name"], display_name=c["name"], is_food=True, food_group=c["food_group"],
+            food = Food.objects.create(name=c["name"], is_food=True, food_group=c["food_group"],
                                        features=c["features"], feature_std=c["feature_std"],
                                        feature_version=FEATURE_VERSION)
             MenuItem.objects.create(date=datetime.date(2026, 10, 13), meal="LU", restaurant=hall, raw_name=c["name"],
@@ -562,14 +596,16 @@ class CommandTests(TestCase):
         with self.assertRaisesMessage(CommandError, "situation:count"):
             self.build("in_menu:x")
 
-    def test_menus_with_different_feature_versions_are_refused(self):
+    def test_a_menu_without_current_features_is_skipped(self):
         hall = Restaurant.objects.get(code="hall")
         food = Food.objects.create(name="라면", is_food=True, features={"spicy": 0.5}, feature_version="v1")
         MenuItem.objects.create(date=datetime.date(2026, 10, 14), meal="LU", restaurant=hall, raw_name="라면",
                                 food=food, price=4000)
-        with self.assertRaisesMessage(CommandError, "feature 버전이 섞여"):
-            call_command("build_engine_scenarios", "--date", "2026-10-13", "--date", "2026-10-14",
-                         "--output", str(self.scenarios), stdout=io.StringIO())
+        out = io.StringIO()
+        call_command("build_engine_scenarios", "--date", "2026-10-13", "--date", "2026-10-14",
+                     "--output", str(self.scenarios), stdout=out)
+        self.assertIn("2026-10-14 LU: 태깅된 후보가 없어 건너뜁니다.", out.getvalue())
+        self.assertEqual(list(json.loads(self.scenarios.read_text())["menus"]), [MENU_ID])
 
     def test_dry_run_estimates_without_calling(self):
         self.build()
@@ -705,11 +741,10 @@ class CommandTests(TestCase):
         self.assertEqual(Counter(order), {"decision_tree": 3, "llm": 3})
         self.assertEqual(order[:2], order[2:4][::-1])
 
-    def test_not_served_targets_share_the_menus_feature_version(self):
-        Food.objects.update(feature_version="v1")
+    def test_not_served_targets_have_current_features(self):
+        Food.objects.filter(name="마라탕").update(feature_version="v1")
         data = self.build("not_in_menu:1")
-        self.assertEqual(data["menus"][MENU_ID]["feature_version"], "v1")
-        self.assertIn(data["scenarios"][0]["targets"][0]["name"], ("마라탕", "치즈볶음밥"))
+        self.assertEqual(data["scenarios"][0]["targets"][0]["name"], "치즈볶음밥")
 
     def test_each_tester_plays_two_sessions_per_engine_in_a_balanced_order(self):
         self.build()

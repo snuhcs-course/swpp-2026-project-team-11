@@ -18,7 +18,8 @@ class Restaurant(models.Model):
 
 
 class Food(models.Model):
-    """A distinct dish - the unit the question engines recommend.
+    """A distinct dish. The engines recommend sales menus (MenuItem.raw_name),
+    each made of one or more of these.
 
     One row per (cleaned name, set status), shared across days and restaurants.
     Both variants share name-based measurements; meal variety is deterministic.
@@ -26,13 +27,12 @@ class Food(models.Model):
 
     name = models.CharField(max_length=300)  # normalize.clean_name()
     is_set = models.BooleanField(default=False)
-    display_name = models.CharField(max_length=50, blank=True)
     is_food = models.BooleanField(null=True)  # preprocessing verdict; legacy rows may be null
     food_group = models.CharField(max_length=30, blank=True)  # 국밥, 덮밥, 돈까스, ...
 
-    # v2: expected feature intensity; v1: legacy response score.
+    # Expected feature intensity.
     features = models.JSONField(default=dict, blank=True)
-    feature_std = models.JSONField(default=dict, blank=True)  # recipe variation; absent in v1
+    feature_std = models.JSONField(default=dict, blank=True)  # recipe variation
     feature_version = models.CharField(max_length=10, blank=True)
     extraction_model = models.CharField(max_length=50, blank=True)
     extracted_at = models.DateTimeField(null=True, blank=True)
@@ -47,7 +47,7 @@ class Food(models.Model):
         )]
 
     def __str__(self):
-        return self.display_name or self.name
+        return self.name
 
 
 class MenuLine(models.Model):

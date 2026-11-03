@@ -26,6 +26,8 @@ import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.data.repository.RecommendRepository
+import com.example.metchu.data.repository.SettingsStore
+import com.example.metchu.data.repository.Setup
 import com.example.metchu.ui.main.MainActivity
 import com.example.metchu.ui.start.Meal
 import kotlinx.coroutines.CompletableDeferred
@@ -68,7 +70,7 @@ class MainActivityTest {
             instrumentation.uiAutomation.grantRuntimePermission(context.packageName, permission)
         }
         clearPrefs()
-        AllergyStore(context).allergies = emptyList()
+        SettingsStore(context).setup = Setup.DONE
         scenario = ActivityScenario.launch(MainActivity::class.java)
     }
 
@@ -146,12 +148,17 @@ class MainActivityTest {
     }
 
     @Test
-    fun theFirstLaunchOpensTheSettingsAndEverySessionAvoidsTheAllergies() {
+    fun theFirstLaunchAsksTheLanguageThenTheAllergiesThenPointsToTheSettings() {
         clearPrefs()
         relaunch()
+        // The locale switch arrives a moment later, which Compose does not wait for.
+        tap("language_en")
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("setupNext").fetchSemanticsNodes().isNotEmpty() }
         tap("allergen_${Allergen.EGG.id}")
         tap("allergen_${Allergen.PINE_NUT.id}")
-        tap("back")
+        tap("setupNext")
+        compose.onNodeWithTag("setupTip").assertIsDisplayed()
+        tap("setupTipDone")
         compose.onNodeWithTag("start").assertIsDisplayed()
 
         pickMeal(R.string.meal_lunch)
@@ -159,9 +166,10 @@ class MainActivityTest {
         tap("start")
         assertEquals("create LU decision_tree egg,pine_nut en", api.calls.last())
 
-        // Chosen, so the next launch goes straight to the start screen.
+        // Done, so the next launch goes straight to the start screen.
         relaunch()
         compose.onNodeWithTag("start").assertIsDisplayed()
+        compose.onNodeWithTag("setupTip").assertDoesNotExist()
     }
 
     @Test
@@ -208,7 +216,7 @@ class MainActivityTest {
         pickLanguage("언어", "English", "Language")
     }
 
-    /** The locale switch recreates the activity, which Compose does not wait for. */
+    /** The locale switch arrives a moment later, which Compose does not wait for. */
     private fun pickLanguage(button: String, language: String, buttonAfter: String) {
         compose.onNodeWithContentDescription(button).performClick()
         compose.onNodeWithText(language).performClick()
@@ -382,8 +390,9 @@ class MainActivityTest {
         api.menu = menu
         startWith(guess)
         tap("menuButton")
-        assertEquals(listOf("${guess.sessionId} ${menu.restaurant}"), api.menuCalls.toList())
+        assertEquals(listOf("${guess.sessionId} ${guess.step.food!!.offers.single().restaurant}"), api.menuCalls.toList())
         compose.onNodeWithTag("menu").assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.result_menu_note)).assertIsDisplayed()
         compose.onNodeWithText(menu.dishes.first().displayName).assertIsDisplayed()
 
         // Back closes the list and stays on the dish.

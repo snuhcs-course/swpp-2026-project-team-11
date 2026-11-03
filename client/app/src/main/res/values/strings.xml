@@ -26,6 +26,16 @@
     <string name="place_any_option">Anywhere</string>
     <string name="place_near_note">Within a 10-minute walk</string>
     <string name="place_any_note">All cafeterias</string>
+    <string name="location_ask_title">Allow location?</string>
+    <string name="location_ask_body">We use your location to show nearby cafeterias and how far each one is. Without it, every cafeteria is listed.</string>
+    <string name="location_ask_continue">Continue</string>
+    <string name="location_ask_later">Not now</string>
+    <string name="setup_language_title" translatable="false">언어를 골라 주세요\nChoose your language</string>
+    <string name="setup_allergies_title">Any allergies?</string>
+    <string name="setup_next">Next</string>
+    <string name="setup_tip_title">Change these anytime</string>
+    <string name="setup_tip_body">The globe changes the language, and Settings your allergies.</string>
+    <string name="setup_tip_done">Got it</string>
 
     <string name="meal_breakfast">Breakfast</string>
     <string name="meal_lunch">Lunch</string>
@@ -107,6 +117,7 @@
     <string name="offer_none">No cafeteria listed</string>
     <string name="result_menu">Menu</string>
     <string name="result_menu_title">%1$s · %2$s menu</string>
+    <string name="result_menu_note">Only dishes Metchu can suggest</string>
     <string name="result_menu_failed">Couldn’t load the menu. Close this and try again.</string>
     <string name="result_ban">Don’t suggest this dish</string>
     <string name="result_unban">Left out of this session · Undo</string>
