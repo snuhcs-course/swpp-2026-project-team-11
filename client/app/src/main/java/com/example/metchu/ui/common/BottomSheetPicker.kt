@@ -27,13 +27,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
-import com.example.metchu.ui.theme.ScreenGradient
 
 /** One choice in a [BottomSheetPicker]. */
 class PickerOption(val label: String, val note: String?, val selected: Boolean, val onPick: () -> Unit)
@@ -64,7 +64,7 @@ fun BottomSheetPicker(visible: Boolean, title: String, options: List<PickerOptio
                 Modifier
                     .fillMaxWidth()
                     .cssShadow(RectangleShape, (-6).dp, 20.dp, 0.12f)
-                    .background(ScreenGradient)
+                    .background(Color.White)
                     .navigationBarsPadding()
                     .padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)

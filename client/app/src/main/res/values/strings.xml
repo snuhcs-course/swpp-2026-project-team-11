@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Metchu</string>
-    <string name="wordmark" translatable="false">metchu</string>
 
     <!-- shared -->
     <string name="back">Back</string>

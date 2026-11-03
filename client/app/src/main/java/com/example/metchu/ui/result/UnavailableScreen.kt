@@ -20,7 +20,6 @@ import com.example.metchu.R
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.ui.common.Pill
 import com.example.metchu.ui.common.PillSegment
-import com.example.metchu.ui.common.Wordmark
 import com.example.metchu.ui.start.Meal
 import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.screenBackground
@@ -47,6 +46,5 @@ fun UnavailableScreen(session: SessionState, hasAllergies: Boolean, onHome: () -
             Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 76.dp).testTag("unavailable"),
             style = MetchuType.Title
         )
-        Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
     }
 }

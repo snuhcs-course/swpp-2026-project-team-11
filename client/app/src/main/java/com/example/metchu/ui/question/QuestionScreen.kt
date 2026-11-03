@@ -86,7 +86,6 @@ import com.example.metchu.ui.common.PillDivider
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.Spinner
-import com.example.metchu.ui.common.Wordmark
 import com.example.metchu.ui.common.fadeEdges
 import com.example.metchu.ui.common.rememberSlow
 import com.example.metchu.ui.main.AnsweredQuestion
@@ -235,7 +234,6 @@ fun QuestionScreen(
             AnswerScale(offered, active, pressing, loading, pick, press)
             ProgressBlock(session, loading)
         }
-        Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = 34.dp))
     }
 }
 

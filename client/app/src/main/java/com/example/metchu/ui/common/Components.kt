@@ -10,6 +10,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,15 +51,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.metchu.R
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 import kotlinx.coroutines.delay
@@ -173,15 +173,16 @@ fun PillDivider() {
     Box(Modifier.width(1.dp).height(20.dp).background(MetchuColors.Grey200))
 }
 
-/** The light lowercase name in the bottom-left corner of every screen except the result. */
+/**
+ * Keeps the transparent navigation bar's buttons readable where content scrolls under it:
+ * white through the bar, fading out 32 dp above it.
+ */
 @Composable
-fun Wordmark(modifier: Modifier = Modifier) {
-    Text(
-        stringResource(R.string.wordmark),
-        modifier.clearAndSetSemantics {},
-        style = MetchuType.Label.copy(fontWeight = FontWeight.Bold),
-        color = MetchuColors.Grey300
-    )
+fun NavigationBarFade(modifier: Modifier = Modifier) {
+    val bar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val height = bar + 32.dp
+    val white = Color.White.copy(alpha = 0.94f)
+    Box(modifier.fillMaxWidth().height(height).background(Brush.verticalGradient(0f to Color.Transparent, 32.dp / height to white, 1f to white)))
 }
 
 /** Fades the top and/or bottom [edge] of a scrolling area into the background. */
