@@ -1,11 +1,13 @@
 package com.example.metchu.data.repository
 
 import com.example.metchu.data.model.Allergen
+import com.example.metchu.data.model.Ban
 import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.AnswerRequest
+import com.example.metchu.data.network.BanRequest
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.ApiService
 import com.example.metchu.data.network.CreateSessionRequest
@@ -40,6 +42,10 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
         api.recommendNow(sessionId).checked()
 
     suspend fun undo(sessionId: String): SessionState = api.undo(sessionId).checked()
+
+    /** Keeps what [ban] covers out of the rest of the session, or with [banned] false lets it back. */
+    suspend fun ban(sessionId: String, ban: Ban, banned: Boolean): SessionState =
+        api.ban(sessionId, BanRequest(ban.foodId, ban.foodGroup, banned)).checked()
 
     suspend fun reason(sessionId: String): Reason = api.reason(sessionId)
 

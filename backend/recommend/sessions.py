@@ -5,6 +5,8 @@
     session.public_state()     -> what the phone is allowed to see
     session.reason()           -> why the proposed dish suits the user (recommend/reasons.py)
     session.menu(restaurant)   -> the session's dishes that restaurant serves
+    session.ban(food_id, food_group, banned) -> keep a dish, or every dish of a group, out of
+                               the rest of the session, or let it back
 
 A session runs one of ENGINES, chosen when it is created: the decision tree,
 the feature-only RL policy, or the LLM engine. They share the session API and step shapes, so
@@ -30,6 +32,11 @@ farther than that are left out before the engine sees the candidates.
 
 `menu(restaurant)` lists the candidates a restaurant serves, so dishes withheld for
 an allergy or left out by distance are not listed either.
+
+A banned menu, or one holding a dish of a banned group (its `food_groups`), is never
+proposed again in the session, even after undo: a guess of one is turned down with `feedback` as soon as an
+action reaches it, and an undo that reaches one goes back further. Bans last only as
+long as the session.
 
 `reason()` calls the LLM outside the session lock, so a tap on the result screen
 never waits for it, and keeps each reason for the answers it was written for.
@@ -92,6 +99,8 @@ class RecommendSession:
         # Reasons need only dish names and feature means after the engine is built.
         self.reason_data = {c["food_id"]: (c["display_name"], c.get("features") or {}) for c in candidates}
         self.reasons = {}
+        self.banned_foods, self.banned_groups = set(), set()
+        self.food_groups = {c["food_id"]: set(c["food_groups"]) for c in candidates}
         self.menus = {}
         for candidate in candidates:
             for offer in candidate["offers"]:
@@ -128,20 +137,56 @@ class RecommendSession:
         if answer_id not in [option["id"] for option in step["options"]]:
             raise ValueError(f"Unknown answer_id: {answer_id!r}")
         self.engine.answer(question_id, answer_id)
+        self._skip_banned()
 
     def feedback(self, guess_id: str, accepted: bool) -> None:
         step = self.engine.next_step()
         if step["type"] != "guess" or step["guess_id"] != guess_id:
             raise StaleStep("That guess is no longer the current step.")
         self.engine.feedback(guess_id, accepted)
+        self._skip_banned()
 
     def recommend_now(self) -> None:
         # A guess is already a concrete proposal; asking again must not stack events.
         if self.engine.next_step()["type"] == "question":
             self.engine.recommend_now()
+            self._skip_banned()
 
     def undo(self) -> None:
         self.engine.undo()
+        self._skip_banned(back=True)
+
+    def ban(self, food_id: int | None, food_group: str | None, banned: bool) -> None:
+        """Bans one dish or one group. The dish on screen stays; the next action that reaches it skips it."""
+        if (food_id is None) == (food_group is None):
+            raise ValueError("Send either food_id or food_group.")
+        if food_id is not None and type(food_id) is not int:
+            raise ValueError("food_id must be a food ID.")
+        if food_group is not None and not (isinstance(food_group, str) and food_group):
+            raise ValueError("food_group must be a group name.")
+        if type(banned) is not bool:
+            raise ValueError("banned must be true or false.")
+        bans, key = (self.banned_foods, food_id) if food_id is not None else (self.banned_groups, food_group)
+        if banned:
+            bans.add(key)
+        else:
+            bans.discard(key)
+
+    def _banned(self, step: dict) -> bool:
+        if step["type"] != "guess":
+            return False
+        food_id = step["food"]["food_id"]
+        return food_id in self.banned_foods or not self.banned_groups.isdisjoint(self.food_groups[food_id])
+
+    def _skip_banned(self, back: bool = False) -> None:
+        """Turns down each banned guess, or with `back` undoes past it while it can."""
+        step = self.engine.next_step()
+        while self._banned(step):
+            if back and self.engine.can_undo:
+                self.engine.undo()
+            else:
+                self.engine.feedback(step["guess_id"], False)
+            step = self.engine.next_step()
 
     def menu(self, restaurant: str) -> dict:
         """{"restaurant", "dishes"}: each {"food_id", "display_name", "meal", "price"}, by meal and name."""
