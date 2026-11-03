@@ -26,7 +26,6 @@ class Food(models.Model):
 
     name = models.CharField(max_length=300)  # normalize.clean_name()
     is_set = models.BooleanField(default=False)
-    display_name = models.CharField(max_length=50, blank=True)
     is_food = models.BooleanField(null=True)  # preprocessing verdict; legacy rows may be null
     food_group = models.CharField(max_length=30, blank=True)  # 국밥, 덮밥, 돈까스, ...
 
@@ -46,8 +45,12 @@ class Food(models.Model):
             fields=["name", "is_set"], name="unique_food_name_and_set",
         )]
 
+    @property
+    def display_name(self) -> str:
+        return f"{self.name} (세트)" if self.is_set else self.name
+
     def __str__(self):
-        return self.display_name or self.name
+        return self.display_name
 
 
 class MenuLine(models.Model):

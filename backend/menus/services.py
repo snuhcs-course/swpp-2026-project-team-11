@@ -128,7 +128,7 @@ def _candidate(food, include_std: bool) -> dict:
     candidate = {
         "food_id": food.id,
         "name": food.name,
-        "display_name": food.display_name or food.name,
+        "display_name": food.display_name,
         "food_group": food.food_group,
         "features": food.features,
         "offers": [],
