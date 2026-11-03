@@ -293,6 +293,21 @@ class MainActivityTest {
     }
 
     @Test
+    fun theNextQuestionTakesAnAnswerWhenTheReplyComesWithinAFrame() {
+        startWith(question)
+        val next = question.copy(
+            canUndo = true,
+            step = question.step.copy(questionId = "q:next", questionCount = 1, text = "Do you feel like noodles?")
+        )
+        // The fake server replies at once, so loading never shows as true to the screen.
+        api.reply(next)
+        answer("yes")
+        api.reply(next.copy(step = next.step.copy(questionId = "q:third", questionCount = 2)))
+        answer("yes")
+        assertEquals("answer ${question.sessionId} q:next yes", api.calls.last())
+    }
+
+    @Test
     fun anAnsweredQuestionStaysAboveAndCanBeRevisited() {
         startWith(question)
         val next = question.copy(
