@@ -98,16 +98,13 @@ class Command(BaseCommand):
             else:
                 with transaction.atomic():
                     for food in targets[name]:
-                        suffix = " (세트)" if food.is_set else ""
-                        base = (food.display_name or food.name).removesuffix(" (세트)")
-                        food.display_name = base[:50 - len(suffix)] + suffix
                         food.features = means | {"meal_variety": float(food.is_set)}
                         food.feature_std = stds | {"meal_variety": 0.0}
                         food.feature_version = FEATURE_VERSION
                         food.extraction_model = model
                         food.extracted_at = extracted_at
-                        food.save(update_fields=["display_name", "features", "feature_std",
-                                                 "feature_version", "extraction_model", "extracted_at"])
+                        food.save(update_fields=["features", "feature_std", "feature_version",
+                                                 "extraction_model", "extracted_at"])
             completed += 1
         self.stdout.write(f"완료: 이름 {completed}개 {'확인' if options['dry_run'] else '저장'}, 실패 {len(failed)}개")
         if failed:

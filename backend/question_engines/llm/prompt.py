@@ -45,7 +45,7 @@ FALLBACK_QUESTIONS = (
     "Do you feel like noodles?",
     "Do you feel like something spicy?",
     "Do you feel like something fried?",
-    "Do you feel like something light and healthy?",
+    "Do you feel like a filling meal?",
     "Do you feel like Korean food?",
 )
 

@@ -26,27 +26,17 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import kotlin.math.abs
 
-/**
- * Whether the user allows location, and how to ask. Declining keeps the app working without
- * distances. [request] runs `then` once the user has answered, whatever the answer.
- */
-class LocationPermission(val granted: Boolean, private val ask: (() -> Unit) -> Unit) {
-    fun request(then: () -> Unit = {}) = ask(then)
-}
+/** Whether the user allows location, and how to ask. Declining keeps the app working without distances. */
+class LocationPermission(val granted: Boolean, val request: () -> Unit)
 
 @Composable
 fun rememberLocationPermission(): LocationPermission {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(context.hasLocationPermission()) }
-    val pending = remember { mutableListOf<() -> Unit>() }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         granted = context.hasLocationPermission()
-        pending.toList().also { pending.clear() }.forEach { it() }
     }
-    return LocationPermission(granted) { then ->
-        pending += then
-        launcher.launch(LOCATION_PERMISSIONS)
-    }
+    return LocationPermission(granted) { launcher.launch(LOCATION_PERMISSIONS) }
 }
 
 /**

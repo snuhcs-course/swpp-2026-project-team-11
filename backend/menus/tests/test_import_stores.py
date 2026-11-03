@@ -237,7 +237,7 @@ class RunStorePipelineTests(TestCase):
                 mock.patch.object(allergens, "build_llm", return_value=FakeAllergenLLM()):
             call_command("run_store_pipeline", "--file", str(FIXTURE), stdout=out)
         # 짜장면 and 탕수육 alone and in a set, 차돌짬뽕, 짬뽕 (set), 닭볶음탕, 모둠회
-        self.assertIn("일반 식당 추천 후보: 8", out.getvalue())
+        self.assertIn("일반 식당 추천 후보: 7", out.getvalue())
         self.assertFalse(StoreMenu.objects.filter(allergen_version="").exists())
 
     def test_a_failed_import_stops_before_tagging(self):
