@@ -48,6 +48,15 @@ fun cafeteriaList(food: Food, user: Point?, place: Place): CafeteriaList {
     return if (near.isEmpty()) CafeteriaList(all, AllListed.NONE_NEAR) else CafeteriaList(near, null)
 }
 
+/**
+ * What the result map frames: the cafeterias, and the user as well when within
+ * [FRAME_USER_METERS] of one, so a phone far off campus does not zoom the map out to the city.
+ */
+fun framedPoints(cafeterias: List<Cafeteria>, user: Point?): List<Point> {
+    val points = cafeterias.mapNotNull { it.point }
+    return if (user != null && points.any { distanceMeters(user, it) <= FRAME_USER_METERS }) points + user else points
+}
+
 /** Great-circle distance; on campus the error against a walking route is far larger. */
 fun distanceMeters(from: Point, to: Point): Int {
     val dLat = Math.toRadians(to.lat - from.lat)
@@ -62,3 +71,4 @@ private const val EARTH_METERS = 6_371_000.0
 /** About 4.8 km/h, a relaxed campus walk. */
 const val WALK_METERS_PER_MINUTE = 80.0
 const val NEAR_METERS = 800
+const val FRAME_USER_METERS = 3000

@@ -152,7 +152,7 @@ fun ResultScreen(
             if (BuildConfig.HAS_MAPS_KEY) {
                 // The padding follows the resting sheet, not the finger, so the map does not slide while dragging.
                 CafeteriaMap(
-                    cafeterias.cafeterias.distinctBy { it.offer.restaurant }, selected, permission.granted,
+                    cafeterias.cafeterias.distinctBy { it.offer.restaurant }, selected, user,
                     start = cafeterias.cafeterias.firstNotNullOfOrNull { it.point } ?: user ?: CampusCenter,
                     // Above the dish chips when they are shown, so they never cover the logo.
                     bottomInset = height * (1f - stop.fraction) + if (shown.size > 1) ChipRowHeight else 0.dp
@@ -432,15 +432,16 @@ private fun distanceText(meters: Int): String =
 
 /**
  * Google's own map style, with a label pill over each cafeteria. The chosen one is orange.
- * The camera opens at street level over [start] and then fits the cafeterias, keeping
- * them clear of the sheet, [bottomInset] high. Google's logo stays visible and unchanged
- * just above the sheet, as the Maps terms require; the SDK offers no way to recolor it.
+ * The camera opens at street level over [start] and then fits the cafeterias and the user
+ * (see [framedPoints]), keeping them clear of the sheet, [bottomInset] high. Google's logo
+ * stays visible and unchanged just above the sheet, as the Maps terms require; the SDK
+ * offers no way to recolor it.
  */
 @Composable
 private fun CafeteriaMap(
     cafeterias: List<Cafeteria>,
     selected: String?,
-    showUser: Boolean,
+    user: Point?,
     start: Point,
     bottomInset: Dp,
     onSelect: (String) -> Unit
@@ -454,12 +455,14 @@ private fun CafeteriaMap(
     // The SDK draws Google's logo in the padded corner, a few dp in; this lines it up with the 20 dp screen margin.
     val padding = PaddingValues(start = 14.dp, top = 120.dp, bottom = bottomInset + 6.dp)
 
-    LaunchedEffect(loaded, points) {
-        if (!loaded || points.isEmpty()) return@LaunchedEffect
-        val update = if (points.size == 1) {
-            CameraUpdateFactory.newLatLngZoom(points.single(), 16f)
+    // Fits again when the first fix arrives, not on every later one, so the camera does not undo the user's panning.
+    LaunchedEffect(loaded, points, user != null) {
+        val framed = framedPoints(cafeterias, user).map { LatLng(it.lat, it.lng) }
+        if (!loaded || framed.isEmpty()) return@LaunchedEffect
+        val update = if (framed.size == 1) {
+            CameraUpdateFactory.newLatLngZoom(framed.single(), 16f)
         } else {
-            val bounds = LatLngBounds.builder().apply { points.forEach(::include) }.build()
+            val bounds = LatLngBounds.builder().apply { framed.forEach(::include) }.build()
             CameraUpdateFactory.newLatLngBounds(bounds, with(density) { 48.dp.roundToPx() })
         }
         camera.animate(update, 600)
@@ -473,7 +476,7 @@ private fun CafeteriaMap(
         modifier = Modifier.fillMaxSize().testTag("map"),
         cameraPositionState = camera,
         contentPadding = padding,
-        properties = MapProperties(isMyLocationEnabled = showUser),
+        properties = MapProperties(isMyLocationEnabled = user != null),
         uiSettings = MapUiSettings(mapToolbarEnabled = false, myLocationButtonEnabled = false, zoomControlsEnabled = false),
         onMapLoaded = { loaded = true }
     ) {
