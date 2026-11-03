@@ -42,14 +42,14 @@ class Node:
 class MenuTree:
     ROOT_ID = "root"
 
-    def __init__(self, candidates):
+    def __init__(self, candidates, *, include_groups=True):
         self.food_ids = tuple(f"food:{c.food_id}" for c in candidates)
         self.food_index = {food_id: i for i, food_id in enumerate(self.food_ids)}
         self.nodes = {"root": Node("root", "All available meals", "root", None)}
         self.descendants = {"root": tuple(range(len(candidates)))}
         grouped = defaultdict(list)
         for i, c in enumerate(candidates):
-            if c.food_group:
+            if include_groups and c.food_group:
                 grouped[c.food_group].append(i)
         parents = {}
         for label, members in sorted(grouped.items()):
@@ -91,7 +91,9 @@ class CandidateCatalog:
                 raise ValueError("Question text and family must be nonempty strings")
             self.questions.append({"id": f"q:{key}", "attribute": key, "text": text, "family": family, "kind": "attribute"})
         rows = []
+        menu_profiles = []
         for raw in candidates:
+            menu_profiles.append(isinstance(raw, dict) and raw.get("menu_profile") == "rms-v1")
             if not isinstance(raw, dict):
                 raise ValueError("Candidate rows must be dictionaries")
             food_id = raw.get("food_id")
@@ -133,7 +135,9 @@ class CandidateCatalog:
                 price = offer.get("price")
                 if price is not None and (type(price) is not int or price < 0):
                     raise ValueError("Offer price must be a nonnegative integer or null")
-            rows.append(Candidate(food_id, name.strip(), label.strip(), group.strip(),
+            if raw.get("menu_profile") != "rms-v1":
+                name, label = name.strip(), label.strip()
+            rows.append(Candidate(food_id, name, label, group.strip(),
                                   MappingProxyType(values), tuple(copy.deepcopy(offers)),
                                   None if stds is None else MappingProxyType(stds)))
         if len({c.food_id for c in rows}) != len(rows):
@@ -155,7 +159,10 @@ class CandidateCatalog:
         if context is not None and not isinstance(context, dict):
             raise ValueError("Context must be a JSON-compatible dictionary")
         self.context = copy.deepcopy(context or {})
-        self.food_tree = MenuTree(self.candidates)
+        actual_menus = bool(menu_profiles) and all(menu_profiles)
+        if actual_menus:
+            self.context["candidate_kind"] = "menu-rms-v1"
+        self.food_tree = MenuTree(self.candidates, include_groups=not actual_menus)
         self.foods = [{"id": f"food:{c.food_id}", "display_name": c.display_name,
                        "attributes": dict(c.features),
                        "attribute_std": {} if c.feature_std is None else dict(c.feature_std),

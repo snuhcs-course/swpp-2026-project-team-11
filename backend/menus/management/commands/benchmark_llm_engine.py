@@ -5,7 +5,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from menus.services import get_candidates
+from menus.services import get_catalog
 from question_engines.llm import LLMConfigError, LLMSettings
 from question_engines.llm.config import build_llm
 from question_engines.llm.evaluation import run_benchmark
@@ -36,7 +36,7 @@ class Command(BaseCommand):
             judge_llm = (build_llm(LLMSettings(settings.api_key, options["judge_model"], 60))
                          if options["judge_model"] else None)
             report = run_benchmark(
-                get_candidates(options["date"], options["meal"]), build_llm(settings), user_llm, judge_llm,
+                get_catalog(options["date"], options["meal"])[0], build_llm(settings), user_llm, judge_llm,
                 trials=options["trials"], seed=options["seed"], max_questions=options["max_questions"] or None,
                 max_guesses=options["max_guesses"], workers=options["workers"])
         except (LLMConfigError, ValueError) as error:
