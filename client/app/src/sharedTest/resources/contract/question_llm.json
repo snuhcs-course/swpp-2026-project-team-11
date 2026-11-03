@@ -3,6 +3,7 @@
   "engine": "llm",
   "date": "2026-09-29",
   "meal": "LU",
+  "language": "en",
   "candidate_count": 193,
   "max_questions": 10,
   "can_undo": false,

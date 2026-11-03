@@ -74,6 +74,13 @@ class RecommendRepositoryTest {
         assertEquals("""{"meal":"LU","allergies":["egg","pine_nut"]}""", server.takeRequest().json().toString())
     }
 
+    @Test
+    fun createSessionSendsTheLanguage() = runTest {
+        reply("question", 201)
+        repository.createSession("LU", language = "ko")
+        assertEquals("""{"meal":"LU","language":"ko"}""", server.takeRequest().json().toString())
+    }
+
     /** The server refuses the LLM engine when it has no API key; the body says so. */
     @Test
     fun engineUnavailableBodyIsDecoded() = runTest {

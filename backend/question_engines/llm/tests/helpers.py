@@ -21,6 +21,11 @@ def ask(question, food="육개장"):
     return {"action": "ask", "question": question, "food": food}
 
 
+def ask_ko(question, question_ko, food="육개장"):
+    """A Korean session's ask turn: the English is for the LLM, the Korean is shown."""
+    return {"action": "ask", "question": question, "question_ko": question_ko, "food": food}
+
+
 def recommend(food):
     return {"action": "recommend", "question": "", "food": food}
 

@@ -54,6 +54,10 @@ P10, with these differences:
 
 - `target_kind` is always `"food"`: the LLM proposes single dishes, never groups.
 - `question_id` is `q:llm-<n>`; question text is written by the LLM in English.
+  With `config={"language": "ko"}` the LLM also writes `question_ko`, which the step
+  shows. The English stays in the session (`english` in the recorded step, never
+  shown): the LLM reads the history in English and the repeat check works on it.
+  The fixed fallback questions and the other texts come from `contracts.KOREAN`.
 - Dishes with the same `display_name` are one choice for the LLM. The first one's
   `food_id` and offers stand for them.
 - The default `max_questions` is 10 (`None` lets the LLM decide alone). At the

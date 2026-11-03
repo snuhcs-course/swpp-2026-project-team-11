@@ -7,7 +7,7 @@ from menus.models import Food, MenuItem, Restaurant
 
 DAY = "2026-09-29"
 ANSWER_IDS = ("yes", "probably_yes", "any", "probably_no", "no", "unknown")
-STATE_KEYS = {"session_id", "engine", "date", "meal", "candidate_count",
+STATE_KEYS = {"session_id", "engine", "date", "meal", "language", "candidate_count",
               "max_questions", "can_undo", "step"}
 
 

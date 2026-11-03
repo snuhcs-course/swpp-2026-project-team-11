@@ -8,7 +8,8 @@ import math
 import numpy as np
 
 from .catalog import CandidateCatalog
-from .contracts import ANSWER_OPTIONS
+from .contracts import (GUESS_TEXT, LANGUAGES, RECOMMENDATION_TEXT, UNAVAILABLE_TEXT,
+                        answer_options, translate)
 from .planning import IntentModel, Planner, PlannerConfig, POLICY_VERSION
 from .preference import PreferencePlanner
 
@@ -21,8 +22,11 @@ class EngineConfig:
     greedy_information_floor: float = .001
     preference_question_cost: float = .06
     preference_lookahead_beam: int = 4
+    language: str = "en"
 
     def __post_init__(self):
+        if self.language not in LANGUAGES:
+            raise ValueError(f"language must be one of {', '.join(LANGUAGES)}")
         if self.policy not in {"preference", "lookahead", "greedy"}:
             raise ValueError("policy must be preference, lookahead or greedy")
         if (type(self.preference_lookahead_beam) is not int
@@ -55,10 +59,13 @@ class DecisionTreeEngine:
         self.model = IntentModel(self.catalog, self.planner_config) if self.catalog.candidates else None
         self.preference = (PreferencePlanner(self.model, self.config.preference_question_cost,
                            self.config.preference_lookahead_beam) if self.model else None)
-        meaning = {"version": POLICY_VERSION, "catalog": self.catalog.fingerprint,
-                   "engine": asdict(self.config), "planner": asdict(self.planner_config)}
-        self.fingerprint = hashlib.sha256(json.dumps(meaning, sort_keys=True).encode()).hexdigest()
+        self.fingerprint = self._fingerprint(asdict(self.config))
         self._reset()
+
+    def _fingerprint(self, config):
+        meaning = {"version": POLICY_VERSION, "catalog": self.catalog.fingerprint,
+                   "engine": config, "planner": asdict(self.planner_config)}
+        return hashlib.sha256(json.dumps(meaning, sort_keys=True).encode()).hexdigest()
 
     def _reset(self):
         self.belief = self.model.prior.copy() if self.model else np.empty(0)
@@ -112,7 +119,7 @@ class DecisionTreeEngine:
         common = {"type": kind, "question_count": self.question_count}
         if kind == "unavailable":
             return {**common, "reason": descriptor.get("reason", "candidates_exhausted"),
-                    "text": "No available meal matches this session. Try starting again."}
+                    "text": translate(UNAVAILABLE_TEXT, self.config.language)}
         if self.model is None:
             raise ValueError("No candidates available")
         if kind == "question":
@@ -123,8 +130,8 @@ class DecisionTreeEngine:
             if qi in self._asked or self._accepted is not None:
                 raise ValueError("Question was already answered or the session has ended")
             q = self.model.questions[qi]
-            return {**common, "question_id": question_id, "text": q["text"],
-                    "options": copy.deepcopy(list(ANSWER_OPTIONS))}
+            return {**common, "question_id": question_id, "text": translate(q["text"], self.config.language),
+                    "options": answer_options(self.config.language)}
         if kind not in {"guess", "recommendation"}:
             raise ValueError("Unknown step type")
         node_id = descriptor["id"]
@@ -144,7 +151,7 @@ class DecisionTreeEngine:
         node = self.catalog.food_tree.nodes[node_id]
         result = {**common, "food": self.catalog.by_id[food_id].summary(),
                   "target_kind": "group" if node.kind == "family" else "food",
-                  "text": "Is this what you feel like eating?" if kind == "guess" else "Enjoy your meal."}
+                  "text": translate(GUESS_TEXT if kind == "guess" else RECOMMENDATION_TEXT, self.config.language)}
         if kind == "guess":
             result["guess_id"] = node_id
         if node.kind == "family":
@@ -303,7 +310,12 @@ class DecisionTreeEngine:
             raise ValueError("Malformed snapshot structure")
         engine = cls(candidates, feature_schema, priors=priors, context=context,
                      config=snapshot["config"], planner_config=snapshot["planner_config"])
-        if snapshot.get("fingerprint") != engine.fingerprint:
+        expected = engine.fingerprint
+        if "language" not in snapshot["config"]:  # Earlier 3.0 snapshots were English-only.
+            old_config = asdict(engine.config)
+            del old_config["language"]
+            expected = engine._fingerprint(old_config)
+        if snapshot.get("fingerprint") != expected:
             raise ValueError("Snapshot data, context, prior, or configuration differs")
         for event in snapshot["events"]:
             engine._transition(event)

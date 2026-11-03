@@ -3,6 +3,7 @@
   "engine": "decision_tree",
   "date": "2026-01-01",
   "meal": null,
+  "language": "en",
   "candidate_count": 0,
   "max_questions": 10,
   "can_undo": false,
