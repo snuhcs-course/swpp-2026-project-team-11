@@ -2,7 +2,6 @@ package com.example.metchu.ui.settings
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -99,7 +97,8 @@ private fun AllergenChips(picked: List<Allergen>, onChange: (List<Allergen>) -> 
         Allergen.entries.forEach { allergen ->
             val on = allergen in picked
             val background by animateColorAsState(if (on) MetchuColors.Primary else Color.White, label = "chip")
-            Row(
+            // Only the fill changes, so a tap never widens the chip and moves the ones after it.
+            Box(
                 Modifier
                     .height(40.dp)
                     .chipShadow()
@@ -110,13 +109,11 @@ private fun AllergenChips(picked: List<Allergen>, onChange: (List<Allergen>) -> 
                     }
                     .padding(horizontal = 14.dp)
                     .testTag("allergen_${allergen.id}"),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                contentAlignment = Alignment.Center
             ) {
-                if (on) Image(Icons.Check, null, Modifier.size(16.dp), colorFilter = ColorFilter.tint(Color.White))
                 Text(
                     stringResource(allergen.label),
-                    style = MetchuType.Label.copy(fontWeight = if (on) MetchuType.Label.fontWeight else MetchuType.Caption.fontWeight),
+                    style = MetchuType.Label.copy(fontWeight = MetchuType.Caption.fontWeight),
                     color = if (on) Color.White else MetchuColors.Grey900
                 )
             }
