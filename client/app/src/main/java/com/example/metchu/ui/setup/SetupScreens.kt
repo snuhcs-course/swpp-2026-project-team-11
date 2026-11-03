@@ -32,6 +32,7 @@ import com.example.metchu.ui.common.ActionCapsule
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Languages
+import com.example.metchu.ui.common.TopRow
 import com.example.metchu.ui.settings.AllergenChips
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -42,7 +43,7 @@ import com.example.metchu.ui.theme.screenBackground
 fun LanguageSetupScreen(onPick: (String) -> Unit) {
     val current = LocalConfiguration.current.locales[0].language
     Box(Modifier.fillMaxSize().screenBackground()) {
-        Column(Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 76.dp)) {
+        Column(Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 72.dp)) {
             Text(stringResource(R.string.setup_language_title), Modifier.padding(bottom = 24.dp), style = MetchuType.Title)
             Languages.forEach { (tag, name) ->
                 Row(
@@ -67,7 +68,7 @@ fun LanguageSetupScreen(onPick: (String) -> Unit) {
 fun AllergySetupScreen(allergies: List<Allergen>, onAllergies: (List<Allergen>) -> Unit, onBack: () -> Unit, onNext: () -> Unit) {
     Box(Modifier.fillMaxSize().screenBackground()) {
         Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
-            Row(Modifier.height(56.dp).padding(start = 20.dp, top = 6.dp)) {
+            TopRow {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
             }
             Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
