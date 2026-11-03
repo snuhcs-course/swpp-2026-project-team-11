@@ -187,7 +187,7 @@ cd client && ./gradlew connectedDebugAndroidTest                    # 14 UI test
   accept or reject a proposal, ask for a recommendation now, and undo.
 - **Android app.** Start, settings, question and result screens that follow the
   session. The start screen chooses the meal and the distance; settings hold the
-  allergies and the engine.
+  allergies, the dishes banned from the result screen and the engine.
 
 ### Goals of the prototype
 
