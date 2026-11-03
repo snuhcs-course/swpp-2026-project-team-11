@@ -64,7 +64,7 @@ from django.views.decorators.http import require_GET, require_POST
 from menus.allergens import ALLERGEN_KEYS
 from question_engines.decision_tree.contracts import LANGUAGES
 
-from . import sessions
+from . import interaction_log, sessions
 
 MEALS = ("BR", "LU", "DN")
 
@@ -140,7 +140,9 @@ def create_session(request):
         session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language, distance_scope)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
-    return JsonResponse(session.public_state(), status=201)
+    state = session.public_state()
+    interaction_log.record(session, "start", after=state["step"])
+    return JsonResponse(state, status=201)
 
 
 @require_GET
@@ -152,21 +154,31 @@ def session_state(request, session_id: str):
         return JsonResponse(session.public_state())
 
 
-def _action(request, session_id: str, apply):
+def _action(request, session_id: str, event: str, apply):
     """Run one engine action under the session lock and return the new state."""
     session = sessions.get(session_id)
     if session is None:
         return _error(404, "session_not_found", "No such session. Start a new one.")
     with session.lock:
+        before = session.engine.next_step()
         try:
-            apply(session, _body(request))
+            body = _body(request)
+            apply(session, body)
         except sessions.StaleStep as error:
-            return _error(409, "stale_step", str(error), state=session.public_state())
+            state = session.public_state()
+            interaction_log.record(session, event, before=before, after=state["step"], outcome="stale_step")
+            return _error(409, "stale_step", str(error), state=state)
         except KeyError as error:
+            interaction_log.record(session, event, before=before, outcome="invalid_request")
             return _error(400, "invalid_request", f"Missing field: {error.args[0]}")
         except ValueError as error:
+            interaction_log.record(session, event, before=before, outcome="invalid_request")
             return _error(400, "invalid_request", str(error))
-        return JsonResponse(session.public_state())
+        state = session.public_state()
+        interaction_log.record(session, event, before=before, after=state["step"],
+                               answer_id=body.get("answer_id") if event == "answer" else None,
+                               accepted=body.get("accepted") if event == "feedback" else None)
+        return JsonResponse(state)
 
 
 @require_GET
@@ -195,7 +207,7 @@ def menu(request, session_id: str):
 @csrf_exempt
 @require_POST
 def answer(request, session_id: str):
-    return _action(request, session_id,
+    return _action(request, session_id, "answer",
                    lambda s, body: s.answer(body["question_id"], body["answer_id"]))
 
 
@@ -206,23 +218,23 @@ def feedback(request, session_id: str):
         if type(body["accepted"]) is not bool:
             raise ValueError("accepted must be true or false.")
         session.feedback(body["guess_id"], body["accepted"])
-    return _action(request, session_id, apply)
+    return _action(request, session_id, "feedback", apply)
 
 
 @csrf_exempt
 @require_POST
 def recommend_now(request, session_id: str):
-    return _action(request, session_id, lambda s, body: s.recommend_now())
+    return _action(request, session_id, "recommend_now", lambda s, body: s.recommend_now())
 
 
 @csrf_exempt
 @require_POST
 def undo(request, session_id: str):
-    return _action(request, session_id, lambda s, body: s.undo())
+    return _action(request, session_id, "undo", lambda s, body: s.undo())
 
 
 @csrf_exempt
 @require_POST
 def ban(request, session_id: str):
-    return _action(request, session_id,
+    return _action(request, session_id, "ban",
                    lambda s, body: s.ban(body.get("food_id"), body.get("food_group"), body["banned"]))
