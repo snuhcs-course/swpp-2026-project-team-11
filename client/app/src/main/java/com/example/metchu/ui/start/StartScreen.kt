@@ -1,5 +1,12 @@
 package com.example.metchu.ui.start
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
+import com.example.metchu.ui.common.TopRowHeight
 import com.example.metchu.ui.common.fade
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
@@ -68,7 +75,6 @@ import androidx.compose.ui.unit.sp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.repository.Place
-import com.example.metchu.ui.common.BottomSheetPicker
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Languages
@@ -186,9 +192,13 @@ fun StartScreen(
             }
         }
 
-        BottomSheetPicker(
+        // Under the choice it changes: the title, two lines and a 4 dp gap below the top row.
+        ChoicePopup(
             visible = sheet != null,
             title = stringResource(if (shownSheet == Sheet.PLACE) R.string.start_place_sheet else R.string.start_meal_sheet),
+            width = if (shownSheet == Sheet.PLACE) 248.dp else 168.dp,
+            modifier = Modifier.statusBarsPadding()
+                .padding(start = 14.dp, top = TopRowHeight + 10.dp + TitleLine * (if (shownSheet == Sheet.PLACE) 3 else 2) + 4.dp),
             options = if (shownSheet == Sheet.PLACE) {
                 Place.entries.map {
                     PickerOption(
@@ -274,6 +284,66 @@ private fun LocationNotice(onContinue: () -> Unit, onLater: () -> Unit) {
         shape = RoundedCornerShape(20.dp),
         containerColor = Color.White
     )
+}
+
+/**
+ * A small menu that grows from its top-left corner, under the word it changes, without
+ * dimming the screen; it shrinks back and fades when a choice is picked or the user taps
+ * elsewhere. Built like the language menu.
+ */
+@Composable
+private fun ChoicePopup(visible: Boolean, title: String, options: List<PickerOption>, width: Dp, modifier: Modifier, onDismiss: () -> Unit) {
+    val shown by animateFloatAsState(
+        if (visible) 1f else 0f,
+        if (visible) tween(220, easing = SheetEasing) else tween(160),
+        label = "popup"
+    )
+    if (visible) {
+        BackHandler(onBack = onDismiss)
+        Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null, onClick = onDismiss))
+    }
+    if (shown == 0f) return
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier
+            .graphicsLayer {
+                alpha = shown
+                scaleX = 0.92f + 0.08f * shown
+                scaleY = scaleX
+                transformOrigin = TransformOrigin(0f, 0f)
+                compositingStrategy = CompositingStrategy.ModulateAlpha
+            }
+            .width(width)
+            .cssShadow(shape, 6.dp, 24.dp, 0.18f)
+            .clip(shape)
+            .background(Color.White)
+            .padding(6.dp)
+            .semantics { paneTitle = title }
+    ) {
+        options.forEach { option ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (option.selected) MetchuColors.Grey100 else Color.White)
+                    .selectable(option.selected, enabled = visible, role = Role.RadioButton, onClick = option.onPick)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                MenuRowContent(option.label, option.note, option.selected)
+            }
+        }
+    }
+}
+
+/** A menu line: the label, bold with a check when it is the current one, otherwise its note on the right. */
+@Composable
+private fun MenuRowContent(label: String, note: String?, on: Boolean) {
+    Text(label, style = if (on) MetchuType.Item.copy(fontSize = MetchuType.Button.fontSize) else MetchuType.Button, maxLines = 1)
+    if (on) Image(Icons.Check, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900))
+    else if (note != null) Text(note, Modifier.padding(start = 12.dp), style = MetchuType.Caption, maxLines = 1)
 }
 
 private val StartButtonSize = 140.dp
@@ -426,8 +496,7 @@ private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(stringResource(name), style = if (on) MetchuType.Item.copy(fontSize = MetchuType.Button.fontSize) else MetchuType.Button)
-                        if (on) Image(Icons.Check, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900))
+                        MenuRowContent(stringResource(name), null, on)
                     }
                 }
             }
