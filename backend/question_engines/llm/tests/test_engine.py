@@ -166,10 +166,10 @@ class CheckTurnTests(SimpleTestCase):
 
 
 class CafeteriaFixtureTests(TestCase):
-    fixtures = ["menus_2026-09-29"]
+    fixtures = ["menus_2026-11-02"]
 
     def test_runs_on_the_shared_snapshot(self):
-        rows = get_catalog(datetime.date(2026, 9, 29), "LU")[0]
+        rows = get_catalog(datetime.date(2026, 11, 2), "LU")[0]
         first = rows[0]["display_name"]
         llm = FakeLLM(ask(BROTH, food=first), recommend(first))
         engine = LLMEngine(rows, llm=llm)

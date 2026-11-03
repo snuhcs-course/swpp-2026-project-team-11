@@ -7,13 +7,13 @@ from .. import DecisionTreeEngine
 
 
 class CafeteriaIntegrationTests(TestCase):
-    fixtures = ["menus_2026-09-29"]
+    fixtures = ["menus_2026-11-02"]
 
     def test_real_lunch_candidates_can_be_used_without_api_key(self):
-        rows = get_catalog(datetime.date(2026, 9, 29), "LU")[0]
-        self.assertEqual(len(rows), 193)
+        rows = get_catalog(datetime.date(2026, 11, 2), "LU")[0]
+        self.assertEqual(len(rows), 103)
         schema = get_feature_schema()
-        engine = DecisionTreeEngine(rows, schema, context={"date": "2026-09-29", "meal": "LU"})
+        engine = DecisionTreeEngine(rows, schema, context={"date": "2026-11-02", "meal": "LU"})
         step = engine.start()
         self.assertIn(step["type"], {"question", "guess"})
         if step["type"] == "question":
@@ -30,9 +30,9 @@ class CafeteriaIntegrationTests(TestCase):
         self.assertEqual(engine.start()["reason"], "empty_candidates")
 
     def test_changed_meal_context_rejects_snapshot(self):
-        rows = get_catalog(datetime.date(2026, 9, 29), "LU")[0]
+        rows = get_catalog(datetime.date(2026, 11, 2), "LU")[0]
         schema = get_feature_schema()
-        e = DecisionTreeEngine(rows, schema, config={"policy": "greedy"}, context={"date": "2026-09-29", "meal": "LU"})
+        e = DecisionTreeEngine(rows, schema, config={"policy": "greedy"}, context={"date": "2026-11-02", "meal": "LU"})
         snap = e.snapshot()
         with self.assertRaises(ValueError):
-            DecisionTreeEngine.from_snapshot(rows, schema, snap, context={"date": "2026-09-29", "meal": "DN"})
+            DecisionTreeEngine.from_snapshot(rows, schema, snap, context={"date": "2026-11-02", "meal": "DN"})

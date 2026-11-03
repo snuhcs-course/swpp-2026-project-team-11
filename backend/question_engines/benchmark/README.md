@@ -89,9 +89,9 @@ are blurred after the simulated user gives them, the same way for both engines.
 High 0%, medium 15%, low 30%; half become "Not sure"/"Doesn't matter", half are
 turned around. Both engines get the same menus, the same users and the same answers.
 
-Each menu is loaded as the app loads it (`get_catalog`) and copied into
-`scenarios.json`, so a later menu fetch cannot change a scenario. All menus must
-have the same feature version (today only fully v2-tagged days qualify).
+Each menu is loaded as the app loads it (`get_catalog`: its v2-tagged dishes) and
+copied into `scenarios.json`, so a later menu fetch cannot change a scenario. A menu
+without tagged dishes is skipped.
 
 ## The engines and the simulated user (`harness.py`, `simulator.py`)
 

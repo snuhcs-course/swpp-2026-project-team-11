@@ -138,7 +138,7 @@ class IntentModel:
                 stds = np.array([f["attribute_std"].get(q["attribute"], 0.0)
                                  for f in catalog.foods])
                 # Explicit response-model assumption: recipe variation reduces
-                # directional contrast. Zero/missing std preserves v1 behavior.
+                # directional contrast. Zero/missing std leaves the value unchanged.
                 # 4 normalizes variance by the maximum possible bounded variance.
                 response_values = values + (.5 - values) * (4 * stds * stds)
                 mean = np.einsum("zf,f->z", self.intent_to_food, values)

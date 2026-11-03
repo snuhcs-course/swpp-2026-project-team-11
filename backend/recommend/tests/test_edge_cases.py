@@ -69,7 +69,7 @@ class MalformedRequestTests(SmallMenuTestCase):
 
     def test_create_rejects_bad_date_meal_and_engine(self):
         for body in ({"date": "2026-13-01"}, {"date": "29/09/2026"}, {"date": 20260929},
-                     {"date": ""}, {"date": ["2026-09-29"]}, {"meal": "lu"}, {"meal": ""},
+                     {"date": ""}, {"date": ["2026-11-02"]}, {"meal": "lu"}, {"meal": ""},
                      {"meal": 1}, {"meal": ["LU"]}, {"meal": {"id": "LU"}},
                      {"engine": "other"}, {"engine": ""}, {"engine": 1}, {"engine": ["llm"]}):
             response = post(self.client, "/api/sessions/", body)
@@ -251,21 +251,6 @@ class MenuDataTests(SmallMenuTestCase):
         self.assertEqual(sorted((o["restaurant"], o["price"]) for o in offers["Chicken noodles"]),
                          [("Second hall", 7000), ("Test hall", None)])
 
-    def test_dishes_sharing_a_display_name_keep_separate_ids(self):
-        add_food("Bibimbap A", display_name="Bibimbap", restaurant="Hall A")
-        add_food("Bibimbap B", display_name="Bibimbap", restaurant="Hall B")
-        state, url = self.start()
-        self.assertEqual(state["candidate_count"], 5)
-        final = None
-        for _ in range(8):
-            step = self.call(url + "recommend-now/")["step"]
-            if step["food"]["display_name"] in ("Bibimbap A", "Bibimbap B"):
-                final = self.call(url + "feedback/", {"guess_id": step["guess_id"], "accepted": True})["step"]
-                self.assertEqual(final["food"], step["food"])
-                break
-            self.call(url + "feedback/", {"guess_id": step["guess_id"], "accepted": False})
-        self.assertIsNotNone(final, "The shared-name dish was never offered")
-
     def test_menu_change_does_not_disturb_a_running_session(self):
         state, url = self.start()
         add_food("Late addition", rice=0.9)
@@ -275,7 +260,7 @@ class MenuDataTests(SmallMenuTestCase):
         self.assertEqual(self.start()[0]["candidate_count"], 4)
 
     def test_non_ascii_names_round_trip(self):
-        add_food("닭갈비볶음밥&고구마맛탕", "볶음밥", display_name="닭갈비볶음밥", restaurant="301동식당", meal="DN")
+        add_food("닭갈비볶음밥&고구마맛탕", "볶음밥", restaurant="301동식당", meal="DN")
         state, url = self.start(meal="DN")
         step = self.call(url + "recommend-now/")["step"]
         self.assertEqual((step["food"]["name"], step["food"]["display_name"]),
@@ -286,7 +271,7 @@ class MenuDataTests(SmallMenuTestCase):
 class SettingsTests(SmallMenuTestCase):
     def test_today_in_seoul_is_the_default_date(self):
         with override_settings(RECOMMEND_DEFAULT_DATE=None), \
-                mock.patch("recommend.sessions.timezone.localdate", return_value=datetime.date(2026, 9, 29)):
+                mock.patch("recommend.sessions.timezone.localdate", return_value=datetime.date(2026, 11, 2)):
             state = post(self.client, "/api/sessions/").json()
         self.assertEqual((state["date"], state["candidate_count"]), (DAY, 3))
 

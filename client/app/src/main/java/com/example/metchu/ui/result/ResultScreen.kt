@@ -330,17 +330,15 @@ private fun ResultSheet(
             Column(Modifier.rise(titleIn, density), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(stringResource(caption), style = MetchuType.Caption.copy(fontWeight = MetchuType.Label.fontWeight), color = MetchuColors.Primary)
                 Text(group?.displayName ?: food.displayName, Modifier.testTag("dish"), style = MetchuType.Title)
-                val description = when {
-                    group != null -> listOfNotNull(
+                if (group != null) {
+                    val description = listOfNotNull(
                         stringResource(R.string.result_group_example, food.displayName),
                         group.members.filter { it.foodId != food.foodId }.take(MEMBER_PREVIEW)
                             .joinToString(", ") { it.displayName }.ifEmpty { null }
                             ?.let { stringResource(R.string.result_group_members, it) }
                     ).joinToString(". ")
-                    food.name != food.displayName -> food.name
-                    else -> null
+                    Text(description, Modifier.padding(top = 6.dp), style = MetchuType.Body)
                 }
-                if (description != null) Text(description, Modifier.padding(top = 6.dp), style = MetchuType.Body)
                 // The reason comes after the dish is drawn: a pulsing line holds its place, then it fades in.
                 val reasonIn by animateFloatAsState(if (reason != null) 1f else 0f, tween(300), label = "reason")
                 if (reason != null) {

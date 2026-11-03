@@ -38,8 +38,8 @@ engine in Settings. RL uses v2 food features; the decision tree and RL run witho
 ```bash
 pytest backend                                   # all backend tests; no key, no network
 python -m pytest tools/tests                     # harness tests; synthetic data only
-METCHU_MENU_DATE=2026-09-29 python backend/manage.py runserver 0.0.0.0:8000
-                                                 # after migrate + loaddata menus_2026-09-29
+METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
+                                                 # after migrate + loaddata menus_2026-11-02
 cd client && ./gradlew testDebugUnitTest         # JDK 21; the build fails on JDK 25
 ```
 
@@ -72,7 +72,7 @@ cd client && ./gradlew testDebugUnitTest         # JDK 21; the build fails on JD
   `data/model/Allergen.kt`.
 - **Snapshots**: if what a saved session means changes, bump `POLICY_VERSION`
   (`decision_tree/planning.py`) or `ENGINE_VERSION` (`llm/engine.py`).
-- **Shared data**: rebuild `menus/fixtures/menus_2026-09-29.json` only as backend/README.md,
+- **Shared data**: rebuild `menus/fixtures/menus_2026-11-02.json` only as backend/README.md,
   "Making a new shared snapshot", describes. Files a person reviewed (the P7
   preprocessing catalog and overrides) are corrected by people, never regenerated.
 - `decision_tree/` stays pure Python + numpy: no ORM, HTTP or LLM imports.
@@ -104,7 +104,7 @@ ask before proceeding. Permission to read or preview does not authorize a write.
 
 - `manage.py` loads the repo-root `.env`; pytest does not. With a key in `.env`,
   `manage.py` commands and `runserver` call Gemini for real.
-- The shared snapshot only has 2026-09-29; without `METCHU_MENU_DATE` the server
+- The shared snapshot only has 2026-11-02; without `METCHU_MENU_DATE` the server
   looks for today's menu and sessions have no candidates.
 - Leave the temperature of Gemini 3 models unset (Google's default).
 

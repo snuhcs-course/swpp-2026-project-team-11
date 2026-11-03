@@ -20,7 +20,6 @@ class OriginalMenuTests(TestCase):
     def food(self, name, value):
         return Food.objects.create(
             name=name,
-            display_name=name,
             is_food=True,
             is_set=True,
             feature_version="v2",
@@ -42,7 +41,7 @@ class OriginalMenuTests(TestCase):
         a, b = self.food("삼겹살", 0.8), self.food("떡볶이", 0.2)
         self.menu("삼겹살+떡볶이", [a, b])
         self.menu("단품 삼겹살", [a], 10000)
-        rows, _, _ = services.get_catalog(DAY, "LU")
+        rows, _ = services.get_catalog(DAY, "LU")
         by_name = {r["name"]: r for r in rows}
         combo = by_name["삼겹살+떡볶이"]
         self.assertEqual(set(by_name), {"삼겹살+떡볶이", "단품 삼겹살"})
@@ -64,7 +63,7 @@ class OriginalMenuTests(TestCase):
         first = services.get_catalog(DAY, "LU")[0]
         other = Restaurant.objects.create(code="other", name="Second hall")
         self.menu("Three mains", parts, place=other, price=15000)
-        [menu], _, _ = services.get_catalog(DAY, "LU")
+        [menu], _ = services.get_catalog(DAY, "LU")
         self.assertEqual(menu["features"], first[0]["features"])
         self.assertAlmostEqual(menu["features"]["spicy"], math.sqrt((0.8**2 + 0.2**2 + 0.5**2) / 3))
         self.assertEqual(len(menu["offers"]), 2)
@@ -75,7 +74,7 @@ class OriginalMenuTests(TestCase):
         self.menu("Set", [a, b], source="general")
         b.feature_version = ""
         b.save()
-        self.assertFalse(services.get_catalog(DAY, "LU", prefer_v2=True)[0])
+        self.assertFalse(services.get_catalog(DAY, "LU")[0])
         self.assertFalse(services.get_store_catalog("LU")[0])
 
     def test_refusal_and_undo_operate_on_actual_menu_for_dt_and_rl(self):
@@ -109,7 +108,7 @@ class OriginalMenuTests(TestCase):
         other = Restaurant.objects.create(code="shop2", name="Other restaurant")
         self.menu("A세트", [a, b], source="general")
         self.menu("A세트", [a, c], source="general", place=other, price=17000)
-        menus, _, _ = services.get_store_catalog("LU")
+        menus, _ = services.get_store_catalog("LU")
         self.assertEqual(len(menus), 2)
         self.assertNotEqual(menus[0]["food_id"], menus[1]["food_id"])
         self.assertEqual({m["offers"][0]["price"] for m in menus}, {12000, 17000})
@@ -122,7 +121,7 @@ class OriginalMenuTests(TestCase):
         other = Restaurant.objects.create(code="shop2", name="Other restaurant")
         self.menu("A세트", [a, b], source="general")
         self.menu("A세트", [a, c], source="general", place=other, price=17000)
-        candidates, _, _ = services.get_store_catalog("LU")
+        candidates, _ = services.get_store_catalog("LU")
         fake = FakeLLM()
         e = LLMEngine(candidates, llm=fake)
         labels = list(e.choices)
@@ -144,7 +143,7 @@ class OriginalMenuTests(TestCase):
                 mean = rng.random()
                 std = min(0.5, (mean * (1 - mean)) ** 0.5) * rng.random()
                 parts.append(SimpleNamespace(features={"spicy": mean}, feature_std={"spicy": std}))
-            means, stds = services.rms_components(parts, include_std=True)
+            means, stds = services.rms_components(parts)
             self.assertGreaterEqual(means["spicy"], 0)
             self.assertLessEqual(means["spicy"], 1)
             self.assertLessEqual(stds["spicy"] ** 2, means["spicy"] * (1 - means["spicy"]) + 1e-12)

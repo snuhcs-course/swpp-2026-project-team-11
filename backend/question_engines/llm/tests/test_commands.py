@@ -15,10 +15,10 @@ from .helpers import FakeLLM, ask, recommend
 
 
 class DemoCommandTests(TestCase):
-    fixtures = ["menus_2026-09-29"]
+    fixtures = ["menus_2026-11-02"]
 
     def setUp(self):
-        rows, _, _ = get_catalog(datetime.date(2026, 9, 29), "LU")
+        rows = get_catalog(datetime.date(2026, 11, 2), "LU")[0]
         self.first, self.second = rows[0]["display_name"], rows[1]["display_name"]
 
     def run_demo(self, llm, *args, answers=()):
@@ -26,7 +26,7 @@ class DemoCommandTests(TestCase):
         with mock.patch.object(llm_engine, "build_llm", return_value=llm), \
                 mock.patch.dict("os.environ", {"OPENROUTER_API_KEY": "k"}), \
                 mock.patch("builtins.input", side_effect=list(answers)):
-            call_command("demo_llm_engine", "--date", "2026-09-29", *args, stdout=stream)
+            call_command("demo_llm_engine", "--date", "2026-11-02", *args, stdout=stream)
         return stream.getvalue()
 
     def test_smoke_exports_replayable_snapshot_and_real_offers(self):
@@ -58,4 +58,4 @@ class DemoCommandTests(TestCase):
     def test_missing_key_is_a_command_error(self):
         with mock.patch.dict("os.environ", {}, clear=True):
             with self.assertRaisesMessage(CommandError, "OPENROUTER_API_KEY"):
-                call_command("demo_llm_engine", "--date", "2026-09-29", stdout=io.StringIO())
+                call_command("demo_llm_engine", "--date", "2026-11-02", stdout=io.StringIO())

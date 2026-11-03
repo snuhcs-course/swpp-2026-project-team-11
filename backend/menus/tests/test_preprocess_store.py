@@ -74,7 +74,7 @@ class CachedMappingTests(TestCase):
         seed_llm("돈가스 카레우동", ["돈까스", "카레우동"])
         run([record("돈가스 카레우동"), record("마라탕", "공대간이식당", price=7700)])
         tag("돈까스", "카레우동", "마라탕")
-        candidates = {c["name"]: c for c in services.get_catalog(DAY, "LU", feature_version=FEATURE_VERSION)[0]}
+        candidates = {c["name"]: c for c in services.get_catalog(DAY, "LU")[0]}
         self.assertEqual(set(candidates), {"돈가스 카레우동", "마라탕"})
         self.assertEqual(candidates["돈가스 카레우동"]["offers"],
                          [{"restaurant": "220동식당", "meal": "LU", "price": 6500, "lat": None, "lng": None}])
@@ -93,7 +93,7 @@ class CachedMappingTests(TestCase):
         run([record("마라탕", "공대간이식당", price=7700, lat=37.45727, lng=126.95079),
              record("마라탕", "220동식당")])
         tag("마라탕")
-        [mala] = services.get_catalog(DAY, "LU", feature_version=FEATURE_VERSION)[0]
+        [mala] = services.get_catalog(DAY, "LU")[0]
         self.assertEqual({o["restaurant"]: (o["lat"], o["lng"]) for o in mala["offers"]},
                          {"공대간이식당": (37.45727, 126.95079), "220동식당": (None, None)})
 
@@ -103,7 +103,7 @@ class CachedMappingTests(TestCase):
         run([record("눈꽃치즈 돈까스", price=7900), record("치즈돈까스", price=7900),
              record("치즈돈까스", meal="DN", price=7900)])
         tag("치즈돈까스")
-        candidates, _, _ = services.get_catalog(DAY, feature_version=FEATURE_VERSION)
+        candidates, _ = services.get_catalog(DAY)
         by_name = {c["name"]: c for c in candidates}
         self.assertEqual(set(by_name), {"눈꽃치즈 돈까스", "치즈돈까스"})
         self.assertEqual([o["meal"] for o in by_name["눈꽃치즈 돈까스"]["offers"]], ["LU"])

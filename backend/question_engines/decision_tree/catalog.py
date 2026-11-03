@@ -12,7 +12,7 @@ import math
 from numbers import Real
 from types import MappingProxyType
 
-from .contracts import FEATURE_PRESENTATION, FEATURE_PRESENTATION_V2
+from .contracts import FEATURE_PRESENTATION
 
 
 @dataclass(frozen=True)
@@ -79,12 +79,10 @@ class CandidateCatalog:
         if not keys or any(not isinstance(key, str) or not key.strip() for key in keys) or len(set(keys)) != len(keys):
             raise ValueError("Feature schema requires distinct nonempty keys")
         self.feature_keys = tuple(keys)
-        is_v2 = set(keys) == set(FEATURE_PRESENTATION_V2)
-        presentation = FEATURE_PRESENTATION_V2 if is_v2 else FEATURE_PRESENTATION
         self.questions = []
         for row in schema:
             key = row["key"]
-            default = presentation.get(key, (f"Do you feel like {key.replace('_', ' ')}?", key))
+            default = FEATURE_PRESENTATION.get(key, (f"Do you feel like {key.replace('_', ' ')}?", key))
             text = row.get("question_en", default[0])
             family = row.get("family", default[1])
             if not isinstance(text, str) or not text.strip() or not isinstance(family, str) or not family.strip():
@@ -113,8 +111,8 @@ class CandidateCatalog:
                     raise ValueError(f"Food {food_id}: {key} must be a finite score in [0,1]")
                 values[key] = float(value)
             stds = None
-            if is_v2 and "feature_std" not in raw:
-                raise ValueError(f"Food {food_id}: v2 requires std; load candidates with get_catalog")
+            if set(keys) == set(FEATURE_PRESENTATION) and "feature_std" not in raw:
+                raise ValueError(f"Food {food_id}: the feature schema requires std; load candidates with get_catalog")
             if "feature_std" in raw:
                 supplied = raw["feature_std"]
                 if not isinstance(supplied, dict) or set(supplied) != set(keys):
