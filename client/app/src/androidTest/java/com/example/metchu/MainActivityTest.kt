@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -276,9 +275,8 @@ class MainActivityTest {
         startWith(question)
         compose.onNodeWithTag("question").assertIsDisplayed()
         compose.onNodeWithText(question.step.text).assertIsDisplayed()
-        // First question: "Recommend now" waits in its corner, and Back leaves the session instead of undoing.
-        compose.onNodeWithText(text(R.string.recommend_now)).assertIsNotEnabled()
-        tap("recommendNow")
+        // First question: there is nothing to recommend from yet, and Back leaves the session instead of undoing.
+        compose.onNodeWithTag("recommendNow").assertDoesNotExist()
         tap("back")
         compose.onNodeWithTag("start").assertIsDisplayed()
         assertEquals(emptyList<String>(), api.calls.toList())
@@ -414,10 +412,12 @@ class MainActivityTest {
     }
 
     @Test
-    fun startOverLeavesTheResult() {
+    fun startOverLeavesTheResultAndResumeBringsItBack() {
         startWith(guess)
-        tapText(R.string.result_home)
+        tap("home")
         compose.onNodeWithTag("start").assertIsDisplayed()
+        tap("resume")
+        compose.onNodeWithTag("dish").assertIsDisplayed()
         assertEquals(emptyList<String>(), api.calls.toList())
     }
 

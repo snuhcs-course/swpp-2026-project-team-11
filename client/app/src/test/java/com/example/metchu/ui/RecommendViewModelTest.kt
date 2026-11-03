@@ -699,6 +699,40 @@ class RecommendViewModelTest {
         assertEquals(emptyList<Step>(), viewModel.shown.value)
     }
 
+    @Test
+    fun aSessionLeftAfterAnAnswerCanBeResumedAsItWas() {
+        startWith(questionAt(0))
+        answerTo(questionAt(1))
+        val left = viewModel.session.value
+        val history = viewModel.history.value
+        api.calls.clear()
+        viewModel.startOver()
+        assertEquals(true, viewModel.canResume.value)
+        viewModel.resume()
+        assertIdle(left)
+        assertEquals(history, viewModel.history.value)
+        assertEquals(false, viewModel.canResume.value)
+        assertEquals(emptyList<String>(), api.calls.toList())
+    }
+
+    @Test
+    fun aSessionLeftBeforeAnyAnswerIsNotKept() {
+        startWith(questionAt(0))
+        viewModel.startOver()
+        assertEquals(false, viewModel.canResume.value)
+    }
+
+    @Test
+    fun aLeftProposalIsKeptAndANewSessionForgetsIt() {
+        startWith(guess)
+        viewModel.startOver()
+        assertEquals(true, viewModel.canResume.value)
+        startWith(question)
+        assertEquals(false, viewModel.canResume.value)
+        viewModel.resume()
+        assertIdle(question)
+    }
+
     // --- the reason under a proposed dish ---
 
     @Test
