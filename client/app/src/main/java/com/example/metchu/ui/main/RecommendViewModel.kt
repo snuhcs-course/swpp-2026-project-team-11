@@ -38,8 +38,8 @@ data class AnsweredQuestion(val text: String, val answerId: String)
  * no question texts, so the phone remembers them, and trims the list to the
  * server's `question_count` after every reply so the two never disagree.
  * [shown] lists the guesses this session has proposed, for the result screen.
- * [reasons] holds the latest explanation for each proposal; changing the answers
- * invalidates that proposal's explanation.
+ * [reasons] holds the latest explanation for each proposal, null while it is being
+ * written; changing the answers invalidates that proposal's explanation.
  */
 class RecommendViewModel(private val repository: RecommendRepository) : ViewModel() {
 
@@ -59,8 +59,8 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     val shown: LiveData<List<Step>> = _shown
 
     private data class ReasonContext(val foodId: Int, val answers: List<AnsweredQuestion>)
-    private val _reasons = MutableLiveData<Map<String, String>>(emptyMap())
-    val reasons: LiveData<Map<String, String>> = _reasons
+    private val _reasons = MutableLiveData<Map<String, String?>>(emptyMap())
+    val reasons: LiveData<Map<String, String?>> = _reasons
     private val reasonContexts = mutableMapOf<String, ReasonContext>()
 
     private var lastRequest: (suspend () -> SessionState)? = null
@@ -229,7 +229,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         val context = ReasonContext(food.foodId, _history.value.orEmpty())
         if (reasonContexts[proposal] == context) return
         reasonContexts[proposal] = context
-        _reasons.value = _reasons.value.orEmpty() - proposal
+        _reasons.value = _reasons.value.orEmpty() + (proposal to null)
         explain(state.sessionId, proposal, context)
     }
 
@@ -237,17 +237,21 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         viewModelScope.launch {
             try {
                 val reason = repository.reason(sessionId)
-                if (_session.value?.sessionId == sessionId && reasonContexts[proposal] === context &&
-                    reason.foodId == context.foodId) {
-                    _reasons.value = _reasons.value.orEmpty() + (proposal to reason.reason)
+                if (current(sessionId, proposal, context)) {
+                    _reasons.value = if (reason.foodId == context.foodId) _reasons.value.orEmpty() + (proposal to reason.reason)
+                        else _reasons.value.orEmpty() - proposal
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.w(TAG, "no reason for the dish", e)
+                if (current(sessionId, proposal, context)) _reasons.value = _reasons.value.orEmpty() - proposal
             }
         }
     }
+
+    private fun current(sessionId: String, proposal: String, context: ReasonContext) =
+        _session.value?.sessionId == sessionId && reasonContexts[proposal] === context
 
     private fun forgetSession() {
         _history.value = emptyList()

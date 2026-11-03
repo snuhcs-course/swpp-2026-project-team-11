@@ -157,11 +157,11 @@ emulator, set a position under Extended controls > Location (for example
 
 | When | Screen | Actions |
 | --- | --- | --- |
-| first launch | Settings: one chip per allergen, a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
+| first launch | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
-| `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" |
-| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one line per cafeteria and meal | "Find another" turns it down and asks on (only on the dish the server proposes now); ‹ undoes; "Start over"; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it; the sheet's handle drags or taps it between low, middle and high |
-| `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them | Start over |
+| `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" (greyed on the first question); "Start over" in the top-right corner |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one line per cafeteria and meal | "Find another" turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; "Start over", always in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it; the sheet's handle drags or taps it between low, middle and high |
+| `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them and that Settings can change them | "Start over" in the top-right corner |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
 to right; "I'm not sure" sends `unknown`. The scale is drawn by the app for the
@@ -180,7 +180,8 @@ The app fetches a reason after displaying a proposal and fetches it again if
 the user changes the answers and sees the same proposal. With `OPENROUTER_API_KEY`
 set, a reason request for any engine can make up to two model calls. Without the
 key, or without evidence that a dish fits the user's answers, the server can
-give a template explanation. A network failure leaves the reason out.
+give a template explanation. Until it arrives, a pulsing line holds its place under the
+dish; a network failure leaves the reason out.
 
 "Find another" is `feedback` with `accepted: false`: the result screen shows a
 `guess`, and the app never accepts one. Leaving with "Start over" simply drops
@@ -193,15 +194,16 @@ all are listed under a note that the location is unknown. The selected cafeteria
 is kept by name, so it stays put when the list re-sorts as the user moves.
 
 The meal starts at the next one the cafeterias serve (breakfast before 10,
-lunch before 15, dinner after). The distance, engine and allergies are kept on
+lunch before 15, dinner after); one the user picks is kept until the app closes. The distance, engine and allergies are kept on
 the phone (`SettingsStore`, `AllergyStore`, SharedPreferences). The language
 follows the phone until the globe picks one (`AppCompatDelegate` per-app
 locales). A new session asks the server for the app's language (`en` or `ko`), so
 questions come in that language too. Food and cafeteria names are shown as the
 server sends them, in Korean.
 
-A tapped answer stays filled while its request runs and the phase line reads
-"Picking the next question…"; other taps are ignored. A failed request shows a banner at the top. Retry is offered for transient failures. An unsupported start configuration stays on the start screen so the user can change Settings.
+A tapped answer stays filled while its request runs; other taps are ignored. A
+request that takes more than 0.3 s shows a spinner, in the start button while a
+session starts and at the end of the phase line on the question screen. A failed request shows a banner at the top. Retry is offered for transient failures. An unsupported start configuration stays on the start screen so the user can change Settings.
 Screens change with 0.3 s fades. A question that is answered stays in place
 and the next one fades in below it; going from a question to a result, the
 question fades upward and the map, sheet, text and buttons enter in turn.

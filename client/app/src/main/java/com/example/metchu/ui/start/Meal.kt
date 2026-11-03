@@ -2,6 +2,7 @@ package com.example.metchu.ui.start
 
 import androidx.annotation.StringRes
 import com.example.metchu.R
+import java.util.Calendar
 
 /** The meals the start screen offers, with the server's meal codes. */
 enum class Meal(val code: String, @StringRes val label: Int) {
@@ -16,6 +17,8 @@ enum class Meal(val code: String, @StringRes val label: Int) {
             hour < 15 -> LUNCH
             else -> DINNER
         }
+
+        fun now(): Meal = at(Calendar.getInstance().get(Calendar.HOUR_OF_DAY))
 
         fun of(code: String?): Meal? = entries.firstOrNull { it.code == code }
     }

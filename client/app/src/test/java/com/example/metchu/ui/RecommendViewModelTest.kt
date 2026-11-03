@@ -734,11 +734,31 @@ class RecommendViewModelTest {
     }
 
     @Test
+    fun aReasonBeingWrittenIsHeldAsNull() {
+        val held = CompletableDeferred<Reason>()
+        api.heldReason = held
+        startWith(question)
+        answerTo(guess)
+        assertEquals(mapOf(guess.step.guessId to null), viewModel.reasons.value)
+
+        held.complete(Reason(guess.step.food!!.foodId, "Spicy, as you wanted."))
+        assertEquals(mapOf(guess.step.guessId to "Spicy, as you wanted."), viewModel.reasons.value)
+    }
+
+    @Test
+    fun aReasonForAnotherDishIsLeftOut() {
+        api.reason = Reason(guess.step.food!!.foodId + 1, "Spicy, as you wanted.")
+        startWith(question)
+        answerTo(guess)
+        assertEquals(emptyMap<String, String?>(), viewModel.reasons.value)
+    }
+
+    @Test
     fun aFailedReasonIsLeftOutWithoutAnError() {
         startWith(question)
         answerTo(guess)
         assertEquals(listOf(guess.sessionId), api.reasonCalls.toList())
-        assertEquals(emptyMap<String, String>(), viewModel.reasons.value)
+        assertEquals(emptyMap<String, String?>(), viewModel.reasons.value)
         assertIdle(guess)
     }
 
@@ -747,7 +767,7 @@ class RecommendViewModelTest {
         api.reason = Reason(guess.step.food!!.foodId, "Spicy, as you wanted.")
         startWith(guess)
         viewModel.startOver()
-        assertEquals(emptyMap<String, String>(), viewModel.reasons.value)
+        assertEquals(emptyMap<String, String?>(), viewModel.reasons.value)
         startWith(guess)
         assertEquals(2, api.reasonCalls.size)
     }

@@ -15,10 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +46,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.node.DelegatableNode
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -53,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import com.example.metchu.R
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
+import kotlinx.coroutines.delay
 
 /**
  * A CSS box-shadow (`0 [offsetY] [blur] rgba(26, 31, 38, [alpha])`) behind [shape].
@@ -91,6 +97,26 @@ fun Modifier.pressScale(interaction: MutableInteractionSource, pressed: Float = 
     return scale(scale)
 }
 
+/** True once [loading] has lasted a moment, so a quick reply does not flash a spinner. */
+@Composable
+fun rememberSlow(loading: Boolean): Boolean {
+    var slow by remember { mutableStateOf(false) }
+    LaunchedEffect(loading) {
+        slow = false
+        if (loading) {
+            delay(300)
+            slow = true
+        }
+    }
+    return slow
+}
+
+/** The spinner shown while a request runs. */
+@Composable
+fun Spinner(color: Color, size: Dp, modifier: Modifier = Modifier) {
+    CircularProgressIndicator(modifier.size(size).testTag("loading"), color = color, strokeWidth = size / 9)
+}
+
 /** A white 44 dp circle with a shadow, holding a 20 dp icon. */
 @Composable
 fun CircleIconButton(icon: ImageVector, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -119,18 +145,27 @@ fun Pill(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     ) { content() }
 }
 
+/** A disabled segment stays in place, greyed, so the pill never changes shape under a finger. */
 @Composable
-fun PillSegment(text: String, onClick: () -> Unit, color: Color = MetchuColors.Grey900, start: Dp = 18.dp, end: Dp = 18.dp) {
+fun PillSegment(
+    text: String,
+    onClick: () -> Unit,
+    color: Color = MetchuColors.Grey900,
+    start: Dp = 18.dp,
+    end: Dp = 18.dp,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
+) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     Box(
-        Modifier
+        modifier
             .height(44.dp)
             .background(if (pressed) MetchuColors.Grey100 else Color.Transparent)
-            .clickable(interaction, indication = null, role = Role.Button, onClick = onClick)
+            .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(start = start, end = end),
         contentAlignment = Alignment.Center
-    ) { Text(text, style = MetchuType.Label, color = color, maxLines = 1) }
+    ) { Text(text, style = MetchuType.Label, color = if (enabled) color else MetchuColors.Grey400, maxLines = 1) }
 }
 
 @Composable

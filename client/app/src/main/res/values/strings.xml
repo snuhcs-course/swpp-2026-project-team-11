@@ -60,7 +60,7 @@
     <string name="allergen_chicken">Chicken</string>
     <string name="allergen_beef">Beef</string>
     <string name="allergen_squid">Squid</string>
-    <string name="allergen_shellfish">Shellfish (incl. oysters, abalone, mussels)</string>
+    <string name="allergen_shellfish">Shellfish</string>
     <string name="allergen_pine_nut">Pine nuts</string>
 
     <!-- question -->
@@ -86,6 +86,7 @@
     <string name="result_caption_lunch">Lunch pick</string>
     <string name="result_caption_dinner">Dinner pick</string>
     <string name="result_caption_any">Today’s pick</string>
+    <string name="reason_writing">Working out why this suits you…</string>
     <string name="result_home">Start over</string>
     <string name="result_more">Find another</string>
     <string name="result_nearby">Nearby cafeterias</string>
@@ -107,7 +108,7 @@
 
     <!-- unavailable -->
     <string name="unavailable_no_menu">There is no %1$s menu for %2$s yet. Try another meal.</string>
-    <string name="unavailable_no_safe_menu">No %1$s dish for %2$s is known to be free of your allergies. Try another meal.</string>
+    <string name="unavailable_no_safe_menu">No %1$s dish for %2$s is confirmed to be free of the allergies you chose. Check them in Settings or try another meal.</string>
     <string name="unavailable_exhausted">You’ve seen every dish on today’s menu. Start over to see them again.</string>
 
     <!-- errors -->
