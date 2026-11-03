@@ -26,6 +26,7 @@ import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.MainActivity
+import com.example.metchu.ui.start.Meal
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -129,6 +130,18 @@ class MainActivityTest {
             assertEquals("create $code decision_tree en", api.calls.last())
             tap("back")
         }
+    }
+
+    @Test
+    fun theMealPickedStaysAfterASession() {
+        val other = Meal.entries.first { it != Meal.now() }
+        pickMeal(other.label)
+        api.reply(question)
+        tap("start")
+        tap("back")
+        api.reply(question)
+        tap("start")
+        assertEquals("create ${other.code} decision_tree en", api.calls.last())
     }
 
     @Test
