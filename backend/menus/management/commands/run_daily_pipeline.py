@@ -5,7 +5,8 @@ One day's menu, start to finish (default: today in Seoul):
   1. fetch_menus       - download, split combos, merge duplicates, store
   2. extract_features  - tag the new dishes with feature values
   3. extract_allergens - tag the new dishes with allergens (menus/allergens.py)
-  4. export_preprocess_review (with --review) - CSV for a person to check
+  4. tag_menu_labels - create short display labels for long menu lines
+  5. export_preprocess_review (with --review) - CSV for a person to check
 
 Run it once a day; it needs the key of METCHU_MENU_MODEL (menus/llm.py). Re-running is safe: lines and dishes
 resolved before are reused, so only new menu lines cost LLM calls. If a step fails
@@ -40,11 +41,12 @@ class Command(BaseCommand):
         date = options["date"] or timezone.localdate()
         day = date.isoformat()
 
-        steps = [("[1/4] 메뉴 수집·전처리", ["fetch_menus", "--date", day]),
-                 ("[2/4] 새 요리 특징 추출", ["extract_features", "--date", day]),
-                 ("[3/4] 새 요리 알레르기 태깅", ["extract_allergens", "--date", day])]
+        steps = [("[1/5] 메뉴 수집·전처리", ["fetch_menus", "--date", day]),
+                 ("[2/5] 새 요리 특징 추출", ["extract_features", "--date", day]),
+                 ("[3/5] 새 요리 알레르기 태깅", ["extract_allergens", "--date", day]),
+                 ("[4/5] 메뉴 표시 이름 태깅", ["tag_menu_labels", "--date", day])]
         if options["review"]:
-            steps.append(("[4/4] 검토용 CSV",
+            steps.append(("[5/5] 검토용 CSV",
                           ["export_preprocess_review", "--date", day, "--output", options["review"]]))
         errors = []
         for title, command in steps:
