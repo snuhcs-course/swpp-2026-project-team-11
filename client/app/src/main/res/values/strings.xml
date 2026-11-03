@@ -60,7 +60,7 @@
     <string name="allergen_chicken">Chicken</string>
     <string name="allergen_beef">Beef</string>
     <string name="allergen_squid">Squid</string>
-    <string name="allergen_shellfish">Shellfish (incl. oysters, abalone, mussels)</string>
+    <string name="allergen_shellfish">Shellfish</string>
     <string name="allergen_pine_nut">Pine nuts</string>
 
     <!-- question -->
