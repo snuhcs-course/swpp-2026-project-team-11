@@ -133,6 +133,28 @@ python manage.py createsuperuser && python manage.py runserver   # then http://1
 
 To start over, delete `backend/db.sqlite3` and run `python manage.py migrate` again.
 
+## Short menu display names
+
+Every candidate keeps the original sales line in `name`. Its `display_name` starts
+with `clean_name(raw_name)[0]`; if that base exceeds 20 characters or contains
+characters other than letters, digits, whitespace and parentheses, a current
+`MenuLabel` can replace it. Without a current label the cleaned base is shown.
+The rule applies to both cafeteria and restaurant sales menus. The restaurant
+catalogue caches the labels with the menu for up to `RECOMMEND_STORE_MENU_CACHE_S`.
+
+`tag_menu_labels --date YYYY-MM-DD`, `--stores`, and `--all` select the menu
+lines to label. The command deduplicates by the original line and skips labels at
+`LABEL_VERSION`; `--force` refreshes them. `--dry-run` makes no model call and
+writes nothing. It prints the number of distinct names, initial batches and the
+maximum calls if every item requires a single-item retry. A real run uses the
+configured menu model and can incur costs; review its count first. It saves
+successful batches even if other names fail; rerun to retry failures.
+`run_daily_pipeline` includes the date-scoped label step.
+
+Labels are estimates for presentation, not menu, allergen or feature corrections.
+The preprocessing prompt and `PREPROCESS_VERSION` are unchanged.
+
+
 ## Daily menu preprocessing (P7)
 
 A cafeteria menu line is not always one dish. `fetch_menus` resolves every line into the dishes
