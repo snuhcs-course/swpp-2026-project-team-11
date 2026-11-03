@@ -93,9 +93,10 @@ private fun Section(caption: String, content: @Composable () -> Unit) {
     }
 }
 
+/** One chip per allergen, here and on the first launch. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AllergenChips(picked: List<Allergen>, onChange: (List<Allergen>) -> Unit) {
+fun AllergenChips(picked: List<Allergen>, onChange: (List<Allergen>) -> Unit) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Allergen.entries.forEach { allergen ->
             val on = allergen in picked

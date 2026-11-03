@@ -25,7 +25,8 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="${mapsApiKey}" />
 
-        <!-- A new language redraws the screen instead of recreating it, which flashes black. -->
+        <!-- configChanges: a language switch redraws the screen in place, so it keeps its
+             transitions instead of the activity restarting. -->
         <activity
             android:name=".ui.main.MainActivity"
             android:configChanges="locale|layoutDirection|screenLayout"

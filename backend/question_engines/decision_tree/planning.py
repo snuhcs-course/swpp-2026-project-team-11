@@ -81,7 +81,8 @@ class IntentModel:
         self.node_ids = tuple(self.tree.proposal_ids)
         self.node_index = {node_id: i for i, node_id in enumerate(self.node_ids)}
         self.names = tuple(self.tree.nodes[node_id].label for node_id in self.node_ids)
-        normalized = [" ".join(name.split()).casefold() for name in self.names]
+        normalized = (list(self.node_ids) if catalog.context.get("candidate_kind") == "menu-rms-v1"
+                      else [" ".join(name.split()).casefold() for name in self.names])
         alias_index = {label: index for index, label in enumerate(sorted(set(normalized)))}
         self.alias_ids = np.array([alias_index[label] for label in normalized])
         n, m = len(catalog.foods), len(self.node_ids)
@@ -137,7 +138,7 @@ class IntentModel:
                 stds = np.array([f["attribute_std"].get(q["attribute"], 0.0)
                                  for f in catalog.foods])
                 # Explicit response-model assumption: recipe variation reduces
-                # directional contrast. Zero/missing std preserves v1 behavior.
+                # directional contrast. Zero/missing std leaves the value unchanged.
                 # 4 normalizes variance by the maximum possible bounded variance.
                 response_values = values + (.5 - values) * (4 * stds * stds)
                 mean = np.einsum("zf,f->z", self.intent_to_food, values)

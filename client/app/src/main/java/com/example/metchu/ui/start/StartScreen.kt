@@ -1,6 +1,7 @@
 package com.example.metchu.ui.start
 
-import androidx.appcompat.app.AppCompatDelegate
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -34,9 +35,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +56,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -59,20 +64,22 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.os.LocaleListCompat
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.repository.Place
 import com.example.metchu.ui.common.BottomSheetPicker
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
+import com.example.metchu.ui.common.Languages
 import com.example.metchu.ui.common.PickerOption
 import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.cssShadow
+import com.example.metchu.ui.common.setLanguage
 import com.example.metchu.ui.common.pressScale
 import com.example.metchu.ui.common.rememberLocationPermission
 import com.example.metchu.ui.common.rememberSlow
 import com.example.metchu.ui.common.rememberUserPoint
+import com.example.metchu.ui.common.setLanguage
 import com.example.metchu.ui.result.Point
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -94,17 +101,24 @@ private enum class Sheet { MEAL, PLACE }
 /**
  * "Today I'll have [lunch] [nearby]": the meal and the distance are picked inside the
  * sentence, and the round button starts a session. The map behind the button fades in
- * from the background; the button stands where the user is.
+ * from the background; the button stands where the user is. With [tip], a tip over the
+ * screen points to the globe and the gear, where the language and the allergies change.
+ * With [askForLocation] and no permission yet, a notice says why before the system asks,
+ * once the tip is closed.
  */
 @Composable
 fun StartScreen(
     meal: Meal,
     place: Place,
     loading: Boolean,
+    tip: Boolean,
+    askForLocation: Boolean,
     onMeal: (Meal) -> Unit,
     onPlace: (Place) -> Unit,
     onSettings: () -> Unit,
     onResume: (() -> Unit)?,
+    onTipDone: () -> Unit,
+    onLocationAsked: () -> Unit,
     onStart: (Meal) -> Unit
 ) {
     val nowMeal = remember { Meal.now() }
@@ -115,10 +129,7 @@ fun StartScreen(
     val english = LocalConfiguration.current.locales[0].language != "ko"
     val scope = rememberCoroutineScope()
 
-    // Location is asked for only when the user starts, the moment it is needed; the session
-    // starts after the answer either way.
     val permission = rememberLocationPermission()
-    var askedForLocation by rememberSaveable { mutableStateOf(false) }
     val user = rememberUserPoint(permission.granted)
     // The words fade out, change language and fade back in.
     var switching by remember { mutableStateOf(false) }
@@ -157,13 +168,7 @@ fun StartScreen(
 
         StartButton(
             loading = loading,
-            onClick = {
-                if (permission.granted || askedForLocation) onStart(meal)
-                else {
-                    askedForLocation = true
-                    permission.request { onStart(meal) }
-                }
-            },
+            onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).alpha(words)
         )
@@ -176,7 +181,7 @@ fun StartScreen(
             scope.launch {
                 switching = true
                 delay(160)
-                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+                setLanguage(tag)
             }
         }
 
@@ -202,7 +207,72 @@ fun StartScreen(
             },
             onDismiss = { sheet = null }
         )
+
+        if (tip) SetupTip(onDone = onTipDone, onSettings = { onTipDone(); onSettings() })
+
+        if (askForLocation && !permission.granted && !tip) {
+            LocationNotice(
+                onContinue = { onLocationAsked(); permission.request() },
+                onLater = onLocationAsked
+            )
+        }
     }
+}
+
+/**
+ * The screen dimmed but for copies of the globe and the gear, in the same place, and a
+ * bubble above them. A tap anywhere, Back or "Got it" closes it; the gear also opens the settings.
+ */
+@Composable
+private fun SetupTip(onDone: () -> Unit, onSettings: () -> Unit) {
+    BackHandler(onBack = onDone)
+    Box(
+        Modifier.fillMaxSize().background(MetchuColors.Grey900.copy(alpha = 0.48f))
+            .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDone)
+            .testTag("setupTip")
+    ) {
+        Column(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = CornerButtonBottom)) {
+            Column(
+                Modifier.widthIn(max = 280.dp).clip(RoundedCornerShape(16.dp)).background(Color.White)
+                    .padding(start = 18.dp, end = 8.dp, top = 16.dp, bottom = 4.dp)
+            ) {
+                Text(stringResource(R.string.setup_tip_title), Modifier.padding(end = 10.dp), style = MetchuType.Label)
+                Text(stringResource(R.string.setup_tip_body), Modifier.padding(top = 4.dp, end = 10.dp), style = MetchuType.Body)
+                TextButton(onDone, Modifier.align(Alignment.End).testTag("setupTipDone")) {
+                    Text(stringResource(R.string.setup_tip_done), style = MetchuType.Button, color = MetchuColors.Primary)
+                }
+            }
+            // Over the gear's center: the globe, the gap and half the gear, less half the arrow.
+            Canvas(Modifier.padding(start = 68.dp, bottom = 8.dp).size(16.dp, 8.dp)) {
+                drawPath(Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close() }, Color.White)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                CircleIconButton(Icons.Globe, stringResource(R.string.language), onDone)
+                CircleIconButton(Icons.Gear, stringResource(R.string.settings), onSettings)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocationNotice(onContinue: () -> Unit, onLater: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onLater,
+        confirmButton = {
+            TextButton(onContinue, Modifier.testTag("locationContinue")) {
+                Text(stringResource(R.string.location_ask_continue), style = MetchuType.Button, color = MetchuColors.Primary)
+            }
+        },
+        dismissButton = {
+            TextButton(onLater) {
+                Text(stringResource(R.string.location_ask_later), style = MetchuType.Button, color = MetchuColors.Grey600)
+            }
+        },
+        title = { Text(stringResource(R.string.location_ask_title), style = MetchuType.Item) },
+        text = { Text(stringResource(R.string.location_ask_body), style = MetchuType.Body) },
+        shape = RoundedCornerShape(20.dp),
+        containerColor = Color.White
+    )
 }
 
 private val StartButtonSize = 140.dp
@@ -339,7 +409,7 @@ private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit
         }
         if (items > 0f) {
             Column(Modifier.requiredWidth(168.dp).align(Alignment.BottomStart).padding(6.dp).alpha(items)) {
-                listOf("ko" to R.string.language_ko, "en" to R.string.language_en).forEach { (tag, name) ->
+                Languages.forEach { (tag, name) ->
                     val on = current == tag
                     Row(
                         Modifier
