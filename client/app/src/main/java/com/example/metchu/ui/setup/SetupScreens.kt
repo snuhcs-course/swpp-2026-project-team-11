@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -32,7 +33,8 @@ import com.example.metchu.ui.common.ActionCapsule
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Languages
-import com.example.metchu.ui.common.TopRow
+import com.example.metchu.ui.common.PinnedTopRow
+import com.example.metchu.ui.common.TopRowHeight
 import com.example.metchu.ui.settings.AllergenChips
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -66,11 +68,10 @@ fun LanguageSetupScreen(onPick: (String) -> Unit) {
 /** The second step: the settings' allergy chips, kept at once, and Next. Back returns to the language. */
 @Composable
 fun AllergySetupScreen(allergies: List<Allergen>, onAllergies: (List<Allergen>) -> Unit, onBack: () -> Unit, onNext: () -> Unit) {
+    val scroll = rememberScrollState()
     Box(Modifier.fillMaxSize().screenBackground()) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
-            TopRow {
-                CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
-            }
+        Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(scroll)) {
+            Spacer(Modifier.height(TopRowHeight))
             Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(stringResource(R.string.setup_allergies_title), style = MetchuType.Title)
                 Text(stringResource(R.string.allergies_body), style = MetchuType.Lead)
@@ -78,6 +79,9 @@ fun AllergySetupScreen(allergies: List<Allergen>, onAllergies: (List<Allergen>) 
                 Text(stringResource(R.string.allergies_disclaimer), style = MetchuType.Caption.copy(lineHeight = MetchuType.Caption.fontSize * 1.55f))
             }
             Box(Modifier.navigationBarsPadding().height(120.dp))
+        }
+        PinnedTopRow(scroll) {
+            CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
         }
         ActionCapsule(
             stringResource(R.string.setup_next), Icons.Forward, onNext, filled = true,

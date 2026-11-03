@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +22,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.height
@@ -145,6 +148,8 @@ fun CircleIconButton(icon: ImageVector, description: String, onClick: () -> Unit
     }
 }
 
+val TopRowHeight = 64.dp
+
 /** The 64 dp row under the status bar: 44 dp buttons centered, 20 dp from the edges. */
 @Composable
 fun TopRow(
@@ -153,7 +158,7 @@ fun TopRow(
     content: @Composable RowScope.() -> Unit
 ) {
     Row(
-        modifier.fillMaxWidth().height(64.dp).padding(horizontal = 20.dp),
+        modifier.fillMaxWidth().height(TopRowHeight).padding(horizontal = 20.dp),
         horizontalArrangement = arrangement,
         verticalAlignment = Alignment.CenterVertically,
         content = content
@@ -230,6 +235,26 @@ fun NavigationBarFade(modifier: Modifier = Modifier) {
     val height = bar + 32.dp
     val white = Color.White.copy(alpha = 0.94f)
     Box(modifier.fillMaxWidth().height(height).background(Brush.verticalGradient(0f to Color.Transparent, 32.dp / height to white, 1f to white)))
+}
+
+/**
+ * A [TopRow] that stays while [scroll] moves the screen under it. Once scrolled, white fills
+ * behind the status bar and the buttons and fades out 32 dp below them, so text passing under
+ * is veiled, not cut; at the top nothing covers the title.
+ */
+@Composable
+fun PinnedTopRow(scroll: ScrollState, modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+    val bar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val height = bar + TopRowHeight + 32.dp
+    val white = Color.White.copy(alpha = 0.94f)
+    Box(modifier.fillMaxWidth().height(height)) {
+        Box(
+            Modifier.matchParentSize()
+                .graphicsLayer { alpha = (scroll.value / 24.dp.toPx()).coerceIn(0f, 1f) }
+                .background(Brush.verticalGradient(0f to white, (bar + TopRowHeight) / height to white, 1f to Color.Transparent))
+        )
+        TopRow(Modifier.statusBarsPadding(), content = content)
+    }
 }
 
 /** Fades the top and/or bottom [edge] of a scrolling area into the background. */
