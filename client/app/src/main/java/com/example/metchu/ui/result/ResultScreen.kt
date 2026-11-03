@@ -241,14 +241,16 @@ fun ResultScreen(
             }
         }
 
+        // What rides on the sheet fades out as it rises from half to full, following the finger.
+        val above = ((top.value - topOf(SheetStop.FULL)) / (topOf(SheetStop.HALF) - topOf(SheetStop.FULL))).coerceIn(0f, 1f)
         // The dishes shown so far ride just above the sheet, centered 40 dp over it.
-        if (chips) {
-            ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight - 10.dp).fade { topIn }) { viewing = it }
+        if (shown.size > 1 && above > 0f) {
+            ShownChips(shown, viewing, Modifier.offset(y = sheetTop - ChipRowHeight - 10.dp).fade { topIn * above }) { viewing = it }
         }
-        if (stop != SheetStop.FULL && BuildConfig.HAS_MAPS_KEY) {
+        if (above > 0f && BuildConfig.HAS_MAPS_KEY) {
             LocateButton(
                 locate,
-                Modifier.align(Alignment.TopEnd).offset(y = sheetTop - 64.dp).padding(end = 20.dp).fade { topIn }
+                Modifier.align(Alignment.TopEnd).offset(y = sheetTop - 64.dp).padding(end = 20.dp).fade { topIn * above }
             ) {
                 when {
                     !permission.granted -> permission.request()
