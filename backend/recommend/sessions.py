@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import secrets
 import threading
 import uuid
 from collections import OrderedDict
@@ -103,7 +104,8 @@ class RecommendSession:
             self.engine = DecisionTreeEngine(
                 candidates, schema,
                 context={"date": date.isoformat(), "meal": meal, "feature_version": version},
-                config=config | {"policy": settings.RECOMMEND_DT_POLICY},
+                # A seed per session, so the opening questions and their phrasings vary.
+                config=config | {"policy": settings.RECOMMEND_DT_POLICY, "seed": secrets.randbits(32)},
             )
         self.engine.start()
 

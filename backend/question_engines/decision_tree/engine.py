@@ -4,14 +4,17 @@ from dataclasses import asdict, dataclass
 import hashlib
 import json
 import math
+import random
 
 import numpy as np
 
 from .catalog import CandidateCatalog
 from .contracts import (GUESS_TEXT, LANGUAGES, RECOMMENDATION_TEXT, UNAVAILABLE_TEXT,
-                        answer_options, translate)
+                        answer_options, question_text, question_tier, question_topic, translate)
 from .planning import IntentModel, Planner, PlannerConfig, POLICY_VERSION
 from .preference import PreferencePlanner
+
+VARIED_QUESTIONS = 2  # with a seed, the first questions vary among the near-best ones
 
 
 @dataclass(frozen=True)
@@ -23,10 +26,14 @@ class EngineConfig:
     preference_question_cost: float = .06
     preference_lookahead_beam: int = 4
     language: str = "en"
+    # Per session: varies the opening questions and the phrasings. None keeps both fixed.
+    seed: int | None = None
 
     def __post_init__(self):
         if self.language not in LANGUAGES:
             raise ValueError(f"language must be one of {', '.join(LANGUAGES)}")
+        if self.seed is not None and (type(self.seed) is not int or self.seed < 0):
+            raise ValueError("seed must be a nonnegative integer or None")
         if self.policy not in {"preference", "lookahead", "greedy"}:
             raise ValueError("policy must be preference, lookahead or greedy")
         if (type(self.preference_lookahead_beam) is not int
@@ -134,7 +141,10 @@ class DecisionTreeEngine:
             if qi in self._asked or self._accepted is not None:
                 raise ValueError("Question was already answered or the session has ended")
             q = self.model.questions[qi]
-            return {**common, "question_id": question_id, "text": translate(q["text"], self.config.language),
+            # Consecutive questions take turns between the phrasings, from a per-session start.
+            phrasing = 0 if self.config.seed is None else (self.config.seed + self.question_count) % 3
+            return {**common, "question_id": question_id,
+                    "text": question_text(q["attribute"], q["text"], self.config.language, phrasing),
                     "options": answer_options(self.config.language)}
         if kind not in {"guess", "recommendation"}:
             raise ValueError("Unknown step type")
@@ -186,6 +196,19 @@ class DecisionTreeEngine:
             return Action("guess", proposal)
         return Action("question", qi)
 
+    def _held_questions(self):
+        """Questions that wait, strictest first: more detailed than the session has reached
+        (tier 1 for the first two questions, 2 for the next two) or on the topic of the
+        last question; then only the more detailed ones; then those two tiers deeper."""
+        reached = 1 if self.question_count < 2 else 2 if self.question_count < 4 else 3
+        last = next((e["question_id"] for e in reversed(self._events) if e["type"] == "answer"), None)
+        topic = question_topic(self.model.questions[self.model.question_index[last]]["attribute"]) if last else None
+        tiers = [question_tier(q["attribute"]) for q in self.model.questions]
+        detailed = frozenset(qi for qi, tier in enumerate(tiers) if tier > reached)
+        deeper = frozenset(qi for qi, tier in enumerate(tiers) if tier > reached + 1)
+        repeated = frozenset(qi for qi, q in enumerate(self.model.questions) if question_topic(q["attribute"]) == topic)
+        return detailed | repeated, detailed, deeper
+
     def start(self):
         return self.next_step()
 
@@ -201,8 +224,10 @@ class DecisionTreeEngine:
         trace = [(e["type"], e.get("question_id"), e.get("answer_id"), e.get("guess_id")) for e in self._events]
         seed = int(hashlib.sha256(json.dumps(trace).encode()).hexdigest()[:8], 16)
         if self.config.policy == "preference":
-            action, planning = self.preference.plan(self.belief, self.salience, self._answers,
-                                                    self._rejected, force_guess=force)
+            varied = self.config.seed is not None and self.question_count < VARIED_QUESTIONS
+            action, planning = self.preference.plan(
+                self.belief, self.salience, self._answers, self._rejected, force_guess=force,
+                held=self._held_questions(), rng=random.Random(f"{self.config.seed}:{seed}") if varied else None)
         elif self.config.policy == "greedy" and not force:
             action, planning = self._greedy_action(), {"policy": "greedy"}
         else:
@@ -284,7 +309,8 @@ class DecisionTreeEngine:
                                   "planning": {"reason": "user_requested"}})
 
     def answered(self):
-        """The answered questions of the current history, oldest first, with their English text."""
+        """The answered questions of the current history, oldest first, with the English of
+        their first phrasing (the one reasons and prompts read, whichever one was shown)."""
         return [{"question_id": e["question_id"], "answer_id": e["answer_id"],
                  "text": self.model.questions[self.model.question_index[e["question_id"]]]["text"]}
                 for e in self._events if e["type"] == "answer"]
@@ -320,12 +346,7 @@ class DecisionTreeEngine:
             raise ValueError("Malformed snapshot structure")
         engine = cls(candidates, feature_schema, priors=priors, context=context,
                      config=snapshot["config"], planner_config=snapshot["planner_config"])
-        expected = engine.fingerprint
-        if "language" not in snapshot["config"]:  # Earlier 3.0 snapshots were English-only.
-            old_config = asdict(engine.config)
-            del old_config["language"]
-            expected = engine._fingerprint(old_config)
-        if snapshot.get("fingerprint") != expected:
+        if snapshot.get("fingerprint") != engine.fingerprint:
             raise ValueError("Snapshot data, context, prior, or configuration differs")
         for event in snapshot["events"]:
             engine._transition(event)
