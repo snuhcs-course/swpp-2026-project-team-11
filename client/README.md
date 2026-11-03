@@ -31,10 +31,17 @@ or LLM engine. The app remembers the choice for the next session.
    run the `app` configuration on an emulator. Command line:
    `./gradlew installDebug`.
 
-The emulator reaches the host machine at `http://10.0.2.2:8000/`, which is the
-default. For a physical phone on the same Wi-Fi, add your machine's LAN address
-to the untracked `client/local.properties`, and start the server with that
-address in `METCHU_ALLOWED_HOSTS` (comma-separated, or set it in `.env`):
+The app defaults to the team's mini PC at `https://theology-panning-custody.ngrok-free.dev/`. To use
+your local server from an emulator instead, set the following in the untracked
+`client/local.properties` and rebuild:
+
+```properties
+metchu.baseUrl=http://10.0.2.2:8000/
+```
+
+For a physical phone on the same Wi-Fi, set your machine's LAN address instead,
+and start the local server with that address in `METCHU_ALLOWED_HOSTS`
+(comma-separated, or set it in `.env`):
 
 ```properties
 metchu.baseUrl=http://192.168.0.3:8000/
@@ -90,8 +97,8 @@ App setting:    metchu.baseUrl=https://calm-red-fox-demo.trycloudflare.com/   (c
    now works on any network for as long as the command keeps running.
 3. Ctrl-C, `kill` or closing the terminal stops the server and the tunnel. The app
    then shows "Could not reach the server".
-4. To go back to the emulator or a USB phone, delete the `metchu.baseUrl` line (or
-   set it back) and rebuild the app.
+4. To return to the team server, remove `metchu.baseUrl` and rebuild. For an
+   emulator or USB phone using a local server, set the corresponding URL above.
 
 Things to know:
 

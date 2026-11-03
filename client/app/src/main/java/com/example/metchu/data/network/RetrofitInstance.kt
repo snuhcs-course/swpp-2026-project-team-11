@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit
 
 /**
  * The server address comes from BuildConfig.BASE_URL (see app/build.gradle.kts).
- * The default, http://10.0.2.2:8000/, is how the emulator reaches the host machine;
- * "127.0.0.1" would be the emulator itself.
+ * The default is the team server; local.properties can point a developer build
+ * at an emulator, a phone via adb reverse, or another development server.
  */
 object RetrofitInstance {
 
