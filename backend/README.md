@@ -164,8 +164,7 @@ python manage.py build_fixed_menus --start 2026-09-28 --end 2026-10-13 --review 
 (300동) from 2026-11-03, every meal Monday to Saturday. `fetch_menus` adds a board's lines to every
 day it serves, so they go through the same preprocessing, tagging and allergy filter, and a session
 offers them like any cafeteria. A corner is named like Siksha's 자하연식당>2층 (구시아푸드마켓>비비고고);
-the map shows one pin. Its coordinates are 301동식당's until the exact point is checked. When a
-board changes, edit the file; when Siksha starts listing a cafeteria, delete its entry, or its
+the map shows one pin at 300동. When a board changes, edit the file; when Siksha starts listing a cafeteria, delete its entry, or its
 lines are offered twice. The SETs with a plate of 제육 are split in `overrides.json`.
 
 **Human review.** Check the day's results in Excel and record corrections:
