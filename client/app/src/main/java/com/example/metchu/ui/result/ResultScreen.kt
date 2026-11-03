@@ -73,6 +73,7 @@ import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.Place
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
+import com.example.metchu.ui.common.NavigationBarFade
 import com.example.metchu.ui.common.Pill
 import com.example.metchu.ui.common.PillDivider
 import com.example.metchu.ui.common.PillSegment
@@ -83,7 +84,6 @@ import com.example.metchu.ui.common.rememberLocationPermission
 import com.example.metchu.ui.common.rememberUserPoint
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
-import com.example.metchu.ui.theme.ScreenGradient
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -205,6 +205,7 @@ fun ResultScreen(
             },
             modifier = Modifier.offset(y = sheetTop).height(height - sheetTop)
         )
+        NavigationBarFade(Modifier.align(Alignment.BottomCenter))
     }
 }
 
@@ -293,7 +294,7 @@ private fun ResultSheet(
             .fillMaxWidth()
             .graphicsLayer { translationY = size.height * slide }
             .cssShadow(RectangleShape, (-6).dp, 20.dp, 0.12f)
-            .background(ScreenGradient)
+            .background(Color.White)
     ) {
         var moved by remember { mutableFloatStateOf(0f) }
         Box(

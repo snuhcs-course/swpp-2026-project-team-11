@@ -40,6 +40,7 @@ import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
+import com.example.metchu.ui.common.NavigationBarFade
 import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -79,6 +80,7 @@ fun SettingsScreen(
             }
             Box(Modifier.navigationBarsPadding().height(96.dp))
         }
+        NavigationBarFade(Modifier.align(Alignment.BottomCenter))
     }
 }
 

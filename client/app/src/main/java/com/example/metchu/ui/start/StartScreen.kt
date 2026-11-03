@@ -56,7 +56,6 @@ import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.PickerOption
 import com.example.metchu.ui.common.Spinner
-import com.example.metchu.ui.common.Wordmark
 import com.example.metchu.ui.common.cssShadow
 import com.example.metchu.ui.common.pressScale
 import com.example.metchu.ui.common.rememberLocationPermission
@@ -150,7 +149,6 @@ fun StartScreen(
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2)
         )
-        Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = WordmarkBottom))
 
         BottomSheetPicker(
             visible = sheet != null,
@@ -178,10 +176,6 @@ fun StartScreen(
 }
 
 private val StartButtonSize = 140.dp
-/** The screen gradient's color where the map starts to show (48 % down). */
-private val MapFadeColor = Color(0xFFFCFCFD)
-private val WordmarkBottom = 34.dp
-private val WordmarkHeight = 20.dp
 private val TitleLine = 39.dp
 
 @Composable
@@ -232,10 +226,10 @@ private fun StartMap(center: Point) {
         position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f)
     }
     LaunchedEffect(center) { camera.position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f) }
-    // Google's logo goes above the wordmark, 20 dp in like everything else (the SDK adds ~6 dp
+    // Google's logo sits in the bottom-left corner, 20 dp in like everything else (the SDK adds ~6 dp
     // itself). The top padding then puts the user's position under the start button's center.
     val navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val bottom = navigation + WordmarkBottom + WordmarkHeight + 8.dp - 6.dp
+    val bottom = navigation + 8.dp
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val top = maxHeight + bottom - (ActionCenterFromBottom + navigation) * 2
         GoogleMap(
@@ -248,11 +242,11 @@ private fun StartMap(center: Point) {
                 zoomControlsEnabled = false, zoomGesturesEnabled = false, indoorLevelPickerEnabled = false
             )
         )
-        // The screen's own gradient over the top half, then fading out where the button sits.
+        // White over the top half, then fading out where the button sits.
         Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(
-                    0f to Color.White, 0.45f to Color.White, 0.48f to MapFadeColor, 0.85f to MapFadeColor.copy(alpha = 0f)
+                    0f to Color.White, 0.45f to Color.White, 0.85f to Color.White.copy(alpha = 0f)
                 )
             )
         )

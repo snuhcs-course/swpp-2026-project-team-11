@@ -8,7 +8,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
@@ -61,13 +60,11 @@ object MetchuType {
     val Label = base.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
     val Body = base.copy(fontSize = 15.sp, lineHeight = 22.sp, color = MetchuColors.Grey700)
     val Lead = base.copy(fontSize = 17.sp, lineHeight = 26.sp, color = MetchuColors.Grey700)
-    val Caption = base.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, color = MetchuColors.Grey600)
+    val Caption = base.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, color = MetchuColors.Grey600)
 }
 
-/** White at the top half, darkening to grey-200 at the bottom: every screen and sheet. */
-val ScreenGradient = Brush.verticalGradient(0.45f to Color.White, 1f to MetchuColors.Grey200)
-
-fun Modifier.screenBackground(): Modifier = background(ScreenGradient)
+/** Every screen and sheet is plain white. */
+fun Modifier.screenBackground(): Modifier = background(Color.White)
 
 @Composable
 fun MetchuTheme(content: @Composable () -> Unit) {
