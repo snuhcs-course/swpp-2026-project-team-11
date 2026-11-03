@@ -394,12 +394,12 @@ private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit
         Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null) { open = false })
     }
     val shape = RoundedCornerShape(corner)
+    // Closed, the globe is the gear's twin: its own shadow and press, nothing behind it.
+    val morphing = open || width > 44.dp
     Box(
         modifier
             .size(width, height)
-            .then(if (open) Modifier.cssShadow(shape, 6.dp, 24.dp, 0.18f) else Modifier.floating(shape))
-            .clip(shape)
-            .background(Color.White)
+            .then(if (morphing) Modifier.cssShadow(shape, 6.dp, 24.dp, 0.18f).clip(shape).background(Color.White) else Modifier)
     ) {
         if (globe > 0f) {
             CircleIconButton(
