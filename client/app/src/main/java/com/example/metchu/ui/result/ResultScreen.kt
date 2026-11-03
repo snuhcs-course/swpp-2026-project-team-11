@@ -111,8 +111,8 @@ import kotlin.math.abs
  * between the dishes proposed so far in this session; "Find another" stays on all of
  * them and always turns down the server's current guess. "Menu" on a cafeteria lists
  * what else it serves at that meal; [menus] holds those lists, null while one loads.
- * Under the dish, [onBan] keeps its group out of the rest of the session once two
- * proposals in a row share that group; a dish without a group can be banned alone at
+ * Under the dish, [onBan] keeps its group out of the rest of the session once the group
+ * makes up two of the last three proposals; a dish without a group can be banned alone at
  * any time. A ban in [banned] can be lifted the same way.
  */
 @Composable
@@ -150,7 +150,8 @@ fun ResultScreen(
     val banLabel = when {
         kind == null -> stringResource(if (isBanned) R.string.result_unban else R.string.result_ban)
         isBanned -> stringResource(R.string.result_unban_group, kind)
-        shown.getOrNull(viewing - 1)?.food?.foodGroup == kind -> stringResource(R.string.result_ban_group, kind)
+        (maxOf(viewing - 2, 0) until viewing).any { shown[it].food?.foodGroup == kind } ->
+            stringResource(R.string.result_ban_group, kind)
         else -> null
     }
 
