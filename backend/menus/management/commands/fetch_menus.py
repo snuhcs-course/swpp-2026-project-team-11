@@ -1,9 +1,10 @@
 """python manage.py fetch_menus [--date YYYY-MM-DD] [--no-llm]
 
-Fetch one day of SNU cafeteria menus (default: today in Seoul), resolve each menu
-line to the dishes it stands for (menus/preprocess), and store one MenuItem per
-dish. Re-running replaces that day's menu items, so it is safe to run as often
-as needed.
+Fetch one day of SNU cafeteria menus (default: today in Seoul), add the cafeterias
+with a fixed menu board that Siksha does not list (menus/sources/fixed_cafeterias.py),
+resolve each menu line to the dishes it stands for (menus/preprocess), and store one
+MenuItem per dish. Re-running replaces that day's menu items, so it is safe to run
+as often as needed.
 
 Lines never seen before are resolved by the model of METCHU_MENU_MODEL. Without a
 key, or with --no-llm, each new line is stored as one dish, as before. If the model
@@ -25,7 +26,7 @@ from menus import llm as menu_llm
 from menus.features.extractor import api_key_available
 from menus.preprocess import fixed, mapper
 from menus.preprocess.mapper import NAME_MAX, Mapping, map_lines
-from menus.sources import siksha
+from menus.sources import fixed_cafeterias, siksha
 
 
 def menu_lines(records: list[siksha.MenuRecord]) -> dict[str, str]:
@@ -107,7 +108,7 @@ def store(date: datetime.date, records: list[siksha.MenuRecord],
 
 
 class Command(BaseCommand):
-    help = "Fetch one day of SNU cafeteria menus from Siksha and store them in the DB."
+    help = "Fetch one day of SNU cafeteria menus from Siksha and the fixed boards, and store them in the DB."
 
     def add_arguments(self, parser):
         parser.add_argument("--date", type=datetime.date.fromisoformat, default=None,
@@ -118,6 +119,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         date = options["date"] or timezone.localdate()
         records = [r for r in siksha.parse(siksha.fetch_days(date, date)) if r.date == date]
+        records += fixed_cafeterias.records(date)
         if not records:
             self.stdout.write(f"{date}: 오늘 운영 메뉴 없음")
             return
