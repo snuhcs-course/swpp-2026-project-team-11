@@ -355,7 +355,8 @@ private fun AnswerScale(
             Spacer(Modifier.height(4.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Caption(R.string.answer_no, MetchuColors.Grey700, scale)
-                Caption(R.string.answer_any, MetchuColors.Grey600, scale)
+                // Twice as wide, so "Doesn't matter" is not cut off; the outer captions keep it centered.
+                Caption(R.string.answer_any, MetchuColors.Grey600, scale, width = 140.dp)
                 Caption(R.string.answer_yes, MetchuColors.Primary, scale)
             }
         }
@@ -363,8 +364,8 @@ private fun AnswerScale(
 }
 
 @Composable
-private fun Caption(@StringRes text: Int, color: Color, scale: Float) {
-    Text(stringResource(text), Modifier.width(70.dp * scale), style = MetchuType.Label, color = color, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
+private fun Caption(@StringRes text: Int, color: Color, scale: Float, width: Dp = 70.dp) {
+    Text(stringResource(text), Modifier.width(width * scale), style = MetchuType.Label, color = color, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
 }
 
 /** Shows the answer while held, picks it on release. */
