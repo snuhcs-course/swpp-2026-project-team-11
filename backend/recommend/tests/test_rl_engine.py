@@ -14,7 +14,7 @@ class RLSessions(TestCase):
         store = Restaurant.objects.create(code="R1", name="Test restaurant", source="naver", lat=37.48, lng=126.95)
         for i in range(3):
             features = {k: float((j+i)%3 == 0) for j,k in enumerate(FEATURE_KEYS)}
-            f = Food.objects.create(name=f"Test {i}", display_name=f"Menu {i}", is_food=True, feature_version="v2",
+            f = Food.objects.create(name=f"Test {i}", is_food=True, feature_version="v2",
                                     features=features, feature_std=dict.fromkeys(FEATURE_KEYS, 0.))
             StoreMenu.objects.create(food=f, restaurant=store, raw_name=f.name, price=7000+i)
         response = post(self.client, "/api/sessions/", {"source":"general", "engine":"rl", "meal":"LU", "language":"ko"})
@@ -54,29 +54,20 @@ class RLSessions(TestCase):
         self.assertEqual(action("undo"), second)
 
     @override_settings(RECOMMEND_DEFAULT_ENGINE="rl")
-    def test_cafeteria_v2_default_and_empty_catalogue(self):
+    def test_cafeteria_default_serves_only_dishes_with_current_features(self):
         empty = post(self.client, "/api/sessions/", {"date":DAY}).json()
         self.assertEqual(empty["engine"], "rl")
         self.assertEqual(empty["step"]["reason"], "empty_candidates")
         food = add_food("Daily menu")
-        food.features = dict.fromkeys(FEATURE_KEYS, .5)
-        food.feature_std = dict.fromkeys(FEATURE_KEYS, .1)
-        food.feature_version = "v2"
-        food.save()
-        # An RL client can use the v2 dish even during a partial tagging rollout.
-        add_food("Legacy dish A")
-        add_food("Legacy dish B")
+        add_food("Untagged dish A")
+        add_food("Untagged dish B")
+        Food.objects.filter(name__startswith="Untagged").update(feature_version="v1")
         state = post(self.client, "/api/sessions/", {"date":DAY, "meal":"LU"}).json()
         check_state(self, state)
         self.assertEqual(state["candidate_count"], 1)
         self.assertEqual(state["step"]["food"]["food_id"], food.pk)
         dt = post(self.client, "/api/sessions/", {"date":DAY, "meal":"LU", "engine":"decision_tree"})
-        self.assertEqual(dt.json()["candidate_count"], 2)
-
-    def test_incompatible_v1_catalogue_is_explicit(self):
-        add_food("Old menu")
-        result = post(self.client, "/api/sessions/", {"date":DAY, "engine":"rl"})
-        self.assertEqual(result.status_code, 503)
+        self.assertEqual(dt.json()["candidate_count"], 1)
 
     def test_invalid_stored_v2_values_use_the_api_error_contract(self):
         food = add_food("Invalid v2 menu")

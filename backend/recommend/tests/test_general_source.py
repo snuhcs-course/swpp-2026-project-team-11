@@ -18,7 +18,7 @@ SEOUL_NAT_UNIV_STATION = {"lat": 37.481247, "lng": 126.952739}
 def tagged_food(name, spicy):
     """A v2-tagged dish with no allergens; spicy varies so the decision tree has something to ask."""
     features = {key: 0.5 for key in FEATURE_KEYS} | {"spicy": spicy, "meal_variety": 0.0}
-    return Food.objects.create(name=name, display_name=name, is_food=True, features=features,
+    return Food.objects.create(name=name, is_food=True, features=features,
                                feature_std={key: 0.1 for key in FEATURE_KEYS} | {"meal_variety": 0.0},
                                feature_version=FEATURE_VERSION, allergen_version=ALLERGEN_VERSION)
 
@@ -62,9 +62,8 @@ class GeneralSourceTests(TestCase):
         self.assertTrue(all(offer["meal"] == "DN" for offer in food["offers"]))
         StoreMenu.objects.create(restaurant=Restaurant.objects.get(code="MA0001"), raw_name="옛날짜장",
                                  food=Food.objects.get(name="짜장면"), price=7000)  # same offer, listed once
-        candidates, _, version = services.get_store_catalog("LU")
+        candidates, _ = services.get_store_catalog("LU")
         jjajang = next(c for c in candidates if c["name"] == "짜장면")
-        self.assertEqual(version, FEATURE_VERSION)
         self.assertEqual([(o["restaurant"], o["price"], o["meal"]) for o in jjajang["offers"]],
                          [("북경 서울대입구점", 6500, "LU"), ("홍콩반점 낙성대점", 7000, "LU")])
 
@@ -93,7 +92,7 @@ class GeneralSourceTests(TestCase):
 
     def test_a_safe_dish_is_left_out_where_its_set_serves_an_allergen(self):
         def kimchi_offers(*allergies):
-            candidates, _, _ = services.get_store_catalog(allergies=frozenset(allergies))
+            candidates, _ = services.get_store_catalog(allergies=frozenset(allergies))
             return [o["restaurant"] for c in candidates if c["name"] == "김치찌개" for o in c["offers"]]
 
         self.assertEqual(kimchi_offers(), ["북경 서울대입구점", "홍콩반점 낙성대점"])

@@ -514,7 +514,7 @@ class CommandTests(TestCase):
         self.sessions = self.folder / "sessions.jsonl"
         hall = Restaurant.objects.create(code="hall", name="학생회관식당")
         for c in CANDIDATES:
-            food = Food.objects.create(name=c["name"], display_name=c["name"], is_food=True, food_group=c["food_group"],
+            food = Food.objects.create(name=c["name"], is_food=True, food_group=c["food_group"],
                                        features=c["features"], feature_std=c["feature_std"],
                                        feature_version=FEATURE_VERSION)
             MenuItem.objects.create(date=datetime.date(2026, 10, 13), meal="LU", restaurant=hall, raw_name=c["name"],
@@ -562,14 +562,16 @@ class CommandTests(TestCase):
         with self.assertRaisesMessage(CommandError, "situation:count"):
             self.build("in_menu:x")
 
-    def test_menus_with_different_feature_versions_are_refused(self):
+    def test_a_menu_without_current_features_is_skipped(self):
         hall = Restaurant.objects.get(code="hall")
         food = Food.objects.create(name="라면", is_food=True, features={"spicy": 0.5}, feature_version="v1")
         MenuItem.objects.create(date=datetime.date(2026, 10, 14), meal="LU", restaurant=hall, raw_name="라면",
                                 food=food, price=4000)
-        with self.assertRaisesMessage(CommandError, "feature 버전이 섞여"):
-            call_command("build_engine_scenarios", "--date", "2026-10-13", "--date", "2026-10-14",
-                         "--output", str(self.scenarios), stdout=io.StringIO())
+        out = io.StringIO()
+        call_command("build_engine_scenarios", "--date", "2026-10-13", "--date", "2026-10-14",
+                     "--output", str(self.scenarios), stdout=out)
+        self.assertIn("2026-10-14 LU: 태깅된 후보가 없어 건너뜁니다.", out.getvalue())
+        self.assertEqual(list(json.loads(self.scenarios.read_text())["menus"]), [MENU_ID])
 
     def test_dry_run_estimates_without_calling(self):
         self.build()
@@ -705,11 +707,10 @@ class CommandTests(TestCase):
         self.assertEqual(Counter(order), {"decision_tree": 3, "llm": 3})
         self.assertEqual(order[:2], order[2:4][::-1])
 
-    def test_not_served_targets_share_the_menus_feature_version(self):
-        Food.objects.update(feature_version="v1")
+    def test_not_served_targets_have_current_features(self):
+        Food.objects.filter(name="마라탕").update(feature_version="v1")
         data = self.build("not_in_menu:1")
-        self.assertEqual(data["menus"][MENU_ID]["feature_version"], "v1")
-        self.assertIn(data["scenarios"][0]["targets"][0]["name"], ("마라탕", "치즈볶음밥"))
+        self.assertEqual(data["scenarios"][0]["targets"][0]["name"], "치즈볶음밥")
 
     def test_each_tester_plays_two_sessions_per_engine_in_a_balanced_order(self):
         self.build()
