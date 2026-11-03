@@ -1,6 +1,6 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal, engine, location, allergies, source, language) -> RecommendSession
+    create(date, meal, engine, location, allergies, source, language, banned) -> RecommendSession
     get(session_id)            -> RecommendSession | None
     session.public_state()     -> what the phone is allowed to see
     session.reason()           -> why the proposed dish suits the user (recommend/reasons.py)
@@ -9,8 +9,8 @@
 A session runs one of ENGINES, chosen when it is created: the decision tree,
 the feature-only RL policy, or the LLM engine. They share the session API and step shapes, so
 everything below the constructor is the same for all three. Dishes with one of the
-user's `allergies` never reach the engine (menus.services.get_catalog), and the engine
-writes its questions and texts in the session's `language` ("en" or "ko"). The LLM engine calls
+user's `allergies` never reach the engine (menus.services.get_catalog), nor do the
+food IDs the user `banned`, and the engine writes its questions and texts in the session's `language` ("en" or "ko"). The LLM engine calls
 the LLM while it starts and after every answer, rejection and "recommend now", so
 those requests can take as long as its timeout allows; undo never calls it.
 
@@ -72,7 +72,8 @@ class EngineUnavailable(Exception):
 class RecommendSession:
     def __init__(self, date: datetime.date, meal: str | None, engine: str,
                  location: tuple[float, float] | None, allergies: frozenset[str],
-                 source: str = "cafeteria", language: str = "en"):
+                 source: str = "cafeteria", language: str = "en",
+                 banned: frozenset[int] = frozenset()):
         self.session_id = uuid.uuid4().hex
         self.engine_name = engine
         self.date = date
@@ -83,6 +84,7 @@ class RecommendSession:
             candidates, schema, version = get_store_catalog(meal, allergies)
         else:
             candidates, schema, version = get_catalog(date, meal, allergies, prefer_v2=(engine == "rl"))
+        candidates = [c for c in candidates if c["food_id"] not in banned]
         candidates = with_distances(candidates, location, settings.RECOMMEND_MAX_DISTANCE_M)
         self.feature_version = version
         self.candidate_count = len(candidates)
@@ -207,7 +209,7 @@ _sessions_lock = threading.Lock()
 def create(date: datetime.date | None = None, meal: str | None = None,
            engine: str | None = None, location: tuple[float, float] | None = None,
            allergies: frozenset[str] = frozenset(), source: str | None = None,
-           language: str = "en") -> RecommendSession:
+           language: str = "en", banned: frozenset[int] = frozenset()) -> RecommendSession:
     """General sessions fall back to DT if the configured default is LLM."""
     source = source or "cafeteria"
     if engine is None:
@@ -215,7 +217,7 @@ def create(date: datetime.date | None = None, meal: str | None = None,
         if source == "general" and engine == "llm":
             engine = "decision_tree"
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine, location, allergies, source, language)
+                               meal, engine, location, allergies, source, language, banned)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:

@@ -41,6 +41,7 @@ import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.AllergyStore
+import com.example.metchu.data.repository.BannedDish
 import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
@@ -77,6 +78,8 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     // The first launch opens the settings, where the allergies are picked.
     var settingsOpen by rememberSaveable { mutableStateOf(!allergyStore.chosen) }
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
+    var banned by remember { mutableStateOf(allergyStore.banned) }
+    val setBanned: (List<BannedDish>) -> Unit = { banned = it; allergyStore.banned = it }
     var engine by remember { mutableStateOf(settings.engine) }
     var place by remember { mutableStateOf(settings.place) }
     // Kept while the app runs, so coming back from a session keeps the meal the user picked.
@@ -118,14 +121,16 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                     onMeal = { meal = it },
                     onPlace = { place = it; settings.place = it },
                     onSettings = { settingsOpen = true },
-                    onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language) }
+                    onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language, banned.map { it.foodId }) }
                 )
                 Screen.SETTINGS -> {
                     BackHandler(onBack = closeSettings)
                     SettingsScreen(
                         allergies = allergies,
+                        banned = banned,
                         engine = engine,
                         onAllergies = { allergies = it; allergyStore.allergies = it },
+                        onBanned = setBanned,
                         onEngine = { engine = it; settings.engine = it },
                         onBack = closeSettings
                     )
@@ -150,12 +155,16 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                         shown = shown,
                         reasons = reasons,
                         menus = menus,
+                        banned = banned.map { it.foodId }.toSet(),
                         place = place,
                         loading = loading,
                         onBack = viewModel::undo,
                         onHome = viewModel::startOver,
                         onMore = { viewModel.feedback(accepted = false) },
-                        onMenu = viewModel::menu
+                        onMenu = viewModel::menu,
+                        onBan = { food, ban ->
+                            setBanned(if (ban) banned + BannedDish(food.foodId, food.displayName) else banned.filter { it.foodId != food.foodId })
+                        }
                     )
                 }
                 Screen.UNAVAILABLE -> if (current != null) {

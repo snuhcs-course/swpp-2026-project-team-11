@@ -25,10 +25,12 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
         engine: String? = null,
         location: UserLocation? = null,
         allergies: List<Allergen> = emptyList(),
-        language: String? = null
+        language: String? = null,
+        banned: List<Int> = emptyList()
     ): SessionState =
-        api.createSession(CreateSessionRequest(meal, engine, location, allergies.map { it.id }.ifEmpty { null }, language))
-            .checked()
+        api.createSession(
+            CreateSessionRequest(meal, engine, location, allergies.map { it.id }.ifEmpty { null }, language, banned.ifEmpty { null })
+        ).checked()
 
     suspend fun answer(sessionId: String, questionId: String, answerId: String): SessionState =
         api.answer(sessionId, AnswerRequest(questionId, answerId)).checked()

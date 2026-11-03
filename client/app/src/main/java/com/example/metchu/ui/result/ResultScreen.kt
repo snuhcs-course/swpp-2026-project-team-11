@@ -64,11 +64,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
+import com.example.metchu.data.model.Food
 import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.Offer
 import com.example.metchu.data.model.SessionState
@@ -109,6 +111,8 @@ import kotlin.math.abs
  * between the dishes proposed so far in this session; "Find another" stays on all of
  * them and always turns down the server's current guess. "Menu" on a cafeteria lists
  * what else it serves at that meal; [menus] holds those lists, null while one loads.
+ * Under the dish, [onBan] keeps it out of later sessions, or lets it back in if it is
+ * among the [banned] food IDs.
  */
 @Composable
 fun ResultScreen(
@@ -116,12 +120,14 @@ fun ResultScreen(
     shown: List<Step>,
     reasons: Map<String, String?>,
     menus: Map<String, List<MenuDish>?>,
+    banned: Set<Int>,
     place: Place,
     loading: Boolean,
     onBack: () -> Unit,
     onHome: () -> Unit,
     onMore: () -> Unit,
-    onMenu: (restaurant: String) -> Unit
+    onMenu: (restaurant: String) -> Unit,
+    onBan: (Food, ban: Boolean) -> Unit
 ) {
     val current = session.step
     var viewing by remember(shown.size, current.guessId) { mutableIntStateOf(shown.indexOfFirst { it.guessId == current.guessId }) }
@@ -200,6 +206,8 @@ fun ResultScreen(
             reason = reasons[step.proposalId],
             writingReason = step.proposalId in reasons && reasons[step.proposalId] == null,
             caption = captionFor(session.meal),
+            banned = food.foodId in banned,
+            onBan = { onBan(food, it) },
             cafeterias = cafeterias,
             place = place,
             selected = selected,
@@ -285,6 +293,8 @@ private fun ResultSheet(
     reason: String?,
     writingReason: Boolean,
     @StringRes caption: Int,
+    banned: Boolean,
+    onBan: (Boolean) -> Unit,
     cafeterias: CafeteriaList,
     place: Place,
     selected: String?,
@@ -369,6 +379,19 @@ private fun ResultSheet(
                         stringResource(R.string.reason_writing),
                         Modifier.padding(top = 8.dp).graphicsLayer { alpha = pulse }.testTag("reasonWriting"),
                         style = MetchuType.Body,
+                        color = MetchuColors.Grey600
+                    )
+                }
+                // A group stands for several dishes, so only a single dish can be banned.
+                if (group == null) {
+                    Text(
+                        stringResource(if (banned) R.string.result_unban else R.string.result_ban),
+                        Modifier
+                            .padding(top = 2.dp)
+                            .clickable(role = Role.Button) { onBan(!banned) }
+                            .padding(vertical = 6.dp)
+                            .testTag("ban"),
+                        style = MetchuType.Caption.copy(textDecoration = TextDecoration.Underline),
                         color = MetchuColors.Grey600
                     )
                 }

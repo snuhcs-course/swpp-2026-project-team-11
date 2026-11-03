@@ -36,6 +36,8 @@
     <string name="settings_allergies">Allergies</string>
     <string name="allergies_body">We only suggest dishes without what you pick.</string>
     <string name="allergies_disclaimer">AI estimates allergens from dish names. If an allergy is severe, check with the cafeteria too.</string>
+    <string name="settings_banned">Dishes not suggested</string>
+    <string name="banned_body">Tap one to have it suggested again.</string>
     <string name="settings_engine">Question engine · For development</string>
     <string name="engine_decision_tree">Decision tree</string>
     <string name="engine_rl">Reinforcement learning (RL)</string>
@@ -108,6 +110,8 @@
     <string name="result_menu">Menu</string>
     <string name="result_menu_title">%1$s · %2$s menu</string>
     <string name="result_menu_failed">Couldn’t load the menu. Close this and try again.</string>
+    <string name="result_ban">Don’t suggest this dish again</string>
+    <string name="result_unban">Won’t be suggested again · Undo</string>
 
     <!-- unavailable -->
     <string name="unavailable_no_menu">There is no %1$s menu for %2$s yet. Try another meal.</string>
