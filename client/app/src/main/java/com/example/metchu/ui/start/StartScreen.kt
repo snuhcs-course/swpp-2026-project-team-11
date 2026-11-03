@@ -120,9 +120,11 @@ fun StartScreen(
     val permission = rememberLocationPermission()
     var askedForLocation by rememberSaveable { mutableStateOf(false) }
     val user = rememberUserPoint(permission.granted)
-    // A new language recreates the screen; the words fade out first instead of jumping.
+    // The words fade out, change language and fade back in.
     var switching by remember { mutableStateOf(false) }
     val words by animateFloatAsState(if (switching) 0f else 1f, tween(150), label = "words")
+    val language = LocalConfiguration.current.locales[0].language
+    LaunchedEffect(language) { switching = false }
 
     Box(Modifier.fillMaxSize().screenBackground()) {
         if (BuildConfig.HAS_MAPS_KEY) StartMap(user ?: CampusCenter)
