@@ -8,6 +8,7 @@
     POST /api/sessions/<id>/recommend-now/                                 -> state
     POST /api/sessions/<id>/undo/                                          -> state
     GET  /api/sessions/<id>/reason/              -> {"food_id", "reason", "source"}
+    GET  /api/sessions/<id>/menu/?restaurant=<name>  -> {"restaurant", "dishes"}
     GET  /api/health/                                                      -> {"status": "ok"}
 
 Every success returns the same session state (see `RecommendSession.public_state`),
@@ -20,6 +21,11 @@ sentences of the session's language (recommend/reasons.py). The phone asks for i
 after drawing the result, as it can take an LLM call; `source` is "llm", or
 "template" when the server has no key or the LLM failed. With no dish on screen
 it is a 409 `stale_step` with the state.
+
+`menu` lists what one restaurant serves among the session's dishes, for the result
+screen: each dish is {"food_id", "display_name", "meal", "price"}, breakfast first and
+by name within a meal. A restaurant the session does not know has no dishes; a
+missing `restaurant` is a 400.
 
 `health` touches nothing; it is for checking from a browser that the server can
 be reached, for example through the tunnel of `manage.py serve_public`.
@@ -162,6 +168,17 @@ def reason(request, session_id: str):
     except sessions.StaleStep as error:
         with session.lock:
             return _error(409, "stale_step", str(error), state=session.public_state())
+
+
+@require_GET
+def menu(request, session_id: str):
+    session = sessions.get(session_id)
+    if session is None:
+        return _error(404, "session_not_found", "No such session. Start a new one.")
+    restaurant = request.GET.get("restaurant")
+    if not restaurant:
+        return _error(400, "invalid_request", "Missing parameter: restaurant")
+    return JsonResponse(session.menu(restaurant))
 
 
 @csrf_exempt

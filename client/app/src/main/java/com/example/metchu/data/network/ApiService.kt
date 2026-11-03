@@ -1,12 +1,14 @@
 package com.example.metchu.data.network
 
 import com.example.metchu.data.model.Reason
+import com.example.metchu.data.model.RestaurantMenu
 import com.example.metchu.data.model.SessionState
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 /**
  * The contract with backend/recommend/views.py. Field names must match its JSON.
@@ -74,4 +76,7 @@ interface ApiService {
 
     @GET("api/sessions/{id}/reason/")
     suspend fun reason(@Path("id") sessionId: String): Reason
+
+    @GET("api/sessions/{id}/menu/")
+    suspend fun menu(@Path("id") sessionId: String, @Query("restaurant") restaurant: String): RestaurantMenu
 }

@@ -105,6 +105,9 @@
     <string name="distance_km">%1$.1f km</string>
     <string name="walk_minutes">%1$d min walk</string>
     <string name="offer_none">No cafeteria listed</string>
+    <string name="result_menu">Menu</string>
+    <string name="result_menu_title">%1$s · %2$s menu</string>
+    <string name="result_menu_failed">Couldn’t load the menu. Close this and try again.</string>
 
     <!-- unavailable -->
     <string name="unavailable_no_menu">There is no %1$s menu for %2$s yet. Try another meal.</string>
