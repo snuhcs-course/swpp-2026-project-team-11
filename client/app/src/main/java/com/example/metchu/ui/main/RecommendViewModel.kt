@@ -40,6 +40,8 @@ data class AnsweredQuestion(val text: String, val answerId: String)
  * [shown] lists the guesses this session has proposed, for the result screen.
  * [reasons] holds the latest explanation for each proposal, null while it is being
  * written; changing the answers invalidates that proposal's explanation.
+ * [canResume] is true while a session left with [startOver] can be taken up again with
+ * [resume]; starting a new session forgets it.
  */
 class RecommendViewModel(private val repository: RecommendRepository) : ViewModel() {
 
@@ -63,6 +65,18 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     val reasons: LiveData<Map<String, String?>> = _reasons
     private val reasonContexts = mutableMapOf<String, ReasonContext>()
 
+    /** A session left for the start screen, kept whole so [resume] shows it as it was. */
+    private data class Parked(
+        val session: SessionState,
+        val history: List<AnsweredQuestion>,
+        val shown: List<Step>,
+        val reasons: Map<String, String?>,
+        val contexts: Map<String, ReasonContext>
+    )
+    private var parked: Parked? = null
+    private val _canResume = MutableLiveData(false)
+    val canResume: LiveData<Boolean> = _canResume
+
     private var lastRequest: (suspend () -> SessionState)? = null
     private var lastAnswered: AnsweredQuestion? = null
 
@@ -82,6 +96,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     ) {
         if (_loading.value == true) return
         forgetSession()
+        park(null)
         request { repository.createSession(meal, engine, location?.current(), allergies, language) }
     }
 
@@ -139,13 +154,37 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         request(retry = { walkBack(repository.state(current.sessionId)) }) { walkBack(current) }
     }
 
-    /** Leaves the session and returns to the start screen. */
+    /**
+     * Leaves the session and returns to the start screen. A session with an answer or a
+     * proposal in it is kept for [resume], in case home was tapped by mistake.
+     */
     fun startOver() {
         if (_loading.value == true) return
+        val left = _session.value
+        park(left?.takeIf { it.step.type != Step.QUESTION || it.step.questionCount > 0 }?.let {
+            Parked(it, _history.value.orEmpty(), _shown.value.orEmpty(), _reasons.value.orEmpty(), reasonContexts.toMap())
+        })
         _session.value = null
         _error.value = null
         forgetSession()
         lastRequest = null
+    }
+
+    /** Shows the session [startOver] left, as it was. */
+    fun resume() {
+        val left = parked ?: return
+        if (_loading.value == true) return
+        park(null)
+        _history.value = left.history
+        _shown.value = left.shown
+        _reasons.value = left.reasons
+        reasonContexts.putAll(left.contexts)
+        _session.value = left.session
+    }
+
+    private fun park(left: Parked?) {
+        parked = left
+        _canResume.value = left != null
     }
 
     fun retry() {
