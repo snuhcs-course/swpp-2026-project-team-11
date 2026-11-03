@@ -7,6 +7,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -321,6 +324,21 @@ class MainActivityTest {
         // The row shows itself held for a moment before it goes back.
         compose.waitUntil(3_000) { api.calls.size > sent }
         assertEquals("undo ${question.sessionId}", api.calls.last())
+    }
+
+    @Test
+    fun theDishsStepNeverShowsAsAQuestionWhileTheScreenFades() {
+        startWith(question)
+        api.reply(guess)
+        val sent = api.calls.size
+        tap("answer_yes")
+        compose.waitUntil(3_000) { api.calls.size > sent }
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeByFrame()
+        compose.onAllNodes(hasText(guess.step.text)).assertCountEquals(0)
+        compose.onNodeWithTag("question").assertTextEquals(question.step.text)
+        compose.mainClock.autoAdvance = true
+        compose.onNodeWithTag("dish").assertIsDisplayed()
     }
 
     @Test
