@@ -33,8 +33,8 @@ farther than that are left out before the engine sees the candidates.
 `menu(restaurant)` lists the candidates a restaurant serves, so dishes withheld for
 an allergy or left out by distance are not listed either.
 
-A banned dish, or a dish of a banned `food_group`, is never proposed again in the
-session, even after undo: a guess of one is turned down with `feedback` as soon as an
+A banned menu, or one holding a dish of a banned group (its `food_groups`), is never
+proposed again in the session, even after undo: a guess of one is turned down with `feedback` as soon as an
 action reaches it, and an undo that reaches one goes back further. Bans last only as
 long as the session.
 
@@ -100,6 +100,7 @@ class RecommendSession:
         self.reason_data = {c["food_id"]: (c["display_name"], c.get("features") or {}) for c in candidates}
         self.reasons = {}
         self.banned_foods, self.banned_groups = set(), set()
+        self.food_groups = {c["food_id"]: set(c["food_groups"]) for c in candidates}
         self.menus = {}
         for candidate in candidates:
             for offer in candidate["offers"]:
@@ -172,8 +173,10 @@ class RecommendSession:
             bans.discard(key)
 
     def _banned(self, step: dict) -> bool:
-        return step["type"] == "guess" and (step["food"]["food_id"] in self.banned_foods
-                                            or step["food"]["food_group"] in self.banned_groups)
+        if step["type"] != "guess":
+            return False
+        food_id = step["food"]["food_id"]
+        return food_id in self.banned_foods or not self.banned_groups.isdisjoint(self.food_groups[food_id])
 
     def _skip_banned(self, back: bool = False) -> None:
         """Turns down each banned guess, or with `back` undoes past it while it can."""
