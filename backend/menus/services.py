@@ -1,11 +1,12 @@
 """What the question engines read from the menu DB.
 
-    get_catalog(date, meal, allergies) -> matching candidates, schema, version
+    get_catalog(date, meal, allergies) -> candidates, feature schema
     get_store_catalog(meal, allergies) -> the same for the restaurants near the stations
-    get_feature_schema("v1")      -> legacy schema
+    get_feature_schema()          -> feature schema
 
 Session candidates are actual sales menus, named exactly as the restaurant lists
-them. Preprocessing's main-dish vectors are RMS-composed for each whole menu.
+them. Preprocessing's main-dish vectors are RMS-composed for each whole menu; a menu
+is served only when every main dish has current (FEATURE_VERSION) features.
 
 `allergies` (menus/allergens.py keys) is a hard rule: a menu line is never offered when
 one of its dishes is tagged with one of them or has no current allergen tags. A combo
@@ -26,7 +27,6 @@ from django.utils import timezone
 
 from .allergens import ALLERGEN_VERSION
 from .features.schema import FEATURE_VERSION, FEATURES
-from .features.legacy_schema import FEATURES as LEGACY_FEATURES
 from .models import Food, MenuItem, StoreMenu
 
 logger = logging.getLogger(__name__)
@@ -48,20 +48,15 @@ class SalesLine(NamedTuple):
     allergen_version: str
 
 
-def get_feature_schema(feature_version: str = "v1") -> list[dict]:
-    if feature_version not in ("v1", FEATURE_VERSION):
-        raise ValueError(f"Unsupported feature version: {feature_version}")
-    if feature_version == "v1":
-        return [{"key": f.key, "question": f.question} for f in LEGACY_FEATURES]
-    from question_engines.decision_tree.contracts import FEATURE_PRESENTATION_V2
-    return [{"key": f.key, "question": FEATURE_PRESENTATION_V2[f.key][0],
-             "question_en": FEATURE_PRESENTATION_V2[f.key][0],
-             "family": FEATURE_PRESENTATION_V2[f.key][1]} for f in FEATURES]
+def get_feature_schema() -> list[dict]:
+    from question_engines.decision_tree.contracts import FEATURE_PRESENTATION
+    return [{"key": f.key, "question": FEATURE_PRESENTATION[f.key][0],
+             "question_en": FEATURE_PRESENTATION[f.key][0],
+             "family": FEATURE_PRESENTATION[f.key][1]} for f in FEATURES]
 
 
 def get_catalog(date: datetime.date | None = None, meal: str | None = None,
-                allergies: frozenset[str] = frozenset(), *, prefer_v2: bool = False,
-                feature_version: str | None = None) -> tuple[list, list, str]:
+                allergies: frozenset[str] = frozenset()) -> tuple[list, list]:
     """Recommend the original purchasable menu, with RMS component features."""
     date = date or timezone.localdate()
     items = MenuItem.objects.filter(date=date).select_related("food", "restaurant")
@@ -78,12 +73,11 @@ def get_catalog(date: datetime.date | None = None, meal: str | None = None,
                         item.food.allergens if item.food_id else [],
                         item.food.allergen_version if item.food_id else ""))
     menus = _menu_lines(records, foods, allergies)
-    version = feature_version or _menu_version(menus, prefer_v2)
-    rows = _menu_candidates(menus, version)
+    rows = _menu_candidates(menus)
     log = logger.warning if len(rows) < len(menus) else logger.info
     log("%s %s: serving %d/%d actual menus with feature_version=%s",
-        date, meal or "ALL", len(rows), len(menus), version)
-    return rows, get_feature_schema(version), version
+        date, meal or "ALL", len(rows), len(menus), FEATURE_VERSION)
+    return rows, get_feature_schema()
 
 
 def _menu_lines(records, foods, allergies):
@@ -104,56 +98,44 @@ def _menu_lines(records, foods, allergies):
     return menus
 
 
-def _menu_version(menus, prefer_v2):
-    count = sum(v == FEATURE_VERSION for _, _, v in menus)
-    legacy = sum(v == "v1" for _, _, v in menus)
-    return FEATURE_VERSION if count and (prefer_v2 or count >= legacy) else "v1"
-
-
-def rms_components(components, *, include_std):
+def rms_components(components):
     """Singleton identity; RMS means and conservative RMS recipe-spread proxy."""
     if not components or any(not isinstance(f.features, dict) or
-                             (include_std and not isinstance(f.feature_std, dict)) for f in components):
+                             not isinstance(f.feature_std, dict) for f in components):
         raise ValueError("A menu requires keyed features for every main dish")
     if len(components) == 1:
         f = components[0]
-        return dict(f.features), dict(f.feature_std) if include_std else None
+        return dict(f.features), dict(f.feature_std)
     means = [f.features for f in components]
     if any(set(row) != set(means[0]) for row in means):
         raise ValueError("All components of a menu must have the same feature keys")
     for food in components:
-        if include_std and set(food.feature_std) != set(means[0]):
+        if set(food.feature_std) != set(means[0]):
             raise ValueError("Component spread must cover its feature keys")
         for key, value in food.features.items():
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 <= value <= 1:
                 raise ValueError("Invalid component feature mean")
-            if include_std:
-                std = food.feature_std[key]
-                if (isinstance(std, bool) or not isinstance(std, (int, float)) or not math.isfinite(std)
-                        or not 0 <= std <= .5 or std * std > value * (1-value) + 1e-12):
-                    raise ValueError("Invalid component recipe spread")
+            std = food.feature_std[key]
+            if (isinstance(std, bool) or not isinstance(std, (int, float)) or not math.isfinite(std)
+                    or not 0 <= std <= .5 or std * std > value * (1-value) + 1e-12):
+                raise ValueError("Invalid component recipe spread")
     def rms(rows):
         return {key: math.sqrt(math.fsum(row[key] ** 2 for row in rows) / len(rows)) for key in means[0]}
-    values = rms(means)
-    deviations = rms([f.feature_std for f in components]) if include_std else None
-    return values, deviations
+    return rms(means), rms([f.feature_std for f in components])
 
 
-def _menu_candidates(menus, version):
-    get_feature_schema(version)
+def _menu_candidates(menus):
     combined = {}
-    for rows, parts, current in menus:
-        if current != version:
+    for rows, parts, version in menus:
+        if version != FEATURE_VERSION:
             continue
         row = rows[0]
         identity = (row.raw_name, row.description, tuple(sorted(f.pk for f in parts)))
         if identity not in combined:
-            values, deviations = rms_components(parts, include_std=(version == FEATURE_VERSION))
+            values, deviations = rms_components(parts)
             candidate = {"food_id": min(r.id for r in rows), "name": row.raw_name, "display_name": row.raw_name,
                          "food_group": parts[0].food_group if len(parts) == 1 else "",
-                         "menu_profile": "rms-v1", "features": values, "offers": []}
-            if deviations is not None:
-                candidate["feature_std"] = deviations
+                         "menu_profile": "rms-v1", "features": values, "feature_std": deviations, "offers": []}
             combined[identity] = candidate
         candidate = combined[identity]
         candidate["food_id"] = min(candidate["food_id"], *(r.id for r in rows))
@@ -188,11 +170,10 @@ def _read_store_menus() -> tuple[list[tuple], dict]:
 
 
 def get_store_catalog(meal: str | None = None,
-                      allergies: frozenset[str] = frozenset()) -> tuple[list, list, str]:
+                      allergies: frozenset[str] = frozenset()) -> tuple[list, list]:
     """One original restaurant menu with RMS features, never its separate dishes."""
     rows, foods = _read_store_menus()
     meal = meal or current_meal()
     records = [SalesLine(*row[:5], meal, *row[5:]) for row in rows]
     menus = _menu_lines(records, foods, allergies)
-    candidates = _menu_candidates(menus, FEATURE_VERSION)
-    return candidates, get_feature_schema(FEATURE_VERSION), FEATURE_VERSION
+    return _menu_candidates(menus), get_feature_schema()

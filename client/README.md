@@ -14,18 +14,18 @@ or LLM engine. The app remembers the choice for the next session.
 
    ```bash
    python backend/manage.py migrate
-   python backend/manage.py loaddata menus_2026-09-29
-   METCHU_MENU_DATE=2026-09-29 python backend/manage.py runserver 0.0.0.0:8000
+   python backend/manage.py loaddata menus_2026-11-02
+   METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
    ```
 
-   The shared fixture only has September 29. Without `METCHU_MENU_DATE` the
+   The shared fixture only has November 2. Without `METCHU_MENU_DATE` the
    server uses today's date in Seoul and the app shows "Nothing to recommend"
    unless that day's menu has been fetched and tagged.
 
-   The shared fixture is v1 and works with the decision tree. To try RL, point the server at a meal with v2-tagged dishes; RL runs on CPU without a model API key. For the LLM engine, put
-   `OPENROUTER_API_KEY` in the repo-root `.env` (see `.env.example`) before starting
-   the server; without it, choosing LLM in the app shows an error and the
-   decision tree keeps working.
+   The shared fixture works with the decision tree and RL; RL runs on CPU without a
+   model API key. For the LLM engine, put `OPENROUTER_API_KEY` in the repo-root
+   `.env` (see `.env.example`) before starting the server; without it, choosing LLM
+   in the app shows an error and the decision tree keeps working.
 
 2. Open the `client/` folder in Android Studio, wait for the Gradle sync, and
    run the `app` configuration on an emulator. Command line:
@@ -70,7 +70,7 @@ on the server machine once (`brew install cloudflared`,
 instead of `runserver`:
 
 ```bash
-METCHU_MENU_DATE=2026-09-29 python backend/manage.py serve_public --write-client-config
+METCHU_MENU_DATE=2026-11-02 python backend/manage.py serve_public --write-client-config
 ```
 
 ```
@@ -261,10 +261,10 @@ Every success returns the same session state:
 {
   "session_id": "b3e73addc47a4a54b6cb08e1d575f770",
   "engine": "decision_tree",
-  "date": "2026-09-29",
+  "date": "2026-11-02",
   "meal": "LU",
   "language": "en",
-  "candidate_count": 193,
+  "candidate_count": 107,
   "max_questions": null,
   "can_undo": false,
   "step": {"type": "question", "question_count": 0, "question_id": "q:chicken",
@@ -291,7 +291,7 @@ Errors are `{"error": {"code", "message"}}`:
 | 400 | `invalid_request` | Invalid request fields. A rejected start request stays on the start screen so the user can change settings, including when an older server does not recognize RL. |
 | 404 | `session_not_found` | Unknown session; the app returns to the start screen |
 | 409 | `stale_step` | The question or guess is no longer current. The body also carries `state`, and the app redraws from it |
-| 503 | `engine_unavailable` | The selected engine is unavailable (for example missing LLM configuration or no compatible RL features). The app stays on the start screen and offers no retry |
+| 503 | `engine_unavailable` | The selected engine is unavailable (for example missing LLM configuration or invalid stored features for RL). The app stays on the start screen and offers no retry |
 
 Server behavior to know about:
 
@@ -324,7 +324,8 @@ Server behavior to know about:
 
 `app/src/sharedTest` holds what the two client suites share: a fake `ApiService`
 and `resources/contract/*.json`, replies captured from the real server on the
-2026-09-29 fixture with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
+2026-09-29 snapshot, since replaced by 2026-11-02 (the reply shape has not changed),
+with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
 scripted LLM in place of Gemini). The RL question fixture was captured from Django with three v2 cafeteria dishes.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.

@@ -8,13 +8,13 @@ from django.test import TestCase
 
 
 class CommandIntegrationTests(TestCase):
-    fixtures = ["menus_2026-09-29"]
+    fixtures = ["menus_2026-11-02"]
 
     def test_smoke_exports_replayable_snapshot_and_real_offers(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "session.json"
             stream = io.StringIO()
-            call_command("demo_decision_tree", "--date", "2026-09-29", "--smoke", "--output", str(output), stdout=stream)
+            call_command("demo_decision_tree", "--date", "2026-11-02", "--smoke", "--output", str(output), stdout=stream)
             result = json.loads(output.read_text())
         self.assertEqual(result["events"][-1]["step"]["type"], "recommendation")
         self.assertEqual([x["action"] for x in result["events"]], ["start", "answer", "recommend_now", "reject", "recommend_now", "accept"])

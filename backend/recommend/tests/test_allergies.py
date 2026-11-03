@@ -5,7 +5,6 @@ from unittest import mock
 
 from menus import services
 from menus.allergens import ALLERGEN_VERSION
-from menus.features.schema import FEATURE_VERSION
 from menus.models import Food, MenuItem, Restaurant
 from question_engines.llm import LLMEngine
 from question_engines.llm.tests.helpers import FakeLLM, ask
@@ -51,14 +50,6 @@ class AllergyTests(SmallMenuTestCase):
         add_food("Curry udon", restaurant="Other hall", price=4500)
         [udon] = [c for c in self.catalog("egg")[0] if c["name"] == "Curry udon"]
         self.assertEqual([(o["restaurant"], o["price"]) for o in udon["offers"]], [("Other hall", 4500)])
-
-    def test_the_feature_version_is_chosen_among_the_safe_dishes(self):
-        # The small menu is v1; only the one dish free of egg is v2.
-        Food.objects.filter(name__in=["Beef noodles", "Chicken noodles"]).update(allergens=["egg"])
-        Food.objects.filter(name="Rice bowl").update(feature_version=FEATURE_VERSION, allergens=["wheat"])
-        self.assertEqual(self.catalog()[2], "v1")
-        candidates, _, version = self.catalog("egg")
-        self.assertEqual(([c["name"] for c in candidates], version), (["Rice bowl"], FEATURE_VERSION))
 
     def test_the_session_counts_and_proposes_only_safe_dishes(self):
         state, url = self.start(allergies=["egg"])

@@ -32,21 +32,26 @@ Ask the phone's Codex to perform this checklist on the mini PC:
 3. Disable new `Metchu-DailyMenus` starts and wait for an active update to finish.
    Stop `Metchu-Host` with `./Task.ps1 -Action stop`, then use SQLite's backup API
    to create a dated backup of `private/menu.sqlite3`.
-4. Switch `release.txt` to the verified full commit and start the host with
-   `./Task.ps1 -Action start`. This RMS menu change needs no schema migration,
-   model training or retagging: it composes the existing component vectors when
-   creating a new recommendation session.
-   The installed `daily_menus.py` also lives outside the release. For this cleanup,
-   remove its assignment adding ` (세트)` to `Food.display_name` and remove
-   `display_name` from that assignment's save-field list. It should preserve the
-   stored component label just like `extract_features`. Verify it with
-   `venv/Scripts/python.exe -m py_compile daily_menus.py`; no data backfill is needed.
-5. Check `/api/health/` locally and through the fixed ngrok address. Create
+4. Update the installed `daily_menus.py`, which lives outside the release, before
+   anything writes to the database again. Since migration `menus 0006`, `Food` has
+   no `display_name`: remove every read or assignment of it and drop it from any
+   save-field list, so dishes are created with their name only. Verify it with
+   `venv/Scripts/python.exe -m py_compile daily_menus.py`.
+5. Apply the migrations from the staged release, with the environment the host
+   runs with, so they reach `private/menu.sqlite3`:
+   `& "$env:LOCALAPPDATA\MetchuHost\venv\Scripts\python.exe" backend/manage.py migrate`.
+   `0006` drops the `Food.display_name` column: users see each menu line's
+   original name. No retagging, model training or data backfill is needed.
+   Then switch `release.txt` to the verified full commit and start the host with
+   `./Task.ps1 -Action start`.
+6. Check `/api/health/` locally and through the fixed ngrok address. Create
    separate DT and RL sessions for a known menu date, request a proposal, reject
    it and undo. Confirm a set is named with its exact sales-menu text and that
    rejection does not offer another component of that same set.
-6. Re-enable the daily-menu task. On a failed check, stop the host, restore the
-   previous release pointer and restart it before re-enabling updates.
+7. Re-enable the daily-menu task. On a failed check, stop the host, restore the
+   database backup from step 3 (the previous release needs the dropped column),
+   the previous release pointer and the previous `daily_menus.py`, and restart it
+   before re-enabling updates.
 
 Stop/start drops active in-memory dialogues. New sessions use the new source;
 a cached APK can display the original names with the existing JSON shape.

@@ -120,10 +120,8 @@ class ExtractFeaturesCommandTests(TestCase):
         other = Food.objects.create(name="육개장", is_set=True, is_food=True)
         MenuItem.objects.create(date=DAY, meal="DN", restaurant=self.restaurant,
                                 raw_name="육개장 정식", food=other, price=5000)
-        unserved = Food.objects.create(name="냉모밀", is_set=True, is_food=True,
-                                       display_name="시원한 냉모밀", feature_version="v1",
+        unserved = Food.objects.create(name="냉모밀", is_set=True, is_food=True, feature_version="v1",
                                        features={"cold": 1.0})
-        Food.objects.filter(name="육개장", is_set=False).update(display_name="옛날 육개장")
         self.run_command(FakeLLM())
         llm = FakeLLM()
         self.run_command(llm, "--force")
@@ -134,10 +132,7 @@ class ExtractFeaturesCommandTests(TestCase):
         self.assertEqual(other.features["spicy"], plain.features["spicy"])
         self.assertEqual(other.feature_std, plain.feature_std)
         self.assertEqual(other.features["meal_variety"], 1)
-        self.assertEqual(other.display_name, "")  # tagging preserves presentation metadata
-        self.assertEqual(plain.display_name, "옛날 육개장")
         self.assertEqual(unserved.feature_version, "v1")
-        self.assertEqual(unserved.display_name, "시원한 냉모밀")
         self.assertEqual(unserved.features, {"cold": 1.0})
 
     def test_existing_name_cache_fills_new_variant_without_key_or_call(self):
@@ -211,23 +206,19 @@ class ExtractFeaturesCommandTests(TestCase):
                 self.run_command(FakeLLM())
 
 class MenuCatalogTests(TestCase):
-    def test_versions_are_not_mixed_and_menu_input_metadata_is_explicit(self):
+    def test_only_current_features_are_served_and_candidate_keys_stay_stable(self):
         hall = Restaurant.objects.create(code="hall", name="학생회관식당")
-        for version in ("v1", "v2"):
+        for version in ("v1", FEATURE_VERSION):
             food = Food.objects.create(name=version, is_food=True, feature_version=version,
                                        features={"spicy": .5}, feature_std={"spicy": .1})
             MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name=version, food=food)
-        [legacy], _, version = services.get_catalog(DAY, feature_version="v1")
-        self.assertEqual((legacy["name"], version), ("v1", "v1"))
-        self.assertNotIn("feature_std", legacy)
-        [candidate], _, version = services.get_catalog(DAY)
-        self.assertEqual((candidate["name"], version), ("v2", "v2"))
+        [candidate], schema = services.get_catalog(DAY)
+        self.assertEqual(candidate["name"], FEATURE_VERSION)
+        self.assertEqual(set(candidate), {"food_id", "name", "display_name", "food_group", "menu_profile",
+                                          "features", "feature_std", "offers"})
         self.assertEqual(candidate["feature_std"], {"spicy": .1})
         self.assertEqual(candidate["menu_profile"], "rms-v1")
-        self.assertEqual(len(services.get_feature_schema("v1")), 23)
-        self.assertEqual(len(services.get_feature_schema("v2")), 33)
-        with self.assertRaises(ValueError):
-            services.get_catalog(DAY, feature_version="v0")
+        self.assertEqual(len(schema), 33)
 
 
 class StoreDishesTests(TestCase):

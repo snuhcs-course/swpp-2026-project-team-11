@@ -45,6 +45,7 @@ from collections import OrderedDict
 from django.conf import settings
 from django.utils import timezone
 
+from menus.features.schema import FEATURE_VERSION
 from menus.services import get_catalog, get_store_catalog
 from recommend import reasons
 from recommend.distance import with_distances
@@ -77,13 +78,12 @@ class RecommendSession:
         self.lock = threading.Lock()
         try:
             if source == "general":
-                candidates, schema, version = get_store_catalog(meal, allergies)
+                candidates, schema = get_store_catalog(meal, allergies)
             else:
-                candidates, schema, version = get_catalog(date, meal, allergies, prefer_v2=(engine == "rl"))
+                candidates, schema = get_catalog(date, meal, allergies)
         except ValueError as error:
             raise EngineUnavailable("Invalid stored menu features.") from error
         candidates = with_distances(candidates, location, settings.RECOMMEND_MAX_DISTANCE_M)
-        self.feature_version = version
         self.candidate_count = len(candidates)
         # Reasons need only dish names and feature means after the engine is built.
         self.reason_data = {c["food_id"]: (c["display_name"], c.get("features") or {}) for c in candidates}
@@ -96,16 +96,15 @@ class RecommendSession:
             except LLMConfigError as error:  # no API key, or a malformed LLM setting
                 raise EngineUnavailable(str(error)) from error
         elif engine == "rl":
-            if candidates and version != "v2":
-                raise EngineUnavailable("The RL engine requires v2 food features.")
             try:
                 self.engine = RLEngine(candidates, **config)
             except ValueError as error:
-                raise EngineUnavailable("Invalid v2 catalogue for the RL engine.") from error
+                raise EngineUnavailable("Invalid catalogue for the RL engine.") from error
         else:
             self.engine = DecisionTreeEngine(
                 candidates, schema,
-                context={"date": date.isoformat(), "meal": meal, "feature_version": version, "candidate_kind": "menu-rms-v1"},
+                context={"date": date.isoformat(), "meal": meal, "feature_version": FEATURE_VERSION,
+                         "candidate_kind": "menu-rms-v1"},
                 config=config | {"policy": settings.RECOMMEND_DT_POLICY},
             )
         self.engine.start()
@@ -158,7 +157,7 @@ class RecommendSession:
             members=(),
             restaurants=tuple(dict.fromkeys(offer["restaurant"] for offer in food["offers"])),
             traits=tuple(key.replace("_", " ") for key, value in features.items() if value is not None and value >= .6),
-            answers=tuple(reasons.answer_facts(answered, features, self.feature_version)),
+            answers=tuple(reasons.answer_facts(answered, features)),
             others=tuple({name for name, _ in self.reason_data.values()} - names),
         )
 

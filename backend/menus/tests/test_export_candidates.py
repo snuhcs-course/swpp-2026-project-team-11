@@ -8,16 +8,15 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
-from menus.features.legacy_schema import FEATURE_KEYS as LEGACY_KEYS
 from menus.models import Food, MenuItem, Restaurant
 
-DAY = datetime.date(2026, 9, 29)
+DAY = datetime.date(2026, 11, 2)
 
 
 class ExportCandidatesTests(TestCase):
     def setUp(self):
         restaurant = Restaurant.objects.create(code="학생회관식당", name="학생회관식당")
-        food = Food.objects.create(name="육개장", display_name="육개장", is_food=True,
+        food = Food.objects.create(name="육개장", is_food=True,
                                    feature_version=FEATURE_VERSION,
                                    features={key: 0.5 for key in FEATURE_KEYS})
         MenuItem.objects.create(date=DAY, meal="LU", restaurant=restaurant,
@@ -33,7 +32,7 @@ class ExportCandidatesTests(TestCase):
 
         self.assertIn("후보 1개", out.getvalue())
         self.assertEqual((data["date"], data["meal"], data["feature_version"]),
-                         ("2026-09-29", "LU", FEATURE_VERSION))
+                         ("2026-11-02", "LU", FEATURE_VERSION))
         self.assertEqual([f["key"] for f in data["features"]], list(FEATURE_KEYS))
         self.assertEqual([c["name"] for c in data["candidates"]], ["육개장"])
 
@@ -46,7 +45,7 @@ class ExportCandidatesTests(TestCase):
 class SeedFixtureTests(TestCase):
     """The committed snapshot teammates load instead of calling the LLM."""
 
-    fixtures = ["menus_2026-09-29"]
+    fixtures = ["menus_2026-11-02"]
 
     def test_snapshot_gives_a_full_candidate_set(self):
         from menus import services
@@ -54,9 +53,10 @@ class SeedFixtureTests(TestCase):
         candidates = services.get_catalog(DAY, meal="LU")[0]
         self.assertGreater(len(candidates), 100)
         for candidate in candidates:
-            self.assertEqual(set(candidate["features"]), set(LEGACY_KEYS), candidate["name"])
+            self.assertEqual(set(candidate["features"]), set(FEATURE_KEYS), candidate["name"])
+            self.assertEqual(set(candidate["feature_std"]), set(FEATURE_KEYS), candidate["name"])
         out = io.StringIO()
         call_command("export_candidates", "--date", DAY.isoformat(), "--meal", "LU", stdout=out)
         exported = json.loads(out.getvalue())
-        self.assertEqual(exported["feature_version"], "v1")
+        self.assertEqual(exported["feature_version"], FEATURE_VERSION)
         self.assertEqual(len(exported["candidates"]), len(candidates))
