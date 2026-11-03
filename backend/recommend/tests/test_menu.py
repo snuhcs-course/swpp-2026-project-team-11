@@ -1,6 +1,7 @@
 """The other dishes of a restaurant, for the result screen's menu list."""
 from menus.allergens import ALLERGEN_VERSION
-from menus.models import Food, MenuItem
+from menus.models import Food, MenuItem, SalesMenu
+from menus.menu_registry import register_menu_ids
 
 from .helpers import add_food
 from .test_edge_cases import SmallMenuTestCase
@@ -15,10 +16,11 @@ class RestaurantMenuTests(SmallMenuTestCase):
     def test_lists_the_restaurants_dishes_by_meal(self):
         add_food("Toast", restaurant="Test hall", meal="BR", price=2000)
         add_food("Curry", restaurant="Other hall", price=4500)
+        SalesMenu.objects.filter(source="cafeteria", name="Toast").update(id=4000)
         _, url = self.start(meal=None)
-        # A menu's candidate ID is that of its MenuItem row.
+        # Transport IDs come from the prepared registry, not the source rows.
         self.assertEqual(self.menu(url, "Test hall"), {"restaurant": "Test hall", "dishes": [
-            {"food_id": MenuItem.objects.get(raw_name=name).id, "display_name": name, "meal": meal, "price": price}
+            {"food_id": SalesMenu.objects.get(source="cafeteria", name=name).id, "display_name": name, "meal": meal, "price": price}
             for name, meal, price in [("Toast", "BR", 2000), ("Beef noodles", "LU", 6000),
                                       ("Chicken noodles", "LU", None), ("Rice bowl", "LU", 5000)]]})
         self.assertEqual([d["display_name"] for d in self.menu(url, "Other hall")["dishes"]], ["Curry"])
@@ -27,6 +29,7 @@ class RestaurantMenuTests(SmallMenuTestCase):
         add_food("Pork cutlet", price=7000)
         add_food("Curry udon", price=7000)
         MenuItem.objects.filter(food__name__in=["Pork cutlet", "Curry udon"]).update(raw_name="Pork cutlet curry udon")
+        register_menu_ids("cafeteria")
         _, url = self.start()
         dishes = [(d["display_name"], d["price"]) for d in self.menu(url, "Test hall")["dishes"]]
         self.assertIn(("Pork cutlet curry udon", 7000), dishes)

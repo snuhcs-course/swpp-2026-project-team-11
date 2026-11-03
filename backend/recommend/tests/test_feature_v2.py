@@ -79,7 +79,7 @@ class V2SessionTests(TestCase):
         self.assertEqual(len(schema), 33)
         self.assertEqual([r["food_id"] for r in rows], [f.pk for f in self.foods])
         self.assertTrue(all(set(row["feature_std"]) == set(FEATURE_KEYS) for row in rows))
-        self.assertIn("serving 2/3 actual menus with feature_version=v2", "\n".join(cm.output))
+        self.assertIn("Withholding untagged/partial menu", "\n".join(cm.output))
 
     def test_retagging_on_a_later_date_leaves_other_days_dishes_untagged(self):
         old_day = datetime.date(2026, 9, 29)
@@ -100,7 +100,7 @@ class V2SessionTests(TestCase):
         with self.assertLogs("menus.services", level="WARNING") as cm:
             rows, _ = services.get_catalog(old_day, "LU")
         self.assertEqual({r["name"] for r in rows}, {"짬뽕"})
-        self.assertIn("serving 1/3 actual menus with feature_version=v2", "\n".join(cm.output))
+        self.assertIn("Withholding untagged/partial menu", "\n".join(cm.output))
 
     def test_dt_policy_setting_and_diagnostics_expose_version_and_counts(self):
         session = sessions.create(DAY, "LU", "decision_tree")

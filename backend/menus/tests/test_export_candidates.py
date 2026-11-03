@@ -18,7 +18,8 @@ class ExportCandidatesTests(TestCase):
         restaurant = Restaurant.objects.create(code="학생회관식당", name="학생회관식당")
         food = Food.objects.create(name="육개장", is_food=True,
                                    feature_version=FEATURE_VERSION,
-                                   features={key: 0.5 for key in FEATURE_KEYS})
+                                   features={key: 0.5 for key in FEATURE_KEYS},
+                                   feature_std=dict.fromkeys(FEATURE_KEYS, .1))
         MenuItem.objects.create(date=DAY, meal="LU", restaurant=restaurant,
                                 raw_name="육개장", food=food, price=3000)
 
