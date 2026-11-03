@@ -24,6 +24,7 @@ import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.MainActivity
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -203,6 +204,16 @@ class MainActivityTest {
     }
 
     @Test
+    fun aSlowStartShowsASpinnerInTheButton() {
+        val gate = api.hold()
+        tap("start")
+        compose.waitUntil(3_000) { compose.onAllNodesWithTag("loading").fetchSemanticsNodes().isNotEmpty() }
+        gate.complete(question)
+        compose.onNodeWithTag("question").assertIsDisplayed()
+        compose.onNodeWithTag("loading").assertDoesNotExist()
+    }
+
+    @Test
     fun anUnavailableEngineSaysSoOnTheStartScreen() {
         api.fail(Fixtures.httpError(503, Fixtures.json("error_engine_unavailable")))
         tap("start")
@@ -222,6 +233,16 @@ class MainActivityTest {
             assertEquals(listOf("answer ${question.sessionId} ${question.step.questionId} $id"), api.calls.toList())
             tap("back")
         }
+    }
+
+    @Test
+    fun aSlowAnswerShowsASpinnerUnderTheBar() {
+        startWith(question)
+        val gate = api.hold()
+        answer("yes")
+        compose.waitUntil(3_000) { compose.onAllNodesWithTag("loading").fetchSemanticsNodes().isNotEmpty() }
+        gate.complete(guess)
+        compose.onNodeWithTag("dish").assertIsDisplayed()
     }
 
     @Test
@@ -284,6 +305,24 @@ class MainActivityTest {
         api.reason = Reason(guess.step.food!!.foodId, "Spicy, as you wanted.")
         startWith(guess)
         compose.onNodeWithText("Spicy, as you wanted.").assertIsDisplayed()
+    }
+
+    @Test
+    fun aReasonBeingWrittenHoldsItsPlace() {
+        val held = CompletableDeferred<Reason>()
+        api.heldReason = held
+        startWith(guess)
+        compose.onNodeWithTag("reasonWriting").assertIsDisplayed()
+        held.complete(Reason(guess.step.food!!.foodId, "Spicy, as you wanted."))
+        compose.onNodeWithText("Spicy, as you wanted.").assertIsDisplayed()
+        compose.onNodeWithTag("reasonWriting").assertDoesNotExist()
+    }
+
+    @Test
+    fun aFailedReasonLeavesNoPlaceholder() {
+        startWith(guess)
+        compose.onNodeWithTag("dish").assertIsDisplayed()
+        compose.onNodeWithTag("reasonWriting").assertDoesNotExist()
     }
 
     @Test
