@@ -11,7 +11,8 @@ import retrofit2.Response
 
 /**
  * Replies captured from the real server (backend/recommend) on the 2026-09-29
- * fixture, stored under src/sharedTest/resources/contract. If the server's JSON changes,
+ * snapshot (since replaced; the reply shape is unchanged), stored under
+ * src/sharedTest/resources/contract. If the server's JSON changes,
  * recapture them; the tests that read them are the client's side of the contract.
  *
  * src/sharedTest is compiled into both the JVM unit tests and the on-device tests.

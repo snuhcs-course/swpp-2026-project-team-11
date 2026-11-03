@@ -1,14 +1,17 @@
-"""Whole sessions against the shared 2026-09-29 fixture, the data the demo runs on."""
+"""Whole sessions against the shared 2026-11-02 fixture, the data the demo runs on."""
 import random
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 
+from menus.models import MenuItem
+from menus.services import get_feature_schema
+
 from .helpers import ANSWER_IDS, DAY, check_state, post
 
 
 class RealMenuTestCase(TestCase):
-    fixtures = ["menus_2026-09-29"]
+    fixtures = ["menus_2026-11-02"]
 
     def start(self, meal="LU"):
         response = post(self.client, "/api/sessions/", {"date": DAY, "meal": meal})
@@ -30,7 +33,7 @@ class RealMenuTestCase(TestCase):
                                                  "answer_id": answer_id})
             check_state(self, state)
             answered += 1
-            self.assertLessEqual(answered, 23, "More answers than the question bank holds")
+            self.assertLessEqual(answered, len(get_feature_schema()), "More answers than the question bank holds")
         return state, answered
 
 
@@ -83,52 +86,42 @@ class QuestionCapTests(RealMenuTestCase):
         self.assertGreater(answered, 10)
 
 
-class GroupGuessTests(RealMenuTestCase):
+class ActualMenuGuessTests(RealMenuTestCase):
     def setUp(self):
-        # Group proposals belong to the retained intent-based policy.
-        # The default preference policy proposes individual matching dishes.
+        # Even the retained greedy policy must propose real sales menus for menu inputs.
         from question_engines.decision_tree import DecisionTreeEngine
-        def legacy_engine(*args, **kwargs):
+        def greedy_engine(*args, **kwargs):
             kwargs["config"] = kwargs.get("config", {}) | {"policy": "greedy"}
             return DecisionTreeEngine(*args, **kwargs)
-        patcher = patch("recommend.sessions.DecisionTreeEngine", side_effect=legacy_engine)
+        patcher = patch("recommend.sessions.DecisionTreeEngine", side_effect=greedy_engine)
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def first_group_guess(self):
-        """Reject guesses until the engine proposes a group."""
+    def first_menu_guess(self):
         state, url = self.start()
         state, _ = self.answer_until_guess(state, url, "any")
-        for _ in range(40):
-            if state["step"]["type"] != "guess":
-                break
-            if state["step"]["target_kind"] == "group":
-                return state, url
-            state = self.call(url + "feedback/", {"guess_id": state["step"]["guess_id"], "accepted": False})
-        self.fail("The engine never proposed a group on the fixture")
+        self.assertEqual(state["step"]["target_kind"], "food")
+        self.assertNotIn("group", state["step"])
+        return state, url
 
-    def test_accepting_a_group_recommends_the_dish_that_was_shown(self):
-        guess, url = self.first_group_guess()
+    def test_accepting_an_actual_menu_keeps_its_original_sales_name(self):
+        guess, url = self.first_menu_guess()
         step = guess["step"]
-        self.assertGreater(len(step["group"]["members"]), 1)
-        self.assertEqual(step["guess_id"], step["group"]["group_id"])
+        self.assertTrue(MenuItem.objects.filter(date=DAY, raw_name=step["food"]["display_name"]).exists())
         final = self.call(url + "feedback/", {"guess_id": step["guess_id"], "accepted": True})
         check_state(self, final)
         self.assertEqual(final["step"]["type"], "recommendation")
         self.assertEqual(final["step"]["food"], step["food"])
-        self.assertEqual(final["step"]["group"], step["group"])
 
-    def test_rejecting_a_group_removes_all_its_dishes(self):
-        guess, url = self.first_group_guess()
-        gone = {member["food_id"] for member in guess["step"]["group"]["members"]}
-        state = self.call(url + "feedback/", {"guess_id": guess["step"]["guess_id"], "accepted": False})
-        for _ in range(30):
-            if state["step"]["type"] != "guess":
-                break
-            self.assertNotIn(state["step"]["food"]["food_id"], gone)
-            for member in state["step"].get("group", {}).get("members", []):
-                self.assertNotIn(member["food_id"], gone)
-            state = self.call(url + "feedback/", {"guess_id": state["step"]["guess_id"], "accepted": False})
+    def test_rejecting_an_actual_menu_removes_it_without_category_proposals(self):
+        guess, url = self.first_menu_guess()
+        step = guess["step"]
+        self.call(url + "feedback/", {"guess_id": step["guess_id"], "accepted": False})
+        for _ in range(10):
+            next_step = self.call(url + "recommend-now/")["step"]
+            self.assertNotEqual(next_step["food"]["food_id"], step["food"]["food_id"])
+            self.assertNotIn("group", next_step)
+            self.call(url + "feedback/", {"guess_id": next_step["guess_id"], "accepted": False})
 
     def test_recommend_now_always_names_one_dish(self):
         state, url = self.start()

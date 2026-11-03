@@ -2,10 +2,10 @@
 import datetime
 import json
 
-from menus.features.legacy_schema import FEATURE_KEYS, FEATURE_VERSION
+from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
 from menus.models import Food, MenuItem, Restaurant
 
-DAY = "2026-09-29"
+DAY = "2026-11-02"
 ANSWER_IDS = ("yes", "probably_yes", "any", "probably_no", "no", "unknown")
 STATE_KEYS = {"session_id", "engine", "date", "meal", "language", "candidate_count",
               "max_questions", "can_undo", "step"}
@@ -16,13 +16,16 @@ def post(client, path, body=None):
 
 
 def add_food(name, group="", *, restaurant="Test hall", meal="LU", price=5000,
-             day=DAY, display_name=None, **features):
-    """One served dish. Unnamed features default to 0.5."""
+             day=DAY, is_set=False, **features):
+    """One served dish. Unnamed features default to 0.5, every std to 0."""
+    unknown = set(features) - set(FEATURE_KEYS)
+    assert not unknown, f"not feature keys: {unknown}"
     place, _ = Restaurant.objects.get_or_create(code=restaurant, defaults={"name": restaurant})
-    food, _ = Food.objects.get_or_create(name=name, defaults={
-        "display_name": display_name or name, "food_group": group, "is_food": True,
+    food, _ = Food.objects.get_or_create(name=name, is_set=is_set, defaults={
+        "food_group": group, "is_food": True,
         "feature_version": FEATURE_VERSION,
-        "features": {key: features.get(key, 0.5) for key in FEATURE_KEYS}})
+        "features": {key: features.get(key, 0.5) for key in FEATURE_KEYS},
+        "feature_std": dict.fromkeys(FEATURE_KEYS, 0.0)})
     MenuItem.objects.create(date=datetime.date.fromisoformat(day), meal=meal, restaurant=place,
                             raw_name=name, food=food, price=price)
     return food

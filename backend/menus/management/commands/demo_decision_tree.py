@@ -6,6 +6,7 @@ import time
 
 from django.core.management.base import BaseCommand, CommandError
 
+from menus.features.schema import FEATURE_VERSION
 from menus.services import get_catalog
 from question_engines.decision_tree import DecisionTreeEngine
 
@@ -21,9 +22,8 @@ class Command(BaseCommand):
         parser.add_argument("--output", type=Path, help="Save steps, timings and a replayable snapshot")
 
     def handle(self, *args, **options):
-        context = {"date": options["date"].isoformat(), "meal": options["meal"]}
-        rows, schema, version = get_catalog(options["date"], options["meal"])
-        context["feature_version"] = version
+        context = {"date": options["date"].isoformat(), "meal": options["meal"], "feature_version": FEATURE_VERSION}
+        rows, schema = get_catalog(options["date"], options["meal"])
         start = time.perf_counter()
         engine = DecisionTreeEngine(rows, schema, context=context, config={"policy": options["policy"]})
         step = engine.start()

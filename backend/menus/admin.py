@@ -12,9 +12,9 @@ class RestaurantAdmin(admin.ModelAdmin):
 
 @admin.register(Food)
 class FoodAdmin(admin.ModelAdmin):
-    list_display = ["name", "display_name", "is_food", "food_group", "feature_version"]
+    list_display = ["name", "is_set", "is_food", "food_group", "feature_version"]
     list_filter = ["is_food", "feature_version", "food_group"]
-    search_fields = ["name", "display_name"]
+    search_fields = ["name"]
 
 
 @admin.register(MenuItem)

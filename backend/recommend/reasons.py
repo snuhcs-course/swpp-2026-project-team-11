@@ -18,7 +18,7 @@ import re
 
 from pydantic import BaseModel, Field
 
-from question_engines.decision_tree.contracts import FEATURE_PRESENTATION, FEATURE_PRESENTATION_V2, translate
+from question_engines.decision_tree.contracts import FEATURE_PRESENTATION, translate
 from question_engines.llm import LLMConfigError
 from question_engines.llm.config import LLMSettings, build_llm
 from question_engines.llm.engine import ANSWER_LABELS
@@ -33,15 +33,14 @@ NO = frozenset({"no", "probably_no"})
 HANGUL = re.compile("[가-힣]")
 LATIN_WORD = re.compile("[A-Za-z]{2,}")
 
-QUESTION_KEYS = {version: {text: key for key, (text, _) in schema.items()}
-                 for version, schema in (("v1", FEATURE_PRESENTATION), ("v2", FEATURE_PRESENTATION_V2))}
+QUESTION_KEYS = {text: key for key, (text, _) in FEATURE_PRESENTATION.items()}
 
 
-def answer_facts(answers, features, version):
+def answer_facts(answers, features):
     for answer in answers:
         key = answer["question_id"].removeprefix("q:")
         if key.startswith("llm-"):  # A free-form question has no feature ID.
-            key = QUESTION_KEYS.get(version, {}).get(answer["text"])
+            key = QUESTION_KEYS.get(answer["text"])
         yield answer["text"], answer["answer_id"], features.get(key)
 
 
