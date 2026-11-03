@@ -80,7 +80,7 @@ fun BottomSheetPicker(visible: Boolean, title: String, options: List<PickerOptio
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text(option.label, style = MetchuType.Item, color = if (option.selected) MetchuColors.Grey900 else MetchuColors.Grey400)
+                            Text(option.label, style = MetchuType.Item, color = if (option.selected) MetchuColors.Grey900 else MetchuColors.Grey600)
                             if (option.note != null) Text(option.note, style = MetchuType.Caption)
                         }
                         if (option.selected) {
