@@ -1,6 +1,13 @@
 package com.example.metchu.ui.common
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.background
@@ -8,8 +15,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,16 +26,15 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -136,13 +144,56 @@ fun CircleIconButton(icon: ImageVector, description: String, onClick: () -> Unit
     }
 }
 
-/** One white pill with a shadow, holding one or more [PillSegment]s split by thin lines. */
+/** The 64 dp row under the status bar: 44 dp buttons centered, 20 dp from the edges. */
 @Composable
-fun Pill(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun TopRow(
+    modifier: Modifier = Modifier,
+    arrangement: Arrangement.Horizontal = Arrangement.SpaceBetween,
+    content: @Composable RowScope.() -> Unit
+) {
     Row(
-        modifier.height(44.dp).floating().clip(CircleShape).background(Color.White),
+        modifier.fillMaxWidth().height(64.dp).padding(horizontal = 20.dp),
+        horizontalArrangement = arrangement,
+        verticalAlignment = Alignment.CenterVertically,
+        content = content
+    )
+}
+
+/**
+ * The screen's next step, bottom-right 16 dp above the navigation bar: a 48 dp capsule with
+ * a label and an icon. [filled] is the orange main action; otherwise white with orange ink.
+ * [expanded] false folds it to the icon alone, as a Material extended FAB does.
+ */
+@Composable
+fun ActionCapsule(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    filled: Boolean,
+    modifier: Modifier = Modifier,
+    expanded: Boolean = true
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val start by animateDpAsState(if (expanded) 22.dp else 15.dp, tween(260, easing = SheetEasing), label = "start")
+    val end by animateDpAsState(if (expanded) 18.dp else 15.dp, tween(260, easing = SheetEasing), label = "end")
+    val ink = if (filled) Color.White else MetchuColors.Primary
+    Row(
+        modifier
+            .height(48.dp)
+            .pressScale(interaction)
+            .then(if (filled) Modifier.cssShadow(CircleShape, 6.dp, 20.dp, 0.2f) else Modifier.floating())
+            .clip(CircleShape)
+            .background(if (filled) MetchuColors.Primary else Color.White)
+            .clickable(interaction, indication = null, role = Role.Button, onClickLabel = text, onClick = onClick)
+            .semantics { contentDescription = text }
+            .padding(start = start, end = end),
         verticalAlignment = Alignment.CenterVertically
-    ) { content() }
+    ) {
+        AnimatedVisibility(expanded, enter = fadeIn(tween(200)) + expandHorizontally(tween(260, easing = SheetEasing)), exit = fadeOut(tween(120)) + shrinkHorizontally(tween(260, easing = SheetEasing))) {
+            Text(text, Modifier.padding(end = 6.dp), style = MetchuType.Label, color = ink, maxLines = 1)
+        }
+        Image(icon, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(ink))
+    }
 }
 
 /** A disabled segment stays in place, greyed, so the pill never changes shape under a finger. */
@@ -166,11 +217,6 @@ fun PillSegment(
             .padding(start = start, end = end),
         contentAlignment = Alignment.Center
     ) { Text(text, style = MetchuType.Label, color = if (enabled) color else MetchuColors.Grey400, maxLines = 1) }
-}
-
-@Composable
-fun PillDivider() {
-    Box(Modifier.width(1.dp).height(20.dp).background(MetchuColors.Grey200))
 }
 
 /**
@@ -205,6 +251,9 @@ object Icons {
         ).build()
 
     val Back = line("back", "M15 5l-7 7 7 7", 2.2f)
+    val Home = line("home", "M3.5 11L12 3.8 20.5 11M6 9.2V20h12V9.2M10 20v-5.5h4V20", 2.1f)
+    val FastForward = line("fastForward", "M6 6l6 6-6 6M13 6l6 6-6 6", 2.2f)
+    val Plus = line("plus", "M12 5v14M5 12h14", 2.2f)
     val ChevronDown = line("down", "M7 10l5 5 5-5", 2.4f)
     val Check = line("check", "M5 12.5l4.5 4.5L19 7.5", 2.4f)
     val Cross = line("cross", "M6.5 6.5l11 11M17.5 6.5l-11 11", 2.4f)

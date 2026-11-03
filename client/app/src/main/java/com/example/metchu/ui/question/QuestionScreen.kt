@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,15 +39,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -81,9 +82,8 @@ import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
-import com.example.metchu.ui.common.Pill
-import com.example.metchu.ui.common.PillDivider
-import com.example.metchu.ui.common.PillSegment
+import com.example.metchu.ui.common.ActionCapsule
+import com.example.metchu.ui.common.TopRow
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.fadeEdges
@@ -180,21 +180,10 @@ fun QuestionScreen(
 
     Box(Modifier.fillMaxSize().screenBackground()) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-            Row(
-                Modifier.fillMaxWidth().height(56.dp).padding(start = 20.dp, end = 20.dp, top = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            // Back on the left, home far from it on the right, where a slip is least likely.
+            TopRow {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
-                // Shown from the first question, so the pill does not change when it can be used;
-                // "Start over" keeps the corner it has on the result screen.
-                Pill {
-                    PillSegment(
-                        stringResource(R.string.recommend_now), onRecommendNow, start = 18.dp, end = 14.dp,
-                        enabled = count > 0, modifier = Modifier.testTag("recommendNow")
-                    )
-                    PillDivider()
-                    PillSegment(stringResource(R.string.result_home), onHome, start = 14.dp, modifier = Modifier.testTag("home"))
-                }
+                CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
             }
 
             Column(
@@ -233,6 +222,19 @@ fun QuestionScreen(
 
             AnswerScale(offered, active, pressing, loading, pick, press)
             ProgressBlock(session, loading)
+        }
+        // Answering is the main thing here, so "Recommend now" is the quieter white capsule,
+        // and only once there is an answer to recommend from.
+        AnimatedVisibility(
+            visible = count > 0,
+            modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp),
+            enter = fadeIn(tween(300)),
+            exit = fadeOut(tween(200))
+        ) {
+            ActionCapsule(
+                stringResource(R.string.recommend_now), Icons.FastForward, { if (!loading) onRecommendNow() },
+                filled = false, modifier = Modifier.testTag("recommendNow")
+            )
         }
     }
 }

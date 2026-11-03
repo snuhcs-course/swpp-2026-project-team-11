@@ -36,8 +36,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,7 +48,6 @@ import com.example.metchu.ui.start.CampusCenter
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -74,9 +74,8 @@ import com.example.metchu.data.repository.Place
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.NavigationBarFade
-import com.example.metchu.ui.common.Pill
-import com.example.metchu.ui.common.PillDivider
-import com.example.metchu.ui.common.PillSegment
+import com.example.metchu.ui.common.ActionCapsule
+import com.example.metchu.ui.common.TopRow
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.common.cssShadow
@@ -162,21 +161,9 @@ fun ResultScreen(
 
         val topIn by animateFloatAsState(if (revealed) 1f else 0f, tween(220, delayMillis = 400), label = "top")
         Column(Modifier.statusBarsPadding().alpha(topIn)) {
-            Row(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            TopRow {
                 CircleIconButton(Icons.Back, stringResource(R.string.back), { if (!loading) onBack() }, Modifier.testTag("back"))
-                // "Start over" keeps the corner whether or not "Find another" is offered.
-                Pill {
-                    val more = current.type == Step.GUESS
-                    if (more) {
-                        PillSegment(stringResource(R.string.result_more), { if (!loading) onMore() }, start = 18.dp, end = 14.dp)
-                        PillDivider()
-                    }
-                    PillSegment(stringResource(R.string.result_home), onHome, start = if (more) 14.dp else 18.dp, modifier = Modifier.testTag("home"))
-                }
+                CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
             }
         }
 
@@ -206,6 +193,19 @@ fun ResultScreen(
             modifier = Modifier.offset(y = sheetTop).height(height - sheetTop)
         )
         NavigationBarFade(Modifier.align(Alignment.BottomCenter))
+        // "Find another" comes in a little after the dish, so the dish is read first.
+        if (current.type == Step.GUESS) {
+            val moreIn by animateFloatAsState(if (revealed) 1f else 0f, tween(320, delayMillis = 600, easing = SheetEasing), label = "more")
+            ActionCapsule(
+                stringResource(R.string.result_more), Icons.Plus, { if (!loading) onMore() }, filled = true,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(end = 20.dp, bottom = 16.dp)
+                    .graphicsLayer { alpha = moreIn; translationY = 12.dp.toPx() * (1f - moreIn) }
+                    .testTag("more")
+            )
+        }
     }
 }
 
@@ -324,7 +324,7 @@ private fun ResultSheet(
             Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState(), enabled = stop == SheetStop.HIGH)
-                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp)
+                .padding(start = 20.dp, end = 20.dp, bottom = 88.dp)
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
