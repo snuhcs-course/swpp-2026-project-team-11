@@ -7,6 +7,11 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntOffset
@@ -18,10 +23,8 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -62,9 +65,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
@@ -107,14 +108,8 @@ import com.example.metchu.ui.theme.screenBackground
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/** The answer line under the current question: 12 dp gap and one 39 dp line. */
-private val AnswerLineHeight = 51.dp
-
 /** The width of the prototype's answer row: 353 plus 2.5 on each side. */
 private val ScaleRowWidth = 358.dp
-
-/** How long the answer takes to fade before the next question comes in. */
-private const val ANSWER_FADE_MILLIS = 250L
 
 /** How long a picked answer stays before it is sent and the next question can appear. */
 private const val ANSWER_HOLD_MILLIS = 450L
@@ -138,9 +133,11 @@ private fun answerLabel(answerId: String): Int =
     Levels.firstOrNull { it.id == answerId }?.label ?: R.string.answer_unknown
 
 /**
- * The current question at the bottom of a list of past ones, the scale below it and
- * a progress bar. Past questions fade, blur and keep their answer's color; tapping one
- * goes back to it. Pressing a circle previews its answer under the question.
+ * The current question under a list of past ones, the scale below it and a progress bar.
+ * Past questions are one grey line each with their answer on the right; only they scroll,
+ * the current question stays put. Tapping a past one goes back to it. Pressing a circle
+ * shows its answer under the question; once picked, question and answer shrink into the
+ * line they will have in the list.
  */
 @Composable
 fun QuestionScreen(
@@ -164,16 +161,10 @@ fun QuestionScreen(
     val active = chosen ?: pressing
     if (active != null) lastShown = active
 
-    // Scrolled from the bottom: 0 shows the current question, and new content keeps it in view.
+    // Scrolled from the bottom: 0 shows the newest past question.
     val list = rememberScrollState()
     val scope = rememberCoroutineScope()
-    // After an answer the old line fades first; only then does the new question take its place.
-    var settled by remember { mutableIntStateOf(count) }
-    LaunchedEffect(count) {
-        if (count == settled + 1) delay(ANSWER_FADE_MILLIS)
-        settled = count
-        list.animateScrollTo(0)
-    }
+    LaunchedEffect(count) { list.animateScrollTo(0) }
     // The picked answer stays on screen a moment before the next question replaces it. It
     // names the question it answers, so it is dropped if Back moved the session meanwhile.
     val pick = { id: String ->
@@ -198,37 +189,23 @@ fun QuestionScreen(
                 CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
             }
 
-            Column(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .fadeEdges(top = list.canScrollForward, bottom = list.canScrollBackward)
-                    .verticalScroll(list, reverseScrolling = true)
-                    .padding(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 8.dp)
-            ) {
-                // One call site for current and past questions, keyed by position, so a question
-                // keeps its state (and animates) when it moves from current to past.
-                for (index in 0..count) {
-                    val current = index == count
-                    val past = history.getOrNull(index)
-                    if (!current && past == null) continue
-                    key(index) {
-                        AnimatedVisibility(
-                            visible = !current || settled == count,
-                            enter = fadeIn(tween(300)) + expandVertically(tween(300, easing = SheetEasing), expandFrom = Alignment.Top)
-                        ) {
-                            QuestionItem(
-                                text = if (current) step.text else past!!.text,
-                                current = current,
-                                color = if (current) MetchuColors.Grey900 else answerColor(past!!.answerId),
-                                answer = if (current) lastShown else past!!.answerId,
-                                answerVisible = current && active != null,
-                                // The question just answered keeps its line until the next one comes in.
-                                answerOpen = current || index >= settled,
-                                onRevisit = if (current) null else ({ if (!loading) onRevisit(index) })
-                            )
-                        }
+            Column(Modifier.weight(1f).fillMaxWidth()) {
+                // As tall as the past questions need, up to the room there is; it fades only at
+                // an edge it can still scroll past.
+                Column(
+                    Modifier
+                        .weight(1f, fill = false)
+                        .fillMaxWidth()
+                        .fadeEdges(top = list.canScrollForward, bottom = list.canScrollBackward, edge = 32.dp)
+                        .verticalScroll(list, reverseScrolling = true)
+                        .padding(start = 10.dp, end = 10.dp, top = 4.dp)
+                ) {
+                    history.forEachIndexed { index, past ->
+                        key(index) { PastQuestion(past) { if (!loading) onRevisit(index) } }
                     }
+                }
+                key(step.questionId, count) {
+                    CurrentQuestion(step.text, lastShown, shown = active != null, done = chosen != null)
                 }
             }
 
@@ -252,75 +229,123 @@ fun QuestionScreen(
     }
 }
 
+/**
+ * An answered question: one grey line, its answer on the right in the answer's color. A long
+ * question runs on under the answer and fades out before it. Held, it shows in full and goes
+ * back to that question.
+ */
 @Composable
-private fun QuestionItem(
-    text: String,
-    current: Boolean,
-    color: Color,
-    answer: String?,
-    answerVisible: Boolean,
-    answerOpen: Boolean,
-    onRevisit: (() -> Unit)?,
-    modifier: Modifier = Modifier
-) {
-    // A past question lights up while pressed, then the screen goes back to it.
+private fun PastQuestion(past: AnsweredQuestion, onRevisit: () -> Unit) {
     var held by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val lit = held || (!current && onRevisit != null && pressed)
-    val alpha by animateFloatAsState(if (current || lit) 1f else 0.35f, tween(300), label = "alpha")
-    val blur by animateDpAsState(if (current || lit) 0.dp else 2.dp, tween(300), label = "blur")
-    val ink by animateColorAsState(color, tween(300), label = "ink")
-    val background by animateColorAsState(if (lit) MetchuColors.Grey100 else Color.Transparent, tween(if (lit) 150 else 0), label = "bg")
+    val lit = held || pressed
+    val background by animateColorAsState(if (lit) MetchuColors.Grey100 else Color.White, tween(if (lit) 150 else 0), label = "bg")
     val scale by animateFloatAsState(if (lit) 353f / 373f else 1f, tween(150), label = "scale")
     val revisit = stringResource(R.string.revisit)
-
-    Column(
-        modifier
+    val answer = stringResource(answerLabel(past.answerId))
+    Box(
+        Modifier
             .fillMaxWidth()
             .scale(scale)
             .clip(RoundedCornerShape(12.dp))
             .background(background)
-            .then(
-                if (onRevisit != null) Modifier.clickable(interaction, indication = null, onClickLabel = revisit, role = Role.Button) {
-                    held = true
-                    scope.launch {
-                        delay(220)
-                        held = false
-                        onRevisit()
-                    }
-                } else Modifier
-            )
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-            .alpha(alpha)
-            .blur(blur, BlurredEdgeTreatment.Unbounded)
-    ) {
-        Text(text, style = MetchuType.Title, color = ink, modifier = if (current) Modifier.testTag("question") else Modifier)
-        // The answer line: its text fades first; the empty line closes as the next question opens.
-        val shown by animateFloatAsState(if (answerVisible) 1f else 0f, tween(ANSWER_FADE_MILLIS.toInt()), label = "answer")
-        AnimatedVisibility(
-            visible = answerOpen,
-            enter = expandVertically(tween(300, easing = SheetEasing), expandFrom = Alignment.Top),
-            exit = shrinkVertically(tween(300, easing = SheetEasing), shrinkTowards = Alignment.Top)
-        ) {
-            Box(Modifier.fillMaxWidth().height(AnswerLineHeight)) {
-                Box(Modifier.padding(top = 12.dp).fillMaxWidth().height(39.dp).alpha(shown)) {
-                    Box(Modifier.offset(y = 19.dp).width(22.dp).height(1.5.dp).background(MetchuColors.Grey300))
-                    if (answer != null) {
-                        Text(
-                            stringResource(answerLabel(answer)),
-                            Modifier.padding(start = 32.dp).semantics { liveRegion = LiveRegionMode.Polite },
-                            style = MetchuType.Title,
-                            color = answerColor(answer),
-                            maxLines = 1
-                        )
-                    }
+            .clickable(interaction, indication = null, onClickLabel = revisit, role = Role.Button) {
+                held = true
+                scope.launch {
+                    delay(220)
+                    held = false
+                    onRevisit()
                 }
             }
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        Text(
+            past.text,
+            Modifier.fillMaxWidth().padding(end = if (lit) AnswerRoom else 0.dp),
+            style = PastStyle,
+            color = MetchuColors.Grey600,
+            maxLines = if (lit) Int.MAX_VALUE else 1,
+            softWrap = lit
+        )
+        Text(
+            answer,
+            Modifier.align(Alignment.TopEnd).answerFade(background).padding(start = AnswerRoom),
+            style = PastAnswerStyle,
+            color = answerColor(past.answerId),
+            maxLines = 1
+        )
+    }
+}
+
+/**
+ * The question being asked, in large type, with the answer under it on the right while a
+ * circle is pressed. [done] (an answer picked) shrinks both, without a fade, into the
+ * line the question will have in the list: the answer moves up to the question's line.
+ */
+@Composable
+private fun CurrentQuestion(text: String, answer: String?, shown: Boolean, done: Boolean) {
+    val appear = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { appear.animateTo(1f, tween(300)) }
+    val shrink by animateFloatAsState(if (done) 1f else 0f, tween(380, easing = SheetEasing), label = "shrink")
+    val ink by animateColorAsState(if (done) MetchuColors.Grey600 else MetchuColors.Grey900, tween(380), label = "ink")
+    val answerAlpha by animateFloatAsState(if (shown) 1f else 0f, tween(160), label = "answer")
+    val density = LocalDensity.current
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 6.dp).alpha(appear.value)) {
+        Text(
+            text,
+            Modifier.fillMaxWidth().testTag("question"),
+            style = lerpStyle(MetchuType.Title, PastStyle, shrink),
+            color = ink,
+            maxLines = if (done) 1 else Int.MAX_VALUE,
+            softWrap = !done
+        )
+        if (answer != null) {
+            // 12 dp under the question at first; at the end it sits on the question's line.
+            val gap = lerp(12.dp, -PastLine, shrink)
+            Text(
+                stringResource(answerLabel(answer)),
+                Modifier
+                    .align(Alignment.End)
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val dy = with(density) { gap.roundToPx() }
+                        layout(placeable.width, (placeable.height + dy).coerceAtLeast(0)) { placeable.place(0, dy) }
+                    }
+                    .alpha(answerAlpha)
+                    .answerFade(Color.White)
+                    .padding(start = AnswerRoom * shrink)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+                style = lerpStyle(MetchuType.Title, PastAnswerStyle, shrink),
+                color = answerColor(answer),
+                maxLines = 1
+            )
+        } else {
+            Spacer(Modifier.height(12.dp + 39.dp))
         }
     }
 }
+
+/** A past question's line: 15/20, medium. */
+private val PastStyle = MetchuType.Label.copy(fontWeight = FontWeight.Medium)
+private val PastAnswerStyle = MetchuType.Label
+private val PastLine = 20.dp
+
+/** Space before a past answer: a 28 dp fade over the question, then a clear gap. */
+private val AnswerRoom = 60.dp
+
+/** The question line fades out under the answer: transparent at the left of [AnswerRoom], [background] after 28 dp. */
+private fun Modifier.answerFade(background: Color): Modifier = drawBehind {
+    drawRect(Brush.horizontalGradient(listOf(background.copy(alpha = 0f), background), startX = 0f, endX = 28.dp.toPx()))
+}
+
+private fun lerpStyle(from: TextStyle, to: TextStyle, t: Float): TextStyle = from.copy(
+    fontSize = lerp(from.fontSize, to.fontSize, t),
+    lineHeight = lerp(from.lineHeight, to.lineHeight, t),
+    fontWeight = if (t < 0.5f) from.fontWeight else to.fontWeight,
+    letterSpacing = lerp(from.letterSpacing, to.letterSpacing, t)
+)
 
 /** "I'm not sure", the five circles and their three captions. */
 @Composable
