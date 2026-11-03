@@ -622,7 +622,8 @@ private fun Handle(level: Level, x: Float, diameter: Float, faded: Boolean, rowS
         Box(
             Modifier
                 .size(size)
-                .alpha(alpha)
+                // Each part fades on its own: a faded layer would clip the shadow to a square.
+                .graphicsLayer { this.alpha = alpha; compositingStrategy = CompositingStrategy.ModulateAlpha }
                 .cssShadow(CircleShape, 6.dp, 18.dp, 0.3f)
                 .clip(CircleShape)
                 .background(color),
