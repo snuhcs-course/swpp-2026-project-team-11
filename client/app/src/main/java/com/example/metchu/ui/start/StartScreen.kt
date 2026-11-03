@@ -1,5 +1,6 @@
 package com.example.metchu.ui.start
 
+import com.example.metchu.ui.common.fade
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -170,7 +171,7 @@ fun StartScreen(
             loading = loading,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
-                .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).alpha(words)
+                .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).fade { words }
         )
         // Things set once sit low on the left, out of the way of the sentence and the button.
         CircleIconButton(
@@ -404,7 +405,7 @@ private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit
         if (globe > 0f) {
             CircleIconButton(
                 Icons.Globe, stringResource(R.string.language), { open = true },
-                Modifier.align(Alignment.BottomStart).alpha(globe).testTag("language")
+                Modifier.align(Alignment.BottomStart).fade { globe }.testTag("language")
             )
         }
         if (items > 0f) {

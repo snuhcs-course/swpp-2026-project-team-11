@@ -1,5 +1,8 @@
 package com.example.metchu.ui.main
 
+import com.example.metchu.ui.common.fade
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.core.animateFloat
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -220,14 +223,17 @@ private fun ErrorBanner(error: UiError?, onRetry: () -> Unit, modifier: Modifier
     AnimatedVisibility(
         visible = error != null,
         modifier = modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 60.dp),
-        enter = fadeIn(tween(200)) + slideInVertically(tween(200)) { -it / 4 },
-        exit = fadeOut(tween(200)) + slideOutVertically(tween(200)) { -it / 4 }
+        enter = slideInVertically(tween(200)) { -it / 4 },
+        exit = slideOutVertically(tween(200)) { -it / 4 }
     ) {
+        // Faded here rather than with fadeIn, whose layer would clip the banner's shadow.
+        val alpha by transition.animateFloat({ tween(200) }, label = "banner") { if (it == EnterExitState.Visible) 1f else 0f }
         val shown = last ?: return@AnimatedVisibility
         val shape = RoundedCornerShape(16.dp)
         Row(
             Modifier
                 .fillMaxWidth()
+                .fade { alpha }
                 .floating(shape)
                 .clip(shape)
                 .background(Color.White)
