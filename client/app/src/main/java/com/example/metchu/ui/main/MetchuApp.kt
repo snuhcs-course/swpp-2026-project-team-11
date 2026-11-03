@@ -89,6 +89,8 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     var setup by remember { mutableStateOf(settings.setup) }
     val advance = { next: Setup -> setup = next; settings.setup = next }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    // Once per launch: kept here, so leaving the start screen does not bring the location notice back.
+    var locationAsked by rememberSaveable { mutableStateOf(false) }
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
     var engine by remember { mutableStateOf(settings.engine) }
     var place by remember { mutableStateOf(settings.place) }
@@ -139,10 +141,12 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                     place = place,
                     loading = loading,
                     tip = setup == Setup.TIP,
+                    askForLocation = !locationAsked,
                     onMeal = { meal = it },
                     onPlace = { place = it; settings.place = it },
                     onSettings = { settingsOpen = true },
                     onTipDone = { advance(Setup.DONE) },
+                    onLocationAsked = { locationAsked = true },
                     onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language) }
                 )
                 Screen.SETTINGS -> {
