@@ -134,7 +134,7 @@ class ExtractFeaturesCommandTests(TestCase):
         self.assertEqual(other.features["spicy"], plain.features["spicy"])
         self.assertEqual(other.feature_std, plain.feature_std)
         self.assertEqual(other.features["meal_variety"], 1)
-        self.assertEqual(other.display_name, "육개장 (세트)")
+        self.assertEqual(other.display_name, "")  # tagging preserves presentation metadata
         self.assertEqual(plain.display_name, "옛날 육개장")
         self.assertEqual(unserved.feature_version, "v1")
         self.assertEqual(unserved.display_name, "시원한 냉모밀")
@@ -210,23 +210,24 @@ class ExtractFeaturesCommandTests(TestCase):
             with self.assertRaisesMessage(CommandError, "GOOGLE_API_KEY"):
                 self.run_command(FakeLLM())
 
-class GetCandidatesTests(TestCase):
-    def test_versions_are_not_mixed_and_default_candidate_keys_stay_stable(self):
+class MenuCatalogTests(TestCase):
+    def test_versions_are_not_mixed_and_menu_input_metadata_is_explicit(self):
         hall = Restaurant.objects.create(code="hall", name="학생회관식당")
         for version in ("v1", "v2"):
             food = Food.objects.create(name=version, is_food=True, feature_version=version,
                                        features={"spicy": .5}, feature_std={"spicy": .1})
             MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name=version, food=food)
-        self.assertEqual([c["name"] for c in services.get_candidates(DAY)], ["v1"])
-        [candidate] = services.get_candidates(DAY, feature_version="v2")
-        self.assertEqual(candidate["name"], "v2")
-        self.assertEqual(set(candidate), {"food_id", "name", "display_name", "food_group", "features", "offers"})
-        [with_std] = services.get_candidates(DAY, feature_version="v2", include_std=True)
-        self.assertEqual(with_std["feature_std"], {"spicy": .1})
+        [legacy], _, version = services.get_catalog(DAY, feature_version="v1")
+        self.assertEqual((legacy["name"], version), ("v1", "v1"))
+        self.assertNotIn("feature_std", legacy)
+        [candidate], _, version = services.get_catalog(DAY)
+        self.assertEqual((candidate["name"], version), ("v2", "v2"))
+        self.assertEqual(candidate["feature_std"], {"spicy": .1})
+        self.assertEqual(candidate["menu_profile"], "rms-v1")
         self.assertEqual(len(services.get_feature_schema("v1")), 23)
         self.assertEqual(len(services.get_feature_schema("v2")), 33)
         with self.assertRaises(ValueError):
-            services.get_candidates(DAY, feature_version="v0")
+            services.get_catalog(DAY, feature_version="v0")
 
 
 class StoreDishesTests(TestCase):

@@ -42,11 +42,11 @@ class AllergyTests(SmallMenuTestCase):
             add_food(name, price=7000)
             Food.objects.filter(name=name).update(allergens=tags, allergen_version=ALLERGEN_VERSION)
         MenuItem.objects.filter(food__name__in=["Pork cutlet", "Curry udon"]).update(raw_name="Pork cutlet curry udon")
-        self.assertIn("Curry udon", self.served("egg"))
-        self.assertNotIn("Curry udon", self.served("pork"))
+        self.assertIn("Pork cutlet curry udon", self.served("egg"))
+        self.assertNotIn("Pork cutlet curry udon", self.served("pork"))
 
         Food.objects.filter(name="Pork cutlet").update(allergen_version="")
-        self.assertNotIn("Curry udon", self.served("egg"))  # an untagged dish in the line
+        self.assertNotIn("Pork cutlet curry udon", self.served("egg"))  # an untagged dish in the line
 
         add_food("Curry udon", restaurant="Other hall", price=4500)
         [udon] = [c for c in self.catalog("egg")[0] if c["name"] == "Curry udon"]

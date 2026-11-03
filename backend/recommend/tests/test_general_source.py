@@ -55,7 +55,7 @@ class GeneralSourceTests(TestCase):
 
     def test_serves_the_restaurant_dishes_with_their_offers(self):
         state = self.start(meal="DN")
-        self.assertEqual(state["candidate_count"], 3)  # not the cafeteria's 돈까스
+        self.assertEqual(state["candidate_count"], 4)  # four real menus, not the cafeteria's 돈까스
         self.assertEqual(state["engine"], "decision_tree")
         food = self.proposal(state)
         self.assertIn(food["name"], {"짜장면", "짬뽕", "김치찌개"})
@@ -82,26 +82,26 @@ class GeneralSourceTests(TestCase):
         self.addCleanup(setattr, services, "_store_menus", None)
         services.get_store_catalog("LU")
         with self.assertNumQueries(0):
-            self.assertEqual(len(services.get_store_catalog("LU")[0]), 3)
+            self.assertEqual(len(services.get_store_catalog("LU")[0]), 4)
 
     def test_location_adds_distances(self):
         food = self.proposal(self.start(location=SEOUL_NAT_UNIV_STATION))
         self.assertTrue(all(isinstance(offer["distance_m"], int) for offer in food["offers"]))
 
     def test_allergies_leave_out_unsafe_dishes(self):
-        self.assertEqual(self.start(allergies=["wheat"])["candidate_count"], 1)
+        self.assertEqual(self.start(allergies=["wheat"])["candidate_count"], 2)
 
     def test_a_safe_dish_is_left_out_where_its_set_serves_an_allergen(self):
         def kimchi_offers(*allergies):
             candidates, _, _ = services.get_store_catalog(allergies=frozenset(allergies))
-            return [o["restaurant"] for c in candidates if c["name"] == "김치찌개" for o in c["offers"]]
+            return [o["restaurant"] for c in candidates if c["name"].startswith("김치찌개") for o in c["offers"]]
 
         self.assertEqual(kimchi_offers(), ["북경 서울대입구점", "홍콩반점 낙성대점"])
         self.assertEqual(kimchi_offers("egg"), ["북경 서울대입구점"])  # the dish itself has no egg
 
     def test_an_untagged_line_is_left_out_only_with_allergies(self):
         StoreMenu.objects.filter(raw_name="김치찌개").update(allergen_version="")
-        self.assertEqual(self.start()["candidate_count"], 3)
+        self.assertEqual(self.start()["candidate_count"], 4)
         self.assertEqual(self.start(allergies=["egg"])["candidate_count"], 2)
 
     def test_dishes_without_v2_features_are_not_served(self):

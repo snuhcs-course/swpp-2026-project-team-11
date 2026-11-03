@@ -5,6 +5,7 @@ import io
 import json
 import os
 import pathlib
+import random
 import tempfile
 from collections import Counter
 from types import SimpleNamespace
@@ -68,6 +69,32 @@ class ScenarioTests(SimpleTestCase):
             self.assertEqual(wanted["close"], ["볶음밥"])
             self.assertLessEqual(scenarios.gap(wanted["features"], by_name["볶음밥"]["features"]), scenarios.CLOSE_GAP)
             self.assertFalse(harness.accepted_by_rule(item, {"food": {"food_id": 1, "display_name": "볶음밥"}}))
+
+    def test_actual_menu_targets_do_not_accept_a_set_by_component_name(self):
+        original = [{**c, "menu_profile": "rms-v1"} for c in CANDIDATES[:2]]
+        original[0] = {**original[0], "name": "삼겹살", "display_name": "삼겹살"}
+        original[1] = {**original[1], "name": "삼겹살+떡볶이", "display_name": "삼겹살+떡볶이"}
+        self.assertEqual(scenarios.matches("삼겹살", original), [original[0]["food_id"]])
+        self.assertEqual(scenarios.matches("삼겹살+떡볶이", original), [original[1]["food_id"]])
+
+    def test_same_named_actual_sets_survive_scenario_selection(self):
+        original = [{**c, "name": "A세트", "display_name": "A세트", "menu_profile": "rms-v1"}
+                    for c in CANDIDATES[:2]]
+        self.assertEqual(len(scenarios._choices(original)), 2)
+        choice = scenarios.target("A세트", original[1]["features"], "", original,
+                                  candidate_id=original[1]["food_id"])
+        self.assertEqual(choice["matches"], [original[1]["food_id"]])
+        baseline = metrics.baselines({}, {"situation": "in_menu", "targets": [choice]},
+                                     {c["food_id"]: c for c in original})
+        self.assertEqual(baseline["random_pick"], .5)
+
+    def test_distinct_sets_with_no_dish_family_can_form_multiple_targets(self):
+        menus = [{**c, "name": str(c["food_id"]), "display_name": str(c["food_id"]),
+                  "food_group": "", "menu_profile": "rms-v1"} for c in CANDIDATES[:3]]
+        made = scenarios._targets("multiple", menus, [], random.Random(0))
+        self.assertIn(len(made), (2, 3))
+        ids = [m["matches"][0] for m in made]
+        self.assertEqual(len(ids), len(set(ids)))
 
     def test_build_refuses_what_it_cannot_make(self):
         with self.assertRaisesMessage(ValueError, "not_in_menu"):
@@ -292,13 +319,20 @@ class JudgeTests(SimpleTestCase):
         plain = {"food_id": 1, "name": "볶음밥", "display_name": "볶음밥"}
         self.assertEqual(self.judge(item, plain, True), (False, "rule_only", []))
 
-    def test_a_set_and_its_single_dish_get_one_verdict(self):
+    def test_a_set_and_its_single_dish_get_separate_verdicts(self):
         llm = FakeUserLLM(accept=False)
         user = harness.SimulatedUser(scenario("in_menu", "물냉면"), simulator.Simulator(llm))
         for display in ("짬뽕", "짬뽕 (세트)"):
             self.assertFalse(user.judge({"food": {"food_id": 4, "name": "짬뽕", "display_name": display}})["accepted"])
-        self.assertEqual(len(llm.calls), 1)
-        self.assertIn("The app proposes: 짬뽕\n", llm.calls[0][1])
+        self.assertEqual(len(llm.calls), 2)
+        self.assertIn("The app proposes: 짬뽕 (세트)\n", llm.calls[1][1])
+
+    def test_same_named_menu_ids_do_not_share_a_simulator_verdict(self):
+        llm = FakeUserLLM(accept=False)
+        user = harness.SimulatedUser(scenario("in_menu", "물냉면"), simulator.Simulator(llm))
+        for mid in (101, 102, 101):
+            user.judge({"food": {"food_id": mid, "name": "A세트", "display_name": "A세트"}})
+        self.assertEqual(len(llm.calls), 2)
 
     def test_the_verdict_prompt_is_strict_and_a_new_prompt_asks_again(self):
         llm = FakeUserLLM(accept=True)
