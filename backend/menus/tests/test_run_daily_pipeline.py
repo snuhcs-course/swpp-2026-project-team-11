@@ -7,7 +7,8 @@ from unittest import mock
 from django.core.management import CommandError, call_command
 from django.test import TestCase
 
-from menus import allergens, llm
+from menus import allergens, labels, llm
+from menus.tests.test_menu_labels import FakeLabels
 from menus.allergens import ALLERGEN_VERSION
 from menus.features import extractor
 from menus.features.schema import FEATURE_VERSION
@@ -30,6 +31,7 @@ class RunDailyPipelineTests(TestCase):
                 mock.patch.object(extractor, "api_key_available", return_value=key), \
                 mock.patch.object(llm, "api_key_available", return_value=key), \
                 mock.patch.object(allergens, "build_llm", return_value=FakeAllergenTagger()), \
+                mock.patch.object(labels, "build_llm", return_value=FakeLabels()), \
                 mock.patch.object(mapper, "build_llm", return_value=FakeMapper(ANSWERS)), \
                 mock.patch.object(extractor, "build_llm", return_value=tagger or FakeTagger()):
             call_command("run_daily_pipeline", "--date", DAY.isoformat(), *args, stdout=out)
@@ -45,7 +47,8 @@ class RunDailyPipelineTests(TestCase):
         self.assertFalse(Food.objects.exclude(feature_version=FEATURE_VERSION).exists())
         self.assertFalse(Food.objects.exclude(allergen_version=ALLERGEN_VERSION).exists())
         self.assertIn("점심 3", output)  # the combo is one sales menu
-        self.assertIn("[4/4]", output)
+        self.assertIn("[4/5]", output)
+        self.assertIn("[5/5]", output)
 
     def test_a_failing_step_fails_the_run_after_every_step_ran(self):
         with tempfile.TemporaryDirectory() as tmp:
