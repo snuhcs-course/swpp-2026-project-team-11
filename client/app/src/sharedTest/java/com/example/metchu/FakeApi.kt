@@ -57,7 +57,7 @@ class FakeApi : ApiService {
     override suspend fun recommendNow(sessionId: String) = next("recommend-now $sessionId")
     override suspend fun undo(sessionId: String) = next("undo $sessionId")
     override suspend fun ban(sessionId: String, request: BanRequest) =
-        next("ban $sessionId ${request.foodId} ${request.banned}")
+        next("ban $sessionId ${request.foodId ?: request.foodGroup} ${request.banned}")
     override suspend fun reason(sessionId: String): Reason {
         reasonCalls.add(sessionId)
         val gate = heldReason

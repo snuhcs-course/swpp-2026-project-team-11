@@ -1,4 +1,6 @@
-"""A dish banned on the result screen is not proposed again in that session, even after undo."""
+"""A dish or group banned on the result screen is not proposed again in that session, even after undo."""
+from menus.models import Food
+
 from .test_edge_cases import SmallMenuTestCase
 
 
@@ -20,17 +22,27 @@ class BannedDishTests(SmallMenuTestCase):
         back = self.call(url + "undo/")["step"]
         self.assertEqual((back["type"], back["question_count"]), ("question", 0))
 
+        proposed = self.propose_until_exhausted(url, back)
+        self.assertEqual(len(proposed), 2)
+        self.assertNotIn(food_id, proposed)
+
+    def test_a_banned_group_leaves_out_its_dishes_and_its_group_guess(self):
+        state, url = self.start()
+        self.call(url + "ban/", {"food_group": "Noodles", "banned": True})
+        proposed = self.propose_until_exhausted(url, state["step"])
+        self.assertEqual(proposed, [Food.objects.get(name="Rice bowl").id])
+
+    def propose_until_exhausted(self, url, step):
+        """The dishes proposed from `step` on, each turned down, until none is left."""
         proposed = []
-        step = back
         while step["type"] != "unavailable":
             if step["type"] == "question":
                 step = self.call(url + "recommend-now/")["step"]
                 continue
-            proposed.append(step["food"]["food_id"])
+            proposed.append(step.get("group", {}).get("display_name") or step["food"]["food_id"])
             step = self.call(url + "feedback/", {"guess_id": step["guess_id"], "accepted": False})["step"]
-        self.assertEqual(len(proposed), 2)
-        self.assertNotIn(food_id, proposed)
         self.assertEqual(step["reason"], "candidates_exhausted")
+        return proposed
 
     def test_a_lifted_ban_lets_the_dish_back(self):
         guess, url, food_id = self.guess()
@@ -44,10 +56,13 @@ class BannedDishTests(SmallMenuTestCase):
         self.call(url + "ban/", {"food_id": food_id, "banned": True})
         self.assertEqual(self.guess()[2], food_id)
 
-    def test_food_id_and_banned_are_checked(self):
+    def test_the_ban_body_is_checked(self):
         guess, url, food_id = self.guess()
         for body in ({"food_id": str(food_id), "banned": True}, {"food_id": True, "banned": True},
                      {"food_id": None, "banned": True}, {"food_id": food_id, "banned": "yes"},
-                     {"food_id": food_id, "banned": 1}, {"food_id": food_id}, {"banned": True}):
+                     {"food_id": food_id, "banned": 1}, {"food_id": food_id}, {"banned": True},
+                     {"food_group": "", "banned": True}, {"food_group": 1, "banned": True},
+                     {"food_group": ["Noodles"], "banned": True},
+                     {"food_id": food_id, "food_group": "Noodles", "banned": True}):
             self.assertEqual(self.call(url + "ban/", body, 400)["error"]["code"], "invalid_request", body)
         self.assertEqual(self.client.get(url).json(), guess)
