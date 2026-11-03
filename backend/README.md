@@ -385,7 +385,7 @@ the session (i3-A19): `POST /api/sessions/<id>/ban/` takes a `food_group` or a
 banned dish (a decision tree group guess counts as its `food_group`) with `feedback` as
 soon as an action reaches it, and an undo that reaches one goes back further, so it
 does not return after Back either. A new session starts with no bans. The phone offers
-a group ban once two proposals in a row share the group. New dishes get no
+a group ban once the group makes up two of the last three proposals. New dishes get no
 `food_group` (only rows that already had one keep it), so on 2026-11-03 about 60% of
 the cafeteria dishes could be banned by group.
 
