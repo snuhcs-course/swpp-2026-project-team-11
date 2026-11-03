@@ -383,7 +383,7 @@ class MainActivityTest {
     }
 
     @Test
-    fun findAnotherIsOnlyOfferedOnTheDishTheServerProposes() {
+    fun findAnotherStaysOnEveryDishAndTurnsDownTheCurrentOne() {
         startWith(guess)
         api.reply(question)
         tapText(R.string.result_more)
@@ -392,12 +392,10 @@ class MainActivityTest {
         compose.onNodeWithText(text(R.string.result_more)).assertIsDisplayed()
 
         // The chips list the newest first; the second is the dish turned down.
-        val home = compose.onNodeWithTag("home").getBoundsInRoot()
         compose.onAllNodesWithTag("dishChip")[1].performClick()
-        compose.onNodeWithText(text(R.string.result_more)).assertDoesNotExist()
-        assertEquals(home.right, compose.onNodeWithTag("home").getBoundsInRoot().right)
-        compose.onAllNodesWithTag("dishChip")[0].performClick()
-        compose.onNodeWithText(text(R.string.result_more)).assertIsDisplayed()
+        api.reply(question)
+        tapText(R.string.result_more)
+        assertEquals("feedback ${groupGuess.sessionId} ${groupGuess.step.guessId} false", api.calls.last())
     }
 
     @Test
