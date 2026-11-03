@@ -92,33 +92,40 @@ class IntentModel:
         if prior_mode == "uniform":
             base[:] = 1 / n
         base /= base.sum()
-        self.intent_to_food = np.zeros((m, n))
+        # Actual sales menus have no family nodes: each intent identifies exactly
+        # one menu. Their identity mapping and constant-off-diagonal acceptance
+        # need no quadratic matrices.
+        self.identity_intents = (catalog.context.get("candidate_kind") == "menu-rms-v1"
+                                 and self.node_ids == tuple(food["id"] for food in catalog.foods))
         self.members = []
-        for i, node_id in enumerate(self.node_ids):
-            ids = [self.tree.food_index[fid] for fid in self.tree.descendant_food_ids(node_id)]
-            self.members.append(frozenset(ids))
-            self.intent_to_food[i, ids] = base[ids] / base[ids].sum()
-        self.prior = np.zeros(m)
-        for j, food in enumerate(catalog.foods):
-            ancestors = [i for i, node_id in enumerate(self.node_ids)
-                         if self.tree.nodes[node_id].kind == "family" and j in self.members[i]]
-            generic = config.general_intent_mass if ancestors else 0.0
-            self.prior[self.node_index[food["id"]]] += base[j] * (1 - generic)
-            for i in ancestors:
-                self.prior[i] += base[j] * generic / len(ancestors)
-        self.prior /= self.prior.sum()
-        # Guessing a broad family is less likely to satisfy a specific intent.
-        # A specific variant can satisfy a general intent. Disjoint guesses
-        # retain small noise, so rejection never makes a hypothesis impossible.
-        self.acceptance = np.full((m, m), .005)
-        for v in range(m):
-            for z in range(m):
-                if v == z:
-                    self.acceptance[v, z] = .97
-                elif self.members[z] <= self.members[v]:
-                    self.acceptance[v, z] = .72
-                elif self.members[v] <= self.members[z]:
-                    self.acceptance[v, z] = .88
+        if self.identity_intents:
+            self.intent_to_food = self.acceptance = None
+            self.members = [frozenset((i,)) for i in range(n)]
+            self.prior = base.copy()
+        else:
+            self.intent_to_food = np.zeros((m, n))
+            for i, node_id in enumerate(self.node_ids):
+                ids = [self.tree.food_index[fid] for fid in self.tree.descendant_food_ids(node_id)]
+                self.members.append(frozenset(ids))
+                self.intent_to_food[i, ids] = base[ids] / base[ids].sum()
+            self.prior = np.zeros(m)
+            for j, food in enumerate(catalog.foods):
+                ancestors = [i for i, node_id in enumerate(self.node_ids)
+                             if self.tree.nodes[node_id].kind == "family" and j in self.members[i]]
+                generic = config.general_intent_mass if ancestors else 0.0
+                self.prior[self.node_index[food["id"]]] += base[j] * (1 - generic)
+                for i in ancestors:
+                    self.prior[i] += base[j] * generic / len(ancestors)
+            self.prior /= self.prior.sum()
+            self.acceptance = np.full((m, m), .005)
+            for v in range(m):
+                for z in range(m):
+                    if v == z:
+                        self.acceptance[v, z] = .97
+                    elif self.members[z] <= self.members[v]:
+                        self.acceptance[v, z] = .72
+                    elif self.members[v] <= self.members[z]:
+                        self.acceptance[v, z] = .88
         self.questions = [dict(q, kind="attribute") for q in catalog.questions]
         # Named, actionable menu nodes are proposals. A positive response ends
         # the dialogue instead of asking the same menu twice (confirm, guess).
@@ -141,21 +148,47 @@ class IntentModel:
                 # directional contrast. Zero/missing std leaves the value unchanged.
                 # 4 normalizes variance by the maximum possible bounded variance.
                 response_values = values + (.5 - values) * (4 * stds * stds)
-                mean = np.einsum("zf,f->z", self.intent_to_food, values)
-                variance = np.einsum("zf,f->z", self.intent_to_food, values * values) - mean * mean
-                self.values[qi] = np.einsum("zf,f->z", self.intent_to_food, response_values)
+                if self.identity_intents:
+                    variance = np.zeros(n)
+                    self.values[qi] = response_values
+                else:
+                    mean = np.einsum("zf,f->z", self.intent_to_food, values)
+                    variance = np.einsum("zf,f->z", self.intent_to_food, values * values) - mean * mean
+                    self.values[qi] = np.einsum("zf,f->z", self.intent_to_food, response_values)
                 # Variation *inside an indifferent intent* makes this trait
                 # less relevant. Uncertainty between specific intents does not.
                 self.resolution[qi] = np.clip(1 - 4 * variance, .05, 1)
             else:
                 mask = np.zeros(n)
                 mask[list(self.members[self.node_index[q["node_id"]]])] = 1
-                self.values[qi] = np.einsum("zf,f->z", self.intent_to_food, mask)
+                self.values[qi] = mask if self.identity_intents else np.einsum("zf,f->z", self.intent_to_food, mask)
         self.options = [dict(option) for option in ANSWER_OPTIONS]
         self.answer_ids = tuple(option["id"] for option in self.options)
         meaning = {"policy": POLICY_VERSION, "catalog": catalog.fingerprint,
                    "config": asdict(config), "prior_mode": prior_mode}
         self.fingerprint = hashlib.sha256(json.dumps(meaning, sort_keys=True).encode()).hexdigest()
+
+    def food_belief(self, belief):
+        return belief.copy() if self.identity_intents else self.intent_to_food.T @ belief
+
+    def acceptance_probabilities(self, belief):
+        if self.identity_intents:
+            return .005 * belief.sum() + .965 * belief
+        return np.einsum("vz,z->v", self.acceptance, belief)
+
+    def acceptance_row(self, proposal):
+        if self.identity_intents:
+            row = np.full(len(self.node_ids), .005)
+            row[proposal] = .97
+            return row
+        return self.acceptance[proposal]
+
+    def acceptance_support(self, support):
+        if self.identity_intents:
+            rows = np.full((len(self.node_ids), len(support)), .005)
+            rows[support, np.arange(len(support))] = .97
+            return rows
+        return self.acceptance[:, support]
 
     def all_likelihoods(self, salience, support):
         x = self.values[:, support]
@@ -410,10 +443,10 @@ class Planner:
         else:
             self.support = np.arange(len(belief))
             sampled = belief.copy()
-        self.acceptance = self.model.acceptance[:, self.support]
+        self.acceptance = self.model.acceptance_support(self.support)
         self.candidate_ids = np.flatnonzero(np.max(self.acceptance, axis=1) > .005)
         # Always have a full-belief safe fallback before spending search budget.
-        full_acceptance = np.einsum("vz,z->v", self.model.acceptance, belief)
+        full_acceptance = self.model.acceptance_probabilities(belief)
         valid = self.model.proposal_mask(rejected)
         if not np.any(valid):
             return None, {"policy": POLICY_VERSION, "completed_depth": 0, "nodes": 0}

@@ -53,7 +53,7 @@ class PreferencePlanner:
         if not allowed.any():
             return None, {"policy": "preference", "reason": "candidates_exhausted"}
         scores = self.scores(answers)
-        food_belief = self.model.intent_to_food.T @ belief
+        food_belief = self.model.food_belief(belief)
         order = np.lexsort((np.arange(len(scores)), -food_belief, -scores))
         best = next(int(i) for i in order if allowed[i])
         proposal = Action("guess", int(self.food_nodes[best]))
