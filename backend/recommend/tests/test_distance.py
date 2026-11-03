@@ -5,7 +5,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from menus.models import Restaurant
 from recommend.distance import distance_m, with_distances
 
-DAY = "2026-09-29"
+DAY = "2026-11-02"
 STUDENT_CENTER = (37.45932, 126.95058)  # 학생회관식당 in the shared snapshot
 
 
@@ -44,7 +44,7 @@ class DistanceTests(SimpleTestCase):
 
 
 class SessionDistanceTests(TestCase):
-    fixtures = ["menus_2026-09-29"]
+    fixtures = ["menus_2026-11-02"]
 
     def start(self, **body):
         return self.client.post("/api/sessions/", content_type="application/json",
@@ -56,7 +56,7 @@ class SessionDistanceTests(TestCase):
 
     def test_a_location_adds_distances_and_the_cutoff_is_off_by_default(self):
         state = self.start(location={"lat": 37.0, "lng": 127.0}).json()
-        self.assertEqual(state["candidate_count"], 193)
+        self.assertEqual(state["candidate_count"], 107)
         self.assertTrue(all(o["distance_m"] > 50_000 for o in self.offers(state) if o["lat"] is not None))
 
     def test_without_a_location_distances_are_null(self):
@@ -70,9 +70,9 @@ class SessionDistanceTests(TestCase):
     @override_settings(RECOMMEND_MAX_DISTANCE_M=300)
     def test_the_cutoff_leaves_out_far_cafeterias(self):
         near = self.start(location={"lat": STUDENT_CENTER[0], "lng": STUDENT_CENTER[1]}).json()
-        self.assertLess(near["candidate_count"], 193)
+        self.assertLess(near["candidate_count"], 107)
         self.assertTrue(all(o["distance_m"] is None or o["distance_m"] <= 300 for o in self.offers(near)))
-        self.assertEqual(self.start().json()["candidate_count"], 193)  # no location: nothing to cut
+        self.assertEqual(self.start().json()["candidate_count"], 107)  # no location: nothing to cut
 
     def test_a_malformed_location_is_400(self):
         for location in ({"lat": 37.4}, [37.4, 126.9], {"lat": "37.4", "lng": 126.9},

@@ -1,4 +1,4 @@
-"""Whole sessions against the shared 2026-09-29 fixture, the data the demo runs on."""
+"""Whole sessions against the shared 2026-11-02 fixture, the data the demo runs on."""
 import random
 from unittest.mock import patch
 
@@ -8,7 +8,7 @@ from .helpers import ANSWER_IDS, DAY, check_state, post
 
 
 class RealMenuTestCase(TestCase):
-    fixtures = ["menus_2026-09-29"]
+    fixtures = ["menus_2026-11-02"]
 
     def start(self, meal="LU"):
         response = post(self.client, "/api/sessions/", {"date": DAY, "meal": meal})
@@ -88,10 +88,10 @@ class GroupGuessTests(RealMenuTestCase):
         # Group proposals belong to the retained intent-based policy.
         # The default preference policy proposes individual matching dishes.
         from question_engines.decision_tree import DecisionTreeEngine
-        def legacy_engine(*args, **kwargs):
+        def greedy_engine(*args, **kwargs):
             kwargs["config"] = kwargs.get("config", {}) | {"policy": "greedy"}
             return DecisionTreeEngine(*args, **kwargs)
-        patcher = patch("recommend.sessions.DecisionTreeEngine", side_effect=legacy_engine)
+        patcher = patch("recommend.sessions.DecisionTreeEngine", side_effect=greedy_engine)
         patcher.start()
         self.addCleanup(patcher.stop)
 

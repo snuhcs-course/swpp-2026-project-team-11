@@ -5,11 +5,11 @@ from django.test import TestCase, override_settings
 
 from menus.models import Restaurant
 
-DAY = "2026-09-29"
+DAY = "2026-11-02"
 
 
 class SessionApiTests(TestCase):
-    fixtures = ["menus_2026-09-29"]
+    fixtures = ["menus_2026-11-02"]
 
     def post(self, path, body=None):
         return self.client.post(path, data=json.dumps(body or {}), content_type="application/json")
@@ -22,7 +22,7 @@ class SessionApiTests(TestCase):
     def test_create_returns_first_question(self):
         state = self.start()
         self.assertEqual((state["engine"], state["date"], state["meal"]), ("decision_tree", DAY, "LU"))
-        self.assertEqual(state["candidate_count"], 193)
+        self.assertEqual(state["candidate_count"], 107)
         self.assertFalse(state["can_undo"])
         self.assertEqual(state["step"]["type"], "question")
         self.assertEqual(len(state["step"]["options"]), 6)
@@ -125,7 +125,7 @@ class SessionApiTests(TestCase):
         url = f"/api/sessions/{state['session_id']}/"
         self.assertEqual(self.post(url + "recommend-now/").json()["step"]["type"], "unavailable")
 
-    @override_settings(RECOMMEND_DEFAULT_DATE=datetime.date(2026, 9, 29))
+    @override_settings(RECOMMEND_DEFAULT_DATE=datetime.date(2026, 11, 2))
     def test_default_date_setting_is_used_when_client_sends_none(self):
         state = self.post("/api/sessions/").json()
         self.assertEqual((state["date"], state["meal"]), (DAY, None))

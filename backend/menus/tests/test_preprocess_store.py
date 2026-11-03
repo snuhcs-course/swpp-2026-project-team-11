@@ -70,14 +70,14 @@ class CachedMappingTests(TestCase):
         seed_llm("돈가스 카레우동", ["돈까스", "카레우동"])
         run([record("돈가스 카레우동"), record("마라탕", "공대간이식당", price=7700)])
         tag("돈까스", "카레우동", "마라탕")
-        candidates = {c["name"]: c for c in services.get_candidates(DAY, "LU", feature_version=FEATURE_VERSION)}
+        candidates = {c["name"]: c for c in services.get_candidates(DAY, "LU")}
         self.assertEqual(set(candidates), {"돈까스", "카레우동", "마라탕"})
         for name in ("돈까스", "카레우동"):
             self.assertEqual(candidates[name]["offers"],
                              [{"restaurant": "220동식당", "meal": "LU", "price": 6500, "lat": None, "lng": None}])
         for candidate in candidates.values():
             self.assertEqual(set(candidate),
-                             {"food_id", "name", "display_name", "food_group", "features", "offers"})
+                             {"food_id", "name", "display_name", "food_group", "features", "feature_std", "offers"})
             self.assertTrue(all(set(o) == {"restaurant", "meal", "price", "lat", "lng"} for o in candidate["offers"]))
 
     def test_a_merged_dish_lists_every_cafeteria(self):
@@ -93,7 +93,7 @@ class CachedMappingTests(TestCase):
         run([record("마라탕", "공대간이식당", price=7700, lat=37.45727, lng=126.95079),
              record("마라탕", "220동식당")])
         tag("마라탕")
-        [mala] = services.get_candidates(DAY, "LU", feature_version=FEATURE_VERSION)
+        [mala] = services.get_candidates(DAY, "LU")
         self.assertEqual({o["restaurant"]: (o["lat"], o["lng"]) for o in mala["offers"]},
                          {"공대간이식당": (37.45727, 126.95079), "220동식당": (None, None)})
 
@@ -103,7 +103,7 @@ class CachedMappingTests(TestCase):
         run([record("눈꽃치즈 돈까스", price=7900), record("치즈돈까스", price=7900),
              record("치즈돈까스", meal="DN", price=7900)])
         tag("치즈돈까스")
-        [candidate] = services.get_candidates(DAY, feature_version=FEATURE_VERSION)
+        [candidate] = services.get_candidates(DAY)
         self.assertEqual(candidate["offers"],
                          [{"restaurant": "220동식당", "meal": "LU", "price": 7900, "lat": None, "lng": None},
                           {"restaurant": "220동식당", "meal": "DN", "price": 7900, "lat": None, "lng": None}])
