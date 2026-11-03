@@ -74,8 +74,7 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     val reasons by viewModel.reasons.observeAsState(emptyMap())
     val canResume by viewModel.canResume.observeAsState(false)
 
-    // The first launch opens the settings, where the allergies are picked.
-    var settingsOpen by rememberSaveable { mutableStateOf(!allergyStore.chosen) }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
     var engine by remember { mutableStateOf(settings.engine) }
     var place by remember { mutableStateOf(settings.place) }
