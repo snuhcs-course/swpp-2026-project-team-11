@@ -1,6 +1,9 @@
 package com.example.metchu.ui.main
 
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -24,8 +27,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        // A transparent navigation bar, also with the three buttons: screens keep their content
+        // above it, and the ones that scroll under it draw their own fade (NavigationBarFade).
+        enableEdgeToEdge(navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.isNavigationBarContrastEnforced = false
         val allergies = AllergyStore(this)
         val settings = SettingsStore(this)
         val location = AppContainer.locationSource ?: FusedLocationSource(applicationContext)

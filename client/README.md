@@ -168,17 +168,21 @@ emulator, set a position under Extended controls > Location (for example
 
 | When | Screen | Actions |
 | --- | --- | --- |
-| first launch | Language (asked in both), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear, with a tip that both change there anytime | a language goes on at once; ‹ on Allergies returns to Language; on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
-| no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map | the meal and the distance open a sheet; globe picks the language; gear opens Settings |
+| first launch | Language (asked in both), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear (bottom-left), with a tip that both change there anytime | a language goes on at once; ‹ on Allergies returns to Language; on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
+| no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map around the user, or around the SNU administration building until location is allowed | the meal and the distance open a small menu under them, without dimming the screen; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home |
 | gear | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
-| `question` | The question at the bottom of the past ones, a five-step scale with "I'm not sure", a progress bar | a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); "Recommend now" (greyed on the first question); "Start over" in the top-right corner |
-| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user, a ban link and the cafeterias, one line per cafeteria and meal | "Find another" turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; "Start over", always in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row moves the map to it, and its "Menu" lists what that cafeteria serves at that meal, the proposed dish in orange; once a food group makes up two of the last three proposals, "Don't suggest any <group>" keeps that group out of the rest of the session, even after ‹ (a dish without a group offers "Don't suggest this dish" at once), and turns into Undo; "Start over" clears the bans; the sheet's handle drags or taps it between low, middle and high |
-| `unavailable` | Why nothing can be recommended; with allergies saved, that no dish is known to be free of them and that Settings can change them | "Start over" in the top-right corner |
+| `question` | The current question under the past ones, one grey line each with the answer on the right; a five-step slider with "I'm not sure"; a progress bar | dragging along the slider or tapping a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); home in the top-right corner; "Recommend now" floats bottom-right once there is an answer |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user, a ban link and the cafeterias, one row per cafeteria | "Find another" (bottom-right) turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; home in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row glides the map to it, and the menu icon at its end lists what that cafeteria serves at that meal, the proposed dish in orange; once a food group makes up two of the last three proposals, "Don't suggest any <group>" keeps that group out of the rest of the session, even after ‹ (a dish without a group offers "Don't suggest this dish" at once), and turns into Undo; a new session starts without bans; the locate button centers the map on the user, then turns it with the phone; the sheet's handle, dish name and description drag or tap it between folded, half and full |
+| `unavailable` | Why nothing can be recommended today; with allergies saved, that no dish is known to be free of them and that Settings can change them | ‹ returns to the start screen |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
 to right; "I'm not sure" sends `unknown`. The scale is drawn by the app for the
 answer IDs the engines share (`AnswerId`); a circle whose ID the server does
-not offer is dimmed. Holding a circle previews its answer under the question.
+not offer is dimmed. Pressing the slider brings a handle out of the middle that
+follows the finger with a tick of haptic feedback per answer; letting go picks
+it, and letting go well above or below the row cancels. The answer shows under
+the question meanwhile; once picked, both shrink into the question's line in
+the list, and going back plays this in reverse.
 
 The server keeps no question texts, so `RecommendViewModel` remembers the
 answered questions and trims the list to the step's `question_count` after
@@ -197,7 +201,8 @@ dish; a network failure leaves the reason out.
 
 "Find another" is `feedback` with `accepted: false`: the result screen shows a
 `guess`, and the app never accepts one. Leaving with "Start over" simply drops
-the session. The server cuts no distance by default (`METCHU_MAX_DISTANCE_M`), so
+the session; home keeps a session with an answer or a dish in it so the start
+screen can offer to resume it until a new one starts. The server cuts no distance by default (`METCHU_MAX_DISTANCE_M`), so
 "nearby" is applied to the result's cafeteria list on the phone: cafeterias
 within 800 m (a 10-minute walk at 80 m/min, straight line). Distances come from
 the phone's current position, or the server's `distance_m` until the phone has
@@ -216,8 +221,9 @@ server sends them, in Korean.
 A tapped answer stays filled while its request runs; other taps are ignored. A
 request that takes more than 0.3 s shows a spinner, in the start button while a
 session starts and at the end of the phase line on the question screen. A failed request shows a banner at the top. Retry is offered for transient failures. An unsupported start configuration stays on the start screen so the user can change Settings.
-Screens change with 0.3 s fades. A question that is answered stays in place
-and the next one fades in below it; going from a question to a result, the
+Screens are white under a transparent navigation bar; scrolling ones fade into
+white above it. Screens change with 0.3 s fades. An answered question shrinks
+into the list and the next one fades in below it; going from a question to a result, the
 question fades upward and the map, sheet, text and buttons enter in turn.
 
 An LLM step waits for the LLM, usually a few seconds and at most about 20 (two

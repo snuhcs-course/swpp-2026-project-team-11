@@ -1,8 +1,29 @@
 package com.example.metchu.ui.start
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
+import com.example.metchu.ui.common.TopRowHeight
+import com.example.metchu.ui.common.fade
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.unit.Dp
+import com.example.metchu.ui.common.TopRow
+import com.example.metchu.ui.common.floating
+import com.example.metchu.ui.common.SheetEasing
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -26,8 +47,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,17 +71,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.repository.Place
-import com.example.metchu.ui.common.BottomSheetPicker
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Languages
 import com.example.metchu.ui.common.PickerOption
 import com.example.metchu.ui.common.Spinner
-import com.example.metchu.ui.common.Wordmark
 import com.example.metchu.ui.common.cssShadow
+import com.example.metchu.ui.common.setLanguage
 import com.example.metchu.ui.common.pressScale
 import com.example.metchu.ui.common.rememberLocationPermission
 import com.example.metchu.ui.common.rememberSlow
@@ -81,7 +100,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 /** Where the start button's center sits above the bottom, level with the question screen's answer circles. */
 val ActionCenterFromBottom = 202.dp
 
-/** The middle of the SNU campus, for when the user's position is unknown. */
+/** The SNU administration building (Building 60), shown until the user's position is known. */
 val CampusCenter = Point(37.4600, 126.9520)
 
 private enum class Sheet { MEAL, PLACE }
@@ -104,6 +123,7 @@ fun StartScreen(
     onMeal: (Meal) -> Unit,
     onPlace: (Place) -> Unit,
     onSettings: () -> Unit,
+    onResume: (() -> Unit)?,
     onTipDone: () -> Unit,
     onLocationAsked: () -> Unit,
     onStart: (Meal) -> Unit
@@ -114,22 +134,25 @@ fun StartScreen(
     var shownSheet by rememberSaveable { mutableStateOf(Sheet.MEAL) }
     sheet?.let { shownSheet = it }
     val english = LocalConfiguration.current.locales[0].language != "ko"
+    val scope = rememberCoroutineScope()
 
     val permission = rememberLocationPermission()
     val user = rememberUserPoint(permission.granted)
+    // The words fade out, change language and fade back in.
+    var switching by remember { mutableStateOf(false) }
+    val words by animateFloatAsState(if (switching) 0f else 1f, tween(150), label = "words")
+    val language = LocalConfiguration.current.locales[0].language
+    LaunchedEffect(language) { switching = false }
 
     Box(Modifier.fillMaxSize().screenBackground()) {
         if (BuildConfig.HAS_MAPS_KEY) StartMap(user ?: CampusCenter)
 
-        Column(Modifier.statusBarsPadding()) {
-            Row(
-                Modifier.fillMaxWidth().height(56.dp).padding(start = 20.dp, end = 20.dp, top = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)
-            ) {
-                LanguageButton()
-                CircleIconButton(Icons.Gear, stringResource(R.string.settings), onSettings, Modifier.testTag("settings"))
+        Column(Modifier.statusBarsPadding().alpha(words)) {
+            // Home tapped by mistake: the session left is one tap away.
+            TopRow(arrangement = Arrangement.End) {
+                if (onResume != null) ResumeButton(onResume)
             }
-            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
+            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp)) {
                 val title = MetchuType.Title
                 Text(stringResource(R.string.start_line1), style = title)
                 // Every line keeps the title's 39 dp, also the lines holding a choice.
@@ -154,13 +177,28 @@ fun StartScreen(
             loading = loading,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
-                .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2)
+                .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).fade { words }
         )
-        Wordmark(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = WordmarkBottom))
+        // Things set once sit low on the left, out of the way of the sentence and the button.
+        CircleIconButton(
+            Icons.Gear, stringResource(R.string.settings), onSettings,
+            Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 74.dp, bottom = CornerButtonBottom).testTag("settings")
+        )
+        LanguageMenu(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = CornerButtonBottom)) { tag ->
+            scope.launch {
+                switching = true
+                delay(160)
+                setLanguage(tag)
+            }
+        }
 
-        BottomSheetPicker(
+        // Under the choice it changes: the title, two lines and a 4 dp gap below the top row.
+        ChoicePopup(
             visible = sheet != null,
             title = stringResource(if (shownSheet == Sheet.PLACE) R.string.start_place_sheet else R.string.start_meal_sheet),
+            width = if (shownSheet == Sheet.PLACE) 248.dp else 168.dp,
+            modifier = Modifier.statusBarsPadding()
+                .padding(start = 14.dp, top = TopRowHeight + 10.dp + TitleLine * (if (shownSheet == Sheet.PLACE) 3 else 2) + 4.dp),
             options = if (shownSheet == Sheet.PLACE) {
                 Place.entries.map {
                     PickerOption(
@@ -194,7 +232,7 @@ fun StartScreen(
 
 /**
  * The screen dimmed but for copies of the globe and the gear, in the same place, and a
- * bubble under them. A tap anywhere, Back or "Got it" closes it; the gear also opens the settings.
+ * bubble above them. A tap anywhere, Back or "Got it" closes it; the gear also opens the settings.
  */
 @Composable
 private fun SetupTip(onDone: () -> Unit, onSettings: () -> Unit) {
@@ -204,18 +242,7 @@ private fun SetupTip(onDone: () -> Unit, onSettings: () -> Unit) {
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDone)
             .testTag("setupTip")
     ) {
-        Column(
-            Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 6.dp, end = 20.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                LanguageButton()
-                CircleIconButton(Icons.Gear, stringResource(R.string.settings), onSettings)
-            }
-            // Under the gear's center: half the 44 dp gear less half the arrow.
-            Canvas(Modifier.padding(top = 8.dp, end = 14.dp).size(16.dp, 8.dp)) {
-                drawPath(Path().apply { moveTo(size.width / 2, 0f); lineTo(size.width, size.height); lineTo(0f, size.height); close() }, Color.White)
-            }
+        Column(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = CornerButtonBottom)) {
             Column(
                 Modifier.widthIn(max = 280.dp).clip(RoundedCornerShape(16.dp)).background(Color.White)
                     .padding(start = 18.dp, end = 8.dp, top = 16.dp, bottom = 4.dp)
@@ -225,6 +252,14 @@ private fun SetupTip(onDone: () -> Unit, onSettings: () -> Unit) {
                 TextButton(onDone, Modifier.align(Alignment.End).testTag("setupTipDone")) {
                     Text(stringResource(R.string.setup_tip_done), style = MetchuType.Button, color = MetchuColors.Primary)
                 }
+            }
+            // Over the gear's center: the globe, the gap and half the gear, less half the arrow.
+            Canvas(Modifier.padding(start = 68.dp, bottom = 8.dp).size(16.dp, 8.dp)) {
+                drawPath(Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close() }, Color.White)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                CircleIconButton(Icons.Globe, stringResource(R.string.language), onDone)
+                CircleIconButton(Icons.Gear, stringResource(R.string.settings), onSettings)
             }
         }
     }
@@ -251,11 +286,69 @@ private fun LocationNotice(onContinue: () -> Unit, onLater: () -> Unit) {
     )
 }
 
+/**
+ * A small menu that grows from its top-left corner, under the word it changes, without
+ * dimming the screen; it shrinks back and fades when a choice is picked or the user taps
+ * elsewhere. Built like the language menu.
+ */
+@Composable
+private fun ChoicePopup(visible: Boolean, title: String, options: List<PickerOption>, width: Dp, modifier: Modifier, onDismiss: () -> Unit) {
+    val shown by animateFloatAsState(
+        if (visible) 1f else 0f,
+        if (visible) tween(220, easing = SheetEasing) else tween(160),
+        label = "popup"
+    )
+    if (visible) {
+        BackHandler(onBack = onDismiss)
+        Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null, onClick = onDismiss))
+    }
+    if (shown == 0f) return
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier
+            .graphicsLayer {
+                alpha = shown
+                scaleX = 0.92f + 0.08f * shown
+                scaleY = scaleX
+                transformOrigin = TransformOrigin(0f, 0f)
+                compositingStrategy = CompositingStrategy.ModulateAlpha
+            }
+            .width(width)
+            .cssShadow(shape, 6.dp, 24.dp, 0.18f)
+            .clip(shape)
+            .background(Color.White)
+            .padding(6.dp)
+            .semantics { paneTitle = title }
+    ) {
+        options.forEach { option ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (option.selected) MetchuColors.Grey100 else Color.White)
+                    .selectable(option.selected, enabled = visible, role = Role.RadioButton, onClick = option.onPick)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                MenuRowContent(option.label, option.note, option.selected)
+            }
+        }
+    }
+}
+
+/** A menu line: the label, bold with a check when it is the current one, otherwise its note on the right. */
+@Composable
+private fun MenuRowContent(label: String, note: String?, on: Boolean) {
+    Text(label, style = if (on) MetchuType.Item.copy(fontSize = MetchuType.Button.fontSize) else MetchuType.Button, maxLines = 1)
+    if (on) Image(Icons.Check, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900))
+    else if (note != null) Text(note, Modifier.padding(start = 12.dp), style = MetchuType.Caption, maxLines = 1)
+}
+
 private val StartButtonSize = 140.dp
-/** The screen gradient's color where the map starts to show (48 % down). */
-private val MapFadeColor = Color(0xFFFCFCFD)
-private val WordmarkBottom = 34.dp
-private val WordmarkHeight = 20.dp
+/** The language and settings buttons stand this far above the navigation bar. */
+private val CornerButtonBottom = 18.dp
 private val TitleLine = 39.dp
 
 @Composable
@@ -275,6 +368,27 @@ private fun StartButton(loading: Boolean, onClick: () -> Unit, modifier: Modifie
         // Finding the user and starting the session can take seconds.
         if (rememberSlow(loading)) Spinner(Color.White, 32.dp)
         else Text(stringResource(R.string.start_button), style = MetchuType.Button, color = Color.White, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun ResumeButton(onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    Row(
+        Modifier
+            .height(44.dp)
+            .pressScale(interaction, 0.95f)
+            .floating()
+            .clip(CircleShape)
+            .background(Color.White)
+            .clickable(interaction, indication = null, role = Role.Button, onClick = onClick)
+            .padding(start = 12.dp, end = 16.dp)
+            .testTag("resume"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Image(Icons.Resume, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900))
+        Text(stringResource(R.string.resume), style = MetchuType.Button.copy(fontSize = 15.sp))
     }
 }
 
@@ -306,10 +420,10 @@ private fun StartMap(center: Point) {
         position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f)
     }
     LaunchedEffect(center) { camera.position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f) }
-    // Google's logo goes above the wordmark, 20 dp in like everything else (the SDK adds ~6 dp
-    // itself). The top padding then puts the user's position under the start button's center.
+    // Google's logo sits on the 20 dp margin just above the language and settings buttons (the SDK
+    // adds ~6 dp itself). The top padding then puts the user's position under the start button's center.
     val navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val bottom = navigation + WordmarkBottom + WordmarkHeight + 8.dp - 6.dp
+    val bottom = navigation + CornerButtonBottom + 44.dp + 4.dp
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val top = maxHeight + bottom - (ActionCenterFromBottom + navigation) * 2
         GoogleMap(
@@ -322,41 +436,69 @@ private fun StartMap(center: Point) {
                 zoomControlsEnabled = false, zoomGesturesEnabled = false, indoorLevelPickerEnabled = false
             )
         )
-        // The screen's own gradient over the top half, then fading out where the button sits.
+        // White over the top half, then fading out where the button sits.
         Box(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(
-                    0f to Color.White, 0.45f to Color.White, 0.48f to MapFadeColor, 0.85f to MapFadeColor.copy(alpha = 0f)
+                    0f to Color.White, 0.45f to Color.White, 0.85f to Color.White.copy(alpha = 0f)
                 )
             )
         )
     }
 }
 
+/**
+ * The globe button grows into the language menu where it stands, and shrinks back when a
+ * language is picked or the user taps elsewhere.
+ */
 @Composable
-private fun LanguageButton() {
+private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     val current = LocalConfiguration.current.locales[0].language
-    Box {
-        CircleIconButton(Icons.Globe, stringResource(R.string.language), { open = true })
-        DropdownMenu(
-            expanded = open,
-            onDismissRequest = { open = false },
-            shape = RoundedCornerShape(16.dp),
-            containerColor = Color.White
-        ) {
-            Languages.forEach { (tag, name) ->
-                val on = current == tag
-                DropdownMenuItem(
-                    text = { Text(stringResource(name), style = if (on) MetchuType.Item.copy(fontSize = MetchuType.Button.fontSize) else MetchuType.Button) },
-                    trailingIcon = if (on) {
-                        { Image(Icons.Check, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900)) }
-                    } else null,
-                    onClick = {
-                        open = false
-                        setLanguage(tag)
+    val motion = tween<Dp>(260, easing = SheetEasing)
+    val width by animateDpAsState(if (open) 168.dp else 44.dp, motion, label = "width")
+    val height by animateDpAsState(if (open) 108.dp else 44.dp, motion, label = "height")
+    val corner by animateDpAsState(if (open) 16.dp else 22.dp, motion, label = "corner")
+    val globe by animateFloatAsState(if (open) 0f else 1f, tween(120), label = "globe")
+    val items by animateFloatAsState(if (open) 1f else 0f, tween(160, delayMillis = if (open) 100 else 0), label = "items")
+    if (open) {
+        Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null) { open = false })
+    }
+    val shape = RoundedCornerShape(corner)
+    // Closed, the globe is the gear's twin: its own shadow and press, nothing behind it.
+    val morphing = open || width > 44.dp
+    Box(
+        modifier
+            .size(width, height)
+            .then(if (morphing) Modifier.cssShadow(shape, 6.dp, 24.dp, 0.18f).clip(shape).background(Color.White) else Modifier)
+    ) {
+        if (globe > 0f) {
+            CircleIconButton(
+                Icons.Globe, stringResource(R.string.language), { open = true },
+                Modifier.align(Alignment.BottomStart).fade { globe }.testTag("language")
+            )
+        }
+        if (items > 0f) {
+            Column(Modifier.requiredWidth(168.dp).align(Alignment.BottomStart).padding(6.dp).alpha(items)) {
+                Languages.forEach { (tag, name) ->
+                    val on = current == tag
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (on) MetchuColors.Grey100 else Color.White)
+                            .selectable(on, role = Role.RadioButton) {
+                                open = false
+                                if (!on) onPick(tag)
+                            }
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        MenuRowContent(stringResource(name), null, on)
                     }
-                )
+                }
             }
         }
     }
