@@ -26,8 +26,8 @@ fun UnavailableScreen(session: SessionState, hasAllergies: Boolean, onHome: () -
     val meal = Meal.of(session.meal)?.let { stringResource(it.label) } ?: stringResource(R.string.meal_any)
     val message = when {
         session.step.reason != "empty_candidates" -> stringResource(R.string.unavailable_exhausted)
-        hasAllergies -> stringResource(R.string.unavailable_no_safe_menu, meal, session.date)
-        else -> stringResource(R.string.unavailable_no_menu, meal, session.date)
+        hasAllergies -> stringResource(R.string.unavailable_no_safe_menu, meal)
+        else -> stringResource(R.string.unavailable_no_menu, meal)
     }
     Box(Modifier.fillMaxSize().screenBackground()) {
         // Home sits in the top-right corner, where the question and result screens have it.
