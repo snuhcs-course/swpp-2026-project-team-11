@@ -178,6 +178,8 @@ and allergy selections.
 
 Only server requests and resulting steps are captured: app-only navigation, a
 request that never reaches the server, and a confirmed session end are not tracked.
+A caller may mark a synthetic session with `X-Metchu-Test: 1`; this is self-reported
+and an unmarked session is not proof of a human user.
 The session ID in the log is independent of the public API session token; it is not
 a persistent user identifier. Do not treat missing later events as proof that a user
 accepted, quit or was dissatisfied.
