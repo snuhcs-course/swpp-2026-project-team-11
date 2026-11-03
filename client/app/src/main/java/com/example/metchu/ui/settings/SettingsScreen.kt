@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
@@ -41,7 +42,8 @@ import com.example.metchu.data.model.Engine
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.NavigationBarFade
-import com.example.metchu.ui.common.TopRow
+import com.example.metchu.ui.common.PinnedTopRow
+import com.example.metchu.ui.common.TopRowHeight
 import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -59,11 +61,10 @@ fun SettingsScreen(
     onEngine: (String) -> Unit,
     onBack: () -> Unit
 ) {
+    val scroll = rememberScrollState()
     Box(Modifier.fillMaxSize().screenBackground()) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
-            TopRow {
-                CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
-            }
+        Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(scroll)) {
+            Spacer(Modifier.height(TopRowHeight))
             Text(stringResource(R.string.settings), Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp), style = MetchuType.Title)
 
             Section(stringResource(R.string.settings_allergies)) {
@@ -82,6 +83,9 @@ fun SettingsScreen(
             Box(Modifier.navigationBarsPadding().height(96.dp))
         }
         NavigationBarFade(Modifier.align(Alignment.BottomCenter))
+        PinnedTopRow(scroll) {
+            CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
+        }
     }
 }
 
