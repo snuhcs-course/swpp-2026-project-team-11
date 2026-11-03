@@ -32,6 +32,9 @@ import com.example.metchu.ui.start.Meal
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.performTouchInput
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertSame
 import org.junit.Before
@@ -416,6 +419,16 @@ class MainActivityTest {
     }
 
     @Test
+    fun draggingTheHeaderUpRaisesTheSheet() {
+        // One cafeteria, and still the sheet rises from half to full.
+        startWith(guess)
+        val before = compose.onNodeWithTag("dish").getBoundsInRoot().top
+        compose.onNodeWithTag("dish").performTouchInput { swipeUp(startY = centerY, endY = centerY - 300f, durationMillis = 400) }
+        compose.waitForIdle()
+        assertTrue(compose.onNodeWithTag("dish").getBoundsInRoot().top < before)
+    }
+
+    @Test
     fun findAnotherTurnsTheDishDownAndBackUndoes() {
         startWith(guess)
         api.reply(question)
@@ -460,7 +473,7 @@ class MainActivityTest {
     fun nothingToRecommendSaysWhy() {
         startWith(unavailable)
         compose.onNodeWithTag("unavailable").assertIsDisplayed()
-        tap("home")
+        tap("back")
         compose.onNodeWithTag("start").assertIsDisplayed()
     }
 
