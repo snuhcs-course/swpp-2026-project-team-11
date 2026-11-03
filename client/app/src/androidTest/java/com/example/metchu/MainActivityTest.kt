@@ -414,16 +414,18 @@ class MainActivityTest {
     }
 
     @Test
-    fun aGroupBanIsOfferedOnceTwoProposalsInARowShareTheGroup() {
+    fun aGroupBanIsOfferedOnceTheGroupMakesUpTwoOfTheLastThreeProposals() {
         val group = guess.step.food!!.foodGroup
         assertEquals(group, groupGuess.step.food!!.foodGroup)
+        val other = guess.copy(step = guess.step.copy(guessId = "food:999", food = guess.step.food!!.copy(foodId = 999, foodGroup = "덮밥")))
         startWith(guess)
         compose.onNodeWithTag("ban").assertDoesNotExist()
 
-        api.reply(question)
+        api.reply(other)
         tapText(R.string.result_more)
+        compose.onNodeWithTag("ban").assertDoesNotExist()
         api.reply(groupGuess)
-        answer("yes")
+        tapText(R.string.result_more)
         api.reply(groupGuess)
         compose.onNodeWithText(context.getString(R.string.result_ban_group, group)).performClick()
         assertEquals("ban ${groupGuess.sessionId} $group true", api.calls.last())
