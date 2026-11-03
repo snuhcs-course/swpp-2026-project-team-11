@@ -6,6 +6,7 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -30,6 +31,7 @@ import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
 import com.example.metchu.data.repository.RecommendRepository
+import com.example.metchu.data.model.Engine
 import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.data.repository.Setup
 import com.example.metchu.ui.main.MainActivity
@@ -234,6 +236,20 @@ class MainActivityTest {
             compose.onAllNodes(hasContentDescription(buttonAfter)).fetchSemanticsNodes().isNotEmpty()
         }
         scenario.onActivity { assertSame(before, it) }
+    }
+
+    @Test
+    fun aSavedLlmChoiceRunsRlAfterRelaunch() {
+        SettingsStore(context).engine = Engine.LLM
+        relaunch()
+        tap("settings")
+        compose.onNodeWithTag("engine_rl").performScrollTo().assertIsSelected()
+        compose.onNodeWithTag("engine_llm").assertIsNotSelected()
+        tap("back")
+        pickMeal(R.string.meal_lunch)
+        api.reply(Fixtures.state("question_rl"))
+        tap("start")
+        assertEquals("create LU rl en", api.calls.last())
     }
 
     @Test
