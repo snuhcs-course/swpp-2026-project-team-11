@@ -3,9 +3,9 @@
   "cafeterias": [
     {
       "name": "구시아푸드마켓",
-      "source": "Menu board 구시아푸드마켓 서울대학교 메뉴정보 (300동), pasted by 김신서 on 2026-11-03. The two (따로국밥) lines the board lists without a corner are put under 51장국밥 with the other 따로국밥 lines. lat/lng are 301동식당's (Siksha), the building next to 300동, until the exact point is checked.",
-      "lat": 37.45016,
-      "lng": 126.95259,
+      "source": "Menu board 구시아푸드마켓 서울대학교 메뉴정보 (300동), pasted by 김신서 on 2026-11-03. The two (따로국밥) lines the board lists without a corner are put under 51장국밥 with the other 따로국밥 lines. lat/lng are the center of Google Maps plus code 8Q98FX23+84R (서울대학교 300동 유회진학술정보관).",
+      "lat": 37.450862,
+      "lng": 126.952766,
       "since": "2026-11-03",
       "meals": ["BR", "LU", "DN"],
       "weekdays": [0, 1, 2, 3, 4, 5],
