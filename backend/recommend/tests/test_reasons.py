@@ -6,6 +6,7 @@ from django.test import SimpleTestCase
 
 from question_engines.llm.tests.helpers import FakeLLM, ask
 
+from .. import sessions
 from ..reasons import Facts, InvalidReason, ReasonDraft, build_message, check, explain, template
 from .helpers import check_state
 from .test_edge_cases import SmallMenuTestCase
@@ -122,7 +123,10 @@ class ReasonApiTests(SmallMenuTestCase):
         reason = self.client.get(url + "reason/").json()
         self.assertEqual(reason, {"food_id": state["step"]["food"]["food_id"],
                                   "reason": "It fits what you wanted.", "source": "llm"})
-        self.assertIn(f"Q1. {question['text']} -> Yes, sounds good", llm.prompt())
+        # The question in its first phrasing, whichever phrasing the session showed.
+        [answered] = sessions.get(state["session_id"]).engine.answered()
+        self.assertEqual(answered["question_id"], question["question_id"])
+        self.assertIn(f"Q1. {answered['text']} -> Yes, sounds good", llm.prompt())
         self.assertEqual(self.client.get(url + "reason/").json(), reason)
         self.assertEqual(len(llm.calls), 1)
 

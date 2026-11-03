@@ -169,8 +169,8 @@ class OctoberPreferenceRegressionTests(unittest.TestCase):
             step = e.answer(step["question_id"], self.answers.get(key, "unknown"))
             self.assertLessEqual(len(asked), 12)
         self.assertEqual(step["food"]["name"], "닭개장")
-        self.assertLessEqual(len(asked), 10)
-        self.assertNotIn("wheat", asked)
+        # Pork waits one question after beef (same topic); wheat, worth nearly as much, goes between.
+        self.assertEqual(asked, ["korean", "spicy", "soupy", "beef", "wheat", "pork", "chicken"])
         self.assertNotIn("chinese", asked)
         self.assertEqual(asked[-1], "chicken")
 
