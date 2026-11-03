@@ -1,6 +1,7 @@
 package com.example.metchu.data.repository
 
 import com.example.metchu.data.model.Allergen
+import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
@@ -41,6 +42,16 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
     suspend fun undo(sessionId: String): SessionState = api.undo(sessionId).checked()
 
     suspend fun reason(sessionId: String): Reason = api.reason(sessionId)
+
+    /** What [restaurant] serves among the session's dishes. */
+    @Suppress("SENSELESS_COMPARISON")
+    suspend fun menu(sessionId: String, restaurant: String): List<MenuDish> {
+        val dishes = api.menu(sessionId, restaurant).dishes
+        check(dishes != null && dishes.none { it == null || it.displayName == null || it.meal == null }) {
+            "Menu is incomplete"
+        }
+        return dishes
+    }
 
     /** The session as the server has it now. Changes nothing. */
     suspend fun state(sessionId: String): SessionState = api.getState(sessionId).checked()

@@ -93,6 +93,9 @@
     <string name="price_unknown">가격 정보 없음</string>
     <string name="walk_minutes">걸어서 %1$d분</string>
     <string name="offer_none">이 메뉴를 파는 식당 정보가 없어요</string>
+    <string name="result_menu">메뉴</string>
+    <string name="result_menu_title">%1$s %2$s 메뉴</string>
+    <string name="result_menu_failed">메뉴를 불러오지 못했어요. 닫고 다시 시도해 주세요.</string>
 
     <string name="unavailable_no_menu">%2$s %1$s 메뉴가 아직 없어요. 다른 식사로 추천받을 수 있어요.</string>
     <string name="unavailable_no_safe_menu">%2$s %1$s 메뉴 중에 고른 알러지 재료가 없다고 확인된 메뉴가 없어요. 설정에서 알러지를 확인하거나 다른 식사를 골라 보세요.</string>

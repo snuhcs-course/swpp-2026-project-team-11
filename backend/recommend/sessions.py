@@ -4,6 +4,7 @@
     get(session_id)            -> RecommendSession | None
     session.public_state()     -> what the phone is allowed to see
     session.reason()           -> why the proposed dish suits the user (recommend/reasons.py)
+    session.menu(restaurant)   -> the session's dishes that restaurant serves
 
 A session runs one of ENGINES, chosen when it is created: the decision tree,
 the feature-only RL policy, or the LLM engine. They share the session API and step shapes, so
@@ -27,6 +28,9 @@ engine would send thousands of dish names with every question.
 carries its `distance_m`, and with RECOMMEND_MAX_DISTANCE_M set, cafeterias
 farther than that are left out before the engine sees the candidates.
 
+`menu(restaurant)` lists the candidates a restaurant serves, so dishes withheld for
+an allergy or left out by distance are not listed either.
+
 `reason()` calls the LLM outside the session lock, so a tap on the result screen
 never waits for it, and keeps each reason for the answers it was written for.
 
@@ -45,7 +49,7 @@ from collections import OrderedDict
 from django.conf import settings
 from django.utils import timezone
 
-from menus.services import get_catalog, get_store_catalog
+from menus.services import MEAL_ORDER, get_catalog, get_store_catalog
 from recommend import reasons
 from recommend.distance import with_distances
 from question_engines.decision_tree import DecisionTreeEngine
@@ -85,6 +89,14 @@ class RecommendSession:
         # Reasons need only dish names and feature means after the engine is built.
         self.reason_data = {c["food_id"]: (c["display_name"], c.get("features") or {}) for c in candidates}
         self.reasons = {}
+        self.menus = {}
+        for candidate in candidates:
+            for offer in candidate["offers"]:
+                self.menus.setdefault(offer["restaurant"], []).append({
+                    "food_id": candidate["food_id"], "display_name": candidate["display_name"],
+                    "meal": offer["meal"], "price": offer["price"]})
+        for dishes in self.menus.values():
+            dishes.sort(key=lambda dish: (MEAL_ORDER[dish["meal"]], dish["display_name"]))
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
         config = {"max_questions": self.max_questions, "language": language}
         if engine == "llm":
@@ -128,6 +140,10 @@ class RecommendSession:
 
     def undo(self) -> None:
         self.engine.undo()
+
+    def menu(self, restaurant: str) -> dict:
+        """{"restaurant", "dishes"}: each {"food_id", "display_name", "meal", "price"}, by meal and name."""
+        return {"restaurant": restaurant, "dishes": self.menus.get(restaurant, [])}
 
     def reason(self) -> dict:
         """{"food_id", "reason", "source"} for the dish on screen. Raises StaleStep without one."""
