@@ -234,7 +234,11 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
   The default general engine is the decision tree. Use `"engine": "rl"` for feature-only
   RL, or set `METCHU_ENGINE=rl` for clients that omit the engine. General sessions reject
   the LLM option. DT setup takes about 0.1 s with 500, 1 s with 2,000 and 5 s with 4,000
-  candidates.
+  candidates. `"source": "all"` combines cafeteria and restaurant menus, preserves both
+  sources' allergy filters. `distance_scope=near` filters offers to 800 m straight-line
+  distance before recommendation when location is known; without it, all remain.
+  `distance_scope=any` has no distance cutoff. Like `general`, this supports DT and RL;
+  an explicit LLM request is rejected.
 - **Pipeline.** If `import_stores` fails (a quota error), `run_store_pipeline` stops before tagging:
   the lines it stored as they read are replaced by the next run.
 
