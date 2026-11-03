@@ -91,6 +91,7 @@ private enum class Sheet { MEAL, PLACE }
  * sentence, and the round button starts a session. The map behind the button fades in
  * from the background; the button stands where the user is. With [tip], a tip over the
  * screen points to the globe and the gear, where the language and the allergies change.
+ * With [askForLocation] and no permission yet, a notice says why before the system asks.
  */
 @Composable
 fun StartScreen(
@@ -98,10 +99,12 @@ fun StartScreen(
     place: Place,
     loading: Boolean,
     tip: Boolean,
+    askForLocation: Boolean,
     onMeal: (Meal) -> Unit,
     onPlace: (Place) -> Unit,
     onSettings: () -> Unit,
     onTipDone: () -> Unit,
+    onLocationAsked: () -> Unit,
     onStart: (Meal) -> Unit
 ) {
     val nowMeal = remember { Meal.now() }
@@ -112,8 +115,6 @@ fun StartScreen(
     val english = LocalConfiguration.current.locales[0].language != "ko"
 
     val permission = rememberLocationPermission()
-    // Say why before the system asks, once per launch.
-    var askedForLocation by rememberSaveable { mutableStateOf(permission.granted) }
     val user = rememberUserPoint(permission.granted)
 
     Box(Modifier.fillMaxSize().screenBackground()) {
@@ -181,10 +182,10 @@ fun StartScreen(
 
         if (tip) SetupTip(onDone = onTipDone, onSettings = { onTipDone(); onSettings() })
 
-        if (!askedForLocation) {
+        if (askForLocation && !permission.granted) {
             LocationNotice(
-                onContinue = { askedForLocation = true; permission.request() },
-                onLater = { askedForLocation = true }
+                onContinue = { onLocationAsked(); permission.request() },
+                onLater = onLocationAsked
             )
         }
     }
