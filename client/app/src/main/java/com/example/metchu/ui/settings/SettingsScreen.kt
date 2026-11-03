@@ -136,25 +136,26 @@ private fun EngineRow(id: String, label: Int, hint: Int, selected: String, onPic
     val on = enabled && id == selected
     val ink by animateColorAsState(if (on) MetchuColors.Grey900 else MetchuColors.Grey600, label = "engine")
     val ring by animateDpAsState(if (on) 7.dp else 2.5.dp, label = "ring")
+    // Only the control fades; the note saying why it is off keeps its readable color.
+    val dim = Modifier.alpha(if (enabled) 1f else 0.45f)
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 64.dp)
             .selectable(on, enabled = enabled, role = Role.RadioButton) { onPick(id) }
-            .alpha(if (enabled) 1f else 0.45f)
             .padding(vertical = 10.dp)
             .testTag("engine_$id"),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(label), style = MetchuType.Item, color = ink)
+                Text(stringResource(label), dim, style = MetchuType.Item, color = ink)
                 if (unavailable != null) Text(stringResource(unavailable), Modifier.padding(start = 8.dp), style = MetchuType.Caption)
             }
-            Text(stringResource(hint), style = MetchuType.Caption)
+            Text(stringResource(hint), dim, style = MetchuType.Caption)
         }
         Box(
-            Modifier.size(24.dp).drawBehind {
+            dim.size(24.dp).drawBehind {
                 val width = ring.toPx()
                 drawCircle(
                     if (on) MetchuColors.Primary else MetchuColors.Grey300,
