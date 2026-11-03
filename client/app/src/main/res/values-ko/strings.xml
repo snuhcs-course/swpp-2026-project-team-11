@@ -44,6 +44,7 @@
     <string name="engine_rl">강화학습 (RL)</string>
     <string name="engine_rl_hint">음식의 특징과 내 답변을 보고 언제 메뉴를 제안할지 정해요.</string>
     <string name="engine_llm">LLM</string>
+    <string name="engine_unavailable">지금은 사용할 수 없어요</string>
     <string name="engine_decision_tree_hint">메뉴 특징으로 질문을 골라요. 바로 답해요.</string>
     <string name="engine_llm_hint">Gemini가 질문을 만들어요. 몇 초 걸릴 수 있어요.</string>
     <string name="allergen_egg">달걀</string>
@@ -104,7 +105,8 @@
     <string name="walk_minutes">걸어서 %1$d분</string>
     <string name="offer_none">이 메뉴를 파는 식당 정보가 없어요</string>
     <string name="result_menu">메뉴 보기</string>
-    <string name="result_menu_title">%1$s %2$s 메뉴</string>
+    <string name="result_menu_caption">오늘 %1$s 메뉴</string>
+    <string name="sheet_close">닫기</string>
     <string name="result_menu_note">Metchu가 추천할 수 있는 메뉴만 보여요</string>
     <string name="result_menu_failed">메뉴를 불러오지 못했어요. 닫고 다시 시도해 주세요.</string>
     <string name="result_ban">이 메뉴 추천하지 않기</string>

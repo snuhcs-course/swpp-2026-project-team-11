@@ -51,6 +51,7 @@
     <string name="engine_rl">Reinforcement learning (RL)</string>
     <string name="engine_rl_hint">Uses dish features and your answers to decide when to suggest a meal.</string>
     <string name="engine_llm">LLM</string>
+    <string name="engine_unavailable">Unavailable for now</string>
     <string name="engine_decision_tree_hint">Picks questions from dish features. Answers instantly.</string>
     <string name="engine_llm_hint">Gemini writes each question. A step can take a few seconds.</string>
     <string name="allergen_egg">Eggs</string>
@@ -117,7 +118,8 @@
     <string name="walk_minutes">%1$d min walk</string>
     <string name="offer_none">No cafeteria listed</string>
     <string name="result_menu">See menu</string>
-    <string name="result_menu_title">%1$s · %2$s menu</string>
+    <string name="result_menu_caption">%1$s menu</string>
+    <string name="sheet_close">Close</string>
     <string name="result_menu_note">Only dishes Metchu can suggest</string>
     <string name="result_menu_failed">Couldn’t load the menu. Close this and try again.</string>
     <string name="result_ban">Don’t suggest this dish</string>
