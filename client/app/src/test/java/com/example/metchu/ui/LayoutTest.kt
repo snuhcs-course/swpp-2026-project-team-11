@@ -6,7 +6,6 @@ import com.example.metchu.ui.result.SheetStop.FULL
 import com.example.metchu.ui.result.SheetStop.HALF
 import com.example.metchu.ui.result.SheetStop.PEEK
 import com.example.metchu.ui.result.draggedStop
-import com.example.metchu.ui.result.sheetStops
 import com.example.metchu.ui.result.tappedStop
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -32,28 +31,19 @@ class AnswerScaleTest {
 class SheetStopsTest {
 
     @Test
-    fun oneCafeteriaHasNoFullStop() {
-        assertEquals(listOf(HALF, PEEK), sheetStops(1))
-        assertEquals(listOf(FULL, HALF, PEEK), sheetStops(3))
-    }
-
-    @Test
     fun aTapGoesUpAndComesBackToHalf() {
-        val all = sheetStops(2)
-        assertEquals(HALF, tappedStop(all, PEEK))
-        assertEquals(FULL, tappedStop(all, HALF))
-        assertEquals(HALF, tappedStop(all, FULL))
-        assertEquals(PEEK, tappedStop(sheetStops(1), HALF))
+        assertEquals(HALF, tappedStop(PEEK))
+        assertEquals(FULL, tappedStop(HALF))
+        assertEquals(HALF, tappedStop(FULL))
     }
 
     @Test
     fun aLongDragMovesOneStopAndAShortOneSettlesNearest() {
-        val all = sheetStops(2)
-        assertEquals(PEEK, draggedStop(all, HALF, HALF, down = true, far = true))
-        assertEquals(FULL, draggedStop(all, HALF, HALF, down = false, far = true))
-        assertEquals(HALF, draggedStop(all, HALF, HALF, down = true, far = false))
-        assertEquals(FULL, draggedStop(all, HALF, FULL, down = false, far = false))
+        assertEquals(PEEK, draggedStop(HALF, HALF, down = true, far = true))
+        assertEquals(FULL, draggedStop(HALF, HALF, down = false, far = true))
+        assertEquals(HALF, draggedStop(HALF, HALF, down = true, far = false))
+        assertEquals(FULL, draggedStop(HALF, FULL, down = false, far = false))
         // Past the last stop it stays.
-        assertEquals(PEEK, draggedStop(all, PEEK, PEEK, down = true, far = true))
+        assertEquals(PEEK, draggedStop(PEEK, PEEK, down = true, far = true))
     }
 }

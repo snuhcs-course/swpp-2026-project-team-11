@@ -158,7 +158,6 @@ fun ResultScreen(
         val heightPx = constraints.maxHeight.toFloat()
         val statusPx = WindowInsets.statusBars.getTop(density).toFloat()
         val navPx = WindowInsets.navigationBars.getBottom(density).toFloat()
-        val stops = sheetStops(cafeterias.cafeterias.distinctBy { it.offer.restaurant }.size)
         // Full stops under the top row; peek leaves two lines above the navigation bar.
         val topOf = { stop: SheetStop ->
             with(density) {
@@ -178,7 +177,7 @@ fun ResultScreen(
             scope.launch { top.animateTo(topOf(next), tween(380, easing = SheetEasing)) }
         }
         val drag: (Float) -> Unit = { dy ->
-            scope.launch { top.snapTo((top.value + dy).coerceIn(topOf(stops.first()), topOf(SheetStop.PEEK))) }
+            scope.launch { top.snapTo((top.value + dy).coerceIn(topOf(SheetStop.FULL), topOf(SheetStop.PEEK))) }
         }
         val chips = shown.size > 1 && stop != SheetStop.FULL
         // The locate button: off the user, centered on the user, or turned to where the phone faces.
@@ -243,11 +242,11 @@ fun ResultScreen(
             onSelect = { selected = it; focus++; locate = Locate.FREE },
             revealed = revealed,
             stop = stop,
-            onTap = { settle(tappedStop(stops, stop)) },
+            onTap = { settle(tappedStop(stop)) },
             onDrag = drag,
             onRelease = { moved ->
-                val nearest = stops.minBy { abs(topOf(it) - top.value) }
-                settle(draggedStop(stops, stop, nearest, down = moved > 0, far = abs(moved) > with(density) { 40.dp.toPx() }))
+                val nearest = SheetStop.entries.minBy { abs(topOf(it) - top.value) }
+                settle(draggedStop(stop, nearest, down = moved > 0, far = abs(moved) > with(density) { 40.dp.toPx() }))
             },
             modifier = Modifier.offset(y = sheetTop).height(height - sheetTop)
         )
