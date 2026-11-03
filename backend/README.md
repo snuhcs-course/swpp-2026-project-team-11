@@ -360,31 +360,24 @@ candidates, schema = services.get_store_catalog(meal="DN")
 A menu is a candidate only when every main dish is tagged with the current
 `FEATURE_VERSION` (v2); `get_catalog` logs how many of the served menus it kept.
 
-### Actual menu candidates and set composition
+### Actual menu candidates and feature profiles
 
-`get_catalog` and `get_store_catalog` return the original purchasable menu,
-including its original name, price and restaurant offers. Main dishes remain
-internal feature records; they are not separate proposals for the same set.
-Each feature of a menu containing n main dishes is
-`sqrt(sum(x_i ** 2) / n)`. A singleton keeps its original feature values.
+`get_catalog` and `get_store_catalog` return `(candidates, schema)`. Candidates
+preserve the purchasable dish/set title, whole price and restaurant offers; only
+mechanical source prices and notices are stripped from titles. Imported menu-level
+profiles take precedence over the RMS of complete current-version main vectors.
+Malformed, stale or incomplete menus are withheld without breaking other menus.
 
-Recipe spread is carried as an RMS dispersion proxy, not an independently
-measured standard deviation for the set. Valid bounded component moments keep
-this proxy bounded too: the mean squared deviations are at most
-`mean(x) - mean(x ** 2) <= rms(x) * (1 - rms(x))`.
-No assumption that the component recipes vary independently is made.
+`food_id` belongs to the durable sales-menu registry. It is independent of source
+row replacements, prices and dates, and is not a `Food` primary key. Raw source
+names, descriptions and source namespaces define recipe identity, so changed
+recipes/size variants remain separate. Pure-engine callers can still use groups;
+actual-menu catalogues disable them.
 
-A partially tagged set is withheld whole. Allergy and distance filtering happen
-at the complete sale-offer boundary. Equal menu names with different components
-remain distinct; identical original menus can list multiple restaurant offers.
-The transport key `food_id` is an opaque menu-candidate identifier derived from
-sales rows, not a `Food` primary key. It stays fixed within a session.
-Generic cuisine/group proposals are disabled for these menu candidates.
-
-`get_catalog`, `get_store_catalog` and `export_candidates` share the actual-menu
-candidate path; explicit feature-version exports use the same path.
-Inference reuses the frozen feature policy; composition correctness does not
-establish preference accuracy for real users.
+See [profile import, identity and deployment](../docs/menu-profiles.md). Collected
+menus, generated features and checkpoints belong outside Git, for example in
+`.local/menus/`. Importing profiles makes no model calls. New catalogue features
+alone do not retrain the frozen RL policy or establish human recommendation accuracy.
 
 ### Feature-only RL
 
