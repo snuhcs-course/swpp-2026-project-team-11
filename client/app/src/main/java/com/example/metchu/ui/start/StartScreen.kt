@@ -420,16 +420,16 @@ private fun StartMap(center: Point) {
         position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f)
     }
     LaunchedEffect(center) { camera.position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f) }
-    // Google's logo sits right of the language and settings buttons, level with them (the SDK adds
-    // ~6 dp itself). The top padding then puts the user's position under the start button's center.
+    // Google's logo sits on the 20 dp margin just above the language and settings buttons (the SDK
+    // adds ~6 dp itself). The top padding then puts the user's position under the start button's center.
     val navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val bottom = navigation + CornerButtonBottom + 6.dp
+    val bottom = navigation + CornerButtonBottom + 44.dp + 4.dp
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val top = maxHeight + bottom - (ActionCenterFromBottom + navigation) * 2
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = camera,
-            contentPadding = PaddingValues(start = 122.dp, top = top.coerceAtLeast(0.dp), bottom = bottom),
+            contentPadding = PaddingValues(start = 14.dp, top = top.coerceAtLeast(0.dp), bottom = bottom),
             uiSettings = MapUiSettings(
                 compassEnabled = false, mapToolbarEnabled = false, myLocationButtonEnabled = false,
                 rotationGesturesEnabled = false, scrollGesturesEnabled = false, tiltGesturesEnabled = false,
