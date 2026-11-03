@@ -25,6 +25,8 @@ object MetchuColors {
     /** Start button and whatever the user has picked. */
     val Primary = Color(0xFFD2440C)
     val Grey900 = Color(0xFF1A1F26)
+    /** "No" answers: a step darker than grey-700, so they part from the grey of "doesn't matter". */
+    val Grey800 = Color(0xFF2B323B)
     val Grey700 = Color(0xFF4E5762)
     /** The lightest grey for text: 4.7:1 on white. Grey400 and lighter are for lines and fills. */
     val Grey600 = Color(0xFF6B7480)
