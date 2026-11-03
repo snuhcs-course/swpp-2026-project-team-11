@@ -10,6 +10,8 @@ import numpy as np
 from .planning import Action
 
 ANSWER_STRENGTH = np.array([1., .5, 0., -.5, -1., 0.])
+VARIETY_SHARE = .7  # a varied pick keeps at least this share of the best decision value
+OPEN_SHARE = .5  # a held question waits only for one worth at least this share of the best
 
 
 class PreferencePlanner:
@@ -48,7 +50,11 @@ class PreferencePlanner:
         gains[list(asked)] = -np.inf
         return gains, mass, future
 
-    def plan(self, belief, salience, answers, rejected, *, force_guess=False):
+    def plan(self, belief, salience, answers, rejected, *, force_guess=False, held=(), rng=None):
+        """`held` lists question sets to keep back, strictest first. The first set that
+        leaves a question worth asking and worth at least OPEN_SHARE of the best applies;
+        if none does, every question is open and the best one is asked. Within a set,
+        `rng` varies the pick among the open questions worth nearly as much as the best."""
         allowed = self.model.proposal_mask(rejected)[self.food_nodes]
         if not allowed.any():
             return None, {"policy": "preference", "reason": "candidates_exhausted"}
@@ -64,13 +70,24 @@ class PreferencePlanner:
             return proposal, diagnostics | {"reason": "explicit_question_limit"}
         asked = set(answers)
         gains, mass, future = self._values(scores, belief, salience, asked, allowed)
+        for kept_back in (*held, None):
+            open_gains = gains.copy()
+            open_gains[list(kept_back or ())] = -np.inf
+            worth = np.flatnonzero((open_gains > self.cost + 1e-12) & (open_gains >= OPEN_SHARE * gains.max()))
+            if worth.size:
+                break
+        if worth.size:
+            qi = int(worth[np.argmax(gains[worth])])
+            if rng is not None and kept_back is not None:
+                qi = int(rng.choice([int(q) for q in worth if gains[q] >= VARIETY_SHARE * gains[qi]]))
+            return Action("question", qi), diagnostics | {
+                "reason": "positive_decision_value", "best_question_gain": float(gains[qi]),
+                "best_question_id": self.model.questions[qi]["id"]}
         qi = int(np.argmax(gains))
         finite = np.isfinite(gains[qi])
         gain = float(gains[qi]) if finite else 0.
         diagnostics["best_question_gain"] = gain
         diagnostics["best_question_id"] = self.model.questions[qi]["id"] if finite else None
-        if finite and gain > self.cost + 1e-12:
-            return Action("question", qi), diagnostics | {"reason": "positive_decision_value"}
         # Before stopping, allow a first question to unlock a valuable second.
         # Integrate all six answers, with no sampled outcomes or time cutoffs.
         best_net, best_qi = 0., None
