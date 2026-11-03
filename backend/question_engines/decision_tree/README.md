@@ -245,6 +245,36 @@ particles or random rollouts. It is a local approximation, not global optimality
 The cost and answer strengths require user calibration; there is no default
 question-count cap or 65% acceptance threshold for this policy.
 
+**Question order (3.1).** Among the questions worth their cost, some wait their turn
+(`DecisionTreeEngine._held_questions`, `PreferencePlanner.plan(held=...)`):
+
+- Broad questions come first. `contracts.QUESTION_TIERS` ranks each v2 key: tier 1
+  (Korean, Chinese, Japanese and Western food, rice, noodles, broth, spicy) for the first
+  two questions, up to tier 2 for the next two, then any. Tier 3 holds the detailed
+  ones: shrimp/crab, clams, squid, smoky, sour, flour, a large portion and the combo.
+- A question on the topic just asked (`contracts.QUESTION_TOPICS`, e.g. flour, bread
+  and noodles; beef, pork and chicken) waits for one question.
+- A held question waits only while an open one is worth at least half of the best.
+  Otherwise the rule steps back: first the topic rule goes, then the tiers widen by
+  one, then every question is open and the best is asked. So the rules never end a
+  session earlier or later than before.
+- With `EngineConfig.seed` (a session sets a random one), the first two questions are
+  picked at random among the open ones worth at least 70% of the best, so the same
+  menu does not always open with the same question.
+
+On the 2026-10-13 lunch fixture, with a user answering from each dish's features, the
+mean number of questions went from 8.65 to 8.91 (8.98 with seeds), the first proposal
+matched in 52% of sessions either way, and no session asked a tier 3 question among
+its first four (37 of 146 did before). These are synthetic checks, not human results.
+
+**Phrasings.** Each v2 question has three phrasings ("Do you feel like ...?",
+"How about ... today?", "In the mood for ...?", and their Korean): the first in
+`FEATURE_PRESENTATION_V2` and `KOREAN`, the others in `contracts.PHRASINGS_V2`.
+With a seed, consecutive questions take turns between them from a per-session start;
+without one, every question keeps its first phrasing. `answered()` returns the first
+phrasing in English, which reasons and prompts read. A v1 or custom question keeps
+its own text.
+
 Proposals and `recommend_now` rank by explicit preference utility, with forecast
 weights breaking ties. This policy proposes concrete foods. The retained
 intent policies can also propose groups. Rejection suppresses the proposed
