@@ -105,7 +105,8 @@ python manage.py extract_allergens --date 2026-09-30
 ```
 
 - Try a small batch first: `python manage.py extract_features --limit 25 --dry-run` prints tags without saving.
-- On days with no menu (weekends, holidays), `fetch_menus` prints `오늘 운영 메뉴 없음` and exits.
+- On days with no menu (no Siksha menu and no fixed board, e.g. Sundays), `fetch_menus` prints
+  `오늘 운영 메뉴 없음` and exits. A fixed board does not know holidays: it is added on each of its weekdays.
 - `fetch_menus` is safe to re-run; it replaces that day's menu items.
 - `extract_features` and `extract_allergens` skip dishes that are already tagged. Use `--force` to re-tag them.
 
@@ -158,6 +159,14 @@ catalog does not know, `fetch_menus` warns; rebuild then (hand corrections in th
 ```bash
 python manage.py build_fixed_menus --start 2026-09-28 --end 2026-10-13 --review fixed_review.csv
 ```
+
+**Cafeterias Siksha does not list.** `menus/data/fixed_cafeterias.json` holds their boards: 구시아푸드마켓
+(300동) from 2026-11-03, every meal Monday to Saturday. `fetch_menus` adds a board's lines to every
+day it serves, so they go through the same preprocessing, tagging and allergy filter, and a session
+offers them like any cafeteria. A corner is named like Siksha's 자하연식당>2층 (구시아푸드마켓>비비고고);
+the map shows one pin. Its coordinates are 301동식당's until the exact point is checked. When a
+board changes, edit the file; when Siksha starts listing a cafeteria, delete its entry, or its
+lines are offered twice. The SETs with a plate of 제육 are split in `overrides.json`.
 
 **Human review.** Check the day's results in Excel and record corrections:
 
