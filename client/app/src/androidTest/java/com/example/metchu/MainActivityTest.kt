@@ -32,6 +32,7 @@ import com.example.metchu.ui.start.Meal
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -207,13 +208,19 @@ class MainActivityTest {
         pickLanguage("언어", "English", "Language")
     }
 
-    /** The locale switch recreates the activity, which Compose does not wait for. */
+    /**
+     * The words fade out before the locale changes, which Compose does not wait for. The
+     * activity redraws in the new language instead of being recreated, which flashes black.
+     */
     private fun pickLanguage(button: String, language: String, buttonAfter: String) {
+        var before: MainActivity? = null
+        scenario.onActivity { before = it }
         compose.onNodeWithContentDescription(button).performClick()
         compose.onNodeWithText(language).performClick()
         compose.waitUntil(5_000) {
             compose.onAllNodes(hasContentDescription(buttonAfter)).fetchSemanticsNodes().isNotEmpty()
         }
+        scenario.onActivity { assertSame(before, it) }
     }
 
     @Test
