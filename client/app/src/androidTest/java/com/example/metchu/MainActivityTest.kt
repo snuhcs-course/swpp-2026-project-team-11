@@ -394,6 +394,38 @@ class MainActivityTest {
     }
 
     @Test
+    fun aBannedDishIsLeftOutOfLaterSessionsUntilSettingsLetsItBack() {
+        val food = guess.step.food!!
+        startWith(guess)
+        compose.onNodeWithText(text(R.string.result_ban)).performClick()
+        compose.onNodeWithText(text(R.string.result_unban)).assertIsDisplayed()
+        assertEquals(emptyList<String>(), api.calls.toList())
+
+        tapText(R.string.result_home)
+        pickMeal(R.string.meal_lunch)
+        api.reply(question)
+        tap("start")
+        assertEquals("create LU decision_tree -${food.foodId} en", api.calls.last())
+
+        tap("home")
+        tap("settings")
+        compose.onNodeWithText(food.displayName).assertIsDisplayed()
+        compose.onNodeWithTag("banned_${food.foodId}").performClick()
+        compose.onNodeWithTag("banned_${food.foodId}").assertDoesNotExist()
+        tap("back")
+        api.reply(question)
+        tap("start")
+        assertEquals("create LU decision_tree en", api.calls.last())
+    }
+
+    @Test
+    fun aGroupGuessHasNoBan() {
+        startWith(groupGuess)
+        compose.onNodeWithTag("dish").assertIsDisplayed()
+        compose.onNodeWithTag("ban").assertDoesNotExist()
+    }
+
+    @Test
     fun aGroupGuessNamesTheGroup() {
         startWith(groupGuess)
         compose.onNodeWithTag("dish").assertIsDisplayed()
