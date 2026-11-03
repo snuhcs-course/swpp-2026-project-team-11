@@ -165,7 +165,7 @@ emulator, set a position under Extended controls > Location (for example
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map around the user, or around the SNU administration building until location is allowed | the meal and the distance open a sheet; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home |
 | gear | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
 | `question` | The current question under the past ones, one grey line each with the answer on the right; a five-step slider with "I'm not sure"; a progress bar | dragging along the slider or tapping a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); home in the top-right corner; "Recommend now" floats bottom-right once there is an answer |
-| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one row per cafeteria | "Find another" (bottom-right) turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; home in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row glides the map to it; the locate button centers the map on the user, then turns it with the phone; the sheet's handle, dish name and description drag or tap it between folded, half and full |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user, a ban link and the cafeterias, one row per cafeteria | "Find another" (bottom-right) turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; home in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row glides the map to it, and its "Menu" lists what that cafeteria serves at that meal, the proposed dish in orange; once a food group makes up two of the last three proposals, "Don't suggest any <group>" keeps that group out of the rest of the session, even after ‹ (a dish without a group offers "Don't suggest this dish" at once), and turns into Undo; a new session starts without bans; the locate button centers the map on the user, then turns it with the phone; the sheet's handle, dish name and description drag or tap it between folded, half and full |
 | `unavailable` | Why nothing can be recommended today; with allergies saved, that no dish is known to be free of them and that Settings can change them | ‹ returns to the start screen |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
@@ -243,7 +243,7 @@ ui/start/                           start screen and the meal choice
 ui/settings/                        allergies and engine
 ui/question/                        question history, five-step scale, progress
 ui/result/                          result map and sheet, cafeteria distances, nothing to recommend
-ui/common/                          shared buttons, pills, picker sheet, location
+ui/common/                          shared buttons, pills, bottom and picker sheets, location
 ui/theme/Theme.kt                   colors, font and text sizes of the design foundation board
 ```
 
@@ -262,7 +262,9 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |
 | `POST /api/sessions/<id>/recommend-now/` | | Ask for a guess immediately |
 | `POST /api/sessions/<id>/undo/` | | Go back one step |
+| `POST /api/sessions/<id>/ban/` | `{"food_id" or "food_group", "banned"}` | Keep one dish, or every dish of a `food_group`, out of the rest of the session (`banned: false` lets it back). The step on screen stays; the next action that would show the dish turns it down, and an undo that would goes back further. Bans end with the session |
 | `GET /api/sessions/<id>/reason/` | | `{"food_id", "reason", "source"}`: why the dish on screen suits the user, in the session's language. `source` is `llm`, or `template` when the server has no key or the LLM failed. With no dish on screen, a 409 `stale_step` |
+| `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy or by distance are not listed. An unknown restaurant has no dishes |
 
 Every success returns the same session state:
 
@@ -335,7 +337,8 @@ Server behavior to know about:
 and `resources/contract/*.json`, replies captured from the real server on the
 2026-09-29 snapshot, since replaced by 2026-11-02 (the reply shape has not changed),
 with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
-scripted LLM in place of Gemini). The RL question fixture was captured from Django with three v2 cafeteria dishes.
+scripted LLM in place of Gemini). `menu.json` was captured on 2026-11-02 (301동식당, lunch), so
+it includes a set listed once at its whole price. The RL question fixture was captured from Django with three v2 cafeteria dishes.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 

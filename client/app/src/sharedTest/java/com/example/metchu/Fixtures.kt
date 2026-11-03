@@ -1,5 +1,6 @@
 package com.example.metchu
 
+import com.example.metchu.data.model.RestaurantMenu
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.RetrofitInstance
@@ -26,6 +27,8 @@ object Fixtures {
 
     fun state(name: String): SessionState =
         RetrofitInstance.gson.fromJson(json(name), SessionState::class.java)
+
+    fun menu(): RestaurantMenu = RetrofitInstance.gson.fromJson(json("menu"), RestaurantMenu::class.java)
 
     fun error(name: String): ApiErrorResponse =
         RetrofitInstance.gson.fromJson(json(name), ApiErrorResponse::class.java)

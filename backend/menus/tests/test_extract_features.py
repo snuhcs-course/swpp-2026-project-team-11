@@ -214,8 +214,8 @@ class MenuCatalogTests(TestCase):
             MenuItem.objects.create(date=DAY, meal="LU", restaurant=hall, raw_name=version, food=food)
         [candidate], schema = services.get_catalog(DAY)
         self.assertEqual(candidate["name"], FEATURE_VERSION)
-        self.assertEqual(set(candidate), {"food_id", "name", "display_name", "food_group", "menu_profile",
-                                          "features", "feature_std", "offers"})
+        self.assertEqual(set(candidate), {"food_id", "name", "display_name", "food_group", "food_groups",
+                                          "menu_profile", "features", "feature_std", "offers"})
         self.assertEqual(candidate["feature_std"], {"spicy": .1})
         self.assertEqual(candidate["menu_profile"], "rms-v1")
         self.assertEqual(len(schema), 33)

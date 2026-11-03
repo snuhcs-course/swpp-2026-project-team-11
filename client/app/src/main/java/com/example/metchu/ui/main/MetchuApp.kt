@@ -85,6 +85,8 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     val shown by viewModel.shown.observeAsState(emptyList())
     val reasons by viewModel.reasons.observeAsState(emptyMap())
     val canResume by viewModel.canResume.observeAsState(false)
+    val menus by viewModel.menus.observeAsState(emptyMap())
+    val banned by viewModel.banned.observeAsState(emptySet())
 
     // Stored at once, so a launch picks up where the last one stopped.
     var setup by remember { mutableStateOf(settings.setup) }
@@ -188,11 +190,15 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                         session = current,
                         shown = shown,
                         reasons = reasons,
+                        menus = menus,
+                        banned = banned,
                         place = place,
                         loading = loading,
                         onBack = viewModel::undo,
                         onHome = viewModel::startOver,
-                        onMore = { viewModel.feedback(accepted = false) }
+                        onMore = { viewModel.feedback(accepted = false) },
+                        onMenu = viewModel::menu,
+                        onBan = viewModel::ban
                     )
                 }
                 Screen.UNAVAILABLE -> if (current != null) {

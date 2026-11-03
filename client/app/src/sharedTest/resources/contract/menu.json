@@ -1,0 +1,23 @@
+{
+  "restaurant": "301동식당",
+  "dishes": [
+    {
+      "food_id": 2200,
+      "display_name": "(뚝)삼겹살김치찌개&생선가스",
+      "meal": "LU",
+      "price": 6500
+    },
+    {
+      "food_id": 2202,
+      "display_name": "닭가슴살큐브샐러드",
+      "meal": "LU",
+      "price": 5500
+    },
+    {
+      "food_id": 2198,
+      "display_name": "바지락칼국수&해물파전",
+      "meal": "LU",
+      "price": 6500
+    }
+  ]
+}

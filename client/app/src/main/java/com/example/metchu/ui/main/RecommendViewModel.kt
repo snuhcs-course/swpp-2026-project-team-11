@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.metchu.R
 import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
+import com.example.metchu.data.model.Ban
+import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.ApiError
@@ -42,6 +44,10 @@ data class AnsweredQuestion(val text: String, val answerId: String)
  * written; changing the answers invalidates that proposal's explanation.
  * [canResume] is true while a session left with [startOver] can be taken up again with
  * [resume]; starting a new session forgets it.
+ * [menus] holds the dishes of each restaurant asked for in this session, null while
+ * they load; a failed request leaves no entry, so asking again retries it.
+ * [banned] lists the dishes and groups the user banned in this session; the server
+ * keeps them out of its later proposals until the session ends.
  */
 class RecommendViewModel(private val repository: RecommendRepository) : ViewModel() {
 
@@ -71,11 +77,18 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         val history: List<AnsweredQuestion>,
         val shown: List<Step>,
         val reasons: Map<String, String?>,
-        val contexts: Map<String, ReasonContext>
+        val contexts: Map<String, ReasonContext>,
+        val banned: Set<Ban>
     )
     private var parked: Parked? = null
     private val _canResume = MutableLiveData(false)
     val canResume: LiveData<Boolean> = _canResume
+
+    private val _banned = MutableLiveData<Set<Ban>>(emptySet())
+    val banned: LiveData<Set<Ban>> = _banned
+
+    private val _menus = MutableLiveData<Map<String, List<MenuDish>?>>(emptyMap())
+    val menus: LiveData<Map<String, List<MenuDish>?>> = _menus
 
     private var lastRequest: (suspend () -> SessionState)? = null
     private var lastAnswered: AnsweredQuestion? = null
@@ -124,6 +137,16 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         request { repository.recommendNow(current.sessionId) }
     }
 
+    /** Keeps what [ban] covers out of the rest of the session, or with [banned] false lets it back. */
+    fun ban(ban: Ban, banned: Boolean) {
+        val current = _session.value ?: return
+        request {
+            repository.ban(current.sessionId, ban, banned).also {
+                _banned.value = if (banned) _banned.value.orEmpty() + ban else _banned.value.orEmpty() - ban
+            }
+        }
+    }
+
     /**
      * The server cannot tell a repeated undo from a second one: sent twice, it goes
      * back two steps. If the reply to an undo is lost the server may already have
@@ -162,7 +185,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         if (_loading.value == true) return
         val left = _session.value
         park(left?.takeIf { it.step.type == Step.GUESS || it.step.type == Step.RECOMMENDATION || it.step.type == Step.QUESTION && it.step.questionCount > 0 }?.let {
-            Parked(it, _history.value.orEmpty(), _shown.value.orEmpty(), _reasons.value.orEmpty(), reasonContexts.toMap())
+            Parked(it, _history.value.orEmpty(), _shown.value.orEmpty(), _reasons.value.orEmpty(), reasonContexts.toMap(), _banned.value.orEmpty())
         })
         _session.value = null
         _error.value = null
@@ -179,6 +202,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         _shown.value = left.shown
         _reasons.value = left.reasons
         reasonContexts.putAll(left.contexts)
+        _banned.value = left.banned
         _session.value = left.session
     }
 
@@ -289,6 +313,26 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         }
     }
 
+    /** Loads what [restaurant] serves, unless it is loaded or loading. Runs beside other requests. */
+    fun menu(restaurant: String) {
+        val sessionId = _session.value?.sessionId ?: return
+        if (restaurant in _menus.value.orEmpty()) return
+        _menus.value = _menus.value.orEmpty() + (restaurant to null)
+        viewModelScope.launch {
+            val dishes = try {
+                repository.menu(sessionId, restaurant)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "no menu for the restaurant", e)
+                null
+            }
+            if (_session.value?.sessionId != sessionId) return@launch
+            _menus.value = if (dishes != null) _menus.value.orEmpty() + (restaurant to dishes)
+                else _menus.value.orEmpty() - restaurant
+        }
+    }
+
     private fun current(sessionId: String, proposal: String, context: ReasonContext) =
         _session.value?.sessionId == sessionId && reasonContexts[proposal] === context
 
@@ -297,6 +341,8 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         _shown.value = emptyList()
         _reasons.value = emptyMap()
         reasonContexts.clear()
+        _menus.value = emptyMap()
+        _banned.value = emptySet()
     }
 
     private companion object {
