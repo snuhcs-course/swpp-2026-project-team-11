@@ -12,6 +12,12 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalDensity
@@ -342,7 +348,7 @@ private fun CurrentQuestion(text: String, answer: String?, shown: Boolean, done:
                         layout(placeable.width, (placeable.height + dy).coerceAtLeast(0)) { placeable.place(0, dy) }
                     }
                     .alpha(answerAlpha)
-                    .answerFade(Color.White)
+                    .answerBacking(shrink)
                     .padding(start = AnswerRoom * shrink)
                     .semantics { liveRegion = LiveRegionMode.Polite },
                 style = lerpStyle(MetchuType.Title, PastAnswerStyle, shrink),
@@ -361,12 +367,42 @@ private val PastAnswerStyle = MetchuType.Label
 private val PastLine = 20.dp
 
 /** Space before a past answer: a 28 dp fade over the question, then a clear gap. */
-private val AnswerRoom = 60.dp
+private val AnswerRoom = 32.dp
 
 /** The question line fades out under the answer: transparent at the left of [AnswerRoom], [background] after 28 dp. */
 private fun Modifier.answerFade(background: Color): Modifier = drawBehind {
-    drawRect(Brush.horizontalGradient(listOf(background.copy(alpha = 0f), background), startX = 0f, endX = 28.dp.toPx()))
+    drawRect(Brush.horizontalGradient(listOf(background.copy(alpha = 0f), background), startX = 0f, endX = AnswerFade.toPx()))
 }
+
+/**
+ * The white behind an answer moving up onto the question's line, appearing as it moves
+ * ([alpha]). It reaches [BackingReach] above and below the answer and fades out there, so
+ * neither edge cuts through the question on the way.
+ */
+private fun Modifier.answerBacking(alpha: Float): Modifier = drawBehind {
+    if (alpha <= 0f) return@drawBehind
+    val reach = BackingReach.toPx()
+    val top = -reach
+    val height = size.height + 2 * reach
+    val area = Size(size.width, height)
+    drawContext.canvas.saveLayer(Rect(Offset(0f, top), area), Paint())
+    drawRect(
+        Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0f), Color.White), startX = 0f, endX = AnswerFade.toPx()),
+        topLeft = Offset(0f, top), size = area, alpha = alpha
+    )
+    val edge = reach / height
+    drawRect(
+        Brush.verticalGradient(
+            0f to Color.Transparent, edge to Color.Black, 1f - edge to Color.Black, 1f to Color.Transparent,
+            startY = top, endY = top + height
+        ),
+        topLeft = Offset(0f, top), size = area, blendMode = BlendMode.DstIn
+    )
+    drawContext.canvas.restore()
+}
+
+private val AnswerFade = 28.dp
+private val BackingReach = 24.dp
 
 private fun lerpStyle(from: TextStyle, to: TextStyle, t: Float): TextStyle = from.copy(
     fontSize = lerp(from.fontSize, to.fontSize, t),
