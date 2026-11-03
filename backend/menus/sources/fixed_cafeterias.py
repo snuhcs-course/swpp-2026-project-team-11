@@ -19,14 +19,14 @@ from .siksha import MenuRecord
 CAFETERIAS_PATH = pathlib.Path(__file__).resolve().parent.parent / "data" / "fixed_cafeterias.json"
 
 
-def load(path: pathlib.Path = CAFETERIAS_PATH) -> list[dict]:
-    return json.loads(path.read_text(encoding="utf-8"))["cafeterias"]
+def load() -> list[dict]:
+    return json.loads(CAFETERIAS_PATH.read_text(encoding="utf-8"))["cafeterias"]
 
 
-def records(date: datetime.date, cafeterias: list[dict] | None = None) -> list[MenuRecord]:
+def records(date: datetime.date) -> list[MenuRecord]:
     """One record per (meal, menu line) of every cafeteria open on `date`."""
     found = []
-    for cafeteria in load() if cafeterias is None else cafeterias:
+    for cafeteria in load():
         if date < datetime.date.fromisoformat(cafeteria["since"]) or date.weekday() not in cafeteria["weekdays"]:
             continue
         for meal in cafeteria["meals"]:
