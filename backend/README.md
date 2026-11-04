@@ -434,7 +434,7 @@ though it can still be offered where it is served alone. The feature version is 
 the dishes that are left. Without allergies nothing changes. The phone keeps the allergies; the server stores nothing about the user.
 
 The result screen can also ban a food group, or a menu without one, for the rest of
-the session (i3-A19): `POST /api/sessions/<id>/ban/` takes a `food_group` or the
+the session (i3-A14): `POST /api/sessions/<id>/ban/` takes a `food_group` or the
 candidate's `food_id`. Rather than changing the engines, the session turns down any
 guess of a banned menu with `feedback` as soon as an action reaches it, and an undo
 that reaches one goes back further, so it does not return after Back either. A new
