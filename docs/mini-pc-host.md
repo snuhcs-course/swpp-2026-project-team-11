@@ -62,3 +62,18 @@ Use `get_catalog` or `export_candidates` to inspect current recommendation input
 No deployment from the Mac was performed for this change: the mini PC's LAN
 SSH address was unreachable after the network changed. The operator must verify
 the final merged revision on the host as above.
+
+## Interaction logs
+
+The installed `api.py` loads `METCHU_INTERACTION_LOG_DIR` from
+`private/config.json`, defaulting to `private/interaction-logs` relative to the
+host root. An empty value disables logging. The wrapper passes the resolved path
+as an environment variable before Django starts; an existing installation needs
+that wrapper update as well as the backend release. Restart the host after
+changing the setting.
+
+The directory is private and is not served by the API. Its JSONL records contain
+selected allergies and the location sent at session start as well as questions,
+answers and recommendations; keep it outside the repository. The backend deletes
+files older than 30 UTC calendar days on startup and hourly. See the backend guide
+for the event fields and the limits of what the logs can establish.
