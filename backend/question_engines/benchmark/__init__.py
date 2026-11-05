@@ -3,7 +3,7 @@
 
     build_engine_scenarios  -> scenarios.json   wanted menus + frozen candidate lists
     collect_engine_sessions -> sessions.jsonl   simulated users play both engines (LLM calls)
-    play_engine_session     -> human sessions   a person plays, engine hidden (user study)
+    play_engine_session     -> human sessions   a person plays every engine, hidden (user study, P21)
     validate_simulator      -> simulator check  the simulated user, asked what people were asked
     benchmark_engines       -> report.md        the sections below (no LLM call)
     run_engine_benchmark    -> all of it in engine_benchmark_results/NAME/
@@ -28,3 +28,5 @@ SITUATIONS = ("in_menu", "multiple", "not_in_menu", "close_alternative")
 COUNTS = {"in_menu": 40, "multiple": 20, "not_in_menu": 20, "close_alternative": 20}
 CERTAINTY = ("high", "medium", "low")
 ENGINES = ("decision_tree", "llm")
+STUDY_ENGINES = ("decision_tree", "rl", "llm")  # the user study also plays the feature-only RL policy
+STUDY_ROUNDS = len(SITUATIONS)  # user study: rounds per tester, one per situation, each on every engine

@@ -71,13 +71,25 @@ def target(name, features, food_group, candidates, *, candidate_id=None) -> dict
             "match_names": sorted({by_id[i]["display_name"] for i in ids})}
 
 
-def _choices(candidates) -> list[dict]:
+def choices(candidates) -> list[dict]:
     """Keep actual menus distinct; retain name aliases only for historical dish inputs."""
     seen = {}
     for candidate in sorted(candidates, key=lambda c: c["food_id"]):
         seen.setdefault(("menu", candidate["food_id"]) if candidate.get("menu_profile") == "rms-v1"
                         else candidate["display_name"], candidate)
     return list(seen.values())
+
+
+def menu_target(pick, candidates) -> dict:
+    """The target for a candidate picked as the wanted menu."""
+    return target(pick["display_name"], pick["features"], pick["food_group"], candidates,
+                  candidate_id=pick["food_id"] if pick.get("menu_profile") == "rms-v1" else None)
+
+
+def close_to(made, pick, choices) -> list[str]:
+    """The other menus no question tells apart from `pick` (a close alternative)."""
+    return sorted(other["display_name"] for other in choices if other["food_id"] not in made["matches"]
+                  and other["name"] != pick["name"] and gap(pick["features"], other["features"]) <= CLOSE_GAP)
 
 
 def gap(a: dict, b: dict) -> float:
@@ -116,13 +128,11 @@ def build(menus: dict, others: list[dict], counts: dict, seed: int = 0) -> dict:
 
 
 def _targets(situation, candidates, others, rng):
-    choices = _choices(candidates)
-    if not choices:
+    picks = choices(candidates)
+    if not picks:
         return None
     if situation == "in_menu":
-        pick = rng.choice(choices)
-        return [target(pick["display_name"], pick["features"], pick["food_group"], candidates,
-                      candidate_id=pick["food_id"] if pick.get("menu_profile") == "rms-v1" else None)]
+        return [menu_target(rng.choice(picks), candidates)]
     if situation == "not_in_menu":
         pool = [dish for dish in others if not matches(dish["name"], candidates)]
         if not pool:
@@ -131,25 +141,22 @@ def _targets(situation, candidates, others, rng):
         return [target(pick["name"], pick["features"], pick.get("food_group", ""), candidates)]
     if situation == "close_alternative":
         pairs = []
-        for pick in choices:
-            made = target(pick["display_name"], pick["features"], pick["food_group"], candidates,
-                      candidate_id=pick["food_id"] if pick.get("menu_profile") == "rms-v1" else None)
-            close = sorted(other["display_name"] for other in choices if other["food_id"] not in made["matches"]
-                           and other["name"] != pick["name"] and gap(pick["features"], other["features"]) <= CLOSE_GAP)
+        for pick in picks:
+            made = menu_target(pick, candidates)
+            close = close_to(made, pick, picks)
             if close:
                 pairs.append(made | {"close": close})
         return [rng.choice(pairs)] if pairs else None
     count = rng.choice((2, 3))
-    picks, used = [], set()
-    for pick in rng.sample(choices, len(choices)):
-        made = target(pick["display_name"], pick["features"], pick["food_group"], candidates,
-                      candidate_id=pick["food_id"] if pick.get("menu_profile") == "rms-v1" else None)
+    made_targets, used = [], set()
+    for pick in rng.sample(picks, len(picks)):
+        made = menu_target(pick, candidates)
         if used.isdisjoint(made["matches"]) and (not pick["food_group"] or
-                pick["food_group"] not in {p["food_group"] for p in picks}):
-            picks.append(made)
+                pick["food_group"] not in {t["food_group"] for t in made_targets}):
+            made_targets.append(made)
             used.update(made["matches"])
-        if len(picks) == count:
-            return picks
+        if len(made_targets) == count:
+            return made_targets
     return None
 
 

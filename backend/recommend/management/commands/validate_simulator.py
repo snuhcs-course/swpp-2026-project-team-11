@@ -3,8 +3,8 @@
 
 Ask the simulated user every question people answered in play_engine_session,
 as someone who wanted what that person wanted, and whether it would take each
-proposal people judged that the name rule does not accept (the verdicts it gives
-in the benchmark). benchmark_engines --simulator-check then reports how often they
+proposal people judged themselves (the ones the rule left to the simulator in the
+benchmark). benchmark_engines --simulator-check then reports how often they
 agree: the evidence for trusting the automated benchmark. Answers are cached next
 to --output (or in --simulator-cache), so a rerun asks nothing twice. --dry-run
 prints how many questions and verdicts would be asked.
@@ -17,7 +17,7 @@ import pathlib
 
 from django.core.management.base import BaseCommand, CommandError
 
-from question_engines.benchmark import scenarios, simulator
+from question_engines.benchmark import simulator
 
 from .benchmark_engines import read_lines
 
@@ -36,8 +36,7 @@ class Command(BaseCommand):
         questions = sum(1 for s in sessions for step in s["trace"] if "question" in step)
         if not questions:
             raise CommandError("사람이 답한 질문이 없습니다.")
-        proposals = sum(1 for s in sessions for step in s["trace"] if "proposal" in step
-                        and not scenarios.is_wanted(s["scenario_data"], step["proposal"], step["group"]))
+        proposals = sum(1 for s in sessions for step in s["trace"] if step.get("judged_by") == "person")
         self.stdout.write(f"질문 {questions}개, 제안 판정 {proposals}개 -> 가상 사용자 호출 최대 {questions + proposals}번 "
                           "(캐시에 있는 것은 제외)")
         if options["dry_run"]:
@@ -57,7 +56,7 @@ class Command(BaseCommand):
                 if "question" in step:
                     rows.append(row | {"question": step["question"], "human": step["answer"],
                                        "simulator": user.answer(persona, step["question"])})
-                elif not scenarios.is_wanted(session["scenario_data"], step["proposal"], step["group"]):
+                elif step.get("judged_by") == "person":
                     rows.append(row | {"proposal": step["label"], "human": step["accepted"],
                                        "simulator": user.takes(persona, step["label"], served)})
         output.write_text(

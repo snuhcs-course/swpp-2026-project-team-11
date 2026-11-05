@@ -40,6 +40,7 @@ from django.conf import settings
 from menus.services import get_feature_schema
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.llm import LLMEngine
+from question_engines.rl import RLEngine
 
 from .scenarios import is_wanted
 from .simulator import blur, describe
@@ -70,9 +71,9 @@ def proposal_text(step) -> str:
 class EngineFactory:
     """Builds and restores engines for one menu, as the app would."""
 
-    def __init__(self, engine, menu, llm=None):
+    def __init__(self, engine, menu, llm=None, language="en"):
         self.engine, self.menu, self.llm = engine, menu, llm
-        self.config = {"max_questions": settings.RECOMMEND_MAX_QUESTIONS}
+        self.config = {"max_questions": settings.RECOMMEND_MAX_QUESTIONS, "language": language}
         self.schema = get_feature_schema()
         self.context = {"date": menu["date"], "meal": menu["meal"], "feature_version": menu["feature_version"]}
 
@@ -80,12 +81,16 @@ class EngineFactory:
         if self.engine == "decision_tree":
             return DecisionTreeEngine(self.menu["candidates"], self.schema, context=self.context,
                                       config=self.config | {"policy": settings.RECOMMEND_DT_POLICY})
+        if self.engine == "rl":
+            return RLEngine(self.menu["candidates"], **self.config)
         return LLMEngine(self.menu["candidates"], llm=self.llm, config=self.config)
 
     def restore(self, snapshot):
         if self.engine == "decision_tree":
             return DecisionTreeEngine.from_snapshot(self.menu["candidates"], self.schema, snapshot,
                                                     context=self.context)
+        if self.engine == "rl":
+            return RLEngine.from_snapshot(self.menu["candidates"], snapshot)
         return LLMEngine.from_snapshot(self.menu["candidates"], snapshot, llm=self.llm)
 
 
