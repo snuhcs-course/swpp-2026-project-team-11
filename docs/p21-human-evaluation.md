@@ -98,14 +98,14 @@ Ctrl-C로 멈췄거나 네트워크 오류가 났으면 **같은 명령을 다�
 
 `engine_benchmark_results/2026-11-02/9_user_study/human/이름.jsonl` → 구본재
 
-### 2부. feature 검토: 학식 약 70분 + 일반 음식점 약 60분
+### 2부. feature 검토: 학식 약 35분 + 일반 음식점 약 30분
 
 LLM이 음식 이름만 보고 뽑은 32개 feature의 mean과 std가 그 음식에 맞는지 **값 하나하나** 판단합니다. 값을 새로 매기는 것이 아닙니다.
 
 **파일** (`feature_benchmark_results/2026-11-02-review/`)
 
-- `cafeteria_이름.xlsx`: 학식 39~40개
-- `general_이름.xlsx`: 일반 음식점 32~33개
+- `cafeteria_이름.xlsx`: 학식 20개
+- `general_이름.xlsx`: 일반 음식점 16~17개
 
 **보는 법**
 

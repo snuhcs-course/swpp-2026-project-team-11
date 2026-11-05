@@ -601,8 +601,8 @@ No LLM call; the database is only read.
 
 ```bash
 R=../feature_benchmark_results/2026-11-02-review
-python manage.py export_feature_review --date 2026-11-02 --raters 구본재,김신서,이민규,이승호 --output-dir $R
-python manage.py export_feature_review --workbook 메추_음식별_feature_학식_일반_20261104.xlsx --n 100 \
+python manage.py export_feature_review --date 2026-11-02 --n 50 --raters 구본재,김신서,이민규,이승호 --output-dir $R
+python manage.py export_feature_review --workbook 메추_음식별_feature_학식_일반_20261104.xlsx --n 36 \
     --raters 구본재,김신서,이민규,이승호 --output-dir $R    # or --stores, from a database with the restaurants
 # each rater fills cafeteria_<name>.xlsx and general_<name>.xlsx in place, then:
 python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
@@ -616,15 +616,15 @@ python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
   passes when both fields pass. Every rating counts, so a shared dish counts once per rater.
 - `--overlap` dishes (default 10 per source, 20 in all) go to every rater, for agreement on their
   values; the rest are split. `<source>_assignment.csv` says who has which dish.
-- General menus: `--n` dishes, each restaurant category (of the dish's menus) given its share.
-  A dish is what the features were extracted for, not a menu line: `--workbook` groups the team's
+- `--n` dishes are sampled, each group given its share: the cafeteria of a day's dishes, the
+  restaurant category of the general menus' (of the dish's menus). A dish is what the features were extracted for, not a menu line: `--workbook` groups the team's
   per-dish export (sheet 일반 음식, one row per menu) by linked dish and values, so 6,226 menus
   become 1,598 dishes; set = `meal_variety` mean >= 0.5. The 판매 예 column shows up to 3 menus.
 - The id, dish and status columns stay in view while scrolling, means are shaded from 0 to 1, and
   the 요약 sheet gives the file's accuracy per feature. The 안내 and 루브릭 sheets hold the guide and rubric.
 - `feature_benchmark_results/2026-11-02-review/` holds the cafeteria workbooks of the 2026-11-02
-  snapshot (127 dishes, 39-40 per rater) and the general ones from the 2026-11-04 export (snapshot
-  of 2026-11-03; 100 of 1,598 dishes, 32-33 per rater). Steps: [the handout](../docs/p21-human-evaluation.md).
+  snapshot (50 of 127 dishes, 20 per rater) and the general ones from the 2026-11-04 export
+  (snapshot of 2026-11-03; 36 of 1,598 dishes, 16-17 per rater). Steps: [the handout](../docs/p21-human-evaluation.md).
 
 ## Making a new shared snapshot
 
