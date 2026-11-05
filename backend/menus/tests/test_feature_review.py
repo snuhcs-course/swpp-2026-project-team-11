@@ -57,6 +57,12 @@ class ReviewTests(SimpleTestCase):
         self.assertEqual(sorted(len(mine) for mine in assignment.values()), [11, 11, 11])  # 5 + 18 / 3
         self.assertEqual(assignment, review.assign(range(23), ["kim", "lee", "park"], overlap=5))
 
+    def test_each_rater_gets_a_fair_share_of_each_stratum(self):
+        stratum = lambda item: "hard" if item % 3 == 0 else "other"  # 8 hard of 24
+        assignment = review.assign(range(24), ["kim", "lee", "park", "choi"], overlap=0, stratum_of=stratum)
+        self.assertEqual([sum(stratum(i) == "hard" for i in mine) for mine in assignment.values()], [2, 2, 2, 2])
+        self.assertEqual(sorted(i for mine in assignment.values() for i in mine), list(range(24)))
+
     def test_a_sample_gives_each_group_its_share(self):
         group = lambda item: "a" if item < 56 else "b" if item < 86 else "c"  # 56, 30, 14
         picked = review.proportional_sample(range(100), group, 10)
@@ -210,7 +216,7 @@ class CommandTests(TestCase):
             return list(csv.reader(f))[1:]
 
     def test_a_day_is_split_between_the_raters_and_reported(self):
-        self.assertIn("음식 3개 중 3개 (어려운 음식", self.export("--date", "2026-11-02"))  # 라면 has old features
+        self.assertIn("음식 3개 중 3개 (어려운 음식", self.export("--date", "2026-11-02", "--overlap", "3"))  # not 라면 (v1)
         self.assertEqual([row[1:4] + row[6:] for row in self.assignment("cafeteria")],
                          [["돈가스", "", "학생회관식당", "kim, lee"], ["돈가스", "세트", "학생회관식당", "kim, lee"],
                           ["제육덮밥", "", "학생회관식당", "kim, lee"]])
@@ -252,7 +258,7 @@ class CommandTests(TestCase):
               "feature 버전": "v1"}, {}),
             ({"원본 메뉴명": "보류 메뉴", "구성 음식(원본 연결)": "보류", "feature 버전": FEATURE_VERSION}, {}),
         ])
-        self.assertIn("general: 음식 2개 중 2개", self.export("--workbook", str(path)))
+        self.assertIn("general: 음식 2개 중 2개", self.export("--workbook", str(path), "--overlap", "2"))
         self.assertEqual([row[:4] + row[6:] for row in self.assignment("general")],
                          [["11", "LA갈비", "", "육류,고기요리", "kim, lee"], ["13", "LA갈비", "세트", "한식", "kim, lee"]])
         self.assertEqual([row[4:6] for row in self.assignment("general")],
