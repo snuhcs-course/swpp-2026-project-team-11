@@ -601,8 +601,8 @@ No LLM call; the database is only read.
 
 ```bash
 R=../feature_benchmark_results/2026-11-02-review
-python manage.py export_feature_review --date 2026-11-02 --n 50 --raters 구본재,김신서,이민규,이승호 --output-dir $R
-python manage.py export_feature_review --workbook 메추_음식별_feature_학식_일반_20261104.xlsx --n 36 \
+python manage.py export_feature_review --date 2026-11-02 --n 80 --raters 구본재,김신서,이민규,이승호 --output-dir $R
+python manage.py export_feature_review --workbook 메추_음식별_feature_학식_일반_20261104.xlsx --n 66 \
     --raters 구본재,김신서,이민규,이승호 --output-dir $R    # or --stores, from a database with the restaurants
 # each rater fills cafeteria_<name>.xlsx and general_<name>.xlsx in place, then:
 python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
@@ -617,20 +617,22 @@ python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
   not told which dishes are hard; the hidden sheet 표본 and `<source>_assignment.csv` record it.
 - Accuracy: the share of reasonable values on completed rows, for means and stds separately, the
   hard and other dishes weighted by their share of the pool so the oversampling does not lower it;
-  the report also gives each stratum's own accuracy. Pass,
-  per source and field, fixed before the review: overall >= 95% and every feature >= 85%; a source
-  passes when both fields pass. Every rating counts, so a shared dish counts once per rater.
-- `--overlap` dishes (default 10 per source, 20 in all) go to every rater, for agreement on their
-  values; the rest are split. `<source>_assignment.csv` says who has which dish.
-- `--n` dishes are sampled, in each stratum each group given its share: the cafeteria of a day's dishes, the
-  restaurant category of the general menus' (of the dish's menus). A dish is what the features were extracted for, not a menu line: `--workbook` groups the team's
-  per-dish export (sheet 일반 음식, one row per menu) by linked dish and values, so 6,226 menus
-  become 1,598 dishes; set = `meal_variety` mean >= 0.5. The 판매 예 column shows up to 3 menus.
+  the report also gives each stratum's own accuracy. Pass, per source and field, fixed before the
+  review: overall >= 95% and every feature >= 85%; a source passes when both fields pass.
+- Each rater reviews different dishes, as many hard ones as the others; `<source>_assignment.csv`
+  says who has which. `--overlap` would give that many dishes to every rater, and the report would
+  add their agreement (none here).
+- `--n` dishes are sampled, in each stratum each group given its share: the cafeteria of a day's
+  dishes, the restaurant category of the general menus' (of the dish's menus). A dish is what the
+  features were extracted for, not a menu line: `--workbook` groups the team's per-dish export
+  (sheet 일반 음식, one row per menu) by linked dish and values, so 6,226 menus become 1,598
+  dishes; set = `meal_variety` mean >= 0.5. The 판매 예 column shows up to 3 menus.
 - The id, dish and status columns stay in view while scrolling, means are shaded from 0 to 1, and
   the 요약 sheet gives the file's accuracy per feature. The 안내 and 루브릭 sheets hold the guide and rubric.
 - `feature_benchmark_results/2026-11-02-review/` holds the cafeteria workbooks of the 2026-11-02
-  snapshot (50 of 127 dishes, 25 of the 39 hard; 20 per rater) and the general ones from the
-  2026-11-04 export (snapshot of 2026-11-03; 36 of 1,598 dishes, 18 of the 465 hard; 16-17 per rater). Steps: [the handout](../docs/p21-human-evaluation.md).
+  snapshot (80 of 127 dishes, all 39 hard ones; 20 per rater) and the general ones from the
+  2026-11-04 export (snapshot of 2026-11-03; 66 of 1,598 dishes, 33 of the 465 hard; 16-17 per
+  rater). Steps: [the handout](../docs/p21-human-evaluation.md).
 
 ## Making a new shared snapshot
 
