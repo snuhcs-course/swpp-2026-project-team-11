@@ -179,8 +179,8 @@ class CommandTests(TestCase):
     def test_a_day_is_split_between_the_raters_and_reported(self):
         self.assertIn("음식 3개 중 3개 (공통 3개)", self.export("--date", "2026-11-02"))  # 라면 has old features
         self.assertEqual([row[1:] for row in self.assignment("cafeteria")],
-                         [["돈가스", "", "", "kim, lee"], ["돈가스", "세트", "", "kim, lee"],
-                          ["제육덮밥", "", "", "kim, lee"]])
+                         [["돈가스", "", "학생회관식당", "kim, lee"], ["돈가스", "세트", "학생회관식당", "kim, lee"],
+                          ["제육덮밥", "", "학생회관식당", "kim, lee"]])
         for rater in ("kim", "lee"):
             fill(self.folder / f"cafeteria_{rater}.xlsx",
                  {"제육덮밥": (review.DONE, []), "돈가스": (review.DONE, ["spicy_mean"])})
@@ -191,6 +191,10 @@ class CommandTests(TestCase):
         text = report.read_text(encoding="utf-8")
         self.assertIn("| cafeteria 2026-11-02 | 2 | 3 | 6 | 0 | 97.9% | spicy 33.3% | 100.0% |", text)
         self.assertIn("| no | 100.0% (3) | 100.0% |", text)
+
+    def test_a_day_can_be_sampled(self):
+        self.assertIn("음식 3개 중 2개 (공통 1개)", self.export("--date", "2026-11-02", "--n", "2", "--overlap", "1"))
+        self.assertEqual(len(self.assignment("cafeteria")), 2)
 
     def test_restaurant_dishes_are_sampled_in_proportion_to_their_categories(self):
         self.export("--stores", "--n", "3", "--overlap", "0")
