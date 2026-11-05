@@ -1,11 +1,11 @@
 """python manage.py export_feature_review (--date 2026-11-02 | --stores | --workbook FILE.xlsx) [--n 50]
-       --raters 구본재,김신서,이민규,이승호 --output-dir DIR [--overlap 10] [--seed 0]
+       --raters 구본재,김신서,이민규,이승호 --output-dir DIR [--overlap 0] [--seed 0]
 
 Write the human review of the extracted features (menus/features/benchmark/review.py):
 <source>_<rater>.xlsx per rater, and <source>_assignment.csv saying who reviews which
 dish. --n dishes are sampled (all without it), half of them hard (review.signals), each
-stratum's groups in proportion to their dishes; --overlap of them go to every rater, the
-rest are split. No LLM call; the database is only read.
+stratum's groups in proportion to their dishes, and split between the raters (--overlap
+of them to every rater, none by default). No LLM call; the database is only read.
   --date D         the dishes served on that day (cafeteria), grouped by cafeteria
   --stores         the dishes on the menu boards of the restaurants near the stations
                    (general menus), grouped by restaurant category
@@ -119,7 +119,7 @@ class Command(BaseCommand):
         if options["n"]:
             ids = review.oversample(ids, strata, lambda pk: dishes[pk]["group"], options["n"], options["seed"])
         overlap = min(options["overlap"], len(ids))
-        assignment = review.assign(ids, raters, overlap, options["seed"])
+        assignment = review.assign(ids, raters, overlap, options["seed"], strata.get)
         output = pathlib.Path(options["output_dir"])
         output.mkdir(parents=True, exist_ok=True)
         for rater, mine in assignment.items():

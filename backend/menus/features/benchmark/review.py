@@ -24,10 +24,11 @@ see which; the hidden sheet "표본" holds each dish's stratum and the pool's si
 
 Accuracy is the share of reasonable values on the completed rows, for means and stds
 separately, each stratum weighted by its share of the pool, so the oversampling does not
-lower it; every rating counts, so a shared dish counts once per rater. The pass bar,
+lower it. The pass bar,
 per source and field, fixed before any review: overall accuracy >= PASS_OVERALL and every
-feature's accuracy >= PASS_FEATURE. A source passes when both fields pass. The raters
-share OVERLAP dishes per source, for agreement on the values of those dishes.
+feature's accuracy >= PASS_FEATURE. A source passes when both fields pass. Each rater
+reviews different dishes (OVERLAP 0), as many hard ones as the others; with shared dishes
+the report adds the raters' agreement on their values.
 """
 
 from __future__ import annotations
@@ -55,7 +56,7 @@ WRONG = "X"
 WRONG_GAP = 0.3
 PASS_OVERALL = 0.95
 PASS_FEATURE = 0.85
-OVERLAP = 10
+OVERLAP = 0
 CUISINES = ("korean", "chinese", "japanese", "western", "southeast_asian", "indian")
 MIDDLE = (0.3, 0.7)
 TOP_QUARTER = 0.75
@@ -120,12 +121,15 @@ def oversample(ids, strata, group_of, n, seed=0) -> list:
     return sorted(proportional_sample(hard, group_of, take, seed) + proportional_sample(other, group_of, n - take, seed))
 
 
-def assign(dishes, raters, overlap=OVERLAP, seed=0) -> dict[str, list]:
-    """{rater: dishes}: `overlap` dishes for everyone, the rest split evenly, each list shuffled."""
+def assign(dishes, raters, overlap=OVERLAP, seed=0, stratum_of=None) -> dict[str, list]:
+    """{rater: dishes}: `overlap` dishes for everyone, the rest split evenly (within each stratum
+    of `stratum_of`), each list shuffled."""
     rng = random.Random(seed)
     dishes = sorted(dishes)
     rng.shuffle(dishes)
     shared, rest = dishes[:overlap], dishes[overlap:]
+    if stratum_of:
+        rest.sort(key=stratum_of)
     out = {}
     for index, rater in enumerate(raters):
         mine = shared + rest[index::len(raters)]
