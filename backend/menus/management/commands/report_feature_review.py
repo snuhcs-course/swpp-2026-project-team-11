@@ -28,7 +28,7 @@ class Command(BaseCommand):
         except (OSError, ValueError, KeyError) as error:
             raise CommandError(str(error)) from error
         if not reviews:
-            raise CommandError("판정이 적힌 행이 없습니다.")
+            raise CommandError("상태가 적힌 행이 없습니다.")
         text = review.report(review.summarize(reviews))
         if options["output"]:
             pathlib.Path(options["output"]).write_text(text, encoding="utf-8")
