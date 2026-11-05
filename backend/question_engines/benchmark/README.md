@@ -47,18 +47,49 @@ NAME/
   9_user_study/human/      people's sessions, read when the report is written
 ```
 
-The user study, 30+ students with two sessions on each engine:
-
-```bash
-R=../engine_benchmark_results/2026-10-20
-python manage.py play_engine_session --scenarios $R/scenarios.json --output $R/9_user_study/human/kim.jsonl --tester kim
-# four times per tester; then (--dry-run first: how many simulated-user calls)
-python manage.py validate_simulator --human $R/9_user_study/human/*.jsonl --output $R/9_user_study/simulator_check.jsonl
-python manage.py run_engine_benchmark --name 2026-10-20   # rewrites the report with them
-```
-
 The steps can also be run one by one: `build_engine_scenarios`, `collect_engine_sessions`
 (the only step with LLM calls besides the user study), `benchmark_engines` (no LLM call).
+
+### User study (P21)
+
+People play the decision tree, the RL policy and the LLM engine under the simulated user's
+setup, on `engine_benchmark_results/2026-11-02/scenarios.json` (the shared snapshot's lunch and
+dinner, built by `build_engine_scenarios --date 2026-11-02 --meal LU --meal DN`). Each tester
+plays four rounds, one per situation, in turn from a start chosen by their name. A round:
+
+1. The command names the situation and lists the menu. The tester picks what they really want
+   that fits it: one menu (`in_menu`), two or three equally good menus (`multiple`), a dish that
+   is not served, typed in (`not_in_menu`; a served kind of it is refused), or one of the menus
+   listed with their close alternatives (`close_alternative`).
+2. The tester says how sure they are: high, medium or low. That is the round's certainty; their
+   answers are not blurred.
+3. The same wish is played on all three engines, blind, in an order rotated from round to round,
+   so each engine comes first, second and third. Questions are in Korean.
+4. Proposals are judged as the simulated user's are: a picked menu is accepted by the rule, next
+   to a close alternative nothing else is, and otherwise the person decides with the simulator's
+   criterion (essentially the same dish; for a dish not served, the same craving). After each
+   session the tester rates the result from 1 to 5.
+
+Play on a local database with the snapshot loaded (`loaddata menus_2026-11-02`): a dish typed in
+for `not_in_menu` takes its features from there. An empty `DATABASE_URL` keeps `.env` from
+pointing the commands at the shared database.
+
+```bash
+export DATABASE_URL= METCHU_MAX_QUESTIONS=20   # local SQLite; the question limit of the simulated runs
+R=../engine_benchmark_results/2026-11-02
+python manage.py play_engine_session --scenarios $R/scenarios.json --output $R/9_user_study/human/kim.jsonl --tester kim
+# once per round (four times); a stopped round continues with the same wish, a failed session is played again
+python manage.py benchmark_engines --scenarios $R/scenarios.json --human $R/9_user_study/human/*.jsonl --output-dir $R
+python manage.py validate_simulator --human $R/9_user_study/human/*.jsonl --output $R/9_user_study/simulator_check.jsonl --dry-run
+```
+
+The LLM engine's sessions call OpenRouter (`OPENROUTER_API_KEY`): about 15 calls per session,
+three of them for "recommend now", roughly $0.01-0.02 (16 sessions for four testers).
+`benchmark_engines` with `--human` alone writes only section 9: per situation and engine, and per
+self-reported certainty. `validate_simulator` asks the simulated user every question people
+answered and the verdicts they gave themselves (paid; `--dry-run` counts them first); pass its
+output to `benchmark_engines --simulator-check`. The simulated benchmark still compares the
+decision tree and the LLM engine only; its 2026-11-02 run would reuse this scenario file.
 
 ## Scenarios (`scenarios.py`)
 
@@ -159,7 +190,7 @@ Every table has one row per situation and engine.
 | 6 | Stability | each engine over repeats: same final menu, same outcome, questions SD |
 | 7 | Recommend now | success and similarity after k questions |
 | 8 | Similarity | similarity of accepted and rejected proposals, for the not-served threshold |
-| 9 | User study | people's sessions, satisfaction (1-5), the simulated user's agreement with people on answers and on verdicts |
+| 9 | User study | people's sessions on all three engines by situation and by self-reported certainty, satisfaction (1-5), the simulated user's agreement with people on answers and on the verdicts people gave |
 
 ## Cost
 

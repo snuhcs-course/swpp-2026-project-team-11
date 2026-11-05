@@ -592,6 +592,34 @@ python manage.py benchmark_features --runs runs.jsonl --ratings kim.xlsx lee.xls
   setting (#12) applied but not yet committed, hence `e76162b-dirty` in its config. The prompts
   are unchanged since: every run's `prompt_hash` matches the prompt this code builds.
 
+### Human review of the extracted features (P21)
+
+The rating form above asks people for their own values; the review asks whether the LLM's values
+are reasonable. One row per dish shows its 32 means and stds, with a verdict, the wrong features
+and a comment to fill (`menus/features/benchmark/review.py`). No LLM call; the database is only read.
+
+```bash
+R=../feature_benchmark_results/2026-11-02-review
+python manage.py export_feature_review --date 2026-11-02 --raters 구본재,김신서,이민규,이승호 --output-dir $R
+python manage.py export_feature_review --stores --n 100 --raters 구본재,김신서,이민규,이승호 --output-dir $R
+# each rater fills cafeteria_<name>.xlsx and general_<name>.xlsx in place, then:
+python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
+```
+
+- Verdicts: 합리적 (no wrong feature), 일부 틀림 (1-3), 비합리적 (4 or more, or the dish taken for
+  another), 판단 불가 (an unknown dish; left out of the shares). A feature is wrong when its mean is
+  0.3 or more off the rubric, or its std plainly contradicts how much the recipes vary.
+- Pass, per source, on the judged dishes, fixed before the review: 합리적 >= 80% and 비합리적 <= 5%.
+  Every rating counts, so a shared dish counts once per rater.
+- `--overlap` dishes (default 10 per source, 20 in all) go to every rater, for agreement; the rest
+  are split. `<source>_assignment.csv` says who has which dish. `--stores` samples `--n` dishes
+  spread over the restaurants' categories.
+- The verdict columns stay in view while scrolling, means are shaded from 0 to 1, and the 요약 sheet
+  counts the file's verdicts and wrong features. The 안내 and 루브릭 sheets hold the guide and rubric.
+- `feature_benchmark_results/2026-11-02-review/` holds the cafeteria workbooks of the 2026-11-02
+  snapshot (127 dishes, 39-40 per rater). The general menus' features are only in the mini PC's
+  database, so their workbooks are exported there.
+
 ## Making a new shared snapshot
 
 The snapshot holds one day: its menu items and the cafeterias and dishes they use. Every
@@ -637,11 +665,13 @@ and commit. Teammates then run `python manage.py loaddata menus_<date>`.
 | `export_feature_rating_form --runs --output [--all] [--close] [--n] [--segment] [--llm-values]` | blank human rating form, or the LLM's answers in its format | no |
 | `run_feature_benchmark --name (--menu-set \\| --date) [--conditions] [--ratings ...] [--dry-run]` | the whole benchmark into `feature_benchmark_results/NAME/` | **yes** |
 | `benchmark_features --runs [--ratings ...] [--triplets] [--policy]` | the feature extraction benchmark report | no |
+| `export_feature_review (--date \\| --stores [--n]) --raters --output-dir [--overlap]` | per-rater workbooks for judging the extracted features | no |
+| `report_feature_review --reviews ... [--output]` | the feature review's shares, pass and agreement | no |
 | `serve_public [--port] [--write-client-config] [--debug]` | run the server behind a Cloudflare Tunnel, reachable from any network ([guide](../client/README.md#from-another-network-cloudflare-tunnel)); needs `cloudflared` | no |
 | `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** (OpenRouter) |
 | `run_engine_benchmark --name [--date ...] [--counts] [--repeats] [--limit] [--dry-run]` | the question engine benchmark into `engine_benchmark_results/NAME/` ([guide](question_engines/benchmark/README.md)) | **yes** (OpenRouter + simulated user) |
 | `build_engine_scenarios` / `collect_engine_sessions` / `benchmark_engines` | its steps one by one; only `collect_engine_sessions` calls an LLM | for sessions |
-| `play_engine_session --scenarios --output --tester` / `validate_simulator` | the benchmark's user study: a person plays, engine hidden | for LLM sessions |
+| `play_engine_session --scenarios --output --tester` / `validate_simulator` | the benchmark's user study: a person plays one wish on every engine, hidden (P21) | for LLM sessions |
 
 ## Data model (`menus/models.py`)
 
