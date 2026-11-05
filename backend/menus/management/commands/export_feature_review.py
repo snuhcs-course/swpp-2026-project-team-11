@@ -1,13 +1,14 @@
-"""python manage.py export_feature_review (--date 2026-11-02 | --stores | --workbook FILE.xlsx) [--n 100]
+"""python manage.py export_feature_review (--date 2026-11-02 | --stores | --workbook FILE.xlsx) [--n 50]
        --raters 구본재,김신서,이민규,이승호 --output-dir DIR [--overlap 10] [--seed 0]
 
 Write the human review of the extracted features (menus/features/benchmark/review.py):
 <source>_<rater>.xlsx per rater, and <source>_assignment.csv saying who reviews which
-dish. --overlap dishes go to every rater, the rest are split. No LLM call; the
-database is only read.
-  --date D         every dish served on that day (cafeteria): the shared snapshot's day
-  --stores         --n dishes on the menu boards of the restaurants near the stations
-                   (general menus), each restaurant category in proportion to its dishes
+dish. --n dishes are sampled (all without it), each group in proportion to its dishes;
+--overlap of them go to every rater, the rest are split. No LLM call; the database is
+only read.
+  --date D         the dishes served on that day (cafeteria), grouped by cafeteria
+  --stores         the dishes on the menu boards of the restaurants near the stations
+                   (general menus), grouped by restaurant category
   --workbook FILE  the same from the team's per-dish export (sheet "일반 음식": one row per
                    menu, its linked dish in "구성 음식(원본 연결)"), for the dishes the
                    database here does not have
@@ -90,7 +91,7 @@ class Command(BaseCommand):
         where.add_argument("--date", type=datetime.date.fromisoformat)
         where.add_argument("--stores", action="store_true")
         where.add_argument("--workbook")
-        parser.add_argument("--n", type=int, default=100, help="--stores, --workbook: dishes to sample")
+        parser.add_argument("--n", type=int, help="dishes to sample; all without it")
         parser.add_argument("--raters", required=True, help="comma-separated names")
         parser.add_argument("--output-dir", required=True)
         parser.add_argument("--overlap", type=int, default=review.OVERLAP, help="dishes every rater reviews")
@@ -111,7 +112,7 @@ class Command(BaseCommand):
         if not dishes:
             raise CommandError("현재 feature가 있는 음식이 없습니다.")
         ids = list(dishes)
-        if kind == "general":
+        if options["n"]:
             ids = review.proportional_sample(ids, lambda pk: dishes[pk]["group"], options["n"], options["seed"])
         overlap = min(options["overlap"], len(ids))
         assignment = review.assign(ids, raters, overlap, options["seed"])
@@ -137,6 +138,7 @@ class Command(BaseCommand):
             lines = MenuItem.objects.filter(date=date, food__in=foods).order_by("meal", "restaurant__name")
             for item in lines.values("food_id", "restaurant__name", "raw_name"):
                 served[item["food_id"]].append(f"{item['restaurant__name']}: {item['raw_name']}")
+                group.setdefault(item["food_id"], item["restaurant__name"])
         else:
             kind, source = "general", "general"
             lines = StoreMenu.objects.filter(food__in=foods).order_by("restaurant__name", "id")
