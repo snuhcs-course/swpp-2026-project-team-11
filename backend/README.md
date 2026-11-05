@@ -618,7 +618,7 @@ python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
   counts the file's verdicts and wrong features. The 안내 and 루브릭 sheets hold the guide and rubric.
 - `feature_benchmark_results/2026-11-02-review/` holds the cafeteria workbooks of the 2026-11-02
   snapshot (127 dishes, 39-40 per rater). The general menus' features are only in the mini PC's
-  database, so their workbooks are exported there.
+  database, so their workbooks are exported there ([steps](../docs/p21-human-evaluation.md#mini-pc-owner-now)).
 
 ## Making a new shared snapshot
 

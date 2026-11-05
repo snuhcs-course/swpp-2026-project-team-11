@@ -9,7 +9,7 @@ venv/
 .env
 .env.harness
 .harness/
-backend/db.sqlite3
+backend/*.sqlite3
 .local/
 menu_feature_exports/
 /menu_features.*
