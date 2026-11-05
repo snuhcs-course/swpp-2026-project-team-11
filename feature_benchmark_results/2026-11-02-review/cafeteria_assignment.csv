@@ -1,51 +1,81 @@
 ﻿id,name,set,group,stratum,signals,raters
-245,고등어구이,,두레미담,other,,"구본재, 김신서, 이민규, 이승호"
-347,김치돈까스나베,세트,301동식당>교직원전용식당,hard,"set, cuisine, middle, spread",김신서
-349,눈꽃치즈떡볶이,세트,버거운버거,hard,"set, middle, spread","구본재, 김신서, 이민규, 이승호"
+344,갈비만두,세트,301동식당>교직원전용식당,hard,"set, spread",구본재
+245,고등어구이,,두레미담,other,,구본재
+347,김치돈까스나베,세트,301동식당>교직원전용식당,hard,"set, cuisine, middle, spread",이민규
+349,눈꽃치즈떡볶이,세트,버거운버거,hard,"set, middle, spread",구본재
 130,닭가슴살샐러드,,버거운버거,other,spread,김신서
-350,닭강정,세트,버거운버거,other,set,"구본재, 김신서, 이민규, 이승호"
-351,돈까스,세트,공대간이식당,hard,"set, cuisine, middle",구본재
-352,돼지곰탕,,동원관식당,other,,이민규
+254,닭강정,,버거운버거,other,,김신서
+350,닭강정,세트,버거운버거,other,set,이민규
+351,돈까스,세트,공대간이식당,hard,"set, cuisine, middle",이민규
+260,돼지김치찌개,,수의대식당,other,,김신서
 261,돼지불고기,,학생회관식당,hard,"middle, spread",이승호
+355,두부김치,세트,302동식당,hard,"set, middle",이민규
+356,두부조림,세트,3식당,other,set,구본재
+77,딥치즈치킨버거,,버거운버거,other,,김신서
+266,떡갈비,,두레미담,other,spread,구본재
+357,떡갈비,세트,예술계식당,hard,"set, spread",구본재
+358,떡국,세트,301동식당,other,set,구본재
 359,떡볶이,세트,버거운버거,hard,"set, middle",김신서
-277,모짜렐라치즈버거,,버거운버거,hard,"middle, spread","구본재, 김신서, 이민규, 이승호"
-365,바지락칼국수,세트,301동식당,other,set,이민규
-366,베이컨계란볶음밥,세트,두레미담,hard,"set, cuisine",구본재
-281,볶음밥,,공대간이식당,hard,"cuisine, middle, spread",김신서
-367,부추전,,자하연식당>3층,other,,김신서
-284,불갈비치즈베이크,,버거운버거,hard,"cuisine, middle, spread",이승호
+269,뚝배기불고기,,두레미담,other,,이민규
+270,라면,,예술계식당,other,,이승호
+107,매운양념치킨,,버거운버거,other,,이민규
+363,명란찌개,,자하연식당>3층,other,,김신서
+277,모짜렐라치즈버거,,버거운버거,hard,"middle, spread",구본재
+364,묵은지닭볶음탕,,기숙사식당>아워홈,other,middle,이민규
+365,바지락칼국수,세트,301동식당,other,set,이승호
+366,베이컨계란볶음밥,세트,두레미담,hard,"set, cuisine",이승호
+103,베이컨에그치즈베이크,,버거운버거,other,,이민규
+281,볶음밥,,공대간이식당,hard,"cuisine, middle, spread",이민규
+187,부대짬뽕,,공대간이식당,hard,"cuisine, middle, spread",구본재
+284,불갈비치즈베이크,,버거운버거,hard,"cuisine, middle, spread",이민규
+93,불고기버거,,버거운버거,hard,"cuisine, middle, spread",이민규
+368,불낙볶음,,동원관식당,other,,구본재
+285,불닭레드핫강정,,버거운버거,other,,김신서
 286,불닭모짜렐라치즈버거,,버거운버거,hard,"cuisine, middle, spread",이승호
+95,불새버거,,버거운버거,hard,"cuisine, middle, spread",이승호
+369,비빔국수,세트,예술계식당,other,set,김신서
 370,비빔면,세트,공대간이식당,other,set,이승호
-288,비빔밥,,두레미담,other,,구본재
 291,비프치즈베이크,,버거운버거,other,,이승호
-373,삼각김밥,세트,301동식당,hard,"set, spread","구본재, 김신서, 이민규, 이승호"
-374,생선까스,세트,301동식당,hard,"set, cuisine, middle",구본재
+372,사천짜장돈육찜,세트,두레미담,hard,"set, cuisine, middle",이승호
+373,삼각김밥,세트,301동식당,hard,"set, spread",김신서
+374,생선까스,세트,301동식당,hard,"set, cuisine, middle",이승호
 376,소시지오므라이스,세트,예술계식당,hard,"set, cuisine, middle",김신서
-296,순두부짬뽕,,공대간이식당,hard,"cuisine, middle, spread",이민규
-297,순두부찌개,,학생회관식당,other,,이승호
-377,순두부찌개,세트,예술계식당,other,set,이민규
-128,쉬림프샐러드,,버거운버거,other,,이민규
-108,스노우치킨,,버거운버거,other,,김신서
-378,야끼우동,세트,두레미담,hard,"set, cuisine, middle, spread",구본재
+296,순두부짬뽕,,공대간이식당,hard,"cuisine, middle, spread",김신서
+128,쉬림프샐러드,,버거운버거,other,,김신서
+108,스노우치킨,,버거운버거,other,,이민규
+301,쌀국수,,학생회관식당,other,,구본재
+378,야끼우동,세트,두레미담,hard,"set, cuisine, middle, spread",이민규
+74,양념치킨버거,,버거운버거,hard,"cuisine, middle",김신서
 379,어묵탕,세트,301동식당,hard,"set, cuisine",구본재
-82,에그마요휠렛버거,,버거운버거,other,,"구본재, 김신서, 이민규, 이승호"
-129,에그베이컨샐러드,,버거운버거,other,,"구본재, 김신서, 이민규, 이승호"
-380,우거지해장국,세트,두레미담,other,set,김신서
-194,우삼겹짬뽕,,공대간이식당,hard,"cuisine, middle, spread",이민규
-381,육전,세트,기숙사식당>아워홈,other,set,"구본재, 김신서, 이민규, 이승호"
-113,자메이카통다리,,버거운버거,other,middle,구본재
+129,에그베이컨샐러드,,버거운버거,other,,이민규
+380,우거지해장국,세트,두레미담,other,set,이승호
+194,우삼겹짬뽕,,공대간이식당,hard,"cuisine, middle, spread",이승호
+19,제육덮밥,,공대간이식당,other,,구본재
+315,제육볶음,,두레미담,other,,이승호
 183,짬뽕,,공대간이식당,hard,"middle, spread",이민규
-385,쭈삼불고기,,3식당,other,,이민규
-386,차슈우동,,기숙사식당>아워홈,other,,김신서
+384,짬뽕밥,세트,자하연식당>2층,hard,"set, middle, spread",이승호
+386,차슈우동,,기숙사식당>아워홈,other,,이승호
 387,참치덮밥,,자하연식당>2층,hard,"cuisine, middle, spread",구본재
+326,치즈버거,,버거운버거,other,,이승호
+327,치즈베이크,,버거운버거,other,middle,이민규
 329,치킨버거,,버거운버거,other,,김신서
-131,치킨샐러드,,버거운버거,hard,"middle, spread",이민규
-391,치킨텐더,,학생회관식당,other,,"구본재, 김신서, 이민규, 이승호"
-81,칠리크런치버거,,버거운버거,hard,"middle, spread","구본재, 김신서, 이민규, 이승호"
-331,카레돈까스,,302동식당,hard,"middle, spread",이승호
-393,탕수육,세트,자하연식당>2층,other,set,이민규
-88,투움바비프새우버거,,버거운버거,hard,"middle, spread",구본재
-336,투움바새우버거,,버거운버거,other,middle,이승호
+131,치킨샐러드,,버거운버거,hard,"middle, spread",구본재
+390,치킨카레덮밥,,기숙사식당>아워홈,other,spread,이승호
+391,치킨텐더,,학생회관식당,other,,김신서
+111,칠리마요치킨,,버거운버거,hard,"cuisine, middle",이민규
+81,칠리크런치버거,,버거운버거,hard,"middle, spread",구본재
+331,카레돈까스,,302동식당,hard,"middle, spread",김신서
+100,콘치즈베이크,,버거운버거,other,,구본재
+392,콩나물북어탕,,학생회관식당,other,,이민규
+334,탄탄면,,공대간이식당,hard,"cuisine, middle, spread",김신서
+393,탕수육,세트,자하연식당>2층,other,set,구본재
+394,투움바떡볶이,세트,버거운버거,hard,"set, cuisine, middle, spread",이민규
+88,투움바비프새우버거,,버거운버거,hard,"middle, spread",김신서
 110,핫소마요치킨,,버거운버거,hard,"cuisine, middle",이승호
-396,햄버거,세트,버거운버거,hard,"set, spread",이승호
-341,화이트어니언강정,,버거운버거,other,middle,구본재
+75,핫치킨버거,,버거운버거,other,,이승호
+395,해물파전,세트,301동식당,hard,"set, middle",김신서
+396,햄버거,세트,버거운버거,hard,"set, spread",구본재
+340,허니치즈강정,,버거운버거,other,,이민규
+78,화이트어니언치킨버거,,버거운버거,other,,이승호
+397,후라이드치킨,세트,버거운버거,hard,"set, cuisine",김신서
+398,훈제오리샐러드,,3식당,other,,구본재
