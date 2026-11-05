@@ -234,12 +234,12 @@ def _values(values, name) -> list:
     return [value for key in LLM_FEATURE_KEYS for value in (means[key], stds[key])]
 
 
-def _cell(sheet, row, column, value, font=FONT, fill=None):
-    cell = sheet.cell(row, column, value)
-    cell.font, cell.alignment = font, WRAP
+def cell(sheet, row, column, value, font=FONT, fill=None):
+    written = sheet.cell(row, column, value)
+    written.font, written.alignment = font, WRAP
     if fill:
-        cell.fill = fill
-    return cell
+        written.fill = fill
+    return written
 
 
 def _write_workbook(path, dishes, values, rater, note) -> None:
@@ -247,23 +247,23 @@ def _write_workbook(path, dishes, values, rater, note) -> None:
     form = book.active
     form.title = SHEET
     blank = INPUT if not values else None
-    _cell(form, 1, 1, "평가자 이름", BOLD)
-    _cell(form, 1, 2, rater or None, fill=blank)
-    _cell(form, 1, 3, note or "노란 칸만 입력하세요. 작성 방법은 '안내', 기준은 '루브릭' 시트에 있습니다.")
+    cell(form, 1, 1, "평가자 이름", BOLD)
+    cell(form, 1, 2, rater or None, fill=blank)
+    cell(form, 1, 3, note or "노란 칸만 입력하세요. 작성 방법은 '안내', 기준은 '루브릭' 시트에 있습니다.")
     form.merge_cells(start_row=1, start_column=3, end_row=1, end_column=12)
     first, last = 5, 4 + len(dishes)
     labels = {feature["key"]: feature["label_ko"] for feature in RUBRIC["features"]}
     columns = ["name", "kind", "recipe_notes"] + [f"{key}_{field}" for key in LLM_FEATURE_KEYS for field in FIELDS]
     for index, text in enumerate(("음식", "구분", "참고한 레시피·제공 예시"), start=1):
-        _cell(form, 3, index, text, BOLD, HEAD)
+        cell(form, 3, index, text, BOLD, HEAD)
     for index, column in enumerate(columns, start=1):
-        _cell(form, 4, index, column, KEY_FONT, HEAD)
+        cell(form, 4, index, column, KEY_FONT, HEAD)
     for row, (name, kind) in enumerate(dishes, start=first):
-        _cell(form, row, 1, name, fill=FIXED)
-        _cell(form, row, 2, kind, fill=FIXED)
-        _cell(form, row, 3, None, fill=blank)
+        cell(form, row, 1, name, fill=FIXED)
+        cell(form, row, 2, kind, fill=FIXED)
+        cell(form, row, 3, None, fill=blank)
         for column, value in enumerate(_values(values, name), start=4):
-            _cell(form, row, column, value if values else None, fill=blank)
+            cell(form, row, column, value if values else None, fill=blank)
 
     ranges = {}
     for field, top in (("mean", 1), ("std", 0.5)):
@@ -274,7 +274,7 @@ def _write_workbook(path, dishes, values, rater, note) -> None:
     for index, key in enumerate(LLM_FEATURE_KEYS):
         column = 4 + 2 * index
         mean, std = get_column_letter(column), get_column_letter(column + 1)
-        _cell(form, 3, column, f"{labels[key]} ({key})", BOLD, HEAD)
+        cell(form, 3, column, f"{labels[key]} ({key})", BOLD, HEAD)
         form.merge_cells(start_row=3, start_column=column, end_row=3, end_column=column + 1)
         ranges["mean"].add(f"{mean}{first}:{mean}{last}")
         ranges["std"].add(f"{std}{first}:{std}{last}")
@@ -291,7 +291,7 @@ def _write_workbook(path, dishes, values, rater, note) -> None:
     form.freeze_panes = f"B{first}"
     if not values:
         _write_guide(book.create_sheet("안내"))
-    _write_rubric(book.create_sheet("루브릭"))
+    write_rubric(book.create_sheet("루브릭"))
     book.save(path)
 
 
@@ -314,34 +314,34 @@ def _write_guide(guide) -> None:
         ("", FONT), ("범례", BOLD),
     ]
     for row, (text, font) in enumerate(lines, start=1):
-        _cell(guide, row, 1, text, font)
+        cell(guide, row, 1, text, font)
     row = len(lines) + 1
     for text, fill in (("입력하는 칸", INPUT), ("수정하지 않는 칸 (음식 이름)", FIXED),
                        ("규칙 위반 (범위·소수 자리·std² ≤ mean×(1−mean))", BROKEN)):
-        _cell(guide, row, 1, text, fill=fill)
+        cell(guide, row, 1, text, fill=fill)
         row += 1
-    _cell(guide, row + 1, 1, "작성 예시 (형식 확인용, 일부 feature만 표시)", BOLD)
+    cell(guide, row + 1, 1, "작성 예시 (형식 확인용, 일부 feature만 표시)", BOLD)
     for index, (column, value) in enumerate(EXAMPLE, start=1):
-        _cell(guide, row + 2, index, column, KEY_FONT, HEAD)
-        _cell(guide, row + 3, index, value, fill=INPUT)
+        cell(guide, row + 2, index, column, KEY_FONT, HEAD)
+        cell(guide, row + 3, index, value, fill=INPUT)
     row += 5
-    _cell(guide, row, 1, "추출 지침 (LLM과 같은 기준)", BOLD)
+    cell(guide, row, 1, "추출 지침 (LLM과 같은 기준)", BOLD)
     for row, text in enumerate(GUIDE.strip().splitlines(), start=row + 1):
-        _cell(guide, row, 1, text)
+        cell(guide, row, 1, text)
     guide.column_dimensions["A"].width = 100
     for index in range(2, len(EXAMPLE) + 1):
         guide.column_dimensions[get_column_letter(index)].width = 12
 
 
-def _write_rubric(rubric) -> None:
+def write_rubric(rubric) -> None:
     header = ["key", "이름", "정의", "구분 규칙", "평균 기준", "표준편차 기준"]
     for index, text in enumerate(header, start=1):
-        _cell(rubric, 1, index, text, BOLD, HEAD)
+        cell(rubric, 1, index, text, BOLD, HEAD)
     for row, feature in enumerate((f for f in RUBRIC["features"] if f["key"] in LLM_FEATURE_KEYS), start=2):
         values = [feature["key"], feature["label_ko"], feature["definition"], "\n".join(feature["distinction_rules"]),
                   feature["mean_guidance"], feature["std_guidance"]]
         for index, value in enumerate(values, start=1):
-            _cell(rubric, row, index, value)
+            cell(rubric, row, index, value)
     for letter, width in zip("ABCDEF", (14, 10, 40, 60, 50, 50)):
         rubric.column_dimensions[letter].width = width
     rubric.freeze_panes = "C2"
