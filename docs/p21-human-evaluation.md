@@ -5,7 +5,6 @@ LLM 가상 사용자로만 돌렸던 평가를 사람이 같은 조건으로 합
 | 누가 | 할 일 | 제출 |
 |---|---|---|
 | 테스터 4명 (구본재, 김신서, 이민규, 이승호) | 1부 추천 평가 → 2부 feature 검토 | `.jsonl` 1개, `.xlsx` 2개 → 구본재 |
-| 미니 PC 담당자 | 일반 음식점 검토 파일 내보내기 (지금) | 파일 5개와 출력 → 구본재 |
 | 구본재 | 수합, 커밋, 보고서 | - |
 
 - 마감: 2026-11-06
@@ -99,35 +98,36 @@ Ctrl-C로 멈췄거나 네트워크 오류가 났으면 **같은 명령을 다�
 
 `engine_benchmark_results/2026-11-02/9_user_study/human/이름.jsonl` → 구본재
 
-### 2부. feature 검토: 학식 약 40분 + 일반 음식점 약 35분
+### 2부. feature 검토: 학식 약 70분 + 일반 음식점 약 60분
 
-LLM이 음식 이름만 보고 뽑은 32개 feature가 그 음식에 맞는지 판단합니다. 값을 새로 매기는 것이 아닙니다.
+LLM이 음식 이름만 보고 뽑은 32개 feature의 mean과 std가 그 음식에 맞는지 **값 하나하나** 판단합니다. 값을 새로 매기는 것이 아닙니다.
 
 **파일** (`feature_benchmark_results/2026-11-02-review/`)
 
-- `cafeteria_이름.xlsx`: 학식 39~40개, 지금 있음
-- `general_이름.xlsx`: 일반 음식점 32~33개, 미니 PC에서 받는 대로 구본재가 올립니다
+- `cafeteria_이름.xlsx`: 학식 39~40개
+- `general_이름.xlsx`: 일반 음식점 32~33개
 
 **보는 법**
 
-- 한 행이 음식 하나입니다.
-- `분류`, `세트`, `판매 예`(식당과 실제 메뉴 줄)로 어떤 음식인지 확인합니다.
-- feature마다 두 칸입니다. 왼쪽 mean은 그 특징이 얼마나 두드러지는지(0~1, 진할수록 높음)입니다. 오른쪽 std는 레시피나 식당에 따라 얼마나 다른지입니다.
-- 판단 기준은 `루브릭` 시트, 작성 방법은 `안내` 시트, 내 판정 집계는 `요약` 시트에 있습니다.
+- 한 행이 음식 하나입니다. `분류`, `세트`, `판매 예`(그 음식으로 연결된 실제 메뉴, 최대 3개)로 어떤 음식인지 확인합니다.
+- feature마다 네 칸입니다: mean 값, mean 판정, std 값, std 판정. mean은 그 특징이 얼마나 두드러지는지(0~1, 진할수록 높음), std는 레시피나 식당에 따라 얼마나 다른지입니다.
+- 판단 기준은 `루브릭` 시트, 작성 방법은 `안내` 시트, 내 feature별 정확도는 `요약` 시트에 있습니다.
 
 **노란 칸만 채웁니다**
 
-| 열 | 입력 |
+| 칸 | 입력 |
 |---|---|
-| B `판정` | 목록에서 선택: `합리적` 틀린 feature 없음 / `일부 틀림` 1~3개 / `비합리적` 4개 이상, 또는 다른 음식으로 이해함 / `판단 불가` 레시피와 사진을 찾아봐도 모르는 음식 |
-| C `틀린 feature` | 4행의 key를 쉼표로 (`spicy, soupy`). `일부 틀림`이면 필수 (비어 있으면 빨갛게 표시) |
-| D `의견` | 어떻게 틀렸는지 짧게 (`spicy 0.1 → 0.7`) |
+| 값 오른쪽 판정 칸 (`..._wrong`) | 틀린 값이면 `X`, 맞으면 **비워 둡니다** (X는 빨갛게 표시) |
+| C `상태` | 한 행의 64개 값을 다 봤으면 `완료`. 레시피와 사진을 찾아봐도 모르는 음식이면 `판단 불가` |
+| G `의견` | 선택. 눈에 띄게 틀린 값을 짧게 (`spicy 0.1 → 0.7`) |
+
+- **상태가 빈 행은 집계되지 않습니다.** X를 넣고 상태를 비워 두면 상태 칸이 빨갛게 표시됩니다.
+- 한 행씩: 음식 확인 → 값 64개를 보며 틀린 곳에 X → `완료`.
 
 **틀렸다고 보는 기준**
 
-- mean이 루브릭으로 보아 **0.3 이상** 어긋남 (예: 짬뽕 spicy 0.10)
-- std가 레시피 차이와 분명히 맞지 않음 (예: 식당마다 크게 다른 음식인데 std 0)
-- 그보다 작은 차이는 틀린 것으로 보지 않습니다.
+- mean: 루브릭으로 보아 **0.3 이상** 어긋남 (예: 짬뽕 spicy 0.10). 그보다 작은 차이는 맞는 것으로 봅니다.
+- std: 레시피·식당에 따른 차이와 분명히 맞지 않음 (예: 식당마다 크게 다른 음식인데 std 0, 어디서나 같은 특징인데 std가 큼).
 
 **주의**
 
@@ -139,64 +139,12 @@ LLM이 음식 이름만 보고 뽑은 32개 feature가 그 음식에 맞는지 �
 
 ---
 
-## 미니 PC 담당자: 지금 할 일
-
-일반 음식점 feature는 미니 PC DB에만 있습니다. **DB 사본에서 읽기만** 해서 검토 파일을 만듭니다.
-
-> **하지 말 것:** `private/menu.sqlite3`, `release.txt`, `releases/`, `daily_menus.py`, Windows 작업은 건드리지 않습니다.
-> 호스트를 멈추거나 재시작하지 않습니다. 커밋, 푸시, PR도 하지 않습니다.
-
-**1. 소스 받기.** 아래 파일을 `%TEMP%\p21-review\src`에 풀어 둡니다. `releases/`에는 두지 않습니다.
-<https://github.com/snuhcs-course/swpp-2026-project-team-11/archive/refs/heads/feat/i3-p21-human-eval.zip>
-
-**2. DB 사본 만들고 사본만 쓰도록 설정** (PowerShell)
-
-```powershell
-$py = "$env:LOCALAPPDATA\MetchuHost\venv\Scripts\python.exe"
-New-Item -ItemType Directory -Force "$env:TEMP\p21-review" | Out-Null
-& $py -c "import sqlite3,os; s=sqlite3.connect(os.path.expandvars(r'%LOCALAPPDATA%\MetchuHost\private\menu.sqlite3')); d=sqlite3.connect(os.path.expandvars(r'%TEMP%\p21-review\menu-copy.sqlite3')); s.backup(d); d.close(); s.close()"
-$env:DATABASE_URL = "sqlite:///" + ("$env:TEMP\p21-review\menu-copy.sqlite3" -replace '\\','/')
-$env:GOOGLE_API_KEY = "x-unused"; $env:OPENROUTER_API_KEY = "x-unused"; $env:OPENAI_API_KEY = "x-unused"
-cd "$env:TEMP\p21-review\src\swpp-2026-project-team-11-feat-i3-p21-human-eval\backend"
-& $py manage.py showmigrations menus
-```
-
-- SQLite 백업 API는 호스트가 켜져 있어도 안전합니다.
-- 키에 넣는 가짜 값은 `.env`의 진짜 키가 읽히지 않게 하려는 것입니다. PowerShell은 빈 값을 넣으면 변수를 지웁니다. 이 단계에서 모델을 호출하는 명령은 없습니다.
-- `showmigrations`에 `[ ]`(미적용)가 있으면 `& $py manage.py migrate`를 실행합니다. 사본에만 적용됩니다.
-
-**3. 내보내기**
-
-```powershell
-& $py manage.py export_feature_review --stores --n 100 --raters 구본재,김신서,이민규,이승호 --output-dir "$env:TEMP\p21-review\out"
-& $py manage.py shell -c "from menus.models import StoreMenu, Food; print(StoreMenu.objects.count(), Food.objects.filter(store_menus__isnull=False, feature_version='v2', is_food=True).distinct().count())"
-```
-
-첫 명령은 다음 한 줄을 출력해야 합니다. seed가 고정이라 같은 DB에서는 같은 표본이 나옵니다.
-
-```
-general: 음식 100개 (공통 10개), 검토자별 구본재 33, 김신서 33, 이민규 32, 이승호 32 -> ...
-```
-
-**4. 구본재에게 보낼 것**
-
-- `%TEMP%\p21-review\out`의 파일 5개:
-  `general_구본재.xlsx`, `general_김신서.xlsx`, `general_이민규.xlsx`, `general_이승호.xlsx`, `general_assignment.csv`(음식 100행)
-- 3단계 첫 명령의 출력 한 줄
-- `shell -c`가 출력한 숫자 두 개
-- DB 사본을 만든 시각
-
-보낸 뒤 `menu-copy.sqlite3`를 지웁니다. 어느 단계든 실패하면(열이 없음, 음식이 100개보다 적음 등) 거기서 멈추고 오류 출력을 그대로 보냅니다. 실제 DB에서 우회하지 않습니다.
-
----
-
 ## 수합 (구본재)
 
 **1. 받은 파일을 PR 브랜치에 커밋합니다.**
 
 | 파일 | 위치 |
 |---|---|
-| `general_*.xlsx`, `general_assignment.csv` | `feature_benchmark_results/2026-11-02-review/` (올린 뒤 검토자들에게 알림) |
 | 테스터의 `이름.jsonl` | `engine_benchmark_results/2026-11-02/9_user_study/human/` |
 | 채운 검토 파일 | 빈 파일 자리에 덮어쓰기 |
 

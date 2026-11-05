@@ -595,30 +595,36 @@ python manage.py benchmark_features --runs runs.jsonl --ratings kim.xlsx lee.xls
 ### Human review of the extracted features (P21)
 
 The rating form above asks people for their own values; the review asks whether the LLM's values
-are reasonable. One row per dish shows its 32 means and stds, with a verdict, the wrong features
-and a comment to fill (`menus/features/benchmark/review.py`). No LLM call; the database is only read.
+are reasonable, value by value. One row per dish shows its 32 means and stds, each with a cell to
+mark X when that value is wrong, a status and a comment (`menus/features/benchmark/review.py`).
+No LLM call; the database is only read.
 
 ```bash
 R=../feature_benchmark_results/2026-11-02-review
 python manage.py export_feature_review --date 2026-11-02 --raters 구본재,김신서,이민규,이승호 --output-dir $R
-python manage.py export_feature_review --stores --n 100 --raters 구본재,김신서,이민규,이승호 --output-dir $R
+python manage.py export_feature_review --workbook 메추_음식별_feature_학식_일반_20261104.xlsx --n 100 \
+    --raters 구본재,김신서,이민규,이승호 --output-dir $R    # or --stores, from a database with the restaurants
 # each rater fills cafeteria_<name>.xlsx and general_<name>.xlsx in place, then:
 python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
 ```
 
-- Verdicts: 합리적 (no wrong feature), 일부 틀림 (1-3), 비합리적 (4 or more, or the dish taken for
-  another), 판단 불가 (an unknown dish; left out of the shares). A feature is wrong when its mean is
-  0.3 or more off the rubric, or its std plainly contradicts how much the recipes vary.
-- Pass, per source, on the judged dishes, fixed before the review: 합리적 >= 80% and 비합리적 <= 5%.
-  Every rating counts, so a shared dish counts once per rater.
-- `--overlap` dishes (default 10 per source, 20 in all) go to every rater, for agreement; the rest
-  are split. `<source>_assignment.csv` says who has which dish. `--stores` samples `--n` dishes
-  spread over the restaurants' categories.
-- The verdict columns stay in view while scrolling, means are shaded from 0 to 1, and the 요약 sheet
-  counts the file's verdicts and wrong features. The 안내 and 루브릭 sheets hold the guide and rubric.
+- Marks: X beside a wrong value, blank for a reasonable one. A mean is wrong when it is 0.3 or more
+  off the rubric; a std when it plainly contradicts how much the recipes vary. Status 완료 once a row
+  is judged; 판단 불가 for an unknown dish (left out); rows without a status are not counted.
+- Accuracy: the share of reasonable values on completed rows, for means and stds separately. Pass,
+  per source and field, fixed before the review: overall >= 95% and every feature >= 85%; a source
+  passes when both fields pass. Every rating counts, so a shared dish counts once per rater.
+- `--overlap` dishes (default 10 per source, 20 in all) go to every rater, for agreement on their
+  values; the rest are split. `<source>_assignment.csv` says who has which dish.
+- General menus: `--n` dishes, each restaurant category (of the dish's menus) given its share.
+  A dish is what the features were extracted for, not a menu line: `--workbook` groups the team's
+  per-dish export (sheet 일반 음식, one row per menu) by linked dish and values, so 6,226 menus
+  become 1,598 dishes; set = `meal_variety` mean >= 0.5. The 판매 예 column shows up to 3 menus.
+- The id, dish and status columns stay in view while scrolling, means are shaded from 0 to 1, and
+  the 요약 sheet gives the file's accuracy per feature. The 안내 and 루브릭 sheets hold the guide and rubric.
 - `feature_benchmark_results/2026-11-02-review/` holds the cafeteria workbooks of the 2026-11-02
-  snapshot (127 dishes, 39-40 per rater). The general menus' features are only in the mini PC's
-  database, so their workbooks are exported there ([steps](../docs/p21-human-evaluation.md)).
+  snapshot (127 dishes, 39-40 per rater) and the general ones from the 2026-11-04 export (snapshot
+  of 2026-11-03; 100 of 1,598 dishes, 32-33 per rater). Steps: [the handout](../docs/p21-human-evaluation.md).
 
 ## Making a new shared snapshot
 
@@ -665,8 +671,8 @@ and commit. Teammates then run `python manage.py loaddata menus_<date>`.
 | `export_feature_rating_form --runs --output [--all] [--close] [--n] [--segment] [--llm-values]` | blank human rating form, or the LLM's answers in its format | no |
 | `run_feature_benchmark --name (--menu-set \\| --date) [--conditions] [--ratings ...] [--dry-run]` | the whole benchmark into `feature_benchmark_results/NAME/` | **yes** |
 | `benchmark_features --runs [--ratings ...] [--triplets] [--policy]` | the feature extraction benchmark report | no |
-| `export_feature_review (--date \\| --stores [--n]) --raters --output-dir [--overlap]` | per-rater workbooks for judging the extracted features | no |
-| `report_feature_review --reviews ... [--output]` | the feature review's shares, pass and agreement | no |
+| `export_feature_review (--date \\| --stores \\| --workbook) [--n] --raters --output-dir [--overlap]` | per-rater workbooks for judging the extracted features value by value | no |
+| `report_feature_review --reviews ... [--output]` | the feature review's accuracy, pass and agreement | no |
 | `serve_public [--port] [--write-client-config] [--debug]` | run the server behind a Cloudflare Tunnel, reachable from any network ([guide](../client/README.md#from-another-network-cloudflare-tunnel)); needs `cloudflared` | no |
 | `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** (OpenRouter) |
 | `run_engine_benchmark --name [--date ...] [--counts] [--repeats] [--limit] [--dry-run]` | the question engine benchmark into `engine_benchmark_results/NAME/` ([guide](question_engines/benchmark/README.md)) | **yes** (OpenRouter + simulated user) |
