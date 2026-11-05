@@ -16,8 +16,15 @@ with the rater in B1 and the source in B2 ("cafeteria 2026-11-02", "general").
   wrong when it is WRONG_GAP or more off what the rubric gives the dish; a std when it
   plainly contradicts how much the dish's recipes vary (0 for a dish made many ways).
 
+Hard dishes are oversampled: a dish is hard with HARD_SIGNALS or more of these signals,
+the quartiles taken over the pool sampled from: a set (its values combine several dishes);
+no cuisine or several at MIDDLE[0] or more; the most means between MIDDLE (top quarter,
+above zero); the largest mean std (top quarter, above zero). Half of a sample is hard (HARD_SHARE). The raters do not
+see which; the hidden sheet "표본" holds each dish's stratum and the pool's size per stratum.
+
 Accuracy is the share of reasonable values on the completed rows, for means and stds
-separately; every rating counts, so a shared dish counts once per rater. The pass bar,
+separately, each stratum weighted by its share of the pool, so the oversampling does not
+lower it; every rating counts, so a shared dish counts once per rater. The pass bar,
 per source and field, fixed before any review: overall accuracy >= PASS_OVERALL and every
 feature's accuracy >= PASS_FEATURE. A source passes when both fields pass. The raters
 share OVERLAP dishes per source, for agreement on the values of those dishes.
@@ -26,9 +33,10 @@ share OVERLAP dishes per source, for agreement on the values of those dishes.
 from __future__ import annotations
 
 import random
-from collections import Counter, defaultdict
+from collections import defaultdict
 from itertools import combinations
 
+import numpy as np
 import openpyxl
 from openpyxl.formatting.rule import ColorScaleRule, FormulaRule
 from openpyxl.styles import Font
@@ -40,6 +48,7 @@ from menus.features.schema import FEATURE_VERSION, LLM_FEATURE_KEYS, RUBRIC
 from .human import BOLD, BROKEN, FIELDS, FIXED, FONT, HEAD, INPUT, KEY_FONT, cell, write_rubric
 
 SHEET = "검토"
+SAMPLE_SHEET = "표본"
 STATUSES = ("완료", "판단 불가")
 DONE, UNKNOWN = STATUSES
 WRONG = "X"
@@ -47,6 +56,12 @@ WRONG_GAP = 0.3
 PASS_OVERALL = 0.95
 PASS_FEATURE = 0.85
 OVERLAP = 10
+CUISINES = ("korean", "chinese", "japanese", "western", "southeast_asian", "indian")
+MIDDLE = (0.3, 0.7)
+TOP_QUARTER = 0.75
+HARD_SIGNALS = 2
+HARD_SHARE = 0.5
+STRATA = ("hard", "other")
 COLUMNS = ("id", "name", "status", "food_group", "set", "served", "comment")
 LABELS = ("번호", "음식", "상태", "분류", "세트", "판매 예", "의견")
 FIRST = 5
@@ -72,6 +87,39 @@ def proportional_sample(ids, group_of, n, seed=0) -> list:
     return sorted(item for group in sorted(groups) for item in rng.sample(groups[group], take[group]))
 
 
+def signals(dishes) -> dict[object, list[str]]:
+    """{id: the dish's hardness signals}, the quartiles taken over `dishes` ({id: dish})."""
+    def middle(dish):
+        return sum(MIDDLE[0] <= (dish["features"].get(key) or 0) <= MIDDLE[1] for key in LLM_FEATURE_KEYS)
+
+    def spread(dish):
+        return float(np.mean([dish["feature_std"].get(key) or 0 for key in LLM_FEATURE_KEYS]))
+
+    top_middle = np.quantile([middle(d) for d in dishes.values()], TOP_QUARTER)
+    top_spread = np.quantile([spread(d) for d in dishes.values()], TOP_QUARTER)
+    out = {}
+    for pk, dish in dishes.items():
+        cuisines = sum((dish["features"].get(key) or 0) >= MIDDLE[0] for key in CUISINES)
+        hits = (("set", dish["is_set"]), ("cuisine", cuisines != 1), ("middle", 0 < middle(dish) >= top_middle),
+                ("spread", 0 < spread(dish) >= top_spread))
+        out[pk] = [name for name, hit in hits if hit]
+    return out
+
+
+def stratum(found) -> str:
+    return STRATA[0] if len(found) >= HARD_SIGNALS else STRATA[1]
+
+
+def oversample(ids, strata, group_of, n, seed=0) -> list:
+    """Up to `n` ids, HARD_SHARE of them hard (as many as there are), each stratum sampled in proportion to its groups."""
+    hard = [pk for pk in ids if strata[pk] == STRATA[0]]
+    other = [pk for pk in ids if strata[pk] == STRATA[1]]
+    n = min(n, len(ids))
+    take = min(round(n * HARD_SHARE), len(hard))
+    take = max(take, n - len(other))
+    return sorted(proportional_sample(hard, group_of, take, seed) + proportional_sample(other, group_of, n - take, seed))
+
+
 def assign(dishes, raters, overlap=OVERLAP, seed=0) -> dict[str, list]:
     """{rater: dishes}: `overlap` dishes for everyone, the rest split evenly, each list shuffled."""
     rng = random.Random(seed)
@@ -86,9 +134,10 @@ def assign(dishes, raters, overlap=OVERLAP, seed=0) -> dict[str, list]:
     return out
 
 
-def write(path, rater, source, dishes) -> None:
+def write(path, rater, source, dishes, population) -> None:
     """A review workbook: one row per dish ({"id", "name", "food_group", "is_set", "served", "features",
-    "feature_std", "model"}), the LLM's values fixed and a wrong mark to fill beside each."""
+    "feature_std", "model", "signals"}), the LLM's values fixed and a wrong mark to fill beside each.
+    `population`: {stratum: dishes in the pool}, for weighting."""
     book = openpyxl.Workbook()
     form = book.active
     form.title = SHEET
@@ -153,7 +202,19 @@ def write(path, rater, source, dishes) -> None:
     _write_summary(book.create_sheet("요약"), last, start)
     _write_guide(book.create_sheet("안내"))
     write_rubric(book.create_sheet("루브릭"))
+    _write_sample(book.create_sheet(SAMPLE_SHEET), dishes, population)
     book.save(path)
+
+
+def _write_sample(sample, dishes, population) -> None:
+    sample.sheet_state = "hidden"
+    sample.append(["stratum", "pool"])
+    for name in STRATA:
+        sample.append([name, population.get(name, 0)])
+    sample.append([])
+    sample.append(["id", "stratum", "signals"])
+    for dish in dishes:
+        sample.append([dish["id"], stratum(dish["signals"]), ", ".join(dish["signals"])])
 
 
 def _write_summary(summary, last, start) -> None:
@@ -220,11 +281,15 @@ def _text(value) -> str:
 
 
 def load(paths) -> list[dict]:
-    """Every row with a status: {"rater", "source", "id", "name", "status", "wrong": {field: [keys]}}."""
+    """Every row with a status: {"rater", "source", "id", "name", "status", "wrong": {field: [keys]},
+    "stratum", "population"}."""
     reviews = []
     for path in paths:
-        sheet = openpyxl.load_workbook(path, read_only=True, data_only=True)[SHEET]
-        rows = list(sheet.iter_rows(values_only=True))
+        book = openpyxl.load_workbook(path, read_only=True, data_only=True)
+        sample = list(book[SAMPLE_SHEET].iter_rows(values_only=True))
+        population = {row[0]: row[1] for row in sample[1:1 + len(STRATA)]}
+        strata = {_text(row[0]): row[1] for row in sample[2 + len(STRATA):] if row and row[0] is not None}
+        rows = list(book[SHEET].iter_rows(values_only=True))
         rater, source = _text(rows[0][1]), _text(rows[1][1])
         header = next(i for i, row in enumerate(rows) if _text(row[0]) == "id")
         column = {_text(name): index for index, name in enumerate(rows[header])}
@@ -248,22 +313,38 @@ def load(paths) -> list[dict]:
             if status not in STATUSES:
                 raise ValueError(f"{where}: status {status!r} is not one of {', '.join(STATUSES)}")
             reviews.append({"rater": rater or str(path), "source": source, "id": _text(row[column["id"]]),
-                            "name": _text(row[column["name"]]), "status": status, "wrong": wrong})
+                            "name": _text(row[column["name"]]), "status": status, "wrong": wrong,
+                            "stratum": strata[_text(row[column["id"]])], "population": population})
     return reviews
 
 
+def _accuracy(rows, field, keys) -> float:
+    return 1 - sum(len(set(r["wrong"][field]) & set(keys)) for r in rows) / (len(rows) * len(keys))
+
+
+def _weighted(by_stratum, field, keys) -> float | None:
+    """The strata's accuracies weighted by their share of the pool (over the strata with completed rows)."""
+    if not by_stratum:
+        return None
+    population = next(iter(by_stratum.values()))[0]["population"]
+    total = sum(population[name] for name in by_stratum)
+    return sum(population[name] / total * _accuracy(rows, field, keys) for name, rows in by_stratum.items())
+
+
 def summarize(reviews) -> dict[str, dict]:
-    """Per source: accuracy of the means and stds overall and per feature, the pass, and the
-    raters' agreement on the values of shared dishes."""
+    """Per source: accuracy of the means and stds overall and per feature (weighted over the strata),
+    the pass, accuracy per stratum, and the raters' agreement on the values of shared dishes."""
     out = {}
     for source in sorted({r["source"] for r in reviews}):
         rows = [r for r in reviews if r["source"] == source]
         done = [r for r in rows if r["status"] == DONE]
+        by_stratum = defaultdict(list)
+        for r in done:
+            by_stratum[r["stratum"]].append(r)
         fields = {}
         for field in FIELDS:
-            wrong = Counter(key for r in done for key in r["wrong"][field])
-            feature = {key: 1 - wrong[key] / len(done) if done else None for key in LLM_FEATURE_KEYS}
-            overall = 1 - sum(wrong.values()) / (len(done) * len(LLM_FEATURE_KEYS)) if done else None
+            feature = {key: _weighted(by_stratum, field, [key]) for key in LLM_FEATURE_KEYS}
+            overall = _weighted(by_stratum, field, LLM_FEATURE_KEYS)
             fields[field] = {"overall": overall, "feature": feature,
                              "passed": bool(done) and overall >= PASS_OVERALL - 1e-9
                                        and min(feature.values()) >= PASS_FEATURE - 1e-9}
@@ -279,6 +360,9 @@ def summarize(reviews) -> dict[str, dict]:
         out[source] = {
             "ratings": len(rows), "dishes": len({r["id"] for r in rows}), "raters": len({r["rater"] for r in rows}),
             "done": len(done), "unknown": len(rows) - len(done), "fields": fields,
+            "strata": {name: {"done": len(by_stratum[name]), "pool": rows[0]["population"][name],
+                              **{field: _accuracy(by_stratum[name], field, LLM_FEATURE_KEYS) if by_stratum[name]
+                                 else None for field in FIELDS}} for name in STRATA},
             "passed": all(f["passed"] for f in fields.values()),
             "shared_dishes": sum(len(marks) > 1 for marks in by_dish.values()),
             "agreement": same / (len(pairs) * 2 * len(LLM_FEATURE_KEYS)) if pairs else None,
@@ -289,7 +373,8 @@ def summarize(reviews) -> dict[str, dict]:
 def report(summary) -> str:
     rate = lambda value: "-" if value is None else f"{value:.1%}"
     lines = ["# Feature extraction: human review", "",
-             f"Accuracy: the share of values judged reasonable on completed rows. Pass, per source and for means and "
+             f"Accuracy: the share of values judged reasonable on completed rows, the hard and other dishes "
+             f"weighted by their share of the pool (hard dishes are half of each sample). Pass, per source and for means and "
              f"stds each: overall >= {PASS_OVERALL:.0%} and every feature >= {PASS_FEATURE:.0%} (fixed before the "
              f"review). A mean is wrong when it is {WRONG_GAP} or more off the rubric; a std when it plainly "
              "contradicts the recipe spread. Agreement: the share of values two raters of a shared dish judged alike; "
@@ -306,6 +391,11 @@ def report(summary) -> str:
         lines.append(f"| {source} | {s['raters']} | {s['dishes']} | {s['done']} | {s['unknown']} | "
                      + " | ".join(cells) + f" | {'yes' if s['passed'] else 'no'} | {agreement} | "
                      f"{rate(s['wrong_agreement'])} |")
+    lines += ["", f"**By stratum** (hard: {HARD_SIGNALS}+ signals, half of each sample; accuracy unweighted)", "",
+              "| source | stratum | pool | completed | mean | std |", "|---|---|---|---|---|---|"]
+    for source, s in summary.items():
+        lines += [f"| {source} | {name} | {g['pool']} | {g['done']} | {rate(g['mean'])} | {rate(g['std'])} |"
+                  for name, g in s["strata"].items()]
     labels = {feature["key"]: feature["label_ko"] for feature in RUBRIC["features"]}
     for source, s in summary.items():
         lines += ["", f"**Accuracy per feature, {source}**", "", "| key | 이름 | mean | std |", "|---|---|---|---|"]

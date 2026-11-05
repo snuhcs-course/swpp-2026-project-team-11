@@ -3,9 +3,9 @@
 
 Write the human review of the extracted features (menus/features/benchmark/review.py):
 <source>_<rater>.xlsx per rater, and <source>_assignment.csv saying who reviews which
-dish. --n dishes are sampled (all without it), each group in proportion to its dishes;
---overlap of them go to every rater, the rest are split. No LLM call; the database is
-only read.
+dish. --n dishes are sampled (all without it), half of them hard (review.signals), each
+stratum's groups in proportion to their dishes; --overlap of them go to every rater, the
+rest are split. No LLM call; the database is only read.
   --date D         the dishes served on that day (cafeteria), grouped by cafeteria
   --stores         the dishes on the menu boards of the restaurants near the stations
                    (general menus), grouped by restaurant category
@@ -111,23 +111,30 @@ class Command(BaseCommand):
             kind, source, dishes = self._database(options["date"])
         if not dishes:
             raise CommandError("현재 feature가 있는 음식이 없습니다.")
+        for pk, found in review.signals(dishes).items():
+            dishes[pk]["signals"] = found
+        strata = {pk: review.stratum(dish["signals"]) for pk, dish in dishes.items()}
+        population = Counter(strata.values())
         ids = list(dishes)
         if options["n"]:
-            ids = review.proportional_sample(ids, lambda pk: dishes[pk]["group"], options["n"], options["seed"])
+            ids = review.oversample(ids, strata, lambda pk: dishes[pk]["group"], options["n"], options["seed"])
         overlap = min(options["overlap"], len(ids))
         assignment = review.assign(ids, raters, overlap, options["seed"])
         output = pathlib.Path(options["output_dir"])
         output.mkdir(parents=True, exist_ok=True)
         for rater, mine in assignment.items():
-            review.write(output / f"{kind}_{rater}.xlsx", rater, source, [dishes[pk] for pk in mine])
+            review.write(output / f"{kind}_{rater}.xlsx", rater, source, [dishes[pk] for pk in mine], population)
         with open(output / f"{kind}_assignment.csv", "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["id", "name", "set", "group", "raters"])
+            writer.writerow(["id", "name", "set", "group", "stratum", "signals", "raters"])
             for pk in sorted(ids, key=lambda pk: (dishes[pk]["name"], str(pk))):
                 writer.writerow([dishes[pk]["id"], dishes[pk]["name"], "세트" if dishes[pk]["is_set"] else "",
-                                 dishes[pk]["group"], ", ".join(r for r, mine in assignment.items() if pk in mine)])
+                                 dishes[pk]["group"], strata[pk], ", ".join(dishes[pk]["signals"]),
+                                 ", ".join(r for r, mine in assignment.items() if pk in mine)])
         each = ", ".join(f"{rater} {len(mine)}" for rater, mine in assignment.items())
-        self.stdout.write(self.style.SUCCESS(f"{source}: 음식 {len(dishes)}개 중 {len(ids)}개 (공통 {overlap}개), "
+        hard = sum(strata[pk] == review.STRATA[0] for pk in ids)
+        self.stdout.write(self.style.SUCCESS(f"{source}: 음식 {len(dishes)}개 중 {len(ids)}개 (어려운 음식 "
+                                             f"{population[review.STRATA[0]]}개 중 {hard}개, 공통 {overlap}개), "
                                              f"검토자별 {each} -> {output}"))
 
     def _database(self, date):
