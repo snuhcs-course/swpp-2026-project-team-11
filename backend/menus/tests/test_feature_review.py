@@ -17,7 +17,7 @@ from menus.models import Food, MenuItem, Restaurant, StoreMenu
 def dish(number, name, is_set=False, spicy=0.5):
     return {"id": number, "name": name, "food_group": "국", "is_set": is_set, "served": [f"학생회관식당: {name}"],
             "features": {key: 0.0 for key in FEATURE_KEYS} | {"spicy": spicy},
-            "feature_std": {key: 0.0 for key in FEATURE_KEYS}, "model": "google:fake"}
+            "feature_std": {key: 0.0 for key in FEATURE_KEYS}, "model": "google:fake", "signals": []}
 
 
 def fill(path, rows, rater=None):
@@ -37,10 +37,10 @@ def fill(path, rows, rater=None):
     book.save(path)
 
 
-def rated(rater, number, wrong=(), status=review.DONE):
+def rated(rater, number, wrong=(), status=review.DONE, stratum="other", population=None):
     marks = {field: [key for key, f in wrong if f == field] for field in ("mean", "std")}
     return {"rater": rater, "source": "general", "id": str(number), "name": f"d{number}", "status": status,
-            "wrong": marks}
+            "wrong": marks, "stratum": stratum, "population": population or {"hard": 0, "other": 100}}
 
 
 class ReviewTests(SimpleTestCase):
@@ -64,12 +64,31 @@ class ReviewTests(SimpleTestCase):
         self.assertEqual(picked, review.proportional_sample(range(100), group, 10))
         self.assertEqual(review.proportional_sample(range(4), group, 10), [0, 1, 2, 3])
 
+    def test_hard_dishes_have_two_signals_and_are_half_a_sample(self):
+        plain = {key: 0.0 for key in FEATURE_KEYS} | {"korean": 0.9}
+        dishes = {i: dish(i, f"d{i}") | {"features": dict(plain)} for i in range(8)}
+        dishes[0]["is_set"] = True
+        dishes[0]["features"] |= {"western": 0.8}  # set, two cuisines
+        dishes[1]["features"] |= {"spicy": 0.5, "sweet": 0.4, "oily": 0.6}  # many middle values
+        dishes[1]["feature_std"] = {key: 0.2 for key in FEATURE_KEYS}  # and a wide spread
+        dishes[2]["features"]["korean"] = 0.1  # no cuisine: one signal only
+        found = review.signals(dishes)
+        self.assertEqual((found[0], found[1], found[2]), (["set", "cuisine"], ["middle", "spread"], ["cuisine"]))
+        strata = {pk: review.stratum(f) for pk, f in found.items()}
+        self.assertEqual(sorted(pk for pk, s in strata.items() if s == "hard"), [0, 1])
+        picked = review.oversample(list(dishes), strata, lambda pk: "", 4)
+        self.assertEqual(sum(strata[pk] == "hard" for pk in picked), 2)
+        self.assertEqual(len(review.oversample(list(dishes), strata, lambda pk: "", 8)), 8)
+        self.assertEqual(sorted(review.oversample(list(dishes), strata, lambda pk: "", 8)), list(range(8)))
+
     def test_a_workbook_shows_the_llms_values_and_reads_back_the_marks(self):
         path = self.folder / "kim.xlsx"
         review.write(path, "kim", "cafeteria 2026-11-02", [dish(1, "김치찌개", spicy=0.6), dish(2, "돈가스", True),
-                                                         dish(3, "짬뽕", spicy=0.1)])
+                                                         dish(3, "짬뽕", spicy=0.1) | {"signals": ["set", "middle"]}],
+                     {"hard": 5, "other": 15})
         book = openpyxl.load_workbook(path)
-        self.assertEqual(book.sheetnames, ["검토", "요약", "안내", "루브릭"])
+        self.assertEqual(book.sheetnames, ["검토", "요약", "안내", "루브릭", "표본"])
+        self.assertEqual(book["표본"].sheet_state, "hidden")
         sheet = book[review.SHEET]
         header = [c.value for c in sheet[4]]
         self.assertEqual(header, list(review.COLUMNS) + review.value_columns())
@@ -84,10 +103,12 @@ class ReviewTests(SimpleTestCase):
                          [("1", "김치찌개", "완료", {"mean": [], "std": []}),
                           ("3", "짬뽕", "완료", {"mean": ["spicy"], "std": ["soupy"]})])
         self.assertEqual({(r["rater"], r["source"]) for r in rows}, {("kim", "cafeteria 2026-11-02")})
+        self.assertEqual([(r["stratum"], r["population"]) for r in rows],
+                         [("other", {"hard": 5, "other": 15}), ("hard", {"hard": 5, "other": 15})])
 
     def test_a_wrong_mark_or_status_names_the_cell(self):
         path = self.folder / "kim.xlsx"
-        review.write(path, "kim", "general", [dish(1, "짬뽕")])
+        review.write(path, "kim", "general", [dish(1, "짬뽕")], {"other": 1})
         fill(path, {"짬뽕": ("", ["spicy_mean"])})
         with self.assertRaisesMessage(ValueError, "row 5: values are marked X but the status is blank"):
             review.load([path])
@@ -120,6 +141,18 @@ class ReviewTests(SimpleTestCase):
         self.assertGreater(summary["fields"]["std"]["overall"], 0.99)
         self.assertFalse(summary["fields"]["std"]["passed"])  # spicy std 80%
         self.assertFalse(summary["passed"])
+
+    def test_strata_are_weighted_by_their_share_of_the_pool(self):
+        population = {"hard": 25, "other": 75}
+        hard = [rated("kim", i, [("spicy", "mean")] if i < 5 else [], stratum="hard", population=population)
+                for i in range(10)]
+        other = [rated("kim", 10 + i, population=population) for i in range(10)]
+        summary = review.summarize(hard + other)["general"]
+        self.assertAlmostEqual(summary["fields"]["mean"]["feature"]["spicy"], 0.25 * 0.5 + 0.75 * 1.0)  # not 0.75
+        self.assertAlmostEqual(summary["fields"]["mean"]["overall"], 1 - 0.25 * 5 / 320)
+        self.assertEqual((summary["strata"]["hard"]["done"], summary["strata"]["hard"]["pool"]), (10, 25))
+        self.assertAlmostEqual(summary["strata"]["hard"]["mean"], 1 - 5 / 320)
+        self.assertIn("| general | hard | 25 | 10 | 98.4% | 100.0% |", review.report({"general": summary}))
 
     def test_agreement_on_shared_dishes(self):
         reviews = [rated("kim", 1, [("spicy", "mean")]), rated("lee", 1, [("spicy", "mean"), ("sweet", "std")]),
@@ -177,8 +210,8 @@ class CommandTests(TestCase):
             return list(csv.reader(f))[1:]
 
     def test_a_day_is_split_between_the_raters_and_reported(self):
-        self.assertIn("음식 3개 중 3개 (공통 3개)", self.export("--date", "2026-11-02"))  # 라면 has old features
-        self.assertEqual([row[1:] for row in self.assignment("cafeteria")],
+        self.assertIn("음식 3개 중 3개 (어려운 음식", self.export("--date", "2026-11-02"))  # 라면 has old features
+        self.assertEqual([row[1:4] + row[6:] for row in self.assignment("cafeteria")],
                          [["돈가스", "", "학생회관식당", "kim, lee"], ["돈가스", "세트", "학생회관식당", "kim, lee"],
                           ["제육덮밥", "", "학생회관식당", "kim, lee"]])
         for rater in ("kim", "lee"):
@@ -193,7 +226,7 @@ class CommandTests(TestCase):
         self.assertIn("| no | 100.0% (3) | 100.0% |", text)
 
     def test_a_day_can_be_sampled(self):
-        self.assertIn("음식 3개 중 2개 (공통 1개)", self.export("--date", "2026-11-02", "--n", "2", "--overlap", "1"))
+        self.assertIn("음식 3개 중 2개", self.export("--date", "2026-11-02", "--n", "2", "--overlap", "1"))
         self.assertEqual(len(self.assignment("cafeteria")), 2)
 
     def test_restaurant_dishes_are_sampled_in_proportion_to_their_categories(self):
@@ -220,8 +253,10 @@ class CommandTests(TestCase):
             ({"원본 메뉴명": "보류 메뉴", "구성 음식(원본 연결)": "보류", "feature 버전": FEATURE_VERSION}, {}),
         ])
         self.assertIn("general: 음식 2개 중 2개", self.export("--workbook", str(path)))
-        self.assertEqual(self.assignment("general"), [["11", "LA갈비", "", "육류,고기요리", "kim, lee"],
-                                                      ["13", "LA갈비", "세트", "한식", "kim, lee"]])
+        self.assertEqual([row[:4] + row[6:] for row in self.assignment("general")],
+                         [["11", "LA갈비", "", "육류,고기요리", "kim, lee"], ["13", "LA갈비", "세트", "한식", "kim, lee"]])
+        self.assertEqual([row[4:6] for row in self.assignment("general")],
+                         [["hard", "cuisine, spread"], ["hard", "set, cuisine, spread"]])
         sheet = openpyxl.load_workbook(self.folder / "general_kim.xlsx")[review.SHEET]
         served = {sheet.cell(row, 1).value: sheet.cell(row, 6).value for row in (5, 6)}
         self.assertEqual(served[11], "목구멍: 대패 LA갈비\n목구멍 2호점: 대패 LA갈비\n풍년옥: LA갈비 (250g) (숯불)")
