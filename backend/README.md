@@ -611,20 +611,26 @@ python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
 - Marks: X beside a wrong value, blank for a reasonable one. A mean is wrong when it is 0.3 or more
   off the rubric; a std when it plainly contradicts how much the recipes vary. Status 완료 once a row
   is judged; 판단 불가 for an unknown dish (left out); rows without a status are not counted.
-- Accuracy: the share of reasonable values on completed rows, for means and stds separately. Pass,
+- Hard dishes are half of each sample, so the review sees the cases that are easy to get wrong. A
+  dish is hard with 2 or more of: a set; no cuisine or several at 0.3 or more; the most means
+  between 0.3 and 0.7 (top quarter of its pool); the largest mean std (top quarter). Raters are
+  not told which dishes are hard; the hidden sheet 표본 and `<source>_assignment.csv` record it.
+- Accuracy: the share of reasonable values on completed rows, for means and stds separately, the
+  hard and other dishes weighted by their share of the pool so the oversampling does not lower it;
+  the report also gives each stratum's own accuracy. Pass,
   per source and field, fixed before the review: overall >= 95% and every feature >= 85%; a source
   passes when both fields pass. Every rating counts, so a shared dish counts once per rater.
 - `--overlap` dishes (default 10 per source, 20 in all) go to every rater, for agreement on their
   values; the rest are split. `<source>_assignment.csv` says who has which dish.
-- `--n` dishes are sampled, each group given its share: the cafeteria of a day's dishes, the
+- `--n` dishes are sampled, in each stratum each group given its share: the cafeteria of a day's dishes, the
   restaurant category of the general menus' (of the dish's menus). A dish is what the features were extracted for, not a menu line: `--workbook` groups the team's
   per-dish export (sheet 일반 음식, one row per menu) by linked dish and values, so 6,226 menus
   become 1,598 dishes; set = `meal_variety` mean >= 0.5. The 판매 예 column shows up to 3 menus.
 - The id, dish and status columns stay in view while scrolling, means are shaded from 0 to 1, and
   the 요약 sheet gives the file's accuracy per feature. The 안내 and 루브릭 sheets hold the guide and rubric.
 - `feature_benchmark_results/2026-11-02-review/` holds the cafeteria workbooks of the 2026-11-02
-  snapshot (50 of 127 dishes, 20 per rater) and the general ones from the 2026-11-04 export
-  (snapshot of 2026-11-03; 36 of 1,598 dishes, 16-17 per rater). Steps: [the handout](../docs/p21-human-evaluation.md).
+  snapshot (50 of 127 dishes, 25 of the 39 hard; 20 per rater) and the general ones from the
+  2026-11-04 export (snapshot of 2026-11-03; 36 of 1,598 dishes, 18 of the 465 hard; 16-17 per rater). Steps: [the handout](../docs/p21-human-evaluation.md).
 
 ## Making a new shared snapshot
 
