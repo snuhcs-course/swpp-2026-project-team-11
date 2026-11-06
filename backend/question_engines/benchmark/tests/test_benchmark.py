@@ -16,7 +16,8 @@ from django.test import SimpleTestCase, TestCase
 
 from menus.features.schema import FEATURE_VERSION
 from menus.models import Food, MenuItem, Restaurant
-from question_engines.benchmark import cost, harness, metrics, plots, report, scenarios, simulator, stats
+from question_engines.benchmark import (SITUATIONS, STUDY_ENGINES, cost, harness, metrics, plots, report, scenarios,
+                                        simulator, stats)
 from recommend.management.commands import play_engine_session
 
 from .helpers import CANDIDATES, MENU, OTHERS, FakeEngineLLM, FakeUserLLM, ScriptedUser
@@ -80,7 +81,7 @@ class ScenarioTests(SimpleTestCase):
     def test_same_named_actual_sets_survive_scenario_selection(self):
         original = [{**c, "name": "A세트", "display_name": "A세트", "menu_profile": "rms-v1"}
                     for c in CANDIDATES[:2]]
-        self.assertEqual(len(scenarios._choices(original)), 2)
+        self.assertEqual(len(scenarios.choices(original)), 2)
         choice = scenarios.target("A세트", original[1]["features"], "", original,
                                   candidate_id=original[1]["food_id"])
         self.assertEqual(choice["matches"], [original[1]["food_id"]])
@@ -208,6 +209,14 @@ class PlayTests(SimpleTestCase):
                 self.assertEqual(len(record["llm_calls"]), record["llm"]["calls"])
                 self.assertEqual(set(record["llm_calls"][0]),
                                  {"latency_ms", "attempts", "fallback", "input_tokens", "output_tokens", "cost_usd"})
+
+    def test_rl_session_and_its_recommend_now_copies(self):
+        factory = harness.EngineFactory("rl", MENU, language="ko")
+        record = harness.play(factory, scenario("in_menu", "짬뽕"), ScriptedUser(accept=True))
+        self.assertEqual((record["engine"], record["outcome"], record["error"]), ("rl", "accepted", None))
+        self.assertIn("0", record["anytime"])  # restored from a snapshot
+        self.assertIsNone(record["llm"])
+        self.assertEqual(factory.build().language, "ko")
 
     def test_the_decision_tree_uses_the_servers_policy(self):
         with self.settings(RECOMMEND_DT_POLICY="greedy"):
@@ -684,25 +693,51 @@ class CommandTests(TestCase):
         self.assertEqual(set(summary["1_main_metrics"]["in_menu"]), {"decision_tree", "llm"})
         self.assertEqual(summary["5_latency_and_cost"]["in_menu"]["decision_tree"]["cost_usd"], 0.0)
 
-    def play(self, human, tester="lee", engine=None, wanted="짬뽕", rating="4"):
-        answers = iter([wanted] + ["1"] * 30 + ["y"] * 10 + [rating])
+    def play(self, human, tester="lee", pick="4", certainty="1", fail_at=None):
+        """Play the tester's next round: `pick` and `certainty` when a new wish is asked for, "yes" to
+        every question, "y" to every proposal, satisfaction 4; the `fail_at`-th question raises."""
+        first = iter([pick, certainty])
+        asked = [0]
+
+        def answer(prompt=""):
+            if "y/n" in prompt:
+                return "y"
+            if "만족도" in prompt:
+                return "4"
+            if out.getvalue().rstrip().endswith(("적으세요.", "확실한가요?") + tuple(play_engine_session.SURE.values())):
+                return next(first)
+            asked[0] += 1
+            if asked[0] == fail_at:
+                raise RuntimeError("terminal closed")
+            return "1"
+
         out = io.StringIO()
-        with mock.patch("builtins.input", lambda prompt="": next(answers)), \
+        with mock.patch("builtins.input", answer), \
+             mock.patch.object(play_engine_session, "situations", return_value=list(SITUATIONS)), \
              mock.patch("recommend.management.commands.play_engine_session.build_llm",
                         return_value=FakeEngineLLM(questions=1, pick="짬뽕")), \
              mock.patch("recommend.management.commands.play_engine_session.LLMSettings.from_env"):
             call_command("play_engine_session", "--scenarios", str(self.scenarios), "--output", str(human),
-                         "--tester", tester, *(["--engine", engine] if engine else []), stdout=out)
+                         "--tester", tester, stdout=out)
         return out.getvalue()
 
-    def test_a_person_plays_blind_and_the_simulator_is_checked(self):
+    def test_a_person_plays_one_wish_on_every_engine_and_the_simulator_is_checked(self):
         self.build()
         human = self.folder / "human" / "kim.jsonl"  # the folder is made on the first session
-        out = self.play(human, tester="kim", engine="decision_tree")
-        record = self.lines(human)[0]
-        self.assertEqual((record["engine"], record["outcome"], record["satisfaction"]), ("decision_tree", "accepted", 4))
-        self.assertEqual(record["scenario_data"]["situation"], "in_menu")
-        self.assertNotIn("decision_tree", out)
+        out = self.play(human, tester="kim")
+        rows = self.lines(human)
+        self.assertEqual(sorted(r["engine"] for r in rows), sorted(STUDY_ENGINES))
+        self.assertEqual([r["engine"] for r in rows], play_engine_session.engine_order("kim", 0))
+        self.assertEqual({r["scenario"] for r in rows}, {"human-kim-r1"})  # paired: the same wish
+        wish = rows[0]["scenario_data"]
+        self.assertEqual((wish["situation"], wish["certainty"], wish["round"]), ("in_menu", "high", 0))
+        self.assertEqual([t["name"] for t in wish["targets"]], ["짬뽕"])
+        self.assertEqual({(r["outcome"], r["satisfaction"]) for r in rows}, {("accepted", 4)})
+        self.assertTrue(all(r["trace"][0]["question"] for r in rows))
+        self.assertEqual(next(r for r in rows if r["engine"] == "llm")["llm"]["fallbacks"], 0)  # Korean questions
+        for engine in STUDY_ENGINES:
+            self.assertNotIn(engine, out)
+        self.assertIn("비슷하거나 든든하거나", out)  # the simulator's criterion for proposals it does not name
 
         check = self.folder / "check.jsonl"
         user = FakeUserLLM(answer="yes")
@@ -714,46 +749,78 @@ class CommandTests(TestCase):
             calls = len(user.calls)
             call_command(*args, stdout=io.StringIO())
         self.assertEqual(len(user.calls), calls)  # cached next to --output
-        rows = self.lines(check)
-        self.assertEqual({(r["human"], r["simulator"]) for r in rows if "question" in r}, {("yes", "yes")})
-        self.assertEqual([(r["human"], r["simulator"]) for r in rows if "proposal" in r],
-                         [(True, False)])  # the person took a dish that is not 짬뽕; the simulator would not
+        checked = self.lines(check)
+        self.assertEqual({(r["human"], r["simulator"]) for r in checked if "question" in r}, {("yes", "yes")})
+        person = [t for r in rows for t in r["trace"] if t.get("judged_by") == "person"]
+        self.assertEqual(sum("proposal" in r for r in checked), len(person))  # not the rule's verdicts
 
-        self.fakes()
-        self.collect("--repeats", "1", "--situations", "in_menu")
         folder = self.folder / "report"
-        call_command("benchmark_engines", "--scenarios", str(self.scenarios), "--sessions", str(self.sessions),
-                     "--human", str(human), "--simulator-check", str(check), "--output-dir", str(folder),
-                     "--no-plots", stdout=io.StringIO())
+        call_command("benchmark_engines", "--scenarios", str(self.scenarios), "--human", str(human),
+                     "--simulator-check", str(check), "--output-dir", str(folder), stdout=io.StringIO())
         text = (folder / "report.md").read_text(encoding="utf-8")
-        self.assertIn("1 testers, 0 of them with 2 sessions on each engine", text)
+        self.assertNotIn("## 1. Main metrics", text)  # people's sessions only
+        self.assertIn("1 testers, 1 complete rounds", text)
         self.assertIn("same answer 100.0%", text)
-        self.assertIn("same verdict 0.0% of the time", text)
+        self.assertIn("| in_menu | high | rl | 1 |", text)
+        self.assertTrue((folder / "9_user_study" / "user_study_certainty.csv").exists())
 
-    def test_typed_dishes_none_of_them_served_are_not_in_menu(self):
-        served, gone = {"matches": [4]}, {"matches": []}
-        self.assertEqual([play_engine_session.situation_of(t) for t in ([gone, gone], [served, gone], [served], [gone])],
-                         ["not_in_menu", "multiple", "in_menu", "not_in_menu"])
+    def test_a_stopped_round_continues_with_the_same_wish_and_plays_a_failed_session_again(self):
+        self.build()
+        human = self.folder / "human.jsonl"
+        self.play(human, fail_at=3)
+        failed = self.lines(human)
+        self.assertEqual(failed[-1]["outcome"], "error")
+        out = self.play(human, pick="5")  # not asked: the round keeps its wish
+        self.assertIn("이어서", out)
+        rows = [r for r in self.lines(human) if r["outcome"] != "error"]
+        self.assertEqual(sorted(r["engine"] for r in rows), sorted(STUDY_ENGINES))
+        self.assertEqual({t["name"] for r in rows for t in r["scenario_data"]["targets"]}, {"짬뽕"})
+        self.play(human, pick="1,5")  # the next round is the next situation
+        self.assertEqual(self.lines(human)[-1]["scenario_data"]["situation"], "multiple")
 
-    def test_the_blind_order_balances_any_session_count(self):
-        with mock.patch.object(play_engine_session, "SESSIONS_PER_ENGINE", 3):
-            order = play_engine_session.blind_order("kim")
-        self.assertEqual(Counter(order), {"decision_tree": 3, "llm": 3})
-        self.assertEqual(order[:2], order[2:4][::-1])
+    def test_a_tester_meets_every_situation_and_every_engine_in_every_position(self):
+        self.assertEqual(sorted(play_engine_session.situations("kim")), sorted(SITUATIONS))
+        orders = [play_engine_session.engine_order("kim", n) for n in range(len(STUDY_ENGINES))]
+        for position in range(len(STUDY_ENGINES)):
+            self.assertEqual(sorted(order[position] for order in orders), sorted(STUDY_ENGINES))
+
+    def test_picks_follow_the_situation(self):
+        def pick(situation, *typed):
+            answers, out = iter(typed), []
+            return play_engine_session.choose_targets(situation, CANDIDATES, lambda prompt="": next(answers),
+                                                      out.append), out
+
+        targets, _ = pick("multiple", "1", "1,1", "4,5")
+        self.assertEqual([t["name"] for t in targets], ["짬뽕", "물냉면"])
+        targets, out = pick("not_in_menu", "볶음", "마라탕")
+        self.assertIn("오늘 메뉴에 있습니다", out[-1])  # 볶음밥 is served
+        self.assertEqual((targets[0]["name"], targets[0]["matches"], targets[0]["features"]["spicy"]),
+                         ("마라탕", [], 1.0))  # features from the database
+        targets, _ = pick("not_in_menu", "평양냉면집 만두")
+        self.assertIsNone(targets[0]["features"])  # never tagged: no similarity
+        targets, out = pick("close_alternative", "1")
+        self.assertEqual([line for line in out if "~" in line],
+                         ["  1) 소고기볶음밥 (학생회관식당 5000원)  ~ 비슷한 메뉴: 볶음밥",
+                          "  2) 닭고기볶음밥 (학생회관식당 5000원)  ~ 비슷한 메뉴: 볶음밥"])
+        self.assertEqual((targets[0]["name"], targets[0]["close"]), ("소고기볶음밥", ["볶음밥"]))
+
+    def test_a_person_judges_only_what_the_rule_leaves_to_the_simulator(self):
+        def judge(item, food_id):
+            asked = []
+            user = play_engine_session.HumanUser(item, lambda prompt="": asked.append(prompt) or "n", lambda text: None)
+            food = next(c for c in CANDIDATES if c["food_id"] == food_id)
+            verdict = user.judge({"food": food})
+            return verdict["accepted"], verdict["judged_by"], len(asked)
+
+        self.assertEqual(judge(scenario("in_menu", "볶음밥"), 2), (True, "rule", 0))
+        close = scenario("close_alternative", "소고기볶음밥") | {"situation": "close_alternative"}
+        self.assertEqual(judge(close, 1), (False, "rule_only", 0))
+        self.assertEqual(judge(scenario("in_menu", "짬뽕"), 5), (False, "person", 1))
 
     def test_not_served_targets_have_current_features(self):
         Food.objects.filter(name="마라탕").update(feature_version="v1")
         data = self.build("not_in_menu:1")
         self.assertEqual(data["scenarios"][0]["targets"][0]["name"], "치즈볶음밥")
-
-    def test_each_tester_plays_two_sessions_per_engine_in_a_balanced_order(self):
-        self.build()
-        human = self.folder / "human.jsonl"
-        for _ in range(4):
-            self.play(human)
-        engines = [row["engine"] for row in self.lines(human)]
-        self.assertEqual(Counter(engines), {"decision_tree": 2, "llm": 2})
-        self.assertEqual(engines[:2], engines[:1:-1])  # A B B A
 
     def test_pipeline_keeps_scenarios_sessions_and_sections_in_one_folder(self):
         results = self.folder / "results"
@@ -789,7 +856,7 @@ class CommandTests(TestCase):
         self.scenarios = folder / "scenarios.json"
         human_dir = folder / "9_user_study" / "human"
         human_dir.mkdir(parents=True)
-        self.play(human_dir / "lee.jsonl", engine="decision_tree")
+        self.play(human_dir / "lee.jsonl")
         calls = engine.calls
         call_command(*args, stdout=io.StringIO())  # continues: no new session, people's sessions read
         self.assertEqual(engine.calls, calls)
