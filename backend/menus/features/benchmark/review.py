@@ -33,6 +33,7 @@ the report adds the raters' agreement on their values.
 
 from __future__ import annotations
 
+import pathlib
 import random
 from collections import defaultdict
 from itertools import combinations
@@ -289,6 +290,8 @@ def load(paths) -> list[dict]:
     "stratum", "population"}."""
     reviews = []
     for path in paths:
+        if pathlib.Path(path).name.startswith("~$"):  # Excel's lock file of an open workbook
+            continue
         book = openpyxl.load_workbook(path, read_only=True, data_only=True)
         sample = list(book[SAMPLE_SHEET].iter_rows(values_only=True))
         population = {row[0]: row[1] for row in sample[1:1 + len(STRATA)]}
