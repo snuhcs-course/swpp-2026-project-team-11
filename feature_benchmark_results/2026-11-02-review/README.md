@@ -85,13 +85,19 @@ so anchoring on the AI's marks is possible.
 | Cafeteria | 4 | 80 | 98.2% | 99.4% | large_portion 82.7% | **no** |
 | General | 3 | 50 | 98.1% | 98.6% | rice 90.3% | yes |
 
+**Why the cafeteria fails: one feature, `large_portion`, at 82.7% against the 85% bar.** Every other feature and both overall accuracies pass.
+
+- **One rater (이민규):** all 14 large_portion marks come from one rater, on 14 of their 20 dishes. The three other raters marked none.
+- **Generous portions:** that rater judged portions larger than the LLM did, mostly fried chicken, tonkatsu, fried rice and noodle soups: 0.3–0.4 → 0.5–0.7.
+- **Small gaps:** 8 of the 14 marks are below the 0.3 gap that defines a wrong mean (0.05–0.25). Counting only the 6 marks of 0.3 or more, large_portion is 93.5% and the cafeteria passes; the lowest feature is then greasy at 91.7%.
+- **Underneath, the LLM barely varies `large_portion`:** 113 of the 127 cafeteria dishes (89%) get 0.3–0.4. So the feature says little, and its errors depend on how big a rater thinks a usual portion is. The rubric's reference portion is worth revisiting before the next extraction.
+
+Other findings:
+
 - Hard and other dishes score alike (cafeteria 98.2% and 98.2%; general 98.8% and 97.9%):
   the hardness signals did not pick out the values people call wrong.
 - Below 95% on means: cafeteria large_portion, rice 90.9%, greasy 91.7%; general rice 90.3%,
   korean 93.2%, oily, pork and large_portion 94.3%.
-- Sensitivity: counting only 이민규's changes of 0.3 or more on means (9 X instead of 27, no std
-  marks), the cafeteria passes: mean 98.9%, large_portion 93.5%, lowest greasy 91.7%. The failure
-  rests on how that workbook is converted.
 - Raters differ a lot. X on means per 20 cafeteria dishes: 구본재 2, 이승호 3, 김신서 14, 이민규 27;
   per general workbook: 구본재 3, 이승호 6, 김신서 18. With no shared dishes this cannot be told
   apart from differences between their dishes.
