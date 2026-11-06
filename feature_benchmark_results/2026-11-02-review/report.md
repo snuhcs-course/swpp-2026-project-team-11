@@ -5,7 +5,7 @@ Accuracy: the share of values judged reasonable on completed rows, the hard and 
 | source | raters | dishes | completed | unknown | mean | worst mean | std | worst std | pass | agreement (shared dishes) | X agreement |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | cafeteria 2026-11-02 | 4 | 80 | 80 | 0 | 98.2% | large_portion 82.7% | 99.4% | rice 93.4% | no | - | - |
-| general | 3 | 50 | 50 | 0 | 98.1% | rice 90.3% | 98.6% | rice 90.3% | yes | - | - |
+| general | 4 | 66 | 66 | 0 | 98.2% | large_portion 90.5% | 98.9% | rice 92.7% | yes | - | - |
 
 **By stratum** (hard: 2+ signals, half of each sample; accuracy unweighted)
 
@@ -13,8 +13,8 @@ Accuracy: the share of values judged reasonable on completed rows, the hard and 
 |---|---|---|---|---|---|
 | cafeteria 2026-11-02 | hard | 39 | 39 | 98.2% | 99.2% |
 | cafeteria 2026-11-02 | other | 88 | 41 | 98.2% | 99.5% |
-| general | hard | 465 | 25 | 98.8% | 99.0% |
-| general | other | 1133 | 25 | 97.9% | 98.5% |
+| general | hard | 465 | 33 | 98.5% | 99.1% |
+| general | other | 1133 | 33 | 98.1% | 98.9% |
 
 **Accuracy per feature, cafeteria 2026-11-02**
 
@@ -57,35 +57,35 @@ Accuracy: the share of values judged reasonable on completed rows, the hard and 
 
 | key | 이름 | mean | std |
 |---|---|---|---|
-| spicy | 매운맛 | 96.0% | 93.2% |
+| spicy | 매운맛 | 96.1% | 94.8% |
 | sweet | 단맛 | 100.0% | 100.0% |
-| sour | 신맛 | 97.2% | 97.2% |
-| oily | 기름기 | 94.3% | 97.2% |
-| greasy | 느끼함 | 96.0% | 97.2% |
-| smoky | 불향 | 96.0% | 93.2% |
-| crispy | 바삭함 | 98.8% | 100.0% |
+| sour | 신맛 | 97.9% | 97.9% |
+| oily | 기름기 | 95.7% | 97.9% |
+| greasy | 느끼함 | 97.0% | 97.9% |
+| smoky | 불향 | 97.0% | 94.8% |
+| crispy | 바삭함 | 99.1% | 100.0% |
 | soupy | 국물 있음 | 100.0% | 100.0% |
 | hot | 뜨거움 | 100.0% | 100.0% |
-| cold | 차가움 | 97.2% | 97.2% |
+| cold | 차가움 | 97.9% | 97.9% |
 | fried | 튀김 | 100.0% | 100.0% |
-| grilled | 구이 | 97.2% | 100.0% |
+| grilled | 구이 | 97.9% | 100.0% |
 | stir_fried | 볶음 | 100.0% | 100.0% |
-| rice | 밥 중심 | 90.3% | 90.3% |
+| rice | 밥 중심 | 92.7% | 92.7% |
 | noodle | 면 중심 | 100.0% | 100.0% |
 | bread | 빵 중심 | 100.0% | 100.0% |
-| wheat | 밀 | 97.7% | 97.7% |
+| wheat | 밀 | 97.4% | 98.2% |
 | beef | 소고기 | 100.0% | 100.0% |
-| pork | 돼지고기 | 94.3% | 97.2% |
+| pork | 돼지고기 | 95.7% | 97.9% |
 | chicken | 닭고기 | 100.0% | 100.0% |
-| fish | 생선 | 98.8% | 98.8% |
+| fish | 생선 | 99.1% | 99.1% |
 | crustacean | 갑각류 | 100.0% | 100.0% |
 | bivalve | 이매패류 | 100.0% | 100.0% |
 | cephalopod | 두족류 | 100.0% | 100.0% |
-| large_portion | 양이 많음 | 94.3% | 100.0% |
-| filling | 포만감 | 100.0% | 100.0% |
-| korean | 한식 | 93.2% | 98.8% |
+| large_portion | 양이 많음 | 90.5% | 100.0% |
+| filling | 포만감 | 97.0% | 100.0% |
+| korean | 한식 | 93.9% | 98.2% |
 | chinese | 중식 | 100.0% | 100.0% |
-| japanese | 일식 | 100.0% | 100.0% |
+| japanese | 일식 | 99.1% | 100.0% |
 | western | 양식 | 100.0% | 100.0% |
-| southeast_asian | 동남아식 | 98.8% | 98.8% |
+| southeast_asian | 동남아식 | 99.1% | 99.1% |
 | indian | 인도식 | 100.0% | 100.0% |
