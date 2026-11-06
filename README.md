@@ -1,210 +1,246 @@
-# Metchu! — Iteration 1 Demo (SNU SWPP 2026 Team 11)
+# Metchu! — Iteration 3 Demo (SNU SWPP 2026 Team 11)
 
-Metchu helps you decide what to eat at the SNU cafeterias. It asks a few quick
-questions and proposes a dish from that day's menu. This branch is the working
-prototype at the end of Iteration 1.
-
-For the current app, see the [Android setup](client/README.md). Settings also offers a
-[feature-only RL engine](backend/README.md#feature-only-rl).
+Metchu helps you decide what to eat around SNU. It asks a few quick questions
+and proposes a dish from that day's menus, with where to get it, how far it is
+and why it suits you. This branch is the working demo at the end of Iteration 3:
+`main` at `e36f6ea` plus the demo video and this guide.
 
 ## Demo video
 
-[Watch the demo video](docs/iteration-1-demo.mp4) (2 min 18 s, a screen recording
-of the app).
+[Watch the Iteration 3 demo video](docs/iteration-3-demo.mp4) (1 min 41 s, a
+screen recording of the app on an Android phone, in Korean).
 
-It plays two sessions on the same lunch menu (September 29, 2026, 193 dishes),
-one with each question engine:
+It was recorded on November 4, 2026 against the team server, with that day's
+lunch menu:
 
-1. **Decision tree** (0:00). The app asks yes/no questions about the food. When
-   it proposes a kind of dish (볶음밥, then 정식/뷔페) the user says no, and it
-   goes on to propose a single dish, 숯불양념치킨덮밥, which the user accepts. The
-   result shows the cafeteria and the price.
-2. **LLM** (from about 1:15). Gemini writes the questions. The user rejects its first
-   proposal, 마라쌀국수, answers a few more questions, and gets 우삼겹짬뽕.
+1. **First launch** (0:00). The app asks for the language, then for allergies,
+   and points to the globe and gear buttons where both change later. It then
+   asks for the location, to show nearby cafeterias and their distances.
+2. **Settings** (about 0:22). Egg is picked as an allergy, so no dish that may
+   contain egg is proposed. The question engine is RL, the default; the LLM
+   engine is shown but unavailable for now.
+3. **Questions** (from about 0:35). The start screen reads "오늘 점심은 가까운
+   식당에서 먹을래요" over a map. The RL engine asks questions such as "빵으로 된
+   식사가 당기나요?", and each is answered on a five-step slider. The answered
+   questions stay listed above the current one.
+4. **Result** (about 0:55). The app proposes 핫소마요치킨 at 버거운버거, 388 m
+   away (a 5-minute walk), on a map with the user's position. A sentence explains
+   why it fits the answers, and the menu icon lists everything that cafeteria
+   serves for lunch.
+5. **Find another** (from about 1:05). The user turns the dish down. After a
+   second chicken dish (칠리마요치킨), they keep chicken out for the rest of the
+   session. More questions lead to C코너 셀프라면 at 예술계식당 and then
+   양념치킨버거. Chips above the sheet switch between the dishes proposed so far.
 
-[Step 4](#4-try-it) below repeats these two sessions on your own machine.
+The setup below uses the committed November 2 snapshot, so its dishes and
+questions differ from the video. The [Iteration 1 recording](docs/iteration-1-demo.mp4)
+is kept for comparison; the Iteration 2 one is on the
+[`iteration-2-demo`](https://github.com/snuhcs-course/swpp-2026-project-team-11/tree/iteration-2-demo) branch.
 
 ## How to run the demo
 
 The demo has two parts: a Django server that runs the question engines, and an
-Android app that plays a session against it. Both run on one machine; the app
-runs on an Android emulator.
+Android app that plays a session against it.
 
 You need:
 
 - Python 3.11 or newer
-- Android Studio with an emulator (we used "Medium Phone", API 36)
-- Only for the LLM half of the demo: an OpenRouter API key
+- JDK 21 (the Android build fails on JDK 25)
+- Android Studio with an emulator (we used "Medium Phone", API 36) or an
+  Android phone
+- Optional: a Google Maps API key for the maps, and an OpenRouter API key for
+  LLM-written explanations
 
 ### 1. Start the server
 
-From the repository root:
+Clone the demo branch, then run the server from the repository root:
 
 ```bash
+git clone --branch iteration-3-demo https://github.com/snuhcs-course/swpp-2026-project-team-11.git
+cd swpp-2026-project-team-11
 python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
 python -m pip install -r backend/requirements.txt
+export DATABASE_URL=                 # local SQLite, even if .env names the shared DB
 python backend/manage.py migrate
 python backend/manage.py loaddata menus_2026-11-02
 METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
 ```
 
-`loaddata` fills the local database with the shared menu snapshot, so no API key
-is needed for the menu. The snapshot only has November 2, 2026, which is why
-the server is started with `METCHU_MENU_DATE`.
+`loaddata` fills the local database with the shared snapshot: the SNU
+cafeteria menus of November 2, 2026, already preprocessed and tagged with food
+features and allergens, so no API key is needed. The snapshot has only that
+day, which is why the server is started with `METCHU_MENU_DATE`.
+
+On PowerShell, use `$env:DATABASE_URL = " "` and set
+`$env:METCHU_MENU_DATE = "2026-11-02"` before running the server command without
+its inline `METCHU_MENU_DATE=...` prefix.
 
 Leave this terminal open. To check the server from a second terminal:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/sessions/ -H 'Content-Type: application/json' -d '{"meal": "LU"}'
+curl -X POST http://127.0.0.1:8000/api/sessions/ -H 'Content-Type: application/json' \
+  -d '{"meal": "LU", "engine": "rl", "source": "all", "language": "ko"}'
 ```
 
-It answers with a JSON session whose `candidate_count` is 193 and whose first
-`step` is a question.
+It answers with a JSON session whose first `step` is a question (in Korean).
 
-### 2. (Optional) Enable the LLM engine
+### 2. (Optional) Add API keys
 
-The decision-tree engine needs nothing else. To try the LLM engine as well, get
-an [OpenRouter](https://openrouter.ai/keys) key from the team and put it in a
-`.env` file in the repository root **before** starting the server:
+The decision tree and RL engines need no key. With an
+[OpenRouter](https://openrouter.ai/keys) key (ask the team), the result screen's
+explanation is written by an LLM; without one, the server writes it from a
+template. Put the key in a `.env` file in the repository root **before**
+starting the server:
 
 ```bash
 cp .env.example .env      # then set OPENROUTER_API_KEY=your-key
 ```
 
 `.env` is gitignored. If the server is already running, stop it with Ctrl-C and
-run the last command of step 1 again. Without a key, choosing LLM in the app
-shows a message that the LLM engine is not set up, and the decision tree keeps
-working.
+run the last command of step 1 again.
 
 ### 3. Run the app
 
-Open the `client/` folder (not the repository root) in Android Studio, wait for
-the Gradle sync, start an emulator from the Device Manager, and run the `app`
-configuration. The app defaults to the team server. To use the local server
-from the emulator, set `metchu.baseUrl=http://10.0.2.2:8000/` in the untracked
-`client/local.properties` and rebuild.
+Open the `client/` folder (not the repository root) in Android Studio and wait
+for the Gradle sync. The app defaults to the team server, which is up only while
+the team runs it. To use the local server from step 1 instead, create the
+untracked `client/local.properties` with:
 
-From a terminal instead, with the emulator running and JDK 21 as `JAVA_HOME`
-(the build fails on JDK 25):
+```properties
+metchu.baseUrl=http://10.0.2.2:8000/
+metchu.mapsApiKey=AIza...            # optional; without it the maps are left out
+```
+
+Then start an emulator from the Device Manager and run the `app` configuration.
+From a terminal instead, with the emulator running and JDK 21 as `JAVA_HOME`:
 
 ```bash
 cd client && ./gradlew installDebug
 ```
 
-If the app shows "Could not reach the server", the server from step 1 is not
-running, or `client/local.properties` has a `metchu.baseUrl` left over from
-another setup; remove that line and run the app again.
+On the emulator, set a position near campus under Extended controls > Location
+(for example 37.4600, 126.9520) so the app can show distances.
 
-For a phone on a USB cable, forward the port and point the app at it in the
-untracked `client/local.properties`, then run the app again:
+For a phone on a USB cable, run `adb reverse tcp:8000 tcp:8000` and use
+`metchu.baseUrl=http://127.0.0.1:8000/`. From another network, start the server
+behind a Cloudflare Tunnel with `manage.py serve_public`. The
+[client guide](client/README.md#run-it) covers these setups and the Maps key.
 
-```bash
-adb reverse tcp:8000 tcp:8000
-```
-
-```properties
-metchu.baseUrl=http://127.0.0.1:8000/
-```
-
-From another network (mobile data, another Wi-Fi), start the server behind a
-[Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
-instead of `runserver`. It needs `cloudflared` on the server machine, but no port
-forwarding or Cloudflare account:
-
-```bash
-brew install cloudflared                 # once; Windows: winget install Cloudflare.cloudflared
-METCHU_MENU_DATE=2026-11-02 python backend/manage.py serve_public --write-client-config
-```
-
-It prints a public `https://<random>.trycloudflare.com/` address and writes it to
-`client/local.properties`; rebuild the app to use it. The address changes on
-every start. The [client guide](client/README.md#from-another-network-cloudflare-tunnel)
-covers the details and a fixed address with a named tunnel.
+If the app shows "Could not reach the server", the server is not running or
+`metchu.baseUrl` points somewhere else.
 
 ### 4. Try it
 
-The video shows the earlier screens; the steps below are for the current app
-(the i3-P4 redesign).
+The steps follow the video:
 
-1. The first launch asks for the language, then any allergies (tap **Next**),
-   and points to where both change later. On the start screen, set the sentence to **Lunch** (tap the orange word) and tap the round
-   **Start** button. The meal starts at the next one by the clock; the fixture
-   has breakfast, lunch and dinner for 2026-11-02.
-2. Answer with the five circles (no … yes) or **I'm not sure**. ‹ undoes the
-   last step, and tapping an earlier question goes back to it. There is no fixed
-   number of questions: the engine proposes something when it is confident
-   enough, and **Recommend now** asks for a proposal right away.
-3. The result shows the dish (or a kind of dish with an example), the
-   cafeterias and their prices, with a map when a Maps key is set. **Find
-   another** turns it down and asks on; **Start over** returns to the start.
-4. In Settings (gear), choose **LLM** to play the same menu with the LLM writing
-   the questions (needs the key from step 2). Each step takes a few seconds.
+1. On the first launch, pick the language, pick any allergies and tap
+   **Next**, then close the tip. Allow the location when asked.
+2. On the start screen, tap the meal to choose **Lunch** and the place to choose
+   nearby or all cafeterias, then tap the round **Start** button. The gear opens
+   Settings: allergies and the question engine (RL by default, or the decision
+   tree).
+3. Answer each question with the five circles (no … yes) or **I'm not sure**.
+   ‹ undoes the last step, and tapping an earlier question goes back to it.
+   **Recommend now** asks for a proposal right away.
+4. The result shows the dish, why it suits you, and the cafeterias that serve
+   it with prices and walking distances. Tap a cafeteria to move the map to it;
+   the menu icon lists its other dishes.
+5. Tap **Find another** to turn the dish down and go on. Once a food group
+   appears twice among the last three proposals, a link keeps it out of the rest
+   of the session. Home returns to the start screen.
 
-Your questions and dishes will differ from the video's: they depend on your
-answers, and the LLM engine words its questions differently every time.
+Questions and dishes depend on your answers and allergies.
 
-Without the app, the same engines run in a terminal:
+Without the app, the decision tree also runs in a terminal:
 
 ```bash
 python backend/manage.py demo_decision_tree --date 2026-11-02 --meal LU
-python backend/manage.py demo_llm_engine --date 2026-11-02 --meal LU     # needs the key
 ```
 
 ### Tests
 
 ```bash
-python -m pytest backend                                           # 183 tests, no API key
-cd client && ./gradlew testDebugUnitTest                            # 81 unit tests
-cd client && ./gradlew connectedDebugAndroidTest                    # 14 UI tests, needs an emulator
+python -m pytest backend                                           # no API key or network
+(cd client && ./gradlew testDebugUnitTest)                          # JDK 21
+(cd client && ./gradlew connectedDebugAndroidTest)                  # needs an emulator
 ```
 
 ## Environment we used
 
 | | |
 | --- | --- |
-| OS | macOS 26.6 (Apple Silicon) |
-| Server | Python 3.14, Django 5.2, SQLite (or the shared Supabase Postgres via `DATABASE_URL`, see `backend/README.md`) |
-| LLM | Gemini (`gemini-3.5-flash-lite` for questions) through `langchain-google-genai` 4.4 |
-| Android build | Android Studio 2026.1, Gradle 8.13, Android Gradle Plugin 8.12, Kotlin 2.0.21, JDK 21 |
-| Android target | `compileSdk` 36, `minSdk` 26 |
-| Devices | Emulator "Medium Phone" (API 36) and a Galaxy Note20 (SM-N981N) over USB |
+| OS | macOS 26.6.2 (Apple Silicon) |
+| Server | Python 3.14, Django 5.2, local SQLite or the shared Supabase Postgres; Python 3.11 in GitHub Actions |
+| Team server | A mini PC run by the team, reached through an ngrok address (the app's default) |
+| Question engines | Decision tree and RL in Python + NumPy on CPU; LLM engine (`google/gemini-3.5-flash-lite` through OpenRouter), currently disabled in the app |
+| Menu preprocessing and features | Configurable Google/OpenAI model through LangChain; already computed in the shared fixture |
+| Android build | Android Studio 2026.1, Gradle 8.13, Android Gradle Plugin 8.12, Kotlin 2.0.21, Jetpack Compose, JDK 21 |
+| Android target | `compileSdk` 36, `minSdk` 26, Google Maps SDK for Android |
+| Devices | Emulator "Medium Phone" (API 36) and an Android phone (the video) |
 
 ## What the demo demonstrates
 
 ### Features implemented
 
-- **Cafeteria menu database.** A day's SNU cafeteria menu is fetched, cleaned
-  and stored, and each dish is tagged with food features by an LLM. The shared
-  snapshot holds the result for one day.
-- **Decision-tree question engine.** Picks the next question from the dishes'
-  features, updates its belief after each answer, and proposes a dish or a kind
-  of dish. Runs without any API key.
-- **LLM question engine.** Gemini writes each question from the dish names
-  alone and proposes a dish. If a call fails or times out, the session goes on
-  with a fixed question or a random dish.
-- **REST session API.** One API runs either engine: start a session, answer,
-  accept or reject a proposal, ask for a recommendation now, and undo.
-- **Android app.** Start, settings, question and result screens that follow the
-  session. The start screen chooses the meal and the distance; settings hold the
-  allergies and the engine.
+- **Menu database.** A daily GitHub Actions job fetches, cleans and stores the
+  SNU cafeteria menus, and each sales menu is tagged with food features and possible
+  allergens by an LLM. Restaurants near 서울대입구역 and 낙성대역 are imported
+  from Naver Place menus in the same format.
+- **Question engines behind one API.** A feature-only reinforcement learning
+  (RL) policy, the default, and a decision tree pick the next question from the
+  dishes' features and decide when to propose. Both run without an API key. The
+  LLM engine is kept on the server but disabled in the app for now.
+- **REST session API.** Start a session, answer, turn down a proposal, ask for a
+  recommendation now, undo, keep a dish or food group out, list a cafeteria's
+  menu, and get an explanation of the proposed dish.
+- **Android app.** First-launch language and allergy setup, a start screen with
+  the meal and distance choices over a map, a question screen with a five-step
+  slider and the answer history, and a result screen with a map, the
+  explanation, and the cafeterias with prices and walking distances. English and
+  Korean throughout.
 
-### Goals of the prototype
+### Major progress during Iteration 3
 
-- Show the whole path working end to end: menu data → question engine → REST
-  API → phone.
-- Check that a short series of yes/no questions can lead to a real dish on
-  today's menu, with a way out at every step (undo, recommend now, reject).
-- Put the two engines behind one interface so they can be compared on the same
-  menu in the same app.
+- **Redesigned app (P4, #19, #40).** Rebuilt every screen from the UI/UX design:
+  the sentence-style start screen, the five-step slider, a map-based result
+  screen with a draggable sheet, and floating actions. Fixes from a heuristic
+  evaluation (#29), faster answer taps (#28) and a first-launch setup (#35)
+  followed.
+- **Location, maps and distances (P15, #16, #20, #33).** The result map shows
+  the cafeterias serving the dish with the user's position, and the list shows
+  distances and walking times. "Nearby" keeps cafeterias within 800 m.
+- **Allergy filter (#18).** Dishes that may contain a picked allergen are never
+  proposed, using LLM-estimated allergen tags with a note to check at the
+  cafeteria.
+- **More places to eat (P9, #22, #23, #30, #42).** Added the restaurants near
+  서울대입구역 and 낙성대역 from Naver Place menus, the 300동 food court
+  구시아푸드마켓 from a fixed board, and sessions over all of them at once.
+- **RL engine and real sales menus (P12, #27, #31, #34, #38, #44).** Added a
+  feature-only RL policy, now the app's default. Candidates are the actual
+  menus as the cafeterias sell them, with their real names and prices, scored
+  from source-scoped feature profiles.
+- **Decision tree at scale (P10, #43).** The decision tree no longer builds
+  quadratic matrices for sales-menu catalogs, so a session over about 6,300
+  combined menus starts in seconds.
+- **Explanations, language and control (#25, #26, #36, #37).** Each session runs
+  in the app's language; the result explains why the dish fits; a cafeteria's
+  full menu opens from the result; a food group can be kept out of the session.
+- **Team workflow (P3, #15, #24, #41).** A shared harness for agent task
+  records, usage and the schedule sheet; `main` became the integration branch;
+  the app defaults to the team server.
 
 ### Known limits
 
-- Only the 2026-11-02 menu is included. Other dates need a menu fetch and a
-  Gemini key for tagging.
+- Only the 2026-11-02 cafeteria menus are included as a loadable fixture. The
+  restaurants near the stations and other dates need a menu fetch and a model
+  API key for preprocessing and tagging, so the local demo shows the campus
+  cafeterias only.
+- Allergen tags are LLM estimates from menu names, not the cafeterias' data.
 - Sessions live in server memory; restarting the server ends them.
-- The API has no login. It is meant for a local demo, not a public server.
-- We have not yet measured how often people accept the first proposal.
+- The API has no login. It is meant for a demo, not a public service.
+- Engine comparisons so far use simulated users. The study with real students
+  was moved to Iteration 4.
 
 ## Agent workflow
 
