@@ -632,7 +632,8 @@ python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
 - `feature_benchmark_results/2026-11-02-review/` holds the cafeteria workbooks of the 2026-11-02
   snapshot (80 of 127 dishes, all 39 hard ones; 20 per rater) and the general ones from the
   2026-11-04 export (snapshot of 2026-11-03; 66 of 1,598 dishes, 33 of the 465 hard; 16-17 per
-  rater). Steps: [the handout](../docs/p21-human-evaluation.md).
+  rater). Steps: [the handout](../docs/p21-human-evaluation.md); plan revisions, collection log
+  and results: [its README](../feature_benchmark_results/2026-11-02-review/README.md).
 
 ## Making a new shared snapshot
 

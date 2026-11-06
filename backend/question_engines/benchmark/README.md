@@ -72,8 +72,8 @@ plays four rounds, one per situation, in turn from a start chosen by their name.
 
 Play on a separate local database with the snapshot loaded (`migrate`, `loaddata menus_2026-11-02`):
 a dish typed in for `not_in_menu` takes its features from there, and an explicit `DATABASE_URL`
-keeps `.env` from pointing the commands at the shared database. The steps for testers, the mini
-PC owner and the collector are in [docs/p21-human-evaluation.md](../../../docs/p21-human-evaluation.md).
+keeps `.env` from pointing the commands at the shared database. The steps for testers and the
+collector are in [docs/p21-human-evaluation.md](../../../docs/p21-human-evaluation.md).
 
 ```bash
 export DATABASE_URL=sqlite:///p21.sqlite3 METCHU_MAX_QUESTIONS=20   # the question limit of the simulated runs
