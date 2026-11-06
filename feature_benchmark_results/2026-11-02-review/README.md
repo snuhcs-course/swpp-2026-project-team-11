@@ -6,9 +6,8 @@ each dish, every one of the 32 means and 32 stds is marked X (wrong) or left bla
 [backend/README.md](../../backend/README.md#human-review-of-the-extracted-features-p21);
 the raters' steps (Korean) are in [docs/p21-human-evaluation.md](../../docs/p21-human-evaluation.md).
 
-**Status (2026-11-06): interim.** 7 of 8 workbooks are in; `general_이민규.xlsx` is not.
-[report.md](report.md) is the interim report and is regenerated when the last workbook
-arrives.
+**Status (2026-11-06): complete.** All 8 workbooks are in; [report.md](report.md) is the
+final report.
 
 ## Files
 
@@ -63,14 +62,15 @@ Why: a dish verdict hid which values were wrong (v2); version 1's round-robin sa
 |---|---|---|---|---|
 | 2026-11-06 | 김신서 | 20 done | 17 done | As filled |
 | 2026-11-06 | 이승호 | 20 done | 16 done | As filled |
-| 2026-11-06 | 이민규 | 20 done (converted) | not received | See below |
+| 2026-11-06 | 이민규 | 20 done (converted) | 16 done (converted) | See below |
 | 2026-11-06 | 구본재 | 20 done | 17 done | AI pre-filled, then checked; see below |
 
-**이민규, cafeteria.** The rater overwrote the LLM's values with their own instead of marking X,
+**이민규, both workbooks.** The rater overwrote the LLM's values with their own instead of marking X,
 and left the status blank. On the collector's instruction, every value that differs from the
-original workbook was marked X (34: 27 means, 7 stds), all 20 rows were set to 완료, the LLM's
-values were restored, and the rater's values were written into the comment column
-(`이민규 수정값: key old→new`). This counts changes smaller than the 0.3 rule as wrong.
+original workbook was marked X (cafeteria 34: 27 means, 7 stds; general 10: 9 means, 1 std),
+all rows were set to 완료, the LLM's values were restored, and the rater's values were written
+into the comment column (`이민규 수정값: key old→new`, old values rounded to two decimals).
+This counts changes smaller than the 0.3 rule as wrong.
 
 **구본재, both workbooks.** At 구본재's request Claude (Claude Code) pre-filled both workbooks
 (5 X: rice of 떡국 and 눈꽃치즈떡볶이; grilled of 스테이크샌드위치; large_portion of 농어회 (2인)
@@ -78,12 +78,12 @@ and 쟁반막국수 (특)). 구본재 then checked every row, kept all five mark
 them to count as their ratings. They are reported as 구본재's, but started from an AI pre-fill,
 so anchoring on the AI's marks is possible.
 
-## Interim results (2026-11-06)
+## Results (2026-11-06)
 
 | Source | Raters | Dishes | Mean | Std | Lowest feature (mean) | Pass |
 |---|---|---|---|---|---|---|
 | Cafeteria | 4 | 80 | 98.2% | 99.4% | large_portion 82.7% | **no** |
-| General | 3 | 50 | 98.1% | 98.6% | rice 90.3% | yes |
+| General | 4 | 66 | 98.2% | 98.9% | large_portion 90.5% | yes |
 
 **Why the cafeteria fails: one feature, `large_portion`, at 82.7% against the 85% bar.** Every other feature and both overall accuracies pass.
 
@@ -94,10 +94,12 @@ so anchoring on the AI's marks is possible.
 
 Other findings:
 
-- Hard and other dishes score alike (cafeteria 98.2% and 98.2%; general 98.8% and 97.9%):
+- `large_portion` is also the lowest feature of the general dishes (90.5%; 3 marks by 이민규,
+  2 by 구본재), but it stays above the 85% bar.
+- Hard and other dishes score alike (cafeteria 98.2% and 98.2%; general 98.5% and 98.1%):
   the hardness signals did not pick out the values people call wrong.
-- Below 95% on means: cafeteria large_portion, rice 90.9%, greasy 91.7%; general rice 90.3%,
-  korean 93.2%, oily, pork and large_portion 94.3%.
+- Below 95% on means: cafeteria large_portion, rice 90.9%, greasy 91.7%; general
+  large_portion, rice 92.7%, korean 93.9%.
 - Raters differ a lot. X on means per 20 cafeteria dishes: 구본재 2, 이승호 3, 김신서 14, 이민규 27;
-  per general workbook: 구본재 3, 이승호 6, 김신서 18. With no shared dishes this cannot be told
+  per general workbook (16-17 dishes): 구본재 3, 이승호 6, 이민규 9, 김신서 18. With no shared dishes this cannot be told
   apart from differences between their dishes.
