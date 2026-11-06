@@ -109,6 +109,9 @@ class ReviewTests(SimpleTestCase):
                          [("1", "김치찌개", "완료", {"mean": [], "std": []}),
                           ("3", "짬뽕", "완료", {"mean": ["spicy"], "std": ["soupy"]})])
         self.assertEqual({(r["rater"], r["source"]) for r in rows}, {("kim", "cafeteria 2026-11-02")})
+        lock = self.folder / "~$kim.xlsx"
+        lock.write_bytes(b"\x0bkim")
+        self.assertEqual(len(review.load([path, lock])), 2)
         self.assertEqual([(r["stratum"], r["population"]) for r in rows],
                          [("other", {"hard": 5, "other": 15}), ("hard", {"hard": 5, "other": 15})])
 
