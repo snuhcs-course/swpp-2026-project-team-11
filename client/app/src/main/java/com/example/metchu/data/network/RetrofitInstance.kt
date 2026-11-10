@@ -30,14 +30,31 @@ object RetrofitInstance {
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
+    // Sign-in requests carry passwords and tokens, so only their headers are logged, with the token hidden.
+    private val authClient = OkHttpClient.Builder()
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.HEADERS
+            else HttpLoggingInterceptor.Level.NONE
+            redactHeader("Authorization")
+        })
+        .connectTimeout(5, TimeUnit.SECONDS)
+        // Google sign-in waits while the server checks the token with Google.
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
+
     val api: ApiService by lazy { create(BuildConfig.BASE_URL) }
 
+    val authApi: AuthApi by lazy { createAuth(BuildConfig.BASE_URL) }
+
     /** [baseUrl] must end with a slash. Tests point this at a local fake server. */
-    fun create(baseUrl: String): ApiService =
+    fun create(baseUrl: String): ApiService = retrofit(baseUrl, client).create(ApiService::class.java)
+
+    fun createAuth(baseUrl: String): AuthApi = retrofit(baseUrl, authClient).create(AuthApi::class.java)
+
+    private fun retrofit(baseUrl: String, client: OkHttpClient): Retrofit =
         Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
-            .create(ApiService::class.java)
 }

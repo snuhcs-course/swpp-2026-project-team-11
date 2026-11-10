@@ -211,6 +211,33 @@ fun ActionCapsule(
     }
 }
 
+/**
+ * A 48 dp capsule with a centered label, for a form's actions: [filled] is the orange main
+ * one; otherwise white with dark ink. Disabled, it keeps its place and greys its label.
+ */
+@Composable
+fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val interaction = remember { MutableInteractionSource() }
+    Box(
+        modifier
+            .height(48.dp)
+            .pressScale(interaction)
+            .floating()
+            .clip(CircleShape)
+            .background(if (filled) MetchuColors.Primary else Color.White)
+            .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 22.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        val ink = when {
+            !enabled -> if (filled) Color.White.copy(alpha = 0.6f) else MetchuColors.Grey400
+            filled -> Color.White
+            else -> MetchuColors.Grey900
+        }
+        Text(text, style = MetchuType.Label, color = ink, maxLines = 1)
+    }
+}
+
 /** A disabled segment stays in place, greyed, so the pill never changes shape under a finger. */
 @Composable
 fun PillSegment(

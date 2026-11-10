@@ -37,11 +37,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
 import com.example.metchu.R
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
+import com.example.metchu.data.repository.Account
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
+import com.example.metchu.ui.common.LabelCapsule
 import com.example.metchu.ui.common.NavigationBarFade
 import com.example.metchu.ui.common.PinnedTopRow
 import com.example.metchu.ui.common.TopRowHeight
@@ -51,13 +54,20 @@ import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.screenBackground
 
 /**
- * Allergies to avoid and, for development, which engine asks the questions. Every
- * change is kept at once, so there is no save button.
+ * The account, allergies to avoid and, for development, which engine asks the questions.
+ * Every change is kept at once, so there is no save button. A guest opens the account
+ * screen with [onAccount]; [onLinkGoogle] is null when this build has no Google client ID.
  */
 @Composable
 fun SettingsScreen(
+    account: Account?,
+    accountBusy: Boolean,
+    @StringRes accountError: Int?,
     allergies: List<Allergen>,
     engine: String,
+    onAccount: () -> Unit,
+    onLinkGoogle: (() -> Unit)?,
+    onLogOut: () -> Unit,
     onAllergies: (List<Allergen>) -> Unit,
     onEngine: (String) -> Unit,
     onBack: () -> Unit
@@ -67,6 +77,10 @@ fun SettingsScreen(
         Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(scroll)) {
             Spacer(Modifier.height(TopRowHeight))
             Text(stringResource(R.string.settings), Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp), style = MetchuType.Title)
+
+            Section(stringResource(R.string.settings_account)) {
+                AccountSection(account, accountBusy, accountError, onAccount, onLinkGoogle, onLogOut)
+            }
 
             Section(stringResource(R.string.settings_allergies)) {
                 Text(stringResource(R.string.allergies_body), style = MetchuType.Item)
@@ -87,6 +101,45 @@ fun SettingsScreen(
         PinnedTopRow(scroll) {
             CircleIconButton(Icons.Back, stringResource(R.string.back), onBack, Modifier.testTag("back"))
         }
+    }
+}
+
+/** A guest sees how to sign in; a signed-in user, the account, its Google link and signing out. */
+@Composable
+private fun AccountSection(
+    account: Account?,
+    busy: Boolean,
+    @StringRes error: Int?,
+    onAccount: () -> Unit,
+    onLinkGoogle: (() -> Unit)?,
+    onLogOut: () -> Unit
+) {
+    if (account == null) {
+        Text(stringResource(R.string.account_guest), style = MetchuType.Item)
+        Text(stringResource(R.string.account_guest_hint), style = MetchuType.Caption)
+        LabelCapsule(stringResource(R.string.account_open), onAccount, filled = true, modifier = Modifier.testTag("accountOpen"))
+    } else {
+        val email = account.user.googleEmail
+        Text(account.user.username, Modifier.testTag("accountName"), style = MetchuType.Item)
+        Text(
+            when {
+                email == null -> stringResource(R.string.account_google_none)
+                email.isEmpty() -> stringResource(R.string.account_google_linked)
+                else -> stringResource(R.string.account_google_linked_as, email)
+            },
+            style = MetchuType.Caption
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (email == null && onLinkGoogle != null) {
+                LabelCapsule(stringResource(R.string.account_link_google), onLinkGoogle, filled = false, enabled = !busy,
+                             modifier = Modifier.testTag("accountLinkGoogle"))
+            }
+            LabelCapsule(stringResource(R.string.account_log_out), onLogOut, filled = false, enabled = !busy,
+                         modifier = Modifier.testTag("accountLogOut"))
+        }
+    }
+    if (error != null) {
+        Text(stringResource(error), Modifier.testTag("accountError"), style = MetchuType.Label, color = MetchuColors.Primary)
     }
 }
 

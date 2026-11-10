@@ -6,8 +6,11 @@ import com.example.metchu.data.model.Engine
 /** How far the user will walk. The server has no distance filter, so the result screen applies it. */
 enum class Place { NEAR, ANY }
 
-/** How far the first launch has got: the language, the allergies, then a tip on the start screen. */
-enum class Setup { LANGUAGE, ALLERGIES, TIP, DONE }
+/**
+ * How far the first launch has got: the language, an optional account, the allergies, then a
+ * tip on the start screen. Stored by name, so a step added here does not shift the others.
+ */
+enum class Setup { LANGUAGE, ACCOUNT, ALLERGIES, TIP, DONE }
 
 /** RL unless the decision tree was picked: the LLM engine is switched off, so a stored choice of it falls back too. */
 fun usableEngine(stored: String?): String = if (stored == Engine.DECISION_TREE) stored else Engine.RL
