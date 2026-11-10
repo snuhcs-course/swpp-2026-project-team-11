@@ -1,6 +1,7 @@
 package com.example.metchu.data.auth
 
 import android.content.Context
+import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -29,11 +30,17 @@ class CredentialManagerGoogle(private val serverClientId: String = BuildConfig.G
         val credential = try {
             CredentialManager.create(context).getCredential(context, request).credential
         } catch (e: GetCredentialCancellationException) {
+            // Also how Google reports an app it does not know (an unregistered SHA-1), so say so in the log.
+            Log.i(TAG, "Google sign-in closed without a token: ${e.message}")
             return null
         }
         check(credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
             "Unexpected credential type: ${credential.type}"
         }
         return GoogleIdTokenCredential.createFrom(credential.data).idToken
+    }
+
+    private companion object {
+        const val TAG = "GoogleSignIn"
     }
 }
