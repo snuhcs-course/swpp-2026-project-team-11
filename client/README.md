@@ -162,12 +162,16 @@ the Google Cloud project (Google Auth Platform):
 2. **Clients > Web application**: its client ID is what the app asks Google to address the
    sign-in token to, and what the server checks it against. No client secret is used.
 3. **Clients > Android**: package `com.example.metchu` and the SHA-1 of the keystore that
-   signs your build. Everyone who builds an APK adds one with their own SHA-1; for the
-   debug keystore:
+   signs your build. Everyone who builds an APK adds one with their own SHA-1. Read it from
+   Gradle, which names the keystore it actually signs with (`ANDROID_USER_HOME` can move the
+   debug keystore away from `~/.android`):
 
    ```bash
-   keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+   ./gradlew signingReport    # Variant: debug -> Store: ... and SHA1: ...
    ```
+
+   With a SHA-1 the project does not know, Google's sheet closes without a token and the
+   device log (`adb logcat -s Auth.Api.Credentials`) says `UNREGISTERED_ON_API_CONSOLE`.
 
 4. Put the **web** client ID in `client/local.properties` and, as `METCHU_GOOGLE_CLIENT_ID`,
    in the server's `.env`, then rebuild:
