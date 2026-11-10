@@ -2,27 +2,30 @@
 
 A group rarely agrees on one dish, so group mode recommends one **restaurant** and each
 member's own menu there. Every round, each member answers a question chosen for them.
-The package is pure Python + NumPy on top of the decision tree's `preference` model;
-the RL and LLM engines are not used. There is no REST endpoint or client screen yet.
+The package is pure Python + NumPy on top of the decision tree's intent model; the RL
+and LLM engines are not used. There is no REST endpoint or client screen yet.
 
 ## Model
 
-Each member keeps their own decision-tree state: the intent belief that forecasts their
-answers, and the preference fit `u_i(f)` in [0,1] of every menu (`PreferencePlanner.fit`).
-Menus a member cannot eat (allergies, bans) have fit 0 for that member only.
+Each member keeps their own decision-tree intent belief `b_i(f)`, the probability that
+menu `f` is the one they feel like (uniform over menus before any answer; the same
+answer model as the single-user engine). Menus a member cannot eat (allergies, bans)
+have belief 0 for that member only.
 
 ```text
-U_i(r) = max over menus f served at r of u_i(f)
-G(r)   = sum_i log(EPSILON + U_i(r))        # Nash welfare, EPSILON = .05
+P_i(r) = sum of b_i(f) over the menus f served at r     # i finds their menu at r
+G(r)   = sum_i log P_i(r)                               # Nash welfare
 ```
 
-A restaurant is an offer's `restaurant` name, so `자하연식당>2층` and `>3층` are separate.
-Distance is not part of the score. The recommendation is `argmax G` (ties go to the first
-name in sorted order) and, for each member, their best menu there.
+`G(r)` is the log probability that every member finds their menu at `r`. A restaurant is
+an offer's `restaurant` name, so `자하연식당>2층` and `>3층` are separate. Distance is not
+part of the score. The recommendation is `argmax G` and, for each member, their likeliest
+menu there. A restaurant serving more menus starts with more probability: with no answer
+it is the one recommended.
 
 ## Questions and stopping
 
-For member `i` and question `q`, with the other members' scores fixed:
+For member `i` and question `q`, with the other members' beliefs fixed:
 
 ```text
 gain(i, q) = sum_a P_i(a|q) max_r G_a(r)  -  max_r sum_a P_i(a|q) G_a(r)
@@ -34,9 +37,11 @@ margin most is asked. In the first round all members are alike, so they get the 
 
 Another round is asked when the value of all members' answers together, enumerated over
 every joint answer (`6^members`, hence at most 6 members), exceeds
-`GroupConfig.question_cost` (.02 Nash units) per member asked. The first round is always
-asked; `max_rounds` (4) caps the rest. A group whose menus come from one restaurant gets
-it without a question. These constants are uncalibrated initial values.
+`GroupConfig.question_cost` (.02 log-probability) per member asked. The first round is
+always asked; `max_rounds` (4) caps the rest. A group whose menus come from one
+restaurant gets it without a question. These constants are uncalibrated initial values.
+Sums over a restaurant's menus are one matrix product, so a round over the 6,227 general
+menus and 584 restaurants of a lunch takes about a second per member.
 
 ```python
 from question_engines.group import GroupEngine
@@ -50,15 +55,16 @@ result = engine.recommendation()   # {"restaurant", "menus": [food or None per m
 
 ## Benchmark
 
-`benchmark_group` compares three arms on the same simulated members, each wanting one
-target menu. A member's true satisfaction with a menu is its feature similarity to that
-target (0 for a menu they cannot eat).
+`benchmark_group` compares four arms on the same simulated members, each wanting one
+target menu. A member's true satisfaction with a restaurant is the best feature
+similarity to that target among its menus they can eat; the true group score is
+`sum_i log(.05 + satisfaction_i)`.
 
 - `group`: this engine.
 - `separate`: each member's own `preference` session until it would propose a menu
-  (at most 20 questions, as in the engine benchmark), then the same Nash choice over
-  their fits.
+  (at most 20 questions, as in the engine benchmark), then `argmax G` over their beliefs.
 - `separate_matched`: the same, capped at the group's number of rounds per member.
+- `most_menus`: the restaurant with the most menus, without a question.
 
 Situations are `similar` (targets among each other's ten nearest menus), `conflict`
 (far-apart targets) and `restricted` (one member has one of pork, wheat, milk or egg,
@@ -66,34 +72,43 @@ when a menu without it exists), each with groups of 2, 3 and 5. Results are per
 situation, never averaged across them: the share of groups given the truly best
 restaurant, Nash regret per member, the least satisfied member, total questions and rounds.
 
-**Pass criteria**, fixed before the first run (`evaluation.py`). In every situation:
+**Pass criteria** (`evaluation.py`). In every situation:
 
 1. `group` asks at most half the questions of `separate` (mean total per group).
 2. `group`'s mean Nash regret per member exceeds `separate`'s by at most .02, about
    2% lower geometric-mean satisfaction.
 3. `group`'s mean regret per member is below `separate_matched`'s: with the same number
    of questions, choosing them for the group beats each member's own questions.
+4. `group`'s mean regret per member is below `most_menus`'s.
+
+Criteria 1–3 were fixed before the first run; criterion 4 was added after it, before
+the second case sets were frozen.
 
 ```bash
-python manage.py benchmark_group --date 2026-11-02 --dir DIR                  # freezes DIR/cases.json; commit it
-python manage.py benchmark_group --date 2026-11-02 --dir DIR                  # ResponseOracle members, no key
-python manage.py benchmark_group --date 2026-11-02 --dir DIR --simulator llm  # LLM members (paid)
+python manage.py benchmark_group --date 2026-11-10 --dir DIR                   # freezes DIR/cases.json; commit it
+python manage.py benchmark_group --date 2026-11-10 --dir DIR                   # ResponseOracle members, no key
+python manage.py benchmark_group --date 2026-11-10 --dir DIR --simulator llm   # LLM members (paid)
+python manage.py benchmark_group --source general --dir DIR2 ...               # the restaurants near the stations
 ```
 
-The first run freezes 6 cases per situation and size (54) from the menu and `--seed`, and
-stops. Later runs refuse a menu that differs from the frozen one. The LLM members are the
+The first run freezes 6 cases per situation and size (54) from the menus and `--seed`, and
+stops. Later runs refuse menus that differ from the frozen ones. The LLM members are the
 engine benchmark's simulated user (`METCHU_SIMULATOR_MODEL`), told only the target's name;
-their answers are cached in `DIR/answers.jsonl`, shared by the three arms. Similarity
-and fit come from the same features, so absolute satisfaction is optimistic; the
-comparison between arms is what the criteria judge.
+their answers are cached in `DIR/answers.jsonl`, shared by the arms. Similarity and the
+answer model come from the same features, so absolute satisfaction is optimistic; the
+comparison between arms is what the criteria judge. Taking the best menu of a restaurant
+also favors restaurants with many menus, which `most_menus` makes visible.
 
-## Results: 2026-11-10, 11/02 lunch, 54 frozen cases
+## Results
 
-Results are in `engine_benchmark_results/group-2026-11-02/` (`llm.json` with
-`openai:gpt-6-luna`, prompt `45d1d4125724`, 846 calls; `oracle.json`). **Group mode
-fails in every situation with both simulators.** It meets criterion 1 (about a third of
-the questions), but not criterion 2. Criterion 3 holds only for `restricted` with the
-oracle: given the same number of questions, separate sessions mostly choose better.
+### First version: preference fit (2026-11-10, 11/02 lunch)
+
+The first version scored `U_i(r)` as the best preference fit (`PreferencePlanner.fit`,
+normalized over the answered features) and `G(r) = sum_i log(.05 + U_i(r))`. Results are
+in `engine_benchmark_results/group-2026-11-02/` (`llm.json` with `openai:gpt-6-luna`,
+prompt `45d1d4125724`, 846 calls; `oracle.json`). **It failed every situation with both
+simulators.** It met criterion 1, but not criterion 2, and criterion 3 only for
+`restricted` with the oracle.
 
 | LLM members, mean | similar | conflict | restricted |
 | --- | ---: | ---: | ---: |
@@ -101,8 +116,12 @@ oracle: given the same number of questions, separate sessions mostly choose bett
 | regret per member: group / separate / matched | .183 / .023 / .074 | .056 / .002 / .028 | .037 / .021 / .026 |
 | truly best restaurant: group / separate | 11% / 72% | 39% / 83% | 50% / 56% |
 
-Replaying the cached answers shows why. Preference fit is normalized over the answered
-features only, so after one shared YES (often "something served hot") every member's
-fit is about .95 at many restaurants. Their Nash welfare ties, the next round looks
-worthless and the group stops (19 of 54 LLM groups after one round); the tie then goes
-to the first name in sorted order (동원관식당, 21 of 54 LLM recommendations).
+Replaying the cached answers showed why. After one shared YES (often "something served
+hot") every member's fit was about .95 at many restaurants. Their Nash welfare tied, the
+next round looked worthless and the group stopped (19 of 54 LLM groups after one round);
+the tie went to the first name in sorted order (동원관식당, 21 of 54). The separate arms
+then aggregated fits too; they now aggregate beliefs like the group.
+
+The current belief version was checked on those already-seen cases with oracle members
+before new cases were frozen. A prior that is uniform over restaurants instead of menus
+was tried there and dropped: it failed every check in every situation.

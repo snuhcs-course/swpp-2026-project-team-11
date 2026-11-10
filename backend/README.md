@@ -642,7 +642,7 @@ and commit. Teammates then run `python manage.py loaddata menus_<date>`.
 | `benchmark_features --runs [--ratings ...] [--triplets] [--policy]` | the feature extraction benchmark report | no |
 | `serve_public [--port] [--write-client-config] [--debug]` | run the server behind a Cloudflare Tunnel, reachable from any network ([guide](../client/README.md#from-another-network-cloudflare-tunnel)); needs `cloudflared` | no |
 | `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** (OpenRouter) |
-| `benchmark_group --date --dir [--simulator oracle\\|llm] [--groups] [--seed] [--workers]` | group mode against separate sessions on frozen simulated groups ([guide](question_engines/group/README.md)) | with `--simulator llm` |
+| `benchmark_group --dir [--source cafeteria\\|general] [--date] [--meal] [--simulator oracle\\|llm] [--groups] [--seed] [--workers]` | group mode against separate sessions on frozen simulated groups ([guide](question_engines/group/README.md)) | with `--simulator llm` |
 | `run_engine_benchmark --name [--date ...] [--counts] [--repeats] [--limit] [--dry-run]` | the question engine benchmark into `engine_benchmark_results/NAME/` ([guide](question_engines/benchmark/README.md)) | **yes** (OpenRouter + simulated user) |
 | `build_engine_scenarios` / `collect_engine_sessions` / `benchmark_engines` | its steps one by one; only `collect_engine_sessions` calls an LLM | for sessions |
 | `play_engine_session --scenarios --output --tester` / `validate_simulator` | the benchmark's user study: a person plays, engine hidden | for LLM sessions |
