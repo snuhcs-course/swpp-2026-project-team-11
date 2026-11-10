@@ -151,6 +151,35 @@ apps (package `com.example.metchu` and your signing certificate's SHA-1) in the
 console; never commit it. The Maps terms require Google's logo to stay visible; the
 result map keeps it just above the sheet with map padding.
 
+### Google sign-in (optional)
+
+Signing in with a username and password needs nothing more. "Continue with Google" and
+Settings' "Link Google" appear only in a build with a web OAuth client ID; set it up once in
+the Google Cloud project (Google Auth Platform):
+
+1. **Branding / Audience**: an External app in testing, with the team's Google accounts as
+   test users.
+2. **Clients > Web application**: its client ID is what the app asks Google to address the
+   sign-in token to, and what the server checks it against. No client secret is used.
+3. **Clients > Android**: package `com.example.metchu` and the SHA-1 of the keystore that
+   signs your build. Everyone who builds an APK adds one with their own SHA-1; for the
+   debug keystore:
+
+   ```bash
+   keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+   ```
+
+4. Put the **web** client ID in `client/local.properties` and, as `METCHU_GOOGLE_CLIENT_ID`,
+   in the server's `.env`, then rebuild:
+
+   ```properties
+   metchu.googleWebClientId=1234567890-abc.apps.googleusercontent.com
+   ```
+
+The device needs Google Play services and a Google account (an emulator with a Play Store
+image works once you sign in to Google on it). Google shows its own account picker; closing
+it changes nothing.
+
 Once per launch until it is allowed, the start screen says why it needs location
 (on the first launch, after the settings tip is closed)
 and, on **Continue**, asks for it. With it, a new session sends where the
@@ -169,9 +198,10 @@ emulator, set a position under Extended controls > Location (for example
 
 | When | Screen | Actions |
 | --- | --- | --- |
-| first launch | Language (asked in both), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear (bottom-left), with a tip that both change there anytime | a language goes on at once; ‹ on Allergies returns to Language; on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
+| first launch | Language (asked in both), then Account (log in or sign up, optional), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear (bottom-left), with a tip that both change there anytime | a language goes on at once; on Account, "Not now" goes on as a guest and signing in goes on by itself; ‹ on Allergies returns to Account (to Language once signed in); on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
 | no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map around the user, or around the SNU administration building until location is allowed | the meal and the distance open a small menu under them, without dimming the screen; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home |
-| gear | Settings: one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button |
+| gear | Settings: the account (signed out: "Log in or sign up"; signed in: the username, whether Google is linked, "Link Google" and "Log out"), one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button; "Log in or sign up" opens the Account screen, which returns here once signed in |
+| Account | Log in or Create an account: username, password (twice to create one), the rules, "Continue with Google" in a build with a Google client ID | the line under the button switches between the two; errors show under the fields; the token is kept in its own preferences file, which backup leaves out |
 | `question` | The current question under the past ones, one grey line each with the answer on the right; a five-step slider with "I'm not sure"; a progress bar | dragging along the slider or tapping a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); home in the top-right corner; "Recommend now" floats bottom-right once there is an answer |
 | `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user, a ban link and the cafeterias, one row per cafeteria | "Find another" (bottom-right) turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; home in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row glides the map to it, and the menu icon at its end lists what that cafeteria serves at that meal in a sheet built like the result sheet (its handle closes it; long menus scroll with faded edges), the proposed dish in orange; once a food group makes up two of the last three proposals, "Don't suggest any <group>" keeps that group out of the rest of the session, even after ‹ (a dish without a group offers "Don't suggest this dish" at once), and turns into Undo; a new session starts without bans; the locate button centers the map on the user, then turns it with the phone; the sheet's handle, dish name and description drag or tap it between folded, half and full |
 | `unavailable` | Why nothing can be recommended today; with allergies saved, that no dish is known to be free of them and that Settings can change them | ‹ returns to the start screen |
@@ -274,6 +304,19 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | `GET /api/sessions/<id>/reason/` | | `{"food_id", "reason", "source"}`: why the dish on screen suits the user, in the session's language. `source` is `llm`, or `template` when the server has no key or the LLM failed. With no dish on screen, a 409 `stale_step` |
 | `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy or by distance are not listed. An unknown restaurant has no dishes |
 
+The account requests (`backend/accounts`, see backend/README.md "Accounts") go through
+`AuthApi` and `AuthRepository`, on a separate HTTP client that logs headers only, with the
+token hidden, so no password reaches the debug log:
+
+| Request | Body | Effect |
+| --- | --- | --- |
+| `POST /api/auth/signup/`, `POST /api/auth/login/` | `{"username", "password"}` | `{"token", "user"}`; the app keeps both |
+| `POST /api/auth/google/` | `{"id_token"}` from Google's picker | `{"token", "user", "created"}` |
+| `POST /api/auth/google/link/` | `{"id_token"}`, with `Authorization: Token <token>` | `{"user"}` with `google_email` |
+| `POST /api/auth/logout/` | `Authorization: Token <token>` | 204; the app forgets the account even if this fails |
+
+A 401 `not_authenticated` signs the app out. Recommendation requests do not send the token yet.
+
 Every success returns the same session state:
 
 ```json
@@ -338,6 +381,7 @@ Server behavior to know about:
 | What | Command | Needs |
 | --- | --- | --- |
 | REST API and `serve_public` (`backend/recommend/tests`) | `python -m pytest backend/recommend` | Python only |
+| Account API (`backend/accounts/tests`) | `python -m pytest backend/accounts` | Python only |
 | JSON contract, repository, ViewModel, progress, meal and cafeteria list (`app/src/test`) | `./gradlew testDebugUnitTest` | JDK only |
 | The Compose screens against a fake server (`app/src/androidTest`) | `./gradlew connectedDebugAndroidTest` | a running emulator or phone |
 
@@ -347,6 +391,9 @@ and `resources/contract/*.json`, replies captured from the real server on the
 with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
 scripted LLM in place of Gemini). `menu.json` was captured on 2026-11-02 (301동식당, lunch), so
 it includes a set listed once at its whole price. The RL question fixture was captured from Django with three v2 cafeteria dishes.
+The `auth_*.json` and account `error_*.json` replies were captured on 2026-11-10 from a local
+server on its own SQLite database (the token is that throwaway database's); `FakeAuthApi` stands
+in for the account server.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 
