@@ -1,8 +1,9 @@
 """Group mode: each member answers their own question every round; the group gets one restaurant.
 
-Every member keeps a decision-tree preference state. Member i's fit for restaurant r
-is U_i(r), the best preference fit among the menus r serves and i can eat. The group
-score is the Nash welfare G(r) = sum_i log(EPSILON + U_i(r)).
+Every member keeps a decision-tree intent belief b_i(f): the probability that menu f is the
+one they feel like. P_i(r) = sum of b_i over the menus restaurant r serves that i can eat,
+the probability that i finds their menu at r. The group score is the Nash welfare
+G(r) = sum_i log P_i(r): the log probability that everyone finds their menu there.
 No ORM, HTTP or LLM imports.
 """
 from dataclasses import dataclass
@@ -12,15 +13,14 @@ import numpy as np
 from question_engines.decision_tree.catalog import CandidateCatalog
 from question_engines.decision_tree.contracts import LANGUAGES, answer_options, translate
 from question_engines.decision_tree.planning import IntentModel
-from question_engines.decision_tree.preference import ANSWER_STRENGTH, PreferencePlanner
 
-EPSILON = .05
+FLOOR = 1e-12  # P_i(r) of a restaurant with nothing the member can eat
 MAX_MEMBERS = 6  # The stop rule enumerates all 6^members joint answers of a round.
 
 
 @dataclass(frozen=True)
 class GroupConfig:
-    question_cost: float = .02  # Nash welfare units per member question; uncalibrated
+    question_cost: float = .02  # log-probability per member question; uncalibrated
     max_rounds: int = 4
     language: str = "en"
 
@@ -36,19 +36,17 @@ class GroupConfig:
 def restaurants(catalog):
     """Restaurant names, sorted, and which menus each serves: (names, serves[R, F])."""
     names = sorted({offer["restaurant"] for c in catalog.candidates for offer in c.offers})
-    serves = np.array([[any(o["restaurant"] == name for o in c.offers) for c in catalog.candidates]
-                       for name in names], dtype=bool).reshape(len(names), len(catalog.candidates))
+    index = {name: i for i, name in enumerate(names)}
+    serves = np.zeros((len(names), len(catalog.candidates)), dtype=bool)
+    for f, c in enumerate(catalog.candidates):
+        for offer in c.offers:
+            serves[index[offer["restaurant"]], f] = True
     return names, serves
 
 
-def restaurant_fit(serves, fit):
-    """U(r) for fits shaped (..., F): the best fit among each restaurant's menus, 0 when none."""
-    return np.where(serves, fit[..., None, :], 0).max(-1)
-
-
-def welfare(serves, fits):
-    """G(r) for member fits shaped (members, F)."""
-    return np.log(EPSILON + restaurant_fit(serves, fits)).sum(0)
+def welfare(serves, beliefs):
+    """G(r) for member beliefs over menus shaped (members, F)."""
+    return np.log(np.maximum(beliefs @ serves.T, FLOOR)).sum(0)
 
 
 @dataclass
@@ -62,24 +60,26 @@ class _Member:
 class GroupEngine:
     """Rounds of per-member questions, then one restaurant and each member's menu there.
 
-    `excluded` holds, per member, the food IDs they cannot eat (allergies, bans).
-    Members answer in any order; a round ends when all of its questions are answered.
+    `candidates` is a list of menu rows or a prebuilt CandidateCatalog. `excluded` holds,
+    per member, the food IDs they cannot eat (allergies, bans). Members answer in any
+    order; a round ends when all of its questions are answered.
     """
     def __init__(self, candidates, feature_schema, excluded, *, context=None, config=None):
-        self.catalog = CandidateCatalog(candidates, feature_schema, context=context)
+        self.catalog = (candidates if isinstance(candidates, CandidateCatalog)
+                        else CandidateCatalog(candidates, feature_schema, context=context))
         self.config = config if isinstance(config, GroupConfig) else GroupConfig(**(config or {}))
         if not 2 <= len(excluded) <= MAX_MEMBERS:
             raise ValueError(f"A group has 2 to {MAX_MEMBERS} members")
         self.model = IntentModel(self.catalog)
         if not self.model.identity_intents:
             raise ValueError("Group mode needs actual sales menus")
-        self.preference = PreferencePlanner(self.model)
         self.names, self.serves = restaurants(self.catalog)
+        self._menus = self.serves.T.astype(float)
         ids = np.array([c.food_id for c in self.catalog.candidates])
         self.members = []
         for banned in excluded:
-            allowed = ~np.isin(ids, list(banned))
-            if not (allowed & self.serves.any(0)).any():
+            allowed = ~np.isin(ids, list(banned)) & self.serves.any(0)
+            if not allowed.any():
                 raise ValueError("Every member needs a menu they can eat")
             belief = self.model.prior * allowed
             self.members.append(_Member(allowed, belief / belief.sum(),
@@ -91,53 +91,47 @@ class GroupEngine:
     def finished(self):
         return not self._pending
 
-    def fits(self):
-        """Each member's preference fit for every menu, 0 for what they cannot eat: (members, F)."""
-        return np.array([np.where(m.allowed, self.preference.fit(m.answers), 0) for m in self.members])
+    def beliefs(self):
+        return np.array([m.belief for m in self.members])
 
-    def _outcomes(self, member):
-        """Restaurant fits after each possible answer to each question: (Q, 6, R)."""
-        weights = np.array([ANSWER_STRENGTH[a] for a in member.answers.values()])
-        total = np.abs(weights).sum() + np.abs(ANSWER_STRENGTH)
-        negative = np.minimum(weights, 0).sum() + np.minimum(ANSWER_STRENGTH, 0)
-        scores = (self.preference.scores(member.answers)
-                  + ANSWER_STRENGTH[None, :, None] * self.preference.values.T[:, None, :])
-        fit = np.divide(scores - negative[:, None], total[:, None], out=np.full(scores.shape, .5),
-                        where=total[:, None] > 0)
-        return restaurant_fit(self.serves, np.where(member.allowed, fit, 0))
+    def _logs(self, member):
+        """Log P(r) now (R,), after each answer to each question (Q, 6, R), and P(answer) (Q, 6)."""
+        likelihood = self.model.all_likelihoods(member.salience, np.arange(len(member.belief)))
+        weights = likelihood * member.belief
+        mass = weights.sum(-1)
+        after = (weights @ self._menus) / np.maximum(mass, FLOOR)[..., None]
+        return np.log(np.maximum(member.belief @ self._menus, FLOOR)), np.log(np.maximum(after, FLOOR)), mass
 
-    def _choose(self, member, others, total):
-        """The question whose answer best improves the group decision, and its outcome table.
+    def _choose(self, member, others, total, logs, mass):
+        """The question whose answer best improves the group decision.
 
         Value of information: E_a[max_r G] - max_r E_a[G]. When no single answer can change
         the leading restaurant, prefer the question that moves the leader's margin most.
         """
-        logs = np.log(EPSILON + self._outcomes(member))
         group = others + logs
-        mass = self.model.all_likelihoods(member.salience, np.arange(len(member.belief))) @ member.belief
         gain = (np.einsum("qa,qa->q", group.max(-1), mass)
                 - np.einsum("qa,qar->qr", mass, group).max(-1))
         leader = int(total.argmax())
         margin = group[..., leader] - np.delete(group, leader, -1).max(-1)
         moved = np.einsum("qa,qa->q", mass, np.abs(margin - (total[leader] - np.delete(total, leader).max())))
         order = [int(q) for q in np.lexsort((-moved, -gain.round(12))) if q not in member.answers]
-        return (order[0], mass[order[0]], logs[order[0]]) if order else None
+        return order[0] if order else None
 
     def _plan(self):
         """The next round's questions by member, or {} when another round is not worth it."""
         if self.round >= self.config.max_rounds:
             return {}
-        current = np.log(EPSILON + restaurant_fit(self.serves, self.fits()))
-        total = current.sum(0)
+        tables = [self._logs(m) for m in self.members]
+        total = sum(current for current, _, _ in tables)
         questions, joint, probability = {}, np.zeros((1, len(self.names))), np.ones(1)
-        for i, member in enumerate(self.members):
-            choice = self._choose(member, total - current[i], total)
-            if choice is None:
-                mass, logs = np.ones(1), current[i][None]
+        for i, (member, (current, logs, mass)) in enumerate(zip(self.members, tables)):
+            qi = self._choose(member, total - current, total, logs, mass)
+            if qi is None:
+                outcomes, chances = current[None], np.ones(1)
             else:
-                questions[i], mass, logs = choice
-            joint = (joint[:, None] + logs[None]).reshape(-1, len(self.names))
-            probability = (probability[:, None] * mass[None]).reshape(-1)
+                questions[i], outcomes, chances = qi, logs[qi], mass[qi]
+            joint = (joint[:, None] + outcomes[None]).reshape(-1, len(self.names))
+            probability = (probability[:, None] * chances[None]).reshape(-1)
         value = probability @ joint.max(-1) - (probability @ joint).max()
         if self.round and value <= self.config.question_cost * len(questions):
             return {}
@@ -167,14 +161,13 @@ class GroupEngine:
             self._pending = self._plan()
 
     def recommendation(self):
-        """The restaurant with the highest Nash welfare and each member's best menu there."""
+        """The restaurant with the highest Nash welfare and each member's likeliest menu there."""
         if not self.finished:
             raise ValueError("The group still has questions to answer")
-        fits = self.fits()
-        r = int(welfare(self.serves, fits).argmax())
+        r = int(welfare(self.serves, self.beliefs()).argmax())
         menus = []
-        for i, member in enumerate(self.members):
+        for member in self.members:
             options = self.serves[r] & member.allowed
-            best = int(np.argmax(np.where(options, fits[i], -1)))
+            best = int(np.argmax(np.where(options, member.belief, -1)))
             menus.append(self.catalog.candidates[best].summary() if options.any() else None)
         return {"type": "recommendation", "rounds": self.round, "restaurant": self.names[r], "menus": menus}
