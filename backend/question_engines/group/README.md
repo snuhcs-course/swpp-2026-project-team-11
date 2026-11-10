@@ -125,3 +125,30 @@ then aggregated fits too; they now aggregate beliefs like the group.
 The current belief version was checked on those already-seen cases with oracle members
 before new cases were frozen. A prior that is uniform over restaurants instead of menus
 was tried there and dropped: it failed every check in every situation.
+
+### Belief version (2026-11-11, 11/10 lunch)
+
+Menus come from a copy of the live server's food DB taken 2026-11-10 23:27 (release
+`local-hours-fab28cd3fe36`; kept outside Git): 244 cafeteria menus at 22 restaurants,
+and 6,227 general menus at 584 restaurants. The live release also filters general
+menus by opening hours (4,227 at lunch); `main` does not yet. Results are in
+`engine_benchmark_results/group-2026-11-10-cafeteria/` and `-general/`; LLM members
+used `openai:gpt-6-luna`, prompt `45d1d4125724` (1,066 and 1,832 calls).
+
+| Passed situations | cafeteria | general |
+| --- | --- | --- |
+| LLM members | all three | conflict, restricted (similar fails criterion 2) |
+| oracle members | similar, conflict (restricted fails 3) | none (similar fails 2; conflict, restricted fail 3) |
+
+| LLM members, mean | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| questions: group / separate | 4.2 / 21.7 | 8.0 / 23.7 | 6.6 / 24.2 | 9.3 / 32.8 | 11.8 / 34.0 | 10.3 / 33.2 |
+| regret per member: group | .017 | .007 | .008 | .062 | .040 | .039 |
+| separate / matched / most menus | .004 / .048 / .096 | .005 / .020 / .010 | .006 / .018 / .154 | .033 / .080 / .090 | .024 / .046 / .069 | .024 / .049 / .077 |
+
+Group mode asks 21–35% of the questions of separate sessions, and with the same number
+of questions it chooses better than they do in every LLM situation. Each situation has
+18 groups: most differences from `separate` and `separate_matched` lie within their
+95% intervals, so criteria 2 and 3 pass on point estimates, not as established effects.
+In the cafeteria the restaurant with the most menus (220동식당) is the group's choice in
+34 of 54 groups, and 30 groups stop after one round.
