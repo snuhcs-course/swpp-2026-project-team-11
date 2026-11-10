@@ -86,3 +86,23 @@ engine benchmark's simulated user (`METCHU_SIMULATOR_MODEL`), told only the targ
 their answers are cached in `DIR/answers.jsonl`, shared by the three arms. Similarity
 and fit come from the same features, so absolute satisfaction is optimistic; the
 comparison between arms is what the criteria judge.
+
+## Results: 2026-11-10, 11/02 lunch, 54 frozen cases
+
+Results are in `engine_benchmark_results/group-2026-11-02/` (`llm.json` with
+`openai:gpt-6-luna`, prompt `45d1d4125724`, 846 calls; `oracle.json`). **Group mode
+fails in every situation with both simulators.** It meets criterion 1 (about a third of
+the questions), but not criterion 2. Criterion 3 holds only for `restricted` with the
+oracle: given the same number of questions, separate sessions mostly choose better.
+
+| LLM members, mean | similar | conflict | restricted |
+| --- | ---: | ---: | ---: |
+| questions: group / separate | 4.4 / 21.4 | 6.9 / 21.4 | 8.1 / 21.9 |
+| regret per member: group / separate / matched | .183 / .023 / .074 | .056 / .002 / .028 | .037 / .021 / .026 |
+| truly best restaurant: group / separate | 11% / 72% | 39% / 83% | 50% / 56% |
+
+Replaying the cached answers shows why. Preference fit is normalized over the answered
+features only, so after one shared YES (often "something served hot") every member's
+fit is about .95 at many restaurants. Their Nash welfare ties, the next round looks
+worthless and the group stops (19 of 54 LLM groups after one round); the tie then goes
+to the first name in sorted order (동원관식당, 21 of 54 LLM recommendations).
