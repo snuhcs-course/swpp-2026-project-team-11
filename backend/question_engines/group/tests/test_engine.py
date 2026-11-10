@@ -49,6 +49,12 @@ def test_a_member_is_never_offered_a_menu_they_cannot_eat():
     assert all(m is None or m["food_id"] != 2 for m in result["menus"][1:])
 
 
+def test_more_menus_mean_more_chances_not_a_name_order_tie():
+    menus = [menu(1, "Dish", .5, .5, "Alpha hall")] + [menu(i, f"Dish {i}", .5, .5, "Zeta hall") for i in (2, 3, 4)]
+    engine = GroupEngine(menus, SCHEMA, [set(), set()], config={"max_rounds": 1})
+    assert play(engine, [{}, {}])["restaurant"] == "Zeta hall"
+
+
 def test_stops_after_the_round_limit():
     engine = GroupEngine(MENUS, SCHEMA, [set(), set()], config={"max_rounds": 1})
     with pytest.raises(ValueError):

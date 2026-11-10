@@ -35,10 +35,14 @@ class GroupBenchmarkCommandTests(TestCase):
             self.assertEqual(len(cached), len(llm.calls))
             self.assertIn("simulator_prompt_id", report["config"])
 
-    def test_refuses_cases_frozen_on_another_menu_and_an_empty_day(self):
+    def test_refuses_other_menus_and_missing_ones(self):
         with tempfile.TemporaryDirectory() as directory:
             (Path(directory) / "cases.json").write_text(json.dumps({"catalog": "other", "cases": []}))
-            with self.assertRaisesMessage(CommandError, "differs"):
+            with self.assertRaisesMessage(CommandError, "differ from"):
                 call_command(*RUN, "--dir", directory, stdout=io.StringIO())
-            with self.assertRaisesMessage(CommandError, "No LU menu"):
+            with self.assertRaisesMessage(CommandError, "No cafeteria LU menu"):
                 call_command("benchmark_group", "--date", "2026-10-06", "--dir", directory, stdout=io.StringIO())
+            with self.assertRaisesMessage(CommandError, "No general LU menu"):
+                call_command("benchmark_group", "--source", "general", "--dir", directory, stdout=io.StringIO())
+            with self.assertRaisesMessage(CommandError, "--date is required"):
+                call_command("benchmark_group", "--dir", directory, stdout=io.StringIO())

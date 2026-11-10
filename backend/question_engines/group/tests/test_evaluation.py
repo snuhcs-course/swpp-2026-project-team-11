@@ -44,12 +44,14 @@ def test_pass_needs_half_the_questions_and_little_regret_in_every_check():
     def row(questions, regret):
         return {"best": True, "regret_per_member": regret, "min_satisfaction": .9, "questions": questions, "rounds": 1}
 
-    def verdict(group, separate, matched):
-        case = {"situation": "similar", "size": 2, "group": group, "separate": separate, "separate_matched": matched}
+    def verdict(group, separate, matched, most=row(0, .1)):
+        case = {"situation": "similar", "size": 2, "group": group, "separate": separate,
+                "separate_matched": matched, "most_menus": most}
         return summarize([case])["similar"]["checks"]
 
     assert all(verdict(row(5, .03), row(10, .02), row(5, .05)).values())
     assert verdict(row(6, .03), row(10, .02), row(5, .05)) == {
-        "questions": False, "regret_vs_separate": True, "regret_vs_matched": True}
+        "questions": False, "regret_vs_separate": True, "regret_vs_matched": True, "regret_vs_most_menus": True}
     assert not verdict(row(5, .05), row(10, .02), row(5, .06))["regret_vs_separate"]
     assert not verdict(row(5, .05), row(10, .04), row(5, .05))["regret_vs_matched"]
+    assert not verdict(row(5, .03), row(10, .02), row(5, .05), row(0, .03))["regret_vs_most_menus"]
