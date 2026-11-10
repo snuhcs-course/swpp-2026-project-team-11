@@ -32,6 +32,7 @@ from __future__ import annotations
 import hashlib
 import json
 import pathlib
+import threading
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -131,6 +132,7 @@ class Simulator:
         self.cache_path = pathlib.Path(cache_path) if cache_path else None
         self.cache = {}
         self.usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
+        self._lock = threading.Lock()  # sessions may run in parallel threads
         if self.cache_path and self.cache_path.exists():
             for line in self.cache_path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
@@ -143,21 +145,24 @@ class Simulator:
 
     def _remember(self, key, value, **readable):
         """Cache `value`; the file line also says what was asked, for reading it later."""
-        self.cache[key] = value
-        if self.cache_path:
-            with open(self.cache_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps({"key": key, "value": value, **readable, "prompt_id": PROMPT_ID,
-                                    "model": self.model}, ensure_ascii=False) + "\n")
+        with self._lock:
+            self.cache[key] = value
+            if self.cache_path:
+                with open(self.cache_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"key": key, "value": value, **readable, "prompt_id": PROMPT_ID,
+                                        "model": self.model}, ensure_ascii=False) + "\n")
 
     def _ask(self, model, text):
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        self.usage["calls"] += 1
+        with self._lock:
+            self.usage["calls"] += 1
         reply = self.llm.with_structured_output(model, include_raw=True).invoke(
             [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=text)])
         tokens = getattr(reply["raw"], "usage_metadata", None) or {}
-        self.usage["input_tokens"] += tokens.get("input_tokens", 0)
-        self.usage["output_tokens"] += tokens.get("output_tokens", 0)
+        with self._lock:
+            self.usage["input_tokens"] += tokens.get("input_tokens", 0)
+            self.usage["output_tokens"] += tokens.get("output_tokens", 0)
         if reply["parsing_error"] is not None:
             raise reply["parsing_error"]
         return reply["parsed"]
