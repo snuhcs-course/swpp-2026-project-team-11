@@ -1,0 +1,3406 @@
+{
+  "config": {
+    "epsilon": 0.05,
+    "group": {
+      "question_cost": 0.02,
+      "max_rounds": 4,
+      "language": "en"
+    },
+    "separate_limit": 20,
+    "safe_menus": {
+      "egg": 79,
+      "milk": 119,
+      "pork": 105,
+      "wheat": 1
+    },
+    "menus": 244,
+    "restaurants": 22,
+    "catalog": "c4cd16a0beff7bc5df9c52fc8cf807a515a266ce67c39ba43cacc6637c012e1a",
+    "source": "cafeteria",
+    "date": "2026-11-10",
+    "meal": "LU",
+    "simulator": "oracle"
+  },
+  "summary": {
+    "similar": {
+      "cases": 18,
+      "group": {
+        "best_restaurant": 0.7222222222222222,
+        "regret_per_member": 0.023764908201174422,
+        "min_satisfaction": 0.958973063973064,
+        "questions": 5.388888888888889,
+        "rounds": 1.7777777777777777
+      },
+      "separate": {
+        "best_restaurant": 0.8888888888888888,
+        "regret_per_member": 0.005520974420191123,
+        "min_satisfaction": 0.9774410774410774,
+        "questions": 35.333333333333336,
+        "rounds": 13.5
+      },
+      "separate_matched": {
+        "best_restaurant": 0.5,
+        "regret_per_member": 0.05864326543037863,
+        "min_satisfaction": 0.9199795561294147,
+        "questions": 5.388888888888889,
+        "rounds": 1.7777777777777777
+      },
+      "most_menus": {
+        "best_restaurant": 0.3333333333333333,
+        "regret_per_member": 0.09599824370291904,
+        "min_satisfaction": 0.8853835965334551,
+        "questions": 0.0,
+        "rounds": 0.0
+      },
+      "checks": {
+        "questions": true,
+        "regret_vs_separate": true,
+        "regret_vs_matched": true,
+        "regret_vs_most_menus": true
+      },
+      "passed": true,
+      "by_size": {
+        "2": {
+          "group": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.047435613766791514,
+            "min_satisfaction": 0.9444444444444445,
+            "questions": 5.0,
+            "rounds": 2.5
+          },
+          "separate": {
+            "best_restaurant": 1.0,
+            "regret_per_member": 0.0,
+            "min_satisfaction": 0.993939393939394,
+            "questions": 20.666666666666668,
+            "rounds": 13.0
+          },
+          "separate_matched": {
+            "best_restaurant": 0.8333333333333334,
+            "regret_per_member": 0.02323704941862406,
+            "min_satisfaction": 0.9674242424242424,
+            "questions": 5.0,
+            "rounds": 2.5
+          },
+          "most_menus": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.1192119316928496,
+            "min_satisfaction": 0.8762626262626263,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "3": {
+          "group": {
+            "best_restaurant": 0.8333333333333334,
+            "regret_per_member": 0.01483425901557688,
+            "min_satisfaction": 0.984090909090909,
+            "questions": 4.5,
+            "rounds": 1.5
+          },
+          "separate": {
+            "best_restaurant": 0.8333333333333334,
+            "regret_per_member": 0.01483425901557688,
+            "min_satisfaction": 0.984090909090909,
+            "questions": 28.833333333333332,
+            "rounds": 11.666666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.09250379442746694,
+            "min_satisfaction": 0.8996861431357187,
+            "questions": 4.5,
+            "rounds": 1.5
+          },
+          "most_menus": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.09946003899077412,
+            "min_satisfaction": 0.8956457390953146,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "5": {
+          "group": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.009024851821154872,
+            "min_satisfaction": 0.9483838383838384,
+            "questions": 6.666666666666667,
+            "rounds": 1.3333333333333333
+          },
+          "separate": {
+            "best_restaurant": 0.8333333333333334,
+            "regret_per_member": 0.0017286642449964894,
+            "min_satisfaction": 0.9542929292929293,
+            "questions": 56.5,
+            "rounds": 15.833333333333334
+          },
+          "separate_matched": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.06018895244504488,
+            "min_satisfaction": 0.8928282828282829,
+            "questions": 6.666666666666667,
+            "rounds": 1.3333333333333333
+          },
+          "most_menus": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.06932276042513341,
+            "min_satisfaction": 0.8842424242424242,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        }
+      }
+    },
+    "conflict": {
+      "cases": 18,
+      "group": {
+        "best_restaurant": 0.5555555555555556,
+        "regret_per_member": 0.00850044196162151,
+        "min_satisfaction": 0.8316977117214465,
+        "questions": 8.666666666666666,
+        "rounds": 2.7777777777777777
+      },
+      "separate": {
+        "best_restaurant": 0.6111111111111112,
+        "regret_per_member": 0.011285240934986654,
+        "min_satisfaction": 0.8299875975489324,
+        "questions": 37.05555555555556,
+        "rounds": 14.5
+      },
+      "separate_matched": {
+        "best_restaurant": 0.4444444444444444,
+        "regret_per_member": 0.02372092568639491,
+        "min_satisfaction": 0.8223213294401615,
+        "questions": 8.666666666666666,
+        "rounds": 2.7777777777777777
+      },
+      "most_menus": {
+        "best_restaurant": 0.4444444444444444,
+        "regret_per_member": 0.010146695165810609,
+        "min_satisfaction": 0.8312529437390784,
+        "questions": 0.0,
+        "rounds": 0.0
+      },
+      "checks": {
+        "questions": true,
+        "regret_vs_separate": true,
+        "regret_vs_matched": true,
+        "regret_vs_most_menus": true
+      },
+      "passed": true,
+      "by_size": {
+        "2": {
+          "group": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.015509353492854816,
+            "min_satisfaction": 0.8409163951112916,
+            "questions": 6.0,
+            "rounds": 3.0
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.011593644373194885,
+            "min_satisfaction": 0.8479871021819987,
+            "questions": 24.833333333333332,
+            "rounds": 14.833333333333334
+          },
+          "separate_matched": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.03155722628212881,
+            "min_satisfaction": 0.8277134042955007,
+            "questions": 6.0,
+            "rounds": 3.0
+          },
+          "most_menus": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.020448113105422112,
+            "min_satisfaction": 0.8395820911641877,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "3": {
+          "group": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.0016825987089819283,
+            "min_satisfaction": 0.8377354325098323,
+            "questions": 10.0,
+            "rounds": 3.3333333333333335
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.0016825987089819283,
+            "min_satisfaction": 0.8377354325098323,
+            "questions": 30.5,
+            "rounds": 13.166666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.0016825987089819283,
+            "min_satisfaction": 0.8377354325098323,
+            "questions": 10.0,
+            "rounds": 3.3333333333333335
+          },
+          "most_menus": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.0016825987089819283,
+            "min_satisfaction": 0.8377354325098323,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "5": {
+          "group": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.008309373683027789,
+            "min_satisfaction": 0.8164413075432154,
+            "questions": 10.0,
+            "rounds": 2.0
+          },
+          "separate": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.020579479722783154,
+            "min_satisfaction": 0.8042402579549659,
+            "questions": 55.833333333333336,
+            "rounds": 15.5
+          },
+          "separate_matched": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.03792295206807401,
+            "min_satisfaction": 0.8015151515151516,
+            "questions": 10.0,
+            "rounds": 2.0
+          },
+          "most_menus": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.008309373683027789,
+            "min_satisfaction": 0.8164413075432154,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        }
+      }
+    },
+    "restricted": {
+      "cases": 18,
+      "group": {
+        "best_restaurant": 0.6111111111111112,
+        "regret_per_member": 0.02202129556034203,
+        "min_satisfaction": 0.8779259185292112,
+        "questions": 6.277777777777778,
+        "rounds": 1.8888888888888888
+      },
+      "separate": {
+        "best_restaurant": 0.6111111111111112,
+        "regret_per_member": 0.017102847265968883,
+        "min_satisfaction": 0.8891250871649604,
+        "questions": 34.44444444444444,
+        "rounds": 13.666666666666666
+      },
+      "separate_matched": {
+        "best_restaurant": 0.7222222222222222,
+        "regret_per_member": 0.008480150045738346,
+        "min_satisfaction": 0.8941717097750025,
+        "questions": 6.166666666666667,
+        "rounds": 1.8888888888888888
+      },
+      "most_menus": {
+        "best_restaurant": 0.5555555555555556,
+        "regret_per_member": 0.15408940799974882,
+        "min_satisfaction": 0.7885312570394524,
+        "questions": 0.0,
+        "rounds": 0.0
+      },
+      "checks": {
+        "questions": true,
+        "regret_vs_separate": true,
+        "regret_vs_matched": false,
+        "regret_vs_most_menus": true
+      },
+      "passed": false,
+      "by_size": {
+        "2": {
+          "group": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.04773720751195796,
+            "min_satisfaction": 0.9137791650866559,
+            "questions": 3.6666666666666665,
+            "rounds": 1.8333333333333333
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.03298186262883853,
+            "min_satisfaction": 0.9473766709939037,
+            "questions": 19.166666666666668,
+            "rounds": 12.333333333333334
+          },
+          "separate_matched": {
+            "best_restaurant": 1.0,
+            "regret_per_member": 0.0,
+            "min_satisfaction": 0.9733751246826156,
+            "questions": 3.5,
+            "rounds": 1.8333333333333333
+          },
+          "most_menus": {
+            "best_restaurant": 0.8333333333333334,
+            "regret_per_member": 0.26788538201968176,
+            "min_satisfaction": 0.8067084580159488,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "3": {
+          "group": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.012018977185793436,
+            "min_satisfaction": 0.8734834389858263,
+            "questions": 6.0,
+            "rounds": 2.0
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.012018977185793436,
+            "min_satisfaction": 0.8734834389858263,
+            "questions": 32.333333333333336,
+            "rounds": 14.5
+          },
+          "separate_matched": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.012018977185793436,
+            "min_satisfaction": 0.8734834389858263,
+            "questions": 5.833333333333333,
+            "rounds": 2.0
+          },
+          "most_menus": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.18488215577953068,
+            "min_satisfaction": 0.7128773783797656,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "5": {
+          "group": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.006307701983274689,
+            "min_satisfaction": 0.8465151515151516,
+            "questions": 9.166666666666666,
+            "rounds": 1.8333333333333333
+          },
+          "separate": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.006307701983274689,
+            "min_satisfaction": 0.8465151515151516,
+            "questions": 51.833333333333336,
+            "rounds": 14.166666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.0134214729514216,
+            "min_satisfaction": 0.8356565656565657,
+            "questions": 9.166666666666666,
+            "rounds": 1.8333333333333333
+          },
+          "most_menus": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.009500686200034024,
+            "min_satisfaction": 0.8460079347226427,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 311,
+          "allergy": null
+        },
+        {
+          "target": 307,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 2,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 26,
+        "rounds": 19
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 2,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.4315515628433965,
+        "regret_per_member": 0.21577578142169826,
+        "min_satisfaction": 0.7954545454545454,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 276,
+          "allergy": null
+        },
+        {
+          "target": 352,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9636363636363636,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9636363636363636,
+        "questions": 18,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9636363636363636,
+        "questions": 4,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9636363636363636,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 315,
+          "allergy": null
+        },
+        {
+          "target": 308,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 20,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.4297642522693007,
+        "regret_per_member": 0.21488212613465035,
+        "min_satisfaction": 0.7954545454545454,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 19045,
+          "allergy": null
+        },
+        {
+          "target": 150,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.32711478144673944,
+        "regret_per_member": 0.16355739072336972,
+        "min_satisfaction": 0.8287878787878787,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 28,
+        "rounds": 20
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.27884459302348874,
+        "regret_per_member": 0.13942229651174437,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 4,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.32711478144673944,
+        "regret_per_member": 0.16355739072336972,
+        "min_satisfaction": 0.8287878787878787,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 107,
+          "allergy": null
+        },
+        {
+          "target": 110,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.24211258375475875,
+        "regret_per_member": 0.12105629187737937,
+        "min_satisfaction": 0.8742424242424243,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 12,
+        "rounds": 6
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.24211258375475875,
+        "regret_per_member": 0.12105629187737937,
+        "min_satisfaction": 0.8742424242424243,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 18000,
+          "allergy": null
+        },
+        {
+          "target": 18002,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 20,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 4,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 77,
+          "allergy": null
+        },
+        {
+          "target": 99,
+          "allergy": null
+        },
+        {
+          "target": 74,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 26,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 3,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.5102020346829463,
+        "regret_per_member": 0.17006734489431544,
+        "min_satisfaction": 0.8227272727272728,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 247,
+          "allergy": null
+        },
+        {
+          "target": 240,
+          "allergy": null
+        },
+        {
+          "target": 242,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 39,
+        "rounds": 17
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.3849896325434171,
+        "regret_per_member": 0.12832987751447236,
+        "min_satisfaction": 0.8469696969696969,
+        "questions": 6,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 280,
+          "allergy": null
+        },
+        {
+          "target": 283,
+          "allergy": null
+        },
+        {
+          "target": 275,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 30,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 6,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 381,
+          "allergy": null
+        },
+        {
+          "target": 74,
+          "allergy": null
+        },
+        {
+          "target": 384,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 24,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.5319178323766766,
+        "regret_per_member": 0.17730594412555886,
+        "min_satisfaction": 0.8132683739658275,
+        "questions": 3,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.5319178323766766,
+        "regret_per_member": 0.17730594412555886,
+        "min_satisfaction": 0.8132683739658275,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 15417,
+          "allergy": null
+        },
+        {
+          "target": 15414,
+          "allergy": null
+        },
+        {
+          "target": 15415,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.26701666228038384,
+        "regret_per_member": 0.08900555409346128,
+        "min_satisfaction": 0.9045454545454545,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.26701666228038384,
+        "regret_per_member": 0.08900555409346128,
+        "min_satisfaction": 0.9045454545454545,
+        "questions": 24,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.26701666228038384,
+        "regret_per_member": 0.08900555409346128,
+        "min_satisfaction": 0.9045454545454545,
+        "questions": 6,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.26701666228038384,
+        "regret_per_member": 0.08900555409346128,
+        "min_satisfaction": 0.9045454545454545,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 80,
+          "allergy": null
+        },
+        {
+          "target": 74,
+          "allergy": null
+        },
+        {
+          "target": 76,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 30,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.4811441724939273,
+        "regret_per_member": 0.16038139083130912,
+        "min_satisfaction": 0.8333333333333334,
+        "questions": 3,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.4811441724939273,
+        "regret_per_member": 0.16038139083130912,
+        "min_satisfaction": 0.8333333333333334,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 98,
+          "allergy": null
+        },
+        {
+          "target": 316,
+          "allergy": null
+        },
+        {
+          "target": 309,
+          "allergy": null
+        },
+        {
+          "target": 317,
+          "allergy": null
+        },
+        {
+          "target": 93,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 62,
+        "rounds": 16
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.9393899399287813,
+        "regret_per_member": 0.18787798798575625,
+        "min_satisfaction": 0.7924242424242425,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.9393899399287813,
+        "regret_per_member": 0.18787798798575625,
+        "min_satisfaction": 0.7924242424242425,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 243,
+          "allergy": null
+        },
+        {
+          "target": 6,
+          "allergy": null
+        },
+        {
+          "target": 19035,
+          "allergy": null
+        },
+        {
+          "target": 19068,
+          "allergy": null
+        },
+        {
+          "target": 19067,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 47,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.5955330787879192,
+        "regret_per_member": 0.11910661575758383,
+        "min_satisfaction": 0.8742424242424243,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 15448,
+          "allergy": null
+        },
+        {
+          "target": 15447,
+          "allergy": null
+        },
+        {
+          "target": 240,
+          "allergy": null
+        },
+        {
+          "target": 19035,
+          "allergy": null
+        },
+        {
+          "target": 19053,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 46,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 152,
+          "allergy": null
+        },
+        {
+          "target": 139,
+          "allergy": null
+        },
+        {
+          "target": 256,
+          "allergy": null
+        },
+        {
+          "target": 19044,
+          "allergy": null
+        },
+        {
+          "target": 19107,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.2188856272847515,
+        "regret_per_member": 0.0437771254569503,
+        "min_satisfaction": 0.8357575757575757,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8712121212121212,
+        "questions": 57,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.2188856272847515,
+        "regret_per_member": 0.0437771254569503,
+        "min_satisfaction": 0.8357575757575757,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.2188856272847515,
+        "regret_per_member": 0.0437771254569503,
+        "min_satisfaction": 0.8357575757575757,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 332,
+          "allergy": null
+        },
+        {
+          "target": 256,
+          "allergy": null
+        },
+        {
+          "target": 19107,
+          "allergy": null
+        },
+        {
+          "target": 19,
+          "allergy": null
+        },
+        {
+          "target": 150,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.05185992734989468,
+        "regret_per_member": 0.010371985469978936,
+        "min_satisfaction": 0.8545454545454545,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.05185992734989468,
+        "regret_per_member": 0.010371985469978936,
+        "min_satisfaction": 0.8545454545454545,
+        "questions": 66,
+        "rounds": 19
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.05185992734989468,
+        "regret_per_member": 0.010371985469978936,
+        "min_satisfaction": 0.8545454545454545,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.05185992734989468,
+        "regret_per_member": 0.010371985469978936,
+        "min_satisfaction": 0.8545454545454545,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 75,
+          "allergy": null
+        },
+        {
+          "target": 78,
+          "allergy": null
+        },
+        {
+          "target": 77,
+          "allergy": null
+        },
+        {
+          "target": 79,
+          "allergy": null
+        },
+        {
+          "target": 306,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 15,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 61,
+        "rounds": 18
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 15,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.869547318190575,
+        "regret_per_member": 0.173909463638115,
+        "min_satisfaction": 0.8227272727272728,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 131,
+          "allergy": null
+        },
+        {
+          "target": 187,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.039345966446385994,
+        "regret_per_member": 0.019672983223192997,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.039345966446385994,
+        "regret_per_member": 0.019672983223192997,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 28,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.039345966446385994,
+        "regret_per_member": 0.019672983223192997,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.039345966446385994,
+        "regret_per_member": 0.019672983223192997,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 252,
+          "allergy": null
+        },
+        {
+          "target": 183,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.046988509435919174,
+        "regret_per_member": 0.023494254717959587,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8742424242424243,
+        "questions": 27,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.23907178334289397,
+        "regret_per_member": 0.11953589167144699,
+        "min_satisfaction": 0.753030303030303,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.046988509435919174,
+        "regret_per_member": 0.023494254717959587,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 289,
+          "allergy": null
+        },
+        {
+          "target": 384,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8257575757575757,
+        "questions": 2,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8257575757575757,
+        "questions": 26,
+        "rounds": 17
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.0004911995643130107,
+        "regret_per_member": 0.00024559978215650535,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 2,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.0004911995643130107,
+        "regret_per_member": 0.00024559978215650535,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 15418,
+          "allergy": null
+        },
+        {
+          "target": 79,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8484848484848485,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8484848484848485,
+        "questions": 19,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8484848484848485,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.05877391578649453,
+        "regret_per_member": 0.029386957893247266,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 273,
+          "allergy": null
+        },
+        {
+          "target": 383,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.09977776603195262,
+        "regret_per_member": 0.04988888301597631,
+        "min_satisfaction": 0.8015589767283557,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.09977776603195262,
+        "regret_per_member": 0.04988888301597631,
+        "min_satisfaction": 0.8015589767283557,
+        "questions": 27,
+        "rounds": 16
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.09977776603195262,
+        "regret_per_member": 0.04988888301597631,
+        "min_satisfaction": 0.8015589767283557,
+        "questions": 4,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.09977776603195262,
+        "regret_per_member": 0.04988888301597631,
+        "min_satisfaction": 0.8015589767283557,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 19041,
+          "allergy": null
+        },
+        {
+          "target": 1,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 6,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 22,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 6,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 333,
+          "allergy": null
+        },
+        {
+          "target": 130,
+          "allergy": null
+        },
+        {
+          "target": 14990,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8681818181818182,
+        "questions": 9,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8681818181818182,
+        "questions": 27,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8681818181818182,
+        "questions": 9,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8681818181818182,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 276,
+          "allergy": null
+        },
+        {
+          "target": 77,
+          "allergy": null
+        },
+        {
+          "target": 215,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8348484848484848,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8348484848484848,
+        "questions": 33,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8348484848484848,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8348484848484848,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 15424,
+          "allergy": null
+        },
+        {
+          "target": 79,
+          "allergy": null
+        },
+        {
+          "target": 1,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.00015719674087572022,
+        "regret_per_member": 5.239891362524007e-05,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.00015719674087572022,
+        "regret_per_member": 5.239891362524007e-05,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 37,
+        "rounds": 18
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.00015719674087572022,
+        "regret_per_member": 5.239891362524007e-05,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.00015719674087572022,
+        "regret_per_member": 5.239891362524007e-05,
+        "min_satisfaction": 0.8409090909090909,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 55,
+          "allergy": null
+        },
+        {
+          "target": 353,
+          "allergy": null
+        },
+        {
+          "target": 384,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.03012958002079899,
+        "regret_per_member": 0.01004319334026633,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.03012958002079899,
+        "regret_per_member": 0.01004319334026633,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 33,
+        "rounds": 16
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.03012958002079899,
+        "regret_per_member": 0.01004319334026633,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 3,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.03012958002079899,
+        "regret_per_member": 0.01004319334026633,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 354,
+          "allergy": null
+        },
+        {
+          "target": 382,
+          "allergy": null
+        },
+        {
+          "target": 1,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 24,
+        "rounds": 9
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 6,
+          "allergy": null
+        },
+        {
+          "target": 263,
+          "allergy": null
+        },
+        {
+          "target": 353,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 29,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 150,
+          "allergy": null
+        },
+        {
+          "target": 15446,
+          "allergy": null
+        },
+        {
+          "target": 194,
+          "allergy": null
+        },
+        {
+          "target": 337,
+          "allergy": null
+        },
+        {
+          "target": 345,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.1120675908257392,
+        "regret_per_member": 0.02241351816514784,
+        "min_satisfaction": 0.8348484848484848,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.1120675908257392,
+        "regret_per_member": 0.02241351816514784,
+        "min_satisfaction": 0.8348484848484848,
+        "questions": 54,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.1120675908257392,
+        "regret_per_member": 0.02241351816514784,
+        "min_satisfaction": 0.8348484848484848,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.1120675908257392,
+        "regret_per_member": 0.02241351816514784,
+        "min_satisfaction": 0.8348484848484848,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 19051,
+          "allergy": null
+        },
+        {
+          "target": 15450,
+          "allergy": null
+        },
+        {
+          "target": 382,
+          "allergy": null
+        },
+        {
+          "target": 266,
+          "allergy": null
+        },
+        {
+          "target": 19111,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 15,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.39816198183087664,
+        "regret_per_member": 0.07963239636617533,
+        "min_satisfaction": 0.7718181818181818,
+        "questions": 50,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.39816198183087664,
+        "regret_per_member": 0.07963239636617533,
+        "min_satisfaction": 0.7718181818181818,
+        "questions": 15,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.825327509650709,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 249,
+          "allergy": null
+        },
+        {
+          "target": 265,
+          "allergy": null
+        },
+        {
+          "target": 183,
+          "allergy": null
+        },
+        {
+          "target": 15625,
+          "allergy": null
+        },
+        {
+          "target": 19106,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 60,
+        "rounds": 20
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.5608402780136021,
+        "regret_per_member": 0.11216805560272043,
+        "min_satisfaction": 0.753030303030303,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 93,
+          "allergy": null
+        },
+        {
+          "target": 215,
+          "allergy": null
+        },
+        {
+          "target": 19054,
+          "allergy": null
+        },
+        {
+          "target": 293,
+          "allergy": null
+        },
+        {
+          "target": 269,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8287878787878787,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8287878787878787,
+        "questions": 59,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8287878787878787,
+        "questions": 20,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8287878787878787,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 109,
+          "allergy": null
+        },
+        {
+          "target": 194,
+          "allergy": null
+        },
+        {
+          "target": 1,
+          "allergy": null
+        },
+        {
+          "target": 15414,
+          "allergy": null
+        },
+        {
+          "target": 88,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.030058800638215755,
+        "regret_per_member": 0.006011760127643151,
+        "min_satisfaction": 0.7909090909090909,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.7712121212121212,
+        "questions": 51,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.7712121212121212,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.030058800638215755,
+        "regret_per_member": 0.006011760127643151,
+        "min_satisfaction": 0.7909090909090909,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 153,
+          "allergy": null
+        },
+        {
+          "target": 15414,
+          "allergy": null
+        },
+        {
+          "target": 19094,
+          "allergy": null
+        },
+        {
+          "target": 380,
+          "allergy": null
+        },
+        {
+          "target": 245,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.10715481902687873,
+        "regret_per_member": 0.021430963805375746,
+        "min_satisfaction": 0.7869566992449475,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.10715481902687873,
+        "regret_per_member": 0.021430963805375746,
+        "min_satisfaction": 0.7869566992449475,
+        "questions": 61,
+        "rounds": 19
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.0666187113720022,
+        "regret_per_member": 0.013323742274400441,
+        "min_satisfaction": 0.8493939393939394,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.10715481902687873,
+        "regret_per_member": 0.021430963805375746,
+        "min_satisfaction": 0.7869566992449475,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 19078,
+          "allergy": "milk"
+        },
+        {
+          "target": 286,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 2,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 14,
+        "rounds": 8
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 2,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 261,
+          "allergy": "pork"
+        },
+        {
+          "target": 252,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.3369008561667027,
+        "regret_per_member": 0.16845042808335134,
+        "min_satisfaction": 0.7772727272727273,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 23,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 151,
+          "allergy": "wheat"
+        },
+        {
+          "target": 19044,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 2,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 13,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 1,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 3.214624584236181,
+        "regret_per_member": 1.6073122921180905,
+        "min_satisfaction": 0.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 278,
+          "allergy": "pork"
+        },
+        {
+          "target": 252,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.23594563397679288,
+        "regret_per_member": 0.11797281698839644,
+        "min_satisfaction": 0.8651515151515151,
+        "questions": 6,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.23594563397679288,
+        "regret_per_member": 0.11797281698839644,
+        "min_satisfaction": 0.8651515151515151,
+        "questions": 25,
+        "rounds": 16
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 6,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 19038,
+          "allergy": "milk"
+        },
+        {
+          "target": 350,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8402507480956927,
+        "questions": 2,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "구시아푸드마켓>51장국밥",
+        "best": false,
+        "regret": 0.15983671756926945,
+        "regret_per_member": 0.07991835878463473,
+        "min_satisfaction": 0.8191085108119067,
+        "questions": 15,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8402507480956927,
+        "questions": 2,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8402507480956927,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 271,
+          "allergy": "milk"
+        },
+        {
+          "target": 271,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 2,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 25,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 2,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 15414,
+          "allergy": "egg"
+        },
+        {
+          "target": 353,
+          "allergy": null
+        },
+        {
+          "target": 78,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.08379119084280257,
+        "regret_per_member": 0.027930396947600855,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 9,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.08379119084280257,
+        "regret_per_member": 0.027930396947600855,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 33,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.08379119084280257,
+        "regret_per_member": 0.027930396947600855,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 9,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.08379119084280257,
+        "regret_per_member": 0.027930396947600855,
+        "min_satisfaction": 0.8318181818181818,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 19062,
+          "allergy": "milk"
+        },
+        {
+          "target": 19038,
+          "allergy": null
+        },
+        {
+          "target": 292,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8402507480956927,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8402507480956927,
+        "questions": 39,
+        "rounds": 17
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8402507480956927,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8402507480956927,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 345,
+          "allergy": "egg"
+        },
+        {
+          "target": 152,
+          "allergy": null
+        },
+        {
+          "target": 383,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.13255039850147932,
+        "regret_per_member": 0.04418346616715977,
+        "min_satisfaction": 0.8015589767283557,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.13255039850147932,
+        "regret_per_member": 0.04418346616715977,
+        "min_satisfaction": 0.8015589767283557,
+        "questions": 33,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.13255039850147932,
+        "regret_per_member": 0.04418346616715977,
+        "min_satisfaction": 0.8015589767283557,
+        "questions": 3,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.13255039850147932,
+        "regret_per_member": 0.04418346616715977,
+        "min_satisfaction": 0.8015589767283557,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 151,
+          "allergy": "wheat"
+        },
+        {
+          "target": 287,
+          "allergy": null
+        },
+        {
+          "target": 19060,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9636363636363636,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9636363636363636,
+        "questions": 21,
+        "rounds": 16
+      },
+      "separate_matched": {
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9636363636363636,
+        "questions": 2,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 3.1115372146872704,
+        "regret_per_member": 1.0371790715624234,
+        "min_satisfaction": 0.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 228,
+          "allergy": "pork"
+        },
+        {
+          "target": 56,
+          "allergy": null
+        },
+        {
+          "target": 14993,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8833333333333333,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8833333333333333,
+        "questions": 37,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8833333333333333,
+        "questions": 6,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8833333333333333,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 279,
+          "allergy": "egg"
+        },
+        {
+          "target": 15358,
+          "allergy": null
+        },
+        {
+          "target": 240,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9203030303030303,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9203030303030303,
+        "questions": 31,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9203030303030303,
+        "questions": 3,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9203030303030303,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 380,
+          "allergy": "pork"
+        },
+        {
+          "target": 315,
+          "allergy": null
+        },
+        {
+          "target": 239,
+          "allergy": null
+        },
+        {
+          "target": 14990,
+          "allergy": null
+        },
+        {
+          "target": 215,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.79,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.79,
+        "questions": 48,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.79,
+        "questions": 20,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.09578952650278005,
+        "regret_per_member": 0.01915790530055601,
+        "min_satisfaction": 0.7869566992449475,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 284,
+          "allergy": "milk"
+        },
+        {
+          "target": 149,
+          "allergy": null
+        },
+        {
+          "target": 332,
+          "allergy": null
+        },
+        {
+          "target": 282,
+          "allergy": null
+        },
+        {
+          "target": 335,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.040087483258057915,
+        "regret_per_member": 0.008017496651611583,
+        "min_satisfaction": 0.8303030303030303,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.040087483258057915,
+        "regret_per_member": 0.008017496651611583,
+        "min_satisfaction": 0.8303030303030303,
+        "questions": 46,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.040087483258057915,
+        "regret_per_member": 0.008017496651611583,
+        "min_satisfaction": 0.8303030303030303,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.040087483258057915,
+        "regret_per_member": 0.008017496651611583,
+        "min_satisfaction": 0.8303030303030303,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 109,
+          "allergy": "pork"
+        },
+        {
+          "target": 19092,
+          "allergy": null
+        },
+        {
+          "target": 345,
+          "allergy": null
+        },
+        {
+          "target": 15629,
+          "allergy": null
+        },
+        {
+          "target": 152,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.09136519604139026,
+        "regret_per_member": 0.018273039208278052,
+        "min_satisfaction": 0.8621212121212121,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.09136519604139026,
+        "regret_per_member": 0.018273039208278052,
+        "min_satisfaction": 0.8621212121212121,
+        "questions": 60,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.30477832508579755,
+        "regret_per_member": 0.06095566501715951,
+        "min_satisfaction": 0.7969696969696969,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.09136519604139026,
+        "regret_per_member": 0.018273039208278052,
+        "min_satisfaction": 0.8621212121212121,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 15416,
+          "allergy": "egg"
+        },
+        {
+          "target": 263,
+          "allergy": null
+        },
+        {
+          "target": 15415,
+          "allergy": null
+        },
+        {
+          "target": 15426,
+          "allergy": null
+        },
+        {
+          "target": 19062,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.05777838019879249,
+        "regret_per_member": 0.011555676039758498,
+        "min_satisfaction": 0.9072727272727272,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.05777838019879249,
+        "regret_per_member": 0.011555676039758498,
+        "min_satisfaction": 0.9072727272727272,
+        "questions": 41,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.05777838019879249,
+        "regret_per_member": 0.011555676039758498,
+        "min_satisfaction": 0.9072727272727272,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": false,
+        "regret": 0.05777838019879249,
+        "regret_per_member": 0.011555676039758498,
+        "min_satisfaction": 0.9072727272727272,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 319,
+          "allergy": "egg"
+        },
+        {
+          "target": 15421,
+          "allergy": null
+        },
+        {
+          "target": 245,
+          "allergy": null
+        },
+        {
+          "target": 58,
+          "allergy": null
+        },
+        {
+          "target": 243,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8075757575757576,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8075757575757576,
+        "questions": 51,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8075757575757576,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8075757575757576,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 350,
+          "allergy": "pork"
+        },
+        {
+          "target": 265,
+          "allergy": null
+        },
+        {
+          "target": 15454,
+          "allergy": null
+        },
+        {
+          "target": 18001,
+          "allergy": null
+        },
+        {
+          "target": 19043,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8818181818181818,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8818181818181818,
+        "questions": 65,
+        "rounds": 19
+      },
+      "separate_matched": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8818181818181818,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "220동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8818181818181818,
+        "questions": 0,
+        "rounds": 0
+      }
+    }
+  ]
+}
