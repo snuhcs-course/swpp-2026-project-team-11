@@ -88,6 +88,14 @@ def test_eight_members_take_turns_until_the_group_is_decided():
         GroupEngine(MENUS, SCHEMA, [set()] * 9)
 
 
+def test_members_keep_learning_their_own_taste_while_the_restaurants_tie():
+    tied = [dict(m, offers=[{"restaurant": r, "meal": "LU", "price": 5000} for r in ("A hall", "B hall")]) for m in MENUS]
+    engine = GroupEngine(tied, SCHEMA, [set(), set()])
+    play(engine)
+    assert engine.round > 1
+    assert all(len(m.answers) == engine.round for m in engine.members)
+
+
 def test_stops_after_the_round_limit():
     engine = GroupEngine(MENUS, SCHEMA, [set(), set()], config={"max_rounds": 1})
     with pytest.raises(ValueError):
