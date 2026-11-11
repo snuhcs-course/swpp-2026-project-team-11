@@ -24,7 +24,7 @@ ARMS = ("group", "separate", "separate_matched", "most_menus")
 ALLERGIES = ("pork", "wheat", "milk", "egg")  # one member of a restricted group has one of these
 SEPARATE_LIMIT = 20  # questions per separate session, as in the engine benchmark
 EPSILON = .05
-# Pass criteria, per situation, fixed before the first run.
+# Pass criteria, per situation, fixed before the case sets they judge (README).
 QUESTION_SHARE = .5  # group asks at most half the questions of separate sessions
 REGRET_MARGIN = .02  # and loses at most .02 Nash welfare per member against them
 
@@ -183,7 +183,8 @@ def summarize(results):
         checks = {"questions": means["group"]["questions"] <= QUESTION_SHARE * means["separate"]["questions"],
                   "regret_vs_separate": group - separate <= REGRET_MARGIN,
                   "regret_vs_matched": group < matched,
-                  "regret_vs_most_menus": group < most}
+                  "regret_vs_most_menus": group < most,
+                  "menu_vs_most_menus": means["group"]["menu_satisfaction"] > means["most_menus"]["menu_satisfaction"]}
         summary[situation] = {"cases": len(rows), **means, "checks": checks, "passed": all(checks.values()),
                               "by_size": {size: _means([c for c in rows if c["size"] == size])
                                           for size in SIZES if any(c["size"] == size for c in rows)}}
