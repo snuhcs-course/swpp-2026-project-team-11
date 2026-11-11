@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 from question_engines.group import GroupConfig, GroupEngine
-from question_engines.group.engine import PICKS, closest, picks
+from question_engines.decision_tree.catalog import CandidateCatalog
+from question_engines.group.engine import PICKS, closest, fit, picks
 
 SCHEMA = [{"key": "spicy"}, {"key": "soupy"}, {"key": "noodle"}]
 
@@ -47,11 +48,10 @@ def test_recommends_the_restaurant_that_serves_each_member_their_own_menu():
     assert 1 <= engine.recommendation()["rounds"] <= GroupConfig().max_rounds
 
 
-def test_each_pick_scores_the_members_chances_differently():
-    serves = np.eye(2, dtype=bool)
-    chances = np.array([[.9, .45], [.3, .45]])  # P_i(r) per member and restaurant
-    assert picks(serves, chances) == list(zip(PICKS, [0, 1]))
-    assert picks(serves, np.array([[.9, .1], [.9, .1]])) == list(zip(PICKS, [0, 1]))
+def test_each_pick_scores_the_members_satisfaction_differently():
+    satisfaction = np.array([[.9, .45], [.3, .45]])  # S_i(r) per member and restaurant
+    assert picks(satisfaction) == list(zip(PICKS, [0, 1]))
+    assert picks(np.array([[.9, .1], [.9, .1]])) == list(zip(PICKS, [0, 1]))
 
 
 def test_a_spread_belief_gets_the_menu_in_the_middle_not_a_likeliest_one():
@@ -69,14 +69,23 @@ def test_a_member_is_never_offered_a_menu_they_cannot_eat():
 def test_every_pick_has_a_menu_for_every_member():
     result = play(GroupEngine(MENUS, SCHEMA, [set(), {1, 2, 4}]))  # member 1 eats only at Mixed hall
     assert [p["restaurant"] for p in result] == ["Mixed hall"]
-    serves = np.eye(3, dtype=bool)
-    assert picks(serves, np.array([[.5, .25, .25], [1, 0, 0]])) == [("balanced", 0)]
+    assert picks(np.array([[.5, .25, .25], [1, 0, 0]])) == [("balanced", 0)]
 
 
-def test_more_menus_mean_more_chances_not_a_name_order_tie():
-    menus = [menu(1, "Dish", .5, .5, "Alpha hall")] + [menu(i, f"Dish {i}", .5, .5, "Zeta hall") for i in (2, 3, 4)]
-    engine = GroupEngine(menus, SCHEMA, [set(), set()], config={"max_rounds": 1})
-    assert play(engine, [{}, {}])[0]["restaurant"] == "Zeta hall"
+def test_a_similar_menu_counts_for_most_of_a_match():
+    catalog = CandidateCatalog(MENUS, SCHEMA)
+    spicy_hall, spicy_soup = 3, 2  # restaurants and menus in sorted order
+    assert fit(catalog, frozenset())[spicy_hall, spicy_soup] == pytest.approx(1 - .9 / 3)
+    assert fit(catalog, frozenset())[spicy_hall, 0] == 1
+    assert not fit(catalog, frozenset({1}))[spicy_hall].any()
+
+
+def test_eight_members_take_turns_until_the_group_is_decided():
+    engine = GroupEngine(MENUS, SCHEMA, [set()] * 8)
+    assert len(engine.questions()) == 8
+    assert play(engine, WANTS * 4)[0]["restaurant"] == "Both hall"
+    with pytest.raises(ValueError):
+        GroupEngine(MENUS, SCHEMA, [set()] * 9)
 
 
 def test_stops_after_the_round_limit():

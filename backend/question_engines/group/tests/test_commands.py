@@ -20,11 +20,11 @@ class GroupBenchmarkCommandTests(TestCase):
             folder = Path(directory)
             call_command(*RUN, "--dir", directory, stdout=io.StringIO())
             frozen = json.loads((folder / "cases.json").read_text())
-            self.assertEqual(len(frozen["cases"]), 9)
+            self.assertEqual(len(frozen["cases"]), 12)
             self.assertEqual(sorted(p.name for p in folder.iterdir()), ["cases.json"])
 
             call_command(*RUN, "--dir", directory, stdout=io.StringIO())
-            self.assertEqual(len(json.loads((folder / "oracle.json").read_text())["cases"]), 9)
+            self.assertEqual(len(json.loads((folder / "oracle.json").read_text())["cases"]), 12)
 
             llm = FakeUserLLM(seed=1)
             with mock.patch("menus.management.commands.benchmark_group.build_llm", return_value=llm):
