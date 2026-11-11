@@ -44,6 +44,21 @@ def restaurants(catalog):
     return names, serves
 
 
+def features(catalog):
+    """Menu feature vectors in the catalog's order: (F, keys)."""
+    return np.array([[c.features[key] for key in catalog.feature_keys] for c in catalog.candidates])
+
+
+def closest(features, belief, options):
+    """The menu among `options` closest, in expectation over `belief`, to the one wanted.
+
+    Closeness is 1 - mean absolute feature difference. The likeliest menu is a poor choice
+    while the belief is still spread over many similar menus.
+    """
+    distance = [np.abs(features - features[g]).mean(-1) @ belief for g in options]
+    return int(options[int(np.argmin(distance))])
+
+
 def welfare(serves, beliefs):
     """G(r) for member beliefs over menus shaped (members, F)."""
     return np.log(np.maximum(beliefs @ serves.T, FLOOR)).sum(0)
@@ -75,6 +90,7 @@ class GroupEngine:
             raise ValueError("Group mode needs actual sales menus")
         self.names, self.serves = restaurants(self.catalog)
         self._menus = self.serves.T.astype(float)
+        self.features = features(self.catalog)
         ids = np.array([c.food_id for c in self.catalog.candidates])
         self.members = []
         for banned in excluded:
@@ -161,13 +177,13 @@ class GroupEngine:
             self._pending = self._plan()
 
     def recommendation(self):
-        """The restaurant with the highest Nash welfare and each member's likeliest menu there."""
+        """The restaurant with the highest Nash welfare and each member's closest menu there."""
         if not self.finished:
             raise ValueError("The group still has questions to answer")
         r = int(welfare(self.serves, self.beliefs()).argmax())
         menus = []
         for member in self.members:
-            options = self.serves[r] & member.allowed
-            best = int(np.argmax(np.where(options, member.belief, -1)))
-            menus.append(self.catalog.candidates[best].summary() if options.any() else None)
+            options = np.flatnonzero(self.serves[r] & member.allowed)
+            menus.append(self.catalog.candidates[closest(self.features, member.belief, options)].summary()
+                         if options.size else None)
         return {"type": "recommendation", "rounds": self.round, "restaurant": self.names[r], "menus": menus}
