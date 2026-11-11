@@ -37,7 +37,7 @@ and a group that no restaurant can serve is rejected:
 | `balanced` | `sum_i log S_i(r)` | everyone is satisfied in balance |
 | `no_one_unhappy` | `min_i S_i(r)` | the least satisfied member is best served |
 
-Questions and stopping use `G` only.
+Questions use `G` only.
 
 ## Questions and stopping
 
@@ -47,17 +47,14 @@ For member `i` and question `q`, with the other members' beliefs fixed:
 gain(i, q) = sum_a P_i(a|q) max_r G_a(r)  -  max_r sum_a P_i(a|q) G_a(r)
 ```
 
-Every member gets their highest-gain unasked question each round. When no single answer
-can change the leading restaurant (all gains 0), the question that moves the leader's
-margin most is asked. In the first round all members are alike, so they get the same question.
-
-A group has 2 to 8 members. Another round is asked when the value of all members' answers
-together exceeds `GroupConfig.question_cost` (.0005 log-satisfaction) per member asked. The
-value enumerates every joint answer up to `6^5`; a larger round samples that many, with a
-seed fixed per round. The first round is
-always asked; `max_rounds` (4) caps the rest. A group whose menus come from one
-restaurant gets it without a question. The cost comes from the dev check below; `max_rounds` is
-an uncalibrated initial value.
+A group has 2 to 8 members. Every member gets their highest-gain unasked question each
+round. When no single answer can change the leading restaurant (all gains 0), the member
+gets the question their own preference session would ask (`PreferencePlanner`, as in a
+single-user session), and none when that session would stop. In the first round all
+members are alike, so they get the same question. The group stops after `max_rounds` (4)
+or when no member has a question; a group whose menus come from one restaurant gets it
+without a question. A stop rule that weighed the value of the next round against a cost
+per question was dropped (see the dev check below). `max_rounds` is set by that check.
 Sums over a restaurant's menus are one matrix product, so a round over the 6,227 general
 menus and 584 restaurants of a lunch takes about a second per member.
 
@@ -265,4 +262,28 @@ General `similar` groups stop after about four questions at any cost: one round'
 rarely change the leading restaurant, so the myopic value of another round is small.
 `no_one_unhappy` still does not raise the least satisfied member (general `conflict`
 .857 for `balanced`, .831 for it).
+
+The engine above was played with oracle members on the cases frozen next, with 2, 4, 6
+and 8 members (`group-2026-11-10-*-n2468/oracle.json`). Cafeteria passed every situation;
+general `similar` failed criterion 2 (.061 against .032) after 5.5 questions, and
+`conflict` and `restricted` failed criterion 3 by .002 and .001. Since the engine changed
+after these results, those cases judge nothing further.
+
+### Questions until the round limit (dev check, already-judged 11/10 12-group cases, oracle members)
+
+General `similar` groups stopped because no single round could change the leading
+restaurant, while forcing more rounds lowered their regret (.055 at 4.2 questions, .047 at
+13.3, .038 at 26.7). Looking two rounds ahead did not change the stop, and asking for
+the most informative question instead of the margin did not change the regret. What
+helped was asking a member whose answer cannot move the group what their own preference
+session would ask, so the cost-based stop rule was dropped:
+
+| regret per member (questions) | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
+| --- | --- | --- | --- | --- | --- | --- |
+| cost-based stop, .0005 | .024 (7.1) | .016 (8.5) | .021 (6.0) | .055 (4.2) | .022 (5.6) | .023 (7.1) |
+| own question, 4 rounds | .021 (13.3) | .017 (13.3) | .019 (12.7) | .045 (13.3) | .022 (13.3) | .022 (13.3) |
+| `separate` / `separate_matched` | .014 / .029 | .018 / .022 | .015 / .024 | .025 / .050 | .021 / .022 | .011 / .018 |
+
+Six rounds lowered general `similar` to .040 but at 48% of the separate questions, and
+`separate_matched` reached .034, so `max_rounds` stays 4.
 
