@@ -287,3 +287,34 @@ session would ask, so the cost-based stop rule was dropped:
 Six rounds lowered general `similar` to .040 but at 48% of the separate questions, and
 `separate_matched` reached .034, so `max_rounds` stays 4.
 
+### Own questions, 2–8 members (2026-11-12, 11/10 lunch)
+
+The engine above, judged by criteria 1–5 on new cases frozen before any run
+(`group-2026-11-10-{cafeteria,general}-final/`, seed 20261115): 12 groups per situation
+and size, sizes 2, 4, 6 and 8, so 48 groups per situation. LLM members used
+`openai:gpt-6-luna`, prompt `45d1d4125724`, 637 and 5,438 new calls (2.38M input and
+0.48M output tokens); the answer caches started from the earlier 11/10 runs.
+
+| Passed situations | cafeteria | general |
+| --- | --- | --- |
+| LLM members | none (all fail 1; `restricted` also fails 3) | `conflict`, `restricted` (`similar` fails 2) |
+| oracle members | `similar`, `restricted` (`conflict` fails 4) | `similar` (`conflict`, `restricted` fail 3) |
+
+| LLM members, mean | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| questions: group / separate | 20.0 / 36.0 | 20.0 / 36.4 | 19.1 / 33.9 | 20.0 / 49.4 | 20.0 / 51.6 | 20.0 / 47.9 |
+| regret per member: group | .021 | .015 | .011 | .045 | .016 | .012 |
+| separate / matched / most menus | .011 / .022 / .049 | .009 / .016 / .015 | .003 / .006 / .174 | .012 / .049 / .099 | .016 / .020 / .047 | .008 / .018 / .057 |
+| group − separate (95%) | +.010 ± .011 | +.006 ± .005 | +.008 ± .005 | +.033 ± .012 | +.000 ± .004 | +.004 ± .005 |
+| group − matched (95%) | −.001 ± .008 | −.001 ± .004 | +.005 ± .005 | −.003 ± .009 | −.004 ± .005 | −.005 ± .004 |
+| told-menu similarity: group / most menus | .877 / .836 | .836 / .778 | .866 / .773 | .899 / .850 | .830 / .785 | .897 / .841 |
+
+Asking every member until the round limit costs criterion 1 in the cafeteria: LLM
+members end their own sessions after about 7 questions, so 4 rounds are 53–56% of them.
+In the general `similar` groups the change did not close the gap to separate sessions:
+with 4 questions each the group does as well as `separate_matched` (.045 against .049),
+and separate sessions, at about 10 questions each, reach .012. The gap grows with the
+group (8 members: .066 against .006), since a member's answers say nothing about the
+others' tastes in this model. `no_one_unhappy` again does not raise the least satisfied
+member (general `conflict` .834 for `balanced`, .817 for it).
+
