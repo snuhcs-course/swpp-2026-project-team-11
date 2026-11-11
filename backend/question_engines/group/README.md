@@ -19,8 +19,9 @@ G(r)   = sum_i log P_i(r)                               # Nash welfare
 
 `G(r)` is the log probability that every member finds their menu at `r`. A restaurant is
 an offer's `restaurant` name, so `자하연식당>2층` and `>3층` are separate. Distance is not
-part of the score. The recommendation is `argmax G` and, for each member, their likeliest
-menu there. A restaurant serving more menus starts with more probability: with no answer
+part of the score. The recommendation is `argmax G` and, for each member, the menu there
+closest in expectation to the one they want (1 - mean absolute feature difference,
+averaged over `b_i`). The likeliest menu would be arbitrary while `b_i` is still spread. A restaurant serving more menus starts with more probability: with no answer
 it is the one recommended.
 
 ## Questions and stopping
@@ -70,7 +71,8 @@ Situations are `similar` (targets among each other's ten nearest menus), `confli
 (far-apart targets) and `restricted` (one member has one of pork, wheat, milk or egg,
 when a menu without it exists), each with groups of 2, 3 and 5. Results are per
 situation, never averaged across them: the share of groups given the truly best
-restaurant, Nash regret per member, the least satisfied member, total questions and rounds.
+restaurant, Nash regret per member, the least satisfied member, the mean similarity of the
+menus members are told (each arm picks them as the engine does), total questions and rounds.
 
 **Pass criteria** (`evaluation.py`). In every situation:
 
@@ -152,3 +154,12 @@ of questions it chooses better than they do in every LLM situation. Each situati
 95% intervals, so criteria 2 and 3 pass on point estimates, not as established effects.
 In the cafeteria the restaurant with the most menus (220동식당) is the group's choice in
 34 of 54 groups, and 30 groups stop after one round.
+
+These results predate two fixes found by reading the general cases. Members were told
+their likeliest menu at the restaurant (a 술국 lover was told 한돈 족발한상), which no
+criterion scored; they are now told the closest menu, and `menu_satisfaction` reports it.
+Three general `similar` groups had two members with the same target, because a menu with
+a twin of identical features could be drawn as its own neighbour. Asking more rounds was
+also checked on these cases with oracle members: a question cost of .005 or .001 instead
+of .02 adds 1–3 questions per group and changes regret by at most .008 per member, so
+the cost stays.
