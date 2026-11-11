@@ -1,4 +1,4 @@
-"""Group mode: each member answers their own question every round; the group gets two restaurants.
+"""Group mode: each member answers their own question every round; the group gets up to two restaurants.
 
 Every member keeps a decision-tree intent belief b_i(f): the probability that menu f is the
 one they feel like. P_i(r) = sum of b_i over the menus restaurant r serves that i can eat,
@@ -60,7 +60,8 @@ def closest(features, belief, options):
     return int(options[int(np.argmin(distance))])
 
 
-# Recommendation kinds, in order; each is a restaurant the earlier kinds did not pick.
+# Recommendation kinds, in order; each is a restaurant the earlier kinds did not pick and
+# where every member has a menu. A kind with no such restaurant left is omitted.
 PICKS = (
     "balanced",        # highest Nash welfare sum_i log P_i(r): likely that everyone finds a menu
     "no_one_unhappy",  # highest min_i P_i(r): the least likely member is best served
@@ -70,10 +71,11 @@ PICKS = (
 def picks(serves, beliefs):
     """[(kind, restaurant index)] for member beliefs over menus shaped (members, F)."""
     chances = beliefs @ serves.T
+    servable = (chances > 0).all(0)  # beliefs are zero exactly on the menus a member cannot eat
     scores = (np.log(np.maximum(chances, FLOOR)).sum(0), chances.min(0))
     chosen = []
     for score in scores:
-        rest = [int(r) for r in np.argsort(-score, kind="stable") if r not in chosen]
+        rest = [int(r) for r in np.argsort(-score, kind="stable") if servable[r] and r not in chosen]
         chosen += rest[:1]
     return list(zip(PICKS, chosen))
 
@@ -87,7 +89,7 @@ class _Member:
 
 
 class GroupEngine:
-    """Rounds of per-member questions, then two restaurants and each member's menu at each.
+    """Rounds of per-member questions, then up to two restaurants and each member's menu at each.
 
     `candidates` is a list of menu rows or a prebuilt CandidateCatalog. `excluded` holds,
     per member, the food IDs they cannot eat (allergies, bans). Members answer in any
@@ -114,6 +116,8 @@ class GroupEngine:
             belief = self.model.prior * allowed
             self.members.append(_Member(allowed, belief / belief.sum(),
                                         self.model.salience_prior.copy(), {}))
+        if not (self.serves @ np.array([m.allowed for m in self.members]).T).all(1).any():
+            raise ValueError("No restaurant has a menu for every member")
         self.round = 0
         self._pending = self._plan() if len(self.names) > 1 else {}
 

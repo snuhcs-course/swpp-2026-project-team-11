@@ -165,9 +165,9 @@ def _means(rows):
                   **{key: mean(c[arm][key] for c in rows)
                      for key in ("regret_per_member", "best_pick_regret_per_member", "min_satisfaction",
                                  "menu_satisfaction", "questions", "rounds")},
-                  "picks": {kind: {key: mean(c[arm]["picks"][kind][key] for c in rows)
-                                   for key in ("regret_per_member", "mean_satisfaction", "min_satisfaction")}
-                            for kind in PICKS}}
+                  "picks": {kind: {"cases": len(given), **{key: mean(p[key] for p in given) for key in
+                                                           ("regret_per_member", "mean_satisfaction", "min_satisfaction")}}
+                            for kind in PICKS if (given := [c[arm]["picks"][kind] for c in rows if kind in c[arm]["picks"]])}}
             for arm in ARMS}
 
 
