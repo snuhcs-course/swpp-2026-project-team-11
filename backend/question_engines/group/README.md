@@ -1,7 +1,7 @@
 # Group mode (i4-P3)
 
-A group rarely agrees on one dish, so group mode recommends one **restaurant** and each
-member's own menu there. Every round, each member answers a question chosen for them.
+A group rarely agrees on one dish, so group mode recommends **restaurants**, three of
+different character, and each member's own menu at each. Every round, each member answers a question chosen for them.
 The package is pure Python + NumPy on top of the decision tree's intent model; the RL
 and LLM engines are not used. There is no REST endpoint or client screen yet.
 
@@ -19,10 +19,20 @@ G(r)   = sum_i log P_i(r)                               # Nash welfare
 
 `G(r)` is the log probability that every member finds their menu at `r`. A restaurant is
 an offer's `restaurant` name, so `자하연식당>2층` and `>3층` are separate. Distance is not
-part of the score. The recommendation is `argmax G` and, for each member, the menu there
+part of the score. The first recommendation is `argmax G` and, for each member, the menu there
 closest in expectation to the one they want (1 - mean absolute feature difference,
 averaged over `b_i`). The likeliest menu would be arbitrary while `b_i` is still spread. A restaurant serving more menus starts with more probability: with no answer
 it is the one recommended.
+
+Two more restaurants follow, each the best one not yet picked under its own score:
+
+| kind | score | meaning |
+| --- | --- | --- |
+| `balanced` | `sum_i log P_i(r)` | likely that everyone finds a menu |
+| `highest_total` | `sum_i P_i(r)` | the most members expected to find one |
+| `no_one_unhappy` | `min_i P_i(r)` | the member least likely to find one is best served |
+
+Questions and stopping use `G` only.
 
 ## Questions and stopping
 
@@ -51,7 +61,7 @@ engine = GroupEngine(candidates, schema, excluded=[set(), {food_id_with_pork}])
 while not engine.finished:
     for member, step in engine.questions().items():   # the round's unanswered questions
         engine.answer(member, step["question_id"], answer_id)
-result = engine.recommendation()   # {"restaurant", "menus": [food or None per member], "rounds"}
+result = engine.recommendation()   # {"picks": [{"kind", "restaurant", "menus": [food or None per member]}], "rounds"}
 ```
 
 ## Benchmark
@@ -66,6 +76,11 @@ similarity to that target among its menus they can eat; the true group score is
   (at most 20 questions, as in the engine benchmark), then `argmax G` over their beliefs.
 - `separate_matched`: the same, capped at the group's number of rounds per member.
 - `most_menus`: the restaurant with the most menus, without a question.
+
+Every arm makes three picks the same way (`most_menus` from equal beliefs over all menus,
+so its picks are the three largest restaurants). The criteria judge the first pick;
+`picks` reports each one's regret and mean and least satisfaction, and
+`best_pick_regret_per_member` the regret if the group chose the truly best of the three.
 
 Situations are `similar` (targets among each other's ten nearest menus), `conflict`
 (far-apart targets) and `restricted` (one member has one of pork, wheat, milk or egg,
@@ -163,3 +178,19 @@ a twin of identical features could be drawn as its own neighbour. Asking more ro
 also checked on these cases with oracle members: a question cost of .005 or .001 instead
 of .02 adds 1–3 questions per group and changes regret by at most .008 per member, so
 the cost stays.
+
+### Three picks (dev check, already-seen 11/10 cases, oracle members)
+
+On the cases above, before any new freeze, with oracle members (regret per member):
+
+| | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| group: `balanced` / best of three | .024 / .000 | .009 / .002 | .022 / .000 | .055 / .036 | .061 / .032 | .051 / .022 |
+| group: `highest_total` / `no_one_unhappy` | .096 / .125 | .044 / .034 | .185 / .209 | .091 / .079 | .069 / .042 | .058 / .036 |
+| `most_menus` best of three | .002 | .002 | .000 | .050 | .043 | .037 |
+
+A choice among three is far better than the first pick alone, but in the cafeteria
+(22 restaurants) the three largest restaurants already cover almost every group. In
+general `conflict` and `restricted` groups the `no_one_unhappy` pick beats `balanced` in
+regret and in its least satisfied member (.846 against .813 in `conflict`).
+`highest_total` never does better than `balanced`, even in mean satisfaction.
