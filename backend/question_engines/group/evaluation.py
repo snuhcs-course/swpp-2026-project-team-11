@@ -16,7 +16,7 @@ import numpy as np
 from question_engines.decision_tree.catalog import CandidateCatalog
 from question_engines.decision_tree.engine import DecisionTreeEngine
 from question_engines.decision_tree.evaluation import ResponseOracle
-from .engine import GroupConfig, GroupEngine, closest, features, restaurants, welfare
+from .engine import GroupConfig, GroupEngine, PICKS, closest, features, picks, restaurants
 
 SITUATIONS = ("similar", "conflict", "restricted")
 SIZES = (2, 3, 5)
@@ -88,12 +88,19 @@ def _separate(catalogs, catalog, members, ask, max_questions):
     return np.array(beliefs), asked
 
 
-def _outcome(names, truth, r, menu, questions, rounds):
+def _outcome(names, truth, chosen, menu, questions, rounds):
+    """The first pick decides the criteria; `picks` reports all three against the truth."""
     nash = np.log(EPSILON + truth).sum(0)
-    regret = float(nash.max() - nash[r])
-    return {"restaurant": names[r], "best": bool(nash[r] >= nash.max() - 1e-12), "regret": regret,
-            "regret_per_member": regret / len(truth), "min_satisfaction": float(truth[:, r].min()),
-            "menu_satisfaction": menu, "questions": questions, "rounds": rounds}
+    regret = (nash.max() - nash) / len(truth)
+    r = chosen[0][1]
+    return {"restaurant": names[r], "best": bool(nash[r] >= nash.max() - 1e-12),
+            "regret": float(regret[r] * len(truth)), "regret_per_member": float(regret[r]),
+            "min_satisfaction": float(truth[:, r].min()), "menu_satisfaction": menu,
+            "picks": {kind: {"restaurant": names[p], "regret_per_member": float(regret[p]),
+                             "mean_satisfaction": float(truth[:, p].mean()),
+                             "min_satisfaction": float(truth[:, p].min())} for kind, p in chosen},
+            "best_pick_regret_per_member": float(min(regret[p] for _, p in chosen)),
+            "questions": questions, "rounds": rounds}
 
 
 def compare(candidates, schema, safe, cases, respond, *, config=None, workers=1):
@@ -105,7 +112,6 @@ def compare(candidates, schema, safe, cases, respond, *, config=None, workers=1)
     allergies = {m["allergy"] for case in cases for m in case["members"]} - {None}
     catalogs = {None: catalog} | {key: CandidateCatalog([c for c in candidates if c["food_id"] in safe[key]], schema)
                                   for key in allergies}
-    most_menus = int(serves.sum(1).argmax())
 
     def run(n, case):
         members = case["members"]
@@ -127,18 +133,20 @@ def compare(candidates, schema, safe, cases, respond, *, config=None, workers=1)
         while not group.finished:
             for i, step in group.questions().items():
                 group.answer(i, step["question_id"], ask(i, step))
-        recommendation = group.recommendation()
+        chosen = group.recommendation()["picks"]
         menu = float(np.mean([similarity[i, ids.index(m["food_id"])] if m else 0.
-                              for i, m in enumerate(recommendation["menus"])]))
-        result = dict(case, group=_outcome(names, truth, names.index(recommendation["restaurant"]), menu,
-                                           sum(len(m.answers) for m in group.members), group.round))
+                              for i, m in enumerate(chosen[0]["menus"])]))
+        result = dict(case, group=_outcome(names, truth, [(p["kind"], names.index(p["restaurant"])) for p in chosen],
+                                           menu, sum(len(m.answers) for m in group.members), group.round))
         # Separate sessions as they stop by themselves, and capped at the group's round count.
         for arm, cap in (("separate", SEPARATE_LIMIT), ("separate_matched", group.round)):
             beliefs, asked = _separate(catalogs, catalog, members, ask, cap)
-            r = int(welfare(serves, beliefs).argmax())
-            result[arm] = _outcome(names, truth, r, told(r, beliefs), sum(asked), max(asked))
+            chosen = picks(serves, beliefs)
+            result[arm] = _outcome(names, truth, chosen, told(chosen[0][1], beliefs), sum(asked), max(asked))
+        # Every menu equally likely: the restaurants with the most menus.
+        chosen = picks(serves, np.full(allowed.shape, 1 / len(ids)))
         uniform = allowed / allowed.sum(1, keepdims=True)
-        result["most_menus"] = _outcome(names, truth, most_menus, told(most_menus, uniform), 0, 0)
+        result["most_menus"] = _outcome(names, truth, chosen, told(chosen[0][1], uniform), 0, 0)
         return result
 
     with ThreadPoolExecutor(workers) as pool:
@@ -150,9 +158,16 @@ def compare(candidates, schema, safe, cases, respond, *, config=None, workers=1)
 
 
 def _means(rows):
-    return {arm: {"best_restaurant": float(np.mean([c[arm]["best"] for c in rows])),
-                  **{key: float(np.mean([c[arm][key] for c in rows]))
-                     for key in ("regret_per_member", "min_satisfaction", "menu_satisfaction", "questions", "rounds")}}
+    def mean(values):
+        return float(np.mean(list(values)))
+
+    return {arm: {"best_restaurant": mean(c[arm]["best"] for c in rows),
+                  **{key: mean(c[arm][key] for c in rows)
+                     for key in ("regret_per_member", "best_pick_regret_per_member", "min_satisfaction",
+                                 "menu_satisfaction", "questions", "rounds")},
+                  "picks": {kind: {key: mean(c[arm]["picks"][kind][key] for c in rows)
+                                   for key in ("regret_per_member", "mean_satisfaction", "min_satisfaction")}
+                            for kind in PICKS}}
             for arm in ARMS}
 
 
