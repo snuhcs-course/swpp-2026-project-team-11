@@ -15,15 +15,14 @@ import numpy as np
 from question_engines.decision_tree.catalog import CandidateCatalog
 from question_engines.decision_tree.contracts import LANGUAGES, answer_options, translate
 from question_engines.decision_tree.planning import IntentModel
+from question_engines.decision_tree.preference import PreferencePlanner
 
 FLOOR = 1e-12  # log S_i(r) of a restaurant with nothing the member can eat
 MAX_MEMBERS = 8
-JOINT_LIMIT = 6 ** 5  # the stop rule enumerates this many joint answers of a round, then samples
 
 
 @dataclass(frozen=True)
 class GroupConfig:
-    question_cost: float = .0005  # log-satisfaction per member question (README, dev check)
     max_rounds: int = 4
     language: str = "en"
 
@@ -32,8 +31,6 @@ class GroupConfig:
             raise ValueError(f"language must be one of {', '.join(LANGUAGES)}")
         if type(self.max_rounds) is not int or self.max_rounds < 1:
             raise ValueError("max_rounds must be a positive integer")
-        if not 0 <= self.question_cost < 1:
-            raise ValueError("question_cost must be in [0,1)")
 
 
 def restaurants(catalog):
@@ -121,6 +118,7 @@ class GroupEngine:
         self.model = IntentModel(self.catalog)
         if not self.model.identity_intents:
             raise ValueError("Group mode needs actual sales menus")
+        self.planner = PreferencePlanner(self.model)
         self.names, self.serves = restaurants(self.catalog)
         self.features = features(self.catalog)
         ids = np.array([c.food_id for c in self.catalog.candidates])
@@ -153,43 +151,31 @@ class GroupEngine:
         after = (weights @ member.fit.T) / np.maximum(mass, FLOOR)[..., None]
         return np.log(np.maximum(member.fit @ member.belief, FLOOR)), np.log(np.maximum(after, FLOOR)), mass
 
-    def _choose(self, member, others, total, logs, mass):
-        """The question whose answer best improves the group decision.
+    def _choose(self, member, group, mass):
+        """The question whose answer best improves the group decision, E_a[max_r G] - max_r E_a[G].
 
-        Value of information: E_a[max_r G] - max_r E_a[G]. When no single answer can change
-        the leading restaurant, prefer the question that moves the leader's margin most.
+        When no answer can change the leading restaurant, the question the member's own
+        preference session would ask; None when that session would stop too.
         """
-        group = others + logs
-        gain = (np.einsum("qa,qa->q", group.max(-1), mass)
-                - np.einsum("qa,qar->qr", mass, group).max(-1))
-        leader = int(total.argmax())
-        margin = group[..., leader] - np.delete(group, leader, -1).max(-1)
-        moved = np.einsum("qa,qa->q", mass, np.abs(margin - (total[leader] - np.delete(total, leader).max())))
-        order = [int(q) for q in np.lexsort((-moved, -gain.round(12))) if q not in member.answers]
-        return order[0] if order else None
+        gain = np.einsum("qa,qa->q", group.max(-1), mass) - np.einsum("qa,qar->qr", mass, group).max(-1)
+        gain[list(member.answers)] = -np.inf
+        if gain.max() > 1e-12:
+            return int(gain.argmax())
+        rejected = {int(self.model.alias_ids[f]) for f in np.flatnonzero(~member.allowed)}
+        action, _ = self.planner.plan(member.belief, member.salience, member.answers, rejected)
+        return action.index if action is not None and action.kind == "question" else None
 
     def _plan(self):
-        """The next round's questions by member, or {} when another round is not worth it."""
+        """The next round's questions by member; {} after `max_rounds` or when no member has one."""
         if self.round >= self.config.max_rounds:
             return {}
         tables = [self._logs(m) for m in self.members]
         total = sum(current for current, _, _ in tables)
-        questions, joint, probability = {}, np.zeros((1, len(self.names))), np.ones(1)
-        rng = np.random.default_rng(self.round)
+        questions = {}
         for i, (member, (current, logs, mass)) in enumerate(zip(self.members, tables)):
-            qi = self._choose(member, total - current, total, logs, mass)
-            if qi is None:
-                outcomes, chances = current[None], np.ones(1)
-            else:
-                questions[i], outcomes, chances = qi, logs[qi], mass[qi]
-            joint = (joint[:, None] + outcomes[None]).reshape(-1, len(self.names))
-            probability = (probability[:, None] * chances[None]).reshape(-1)
-            if len(probability) > JOINT_LIMIT:
-                rows = rng.choice(len(probability), JOINT_LIMIT, p=probability / probability.sum())
-                joint, probability = joint[rows], np.full(JOINT_LIMIT, 1 / JOINT_LIMIT)
-        value = probability @ joint.max(-1) - (probability @ joint).max()
-        if self.round and value <= self.config.question_cost * len(questions):
-            return {}
+            qi = self._choose(member, total - current + logs, mass)
+            if qi is not None:
+                questions[i] = qi
         return questions
 
     def questions(self):
