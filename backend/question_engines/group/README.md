@@ -195,5 +195,37 @@ In general `conflict` and `restricted` groups the `no_one_unhappy` pick beats `b
 regret, and in `conflict` also in its least satisfied member (.845 against .813). In the
 cafeteria it is mostly the 75-1동 food court (41 of 54 groups) and does worse. A third
 pick was tried and dropped: `sum_i P_i(r)` never beat `balanced`, even in mean
-satisfaction. Replayed on the cached LLM answers, a menu-count-normalized "specialty" score chose specialties of the
-wrong dish (스키야키 for two 시샤모 lovers) and did worse in every situation.
+satisfaction. Replayed on the cached LLM answers, a menu-count-normalized "specialty"
+score chose specialties of the wrong dish (스키야키 for two 시샤모 lovers) and did worse in every situation.
+
+### Fixed engine, two picks (2026-11-11, 11/10 lunch)
+
+The engine with the fixes and two picks above, judged by criteria 1–5 on new case sets
+of 6 and 12 groups per situation and size (`group-2026-11-10-{cafeteria,general}-g6`
+and `-g12`; 18 and 36 groups per situation). LLM members used `openai:gpt-6-luna`, prompt
+`45d1d4125724`; each answer cache started from the earlier 11/10 run's (and the 6-group
+set's for the 12-group set), so 517, 607, 1,670 and 2,889 new calls were made.
+
+| LLM members | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
+| --- | --- | --- | --- | --- | --- | --- |
+| 6 groups | pass | pass | pass | fails 2 | pass | pass |
+| 12 groups | fails 2 | pass | pass | pass | fails 3 | fails 3 |
+
+| LLM members, 12 groups, mean | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| questions: group / separate | 3.9 / 24.3 | 8.5 / 24.0 | 5.8 / 22.8 | 10.5 / 30.1 | 11.3 / 34.2 | 10.2 / 30.6 |
+| regret per member: group | .037 | .013 | .021 | .042 | .045 | .037 |
+| separate / matched / most menus | .008 / .055 / .072 | .015 / .033 / .022 | .013 / .024 / .197 | .024 / .058 / .078 | .031 / .045 / .069 | .020 / .035 / .063 |
+| group − separate (95% interval) | +.030 ± .017 | −.003 ± .008 | +.008 ± .009 | +.018 ± .014 | +.014 ± .010 | +.017 ± .010 |
+| group − matched (95% interval) | −.018 ± .018 | −.021 ± .010 | −.003 ± .009 | −.016 ± .014 | +.000 ± .007 | +.003 ± .008 |
+| told-menu similarity: group / most menus | .840 / .814 | .817 / .781 | .833 / .770 | .894 / .845 | .823 / .790 | .888 / .859 |
+| better of two picks: group | .012 | .008 | .009 | .034 | .035 | .025 |
+
+Criteria 1, 4 and 5 pass everywhere. The verdicts of criteria 2 and 3 flip between the
+two sizes; the 12-group intervals are the firmer evidence. Group mode asks about a third
+of the questions of separate sessions and loses .01–.03 regret per member to them. With
+the same number of questions it does better in the cafeteria's `similar` and `conflict`
+groups, and no better in general `conflict` and `restricted` groups.
+`no_one_unhappy` (reported only) did not raise the least satisfied member's similarity
+in the 12-group general sets (.824 to .826 in `conflict`, .880 to .885 in `restricted`)
+and lowered it in the cafeteria.
