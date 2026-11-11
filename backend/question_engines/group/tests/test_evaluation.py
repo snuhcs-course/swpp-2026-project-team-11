@@ -1,4 +1,5 @@
 from question_engines.decision_tree.catalog import CandidateCatalog
+from question_engines.group.engine import PICKS
 from question_engines.group.evaluation import (ALLERGIES, ARMS, SITUATIONS, SIZES, build_cases, compare,
                                                oracle, summarize)
 
@@ -38,7 +39,12 @@ def test_compare_reports_every_arm_per_situation_and_size():
         group, matched = case["group"], case["separate_matched"]
         assert 1 <= group["rounds"] <= 2
         assert matched["rounds"] <= group["rounds"]
-        assert all(case[arm]["regret"] >= 0 and 0 < case[arm]["menu_satisfaction"] <= 1 for arm in ARMS)
+        for arm in ARMS:
+            outcome = case[arm]
+            assert outcome["regret"] >= 0 and 0 < outcome["menu_satisfaction"] <= 1
+            assert list(outcome["picks"]) == list(PICKS)
+            assert outcome["picks"]["balanced"]["restaurant"] == outcome["restaurant"]
+            assert outcome["best_pick_regret_per_member"] <= outcome["regret_per_member"]
 
 
 def test_parallel_cases_give_the_same_report():
@@ -49,7 +55,10 @@ def test_parallel_cases_give_the_same_report():
 
 def test_pass_needs_half_the_questions_and_little_regret_in_every_check():
     def row(questions, regret):
-        return {"best": True, "regret_per_member": regret, "min_satisfaction": .9, "menu_satisfaction": .9, "questions": questions, "rounds": 1}
+        pick = {"restaurant": "Hall", "regret_per_member": regret, "mean_satisfaction": .9, "min_satisfaction": .9}
+        return {"best": True, "regret_per_member": regret, "best_pick_regret_per_member": regret,
+                "min_satisfaction": .9, "menu_satisfaction": .9, "picks": dict.fromkeys(PICKS, pick),
+                "questions": questions, "rounds": 1}
 
     def verdict(group, separate, matched, most=row(0, .1)):
         case = {"situation": "similar", "size": 2, "group": group, "separate": separate,
