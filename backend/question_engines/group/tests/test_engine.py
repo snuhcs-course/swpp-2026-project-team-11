@@ -1,6 +1,8 @@
+import numpy as np
 import pytest
 
 from question_engines.group import GroupConfig, GroupEngine
+from question_engines.group.engine import closest
 
 SCHEMA = [{"key": "spicy"}, {"key": "soupy"}, {"key": "noodle"}]
 
@@ -41,6 +43,12 @@ def test_recommends_the_restaurant_that_serves_each_member_their_own_menu():
     assert result["restaurant"] == "Both hall"
     assert [m["food_id"] for m in result["menus"]] == [1, 2]
     assert 1 <= result["rounds"] <= GroupConfig().max_rounds
+
+
+def test_a_spread_belief_gets_the_menu_in_the_middle_not_a_likeliest_one():
+    features = np.array([[0.], [.5], [1.]])
+    assert closest(features, np.array([.4, .2, .4]), np.arange(3)) == 1
+    assert closest(features, np.array([.4, .2, .4]), np.array([0, 2])) == 0
 
 
 def test_a_member_is_never_offered_a_menu_they_cannot_eat():

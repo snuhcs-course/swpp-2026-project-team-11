@@ -22,6 +22,13 @@ def test_cases_are_deterministic_and_cover_every_situation_and_size():
     assert all(m["allergy"] != "wheat" and m["target"] in SAFE[m["allergy"]] for m in restricted)
 
 
+def test_a_similar_group_never_wants_one_menu_twice():
+    twins = CANDIDATES + [dict(c, food_id=c["food_id"] + 100) for c in CANDIDATES]  # identical features
+    cases = build_cases(CandidateCatalog(twins, SCHEMA), SAFE, groups=6, seed=7)
+    similar = [[m["target"] for m in c["members"]] for c in cases if c["situation"] == "similar"]
+    assert all(len(set(targets)) == len(targets) for targets in similar)
+
+
 def test_compare_reports_every_arm_per_situation_and_size():
     cases = build_cases(CATALOG, SAFE, groups=1, seed=7)
     report = compare(CANDIDATES, SCHEMA, SAFE, cases, oracle(CATALOG, 7), config={"max_rounds": 2})
@@ -31,7 +38,7 @@ def test_compare_reports_every_arm_per_situation_and_size():
         group, matched = case["group"], case["separate_matched"]
         assert 1 <= group["rounds"] <= 2
         assert matched["rounds"] <= group["rounds"]
-        assert all(case[arm]["regret"] >= 0 for arm in ARMS)
+        assert all(case[arm]["regret"] >= 0 and 0 < case[arm]["menu_satisfaction"] <= 1 for arm in ARMS)
 
 
 def test_parallel_cases_give_the_same_report():
@@ -42,7 +49,7 @@ def test_parallel_cases_give_the_same_report():
 
 def test_pass_needs_half_the_questions_and_little_regret_in_every_check():
     def row(questions, regret):
-        return {"best": True, "regret_per_member": regret, "min_satisfaction": .9, "questions": questions, "rounds": 1}
+        return {"best": True, "regret_per_member": regret, "min_satisfaction": .9, "menu_satisfaction": .9, "questions": questions, "rounds": 1}
 
     def verdict(group, separate, matched, most=row(0, .1)):
         case = {"situation": "similar", "size": 2, "group": group, "separate": separate,
