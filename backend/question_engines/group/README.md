@@ -13,16 +13,20 @@ answer model as the single-user engine). Menus a member cannot eat (allergies, b
 have belief 0 for that member only.
 
 ```text
-P_i(r) = sum of b_i(f) over the menus f served at r     # i finds their menu at r
-G(r)   = sum_i log P_i(r)                               # Nash welfare
+fit_i(r, f) = similarity of f to the closest menu at r that i can eat   # 0 if there is none
+S_i(r)      = sum_f b_i(f) fit_i(r, f)                                  # i's expected satisfaction at r
+G(r)        = sum_i log S_i(r)                                          # Nash welfare
 ```
 
-`G(r)` is the log probability that every member finds their menu at `r`. A restaurant is
-an offer's `restaurant` name, so `자하연식당>2층` and `>3층` are separate. Distance is not
-part of the score. The first recommendation is `argmax G` and, for each member, the menu there
-closest in expectation to the one they want (1 - mean absolute feature difference,
-averaged over `b_i`). The likeliest menu would be arbitrary while `b_i` is still spread. A restaurant serving more menus starts with more probability: with no answer
-it is the one recommended.
+Similarity is 1 - mean absolute feature difference, as in the benchmark: a menu like the
+one a member wants counts for most of a match. An earlier version scored the probability
+`P_i(r)` that the wanted menu itself is served, which only counts menus and favored the
+largest restaurants. A restaurant is an offer's `restaurant` name, so `자하연식당>2층` and
+`>3층` are separate. Distance is not part of the score. The first recommendation is
+`argmax G` and, for each member, the menu there closest in expectation to the one they
+want (similarity averaged over `b_i`). The likeliest menu would be arbitrary while `b_i`
+is still spread. The `fit` table of a catalog takes about 3 s for the 6,227 general
+menus and is cached per catalog and excluded menus.
 
 A second restaurant follows, the best other one under its own score. Every pick is a
 restaurant with a menu for every member; a kind with no such restaurant left is omitted,
@@ -30,8 +34,8 @@ and a group that no restaurant can serve is rejected:
 
 | kind | score | meaning |
 | --- | --- | --- |
-| `balanced` | `sum_i log P_i(r)` | likely that everyone finds a menu |
-| `no_one_unhappy` | `min_i P_i(r)` | the member least likely to find one is best served |
+| `balanced` | `sum_i log S_i(r)` | everyone is satisfied in balance |
+| `no_one_unhappy` | `min_i S_i(r)` | the least satisfied member is best served |
 
 Questions and stopping use `G` only.
 
@@ -47,11 +51,13 @@ Every member gets their highest-gain unasked question each round. When no single
 can change the leading restaurant (all gains 0), the question that moves the leader's
 margin most is asked. In the first round all members are alike, so they get the same question.
 
-Another round is asked when the value of all members' answers together, enumerated over
-every joint answer (`6^members`, hence at most 6 members), exceeds
-`GroupConfig.question_cost` (.02 log-probability) per member asked. The first round is
+A group has 2 to 8 members. Another round is asked when the value of all members' answers
+together exceeds `GroupConfig.question_cost` (.0005 log-satisfaction) per member asked. The
+value enumerates every joint answer up to `6^5`; a larger round samples that many, with a
+seed fixed per round. The first round is
 always asked; `max_rounds` (4) caps the rest. A group whose menus come from one
-restaurant gets it without a question. These constants are uncalibrated initial values.
+restaurant gets it without a question. The cost comes from the dev check below; `max_rounds` is
+an uncalibrated initial value.
 Sums over a restaurant's menus are one matrix product, so a round over the 6,227 general
 menus and 584 restaurants of a lunch takes about a second per member.
 
@@ -74,18 +80,19 @@ similarity to that target among its menus they can eat; the true group score is
 
 - `group`: this engine.
 - `separate`: each member's own `preference` session until it would propose a menu
-  (at most 20 questions, as in the engine benchmark), then `argmax G` over their beliefs.
+  (at most 20 questions, as in the engine benchmark), then the picks over their beliefs.
 - `separate_matched`: the same, capped at the group's number of rounds per member.
 - `most_menus`: the restaurant with the most menus, without a question.
 
-Every arm makes two picks the same way (`most_menus` from equal beliefs over all menus,
-so its picks are the two largest restaurants). The criteria judge the first pick;
+Every arm makes two picks the same way from `S_i` (`most_menus` from each restaurant's
+share of the menus, so its picks are the two largest restaurants). The criteria judge the first pick;
 `picks` reports each one's regret and mean and least satisfaction, and
 `best_pick_regret_per_member` the regret if the group chose the truly better of the two.
 
 Situations are `similar` (targets among each other's ten nearest menus), `conflict`
 (far-apart targets) and `restricted` (one member has one of pork, wheat, milk or egg,
-when a menu without it exists), each with groups of 2, 3 and 5. Results are per
+when a menu without it exists), each with groups of 2, 4, 6 and 8 (2, 3 and 5 in the
+case sets before 2026-11-12). Results are per
 situation, never averaged across them: the share of groups given the truly best
 restaurant, Nash regret per member, the least satisfied member, the mean similarity of the
 menus members are told (each arm picks them as the engine does), total questions and rounds.
@@ -112,7 +119,7 @@ python manage.py benchmark_group --date 2026-11-10 --dir DIR --simulator llm   #
 python manage.py benchmark_group --source general --dir DIR2 ...               # the restaurants near the stations
 ```
 
-The first run freezes 6 cases per situation and size (54) from the menus and `--seed`, and
+The first run freezes `--groups` cases (default 6) per situation and size from the menus and `--seed`, and
 stops. Later runs refuse menus that differ from the frozen ones. The LLM members are the
 engine benchmark's simulated user (`METCHU_SIMULATOR_MODEL`), told only the target's name;
 their answers are cached in `DIR/answers.jsonl`, shared by the arms. Similarity and the
@@ -238,3 +245,24 @@ A replay of these 12-group cases afterwards, from the cached answers, found a bu
 `min_i P_i = 0`, and name order won). Picks are now limited to restaurants with a menu for
 every member. No `balanced` pick changes, so the verdicts above stand; those 6 cases now
 get one pick.
+
+### Expected satisfaction (dev check, already-judged 11/10 12-group cases, oracle members)
+
+After the bug above, the restaurant score changed from `P_i` to `S_i` in every arm, for
+questions, stopping and both picks. The old cost, .02 log-probability, stops after one round
+in log-satisfaction units, so the cost was chosen on these already-judged cases (regret per
+member, `group` / `separate` / `separate_matched`, and `group` questions):
+
+| question cost | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
+| --- | --- | --- | --- | --- | --- | --- |
+| .002 | .038 / .014 / .057, 4.2 q | .020 / .018 / .022, 5.1 | .023 / .015 / .024, 4.1 | .058 / .025 / .059, 3.4 | .023 / .021 / .023, 3.6 | .023 / .011 / .027, 3.9 |
+| **.0005** | .024 / .014 / .035, 7.1 | .016 / .018 / .022, 8.5 | .021 / .015 / .022, 6.0 | .055 / .025 / .056, 4.2 | .022 / .021 / .023, 5.6 | .023 / .011 / .022, 7.1 |
+| .0002 | .021 / .014 / .028, 7.9 | .016 / .018 / .023, 10.0 | .016 / .015 / .017, 7.2 | .055 / .025 / .056, 4.3 | .024 / .021 / .024, 7.1 | .024 / .011 / .020, 7.8 |
+
+With `P_i`, `group` regret in the general sets was .057 / .051 / .041. `S_i` halves it in
+`conflict` and `restricted`; `separate` gains as much, since it aggregates the same way.
+General `similar` groups stop after about four questions at any cost: one round's answers
+rarely change the leading restaurant, so the myopic value of another round is small.
+`no_one_unhappy` still does not raise the least satisfied member (general `conflict`
+.857 for `balanced`, .831 for it).
+
