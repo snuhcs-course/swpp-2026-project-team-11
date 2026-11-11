@@ -1,6 +1,6 @@
 # Group mode (i4-P3)
 
-A group rarely agrees on one dish, so group mode recommends **restaurants**, three of
+A group rarely agrees on one dish, so group mode recommends **restaurants**, two of
 different character, and each member's own menu at each. Every round, each member answers a question chosen for them.
 The package is pure Python + NumPy on top of the decision tree's intent model; the RL
 and LLM engines are not used. There is no REST endpoint or client screen yet.
@@ -24,12 +24,11 @@ closest in expectation to the one they want (1 - mean absolute feature differenc
 averaged over `b_i`). The likeliest menu would be arbitrary while `b_i` is still spread. A restaurant serving more menus starts with more probability: with no answer
 it is the one recommended.
 
-Two more restaurants follow, each the best one not yet picked under its own score:
+A second restaurant follows, the best other one under its own score:
 
 | kind | score | meaning |
 | --- | --- | --- |
 | `balanced` | `sum_i log P_i(r)` | likely that everyone finds a menu |
-| `highest_total` | `sum_i P_i(r)` | the most members expected to find one |
 | `no_one_unhappy` | `min_i P_i(r)` | the member least likely to find one is best served |
 
 Questions and stopping use `G` only.
@@ -77,10 +76,10 @@ similarity to that target among its menus they can eat; the true group score is
 - `separate_matched`: the same, capped at the group's number of rounds per member.
 - `most_menus`: the restaurant with the most menus, without a question.
 
-Every arm makes three picks the same way (`most_menus` from equal beliefs over all menus,
-so its picks are the three largest restaurants). The criteria judge the first pick;
+Every arm makes two picks the same way (`most_menus` from equal beliefs over all menus,
+so its picks are the two largest restaurants). The criteria judge the first pick;
 `picks` reports each one's regret and mean and least satisfaction, and
-`best_pick_regret_per_member` the regret if the group chose the truly best of the three.
+`best_pick_regret_per_member` the regret if the group chose the truly better of the two.
 
 Situations are `similar` (targets among each other's ten nearest menus), `conflict`
 (far-apart targets) and `restricted` (one member has one of pork, wheat, milk or egg,
@@ -179,18 +178,19 @@ also checked on these cases with oracle members: a question cost of .005 or .001
 of .02 adds 1–3 questions per group and changes regret by at most .008 per member, so
 the cost stays.
 
-### Three picks (dev check, already-seen 11/10 cases, oracle members)
+### Two picks (dev check, already-seen 11/10 cases, oracle members)
 
 On the cases above, before any new freeze, with oracle members (regret per member):
 
 | | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| group: `balanced` / best of three | .024 / .000 | .009 / .002 | .022 / .000 | .055 / .036 | .061 / .032 | .051 / .022 |
-| group: `highest_total` / `no_one_unhappy` | .096 / .125 | .044 / .034 | .185 / .209 | .091 / .079 | .069 / .042 | .058 / .036 |
-| `most_menus` best of three | .002 | .002 | .000 | .050 | .043 | .037 |
+| group: `balanced` / `no_one_unhappy` | .024 / .090 | .009 / .027 | .022 / .171 | .055 / .071 | .061 / .042 | .051 / .044 |
+| group: better of the two | .009 | .005 | .000 | .039 | .037 | .031 |
+| `most_menus`: better of the two | .016 | .005 | .150 | .057 | .045 | .042 |
 
-A choice among three is far better than the first pick alone, but in the cafeteria
-(22 restaurants) the three largest restaurants already cover almost every group. In
-general `conflict` and `restricted` groups the `no_one_unhappy` pick beats `balanced` in
-regret and in its least satisfied member (.846 against .813 in `conflict`).
-`highest_total` never does better than `balanced`, even in mean satisfaction.
+In general `conflict` and `restricted` groups the `no_one_unhappy` pick beats `balanced` in
+regret, and in `conflict` also in its least satisfied member (.845 against .813). In the
+cafeteria it is mostly the 75-1동 food court (41 of 54 groups) and does worse. A third
+pick was tried and dropped: `sum_i P_i(r)` never beat `balanced`, even in mean
+satisfaction. Replayed on the cached LLM answers, a menu-count-normalized "specialty" score chose specialties of the
+wrong dish (스키야키 for two 시샤모 lovers) and did worse in every situation.
