@@ -54,20 +54,22 @@ def test_parallel_cases_give_the_same_report():
 
 
 def test_pass_needs_half_the_questions_and_little_regret_in_every_check():
-    def row(questions, regret):
+    def row(questions, regret, menu=.9):
         pick = {"restaurant": "Hall", "regret_per_member": regret, "mean_satisfaction": .9, "min_satisfaction": .9}
         return {"best": True, "regret_per_member": regret, "best_pick_regret_per_member": regret,
-                "min_satisfaction": .9, "menu_satisfaction": .9, "picks": dict.fromkeys(PICKS, pick),
+                "min_satisfaction": .9, "menu_satisfaction": menu, "picks": dict.fromkeys(PICKS, pick),
                 "questions": questions, "rounds": 1}
 
-    def verdict(group, separate, matched, most=row(0, .1)):
+    def verdict(group, separate, matched, most=row(0, .1, .8)):
         case = {"situation": "similar", "size": 2, "group": group, "separate": separate,
                 "separate_matched": matched, "most_menus": most}
         return summarize([case])["similar"]["checks"]
 
     assert all(verdict(row(5, .03), row(10, .02), row(5, .05)).values())
     assert verdict(row(6, .03), row(10, .02), row(5, .05)) == {
-        "questions": False, "regret_vs_separate": True, "regret_vs_matched": True, "regret_vs_most_menus": True}
+        "questions": False, "regret_vs_separate": True, "regret_vs_matched": True, "regret_vs_most_menus": True,
+        "menu_vs_most_menus": True}
     assert not verdict(row(5, .05), row(10, .02), row(5, .06))["regret_vs_separate"]
     assert not verdict(row(5, .05), row(10, .04), row(5, .05))["regret_vs_matched"]
     assert not verdict(row(5, .03), row(10, .02), row(5, .05), row(0, .03))["regret_vs_most_menus"]
+    assert not verdict(row(5, .03, .8), row(10, .02), row(5, .05))["menu_vs_most_menus"]
