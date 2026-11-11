@@ -89,7 +89,7 @@ def _separate(catalogs, catalog, members, ask, max_questions):
 
 
 def _outcome(names, truth, chosen, menu, questions, rounds):
-    """The first pick decides the criteria; `picks` reports all three against the truth."""
+    """The first pick decides the criteria; `picks` reports each against the truth."""
     nash = np.log(EPSILON + truth).sum(0)
     regret = (nash.max() - nash) / len(truth)
     r = chosen[0][1]

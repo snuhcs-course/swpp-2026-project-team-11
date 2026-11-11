@@ -1,10 +1,10 @@
-"""Group mode: each member answers their own question every round; the group gets three restaurants.
+"""Group mode: each member answers their own question every round; the group gets two restaurants.
 
 Every member keeps a decision-tree intent belief b_i(f): the probability that menu f is the
 one they feel like. P_i(r) = sum of b_i over the menus restaurant r serves that i can eat,
 the probability that i finds their menu at r. The group score is the Nash welfare
 G(r) = sum_i log P_i(r): the log probability that everyone finds their menu there. It
-chooses the questions; the result adds two restaurants scored differently (see PICKS).
+chooses the questions; the result adds a restaurant scored differently (see PICKS).
 No ORM, HTTP or LLM imports.
 """
 from dataclasses import dataclass
@@ -63,7 +63,6 @@ def closest(features, belief, options):
 # Recommendation kinds, in order; each is a restaurant the earlier kinds did not pick.
 PICKS = (
     "balanced",        # highest Nash welfare sum_i log P_i(r): likely that everyone finds a menu
-    "highest_total",   # highest sum_i P_i(r): the most members expected to find one
     "no_one_unhappy",  # highest min_i P_i(r): the least likely member is best served
 )
 
@@ -71,7 +70,7 @@ PICKS = (
 def picks(serves, beliefs):
     """[(kind, restaurant index)] for member beliefs over menus shaped (members, F)."""
     chances = beliefs @ serves.T
-    scores = (np.log(np.maximum(chances, FLOOR)).sum(0), chances.sum(0), chances.min(0))
+    scores = (np.log(np.maximum(chances, FLOOR)).sum(0), chances.min(0))
     chosen = []
     for score in scores:
         rest = [int(r) for r in np.argsort(-score, kind="stable") if r not in chosen]
@@ -88,7 +87,7 @@ class _Member:
 
 
 class GroupEngine:
-    """Rounds of per-member questions, then three restaurants and each member's menu at each.
+    """Rounds of per-member questions, then two restaurants and each member's menu at each.
 
     `candidates` is a list of menu rows or a prebuilt CandidateCatalog. `excluded` holds,
     per member, the food IDs they cannot eat (allergies, bans). Members answer in any
@@ -192,7 +191,7 @@ class GroupEngine:
             self._pending = self._plan()
 
     def recommendation(self):
-        """Up to three restaurants (PICKS) and each member's closest menu at each."""
+        """Up to two restaurants (PICKS) and each member's closest menu at each."""
         if not self.finished:
             raise ValueError("The group still has questions to answer")
         return {"type": "recommendation", "rounds": self.round,
