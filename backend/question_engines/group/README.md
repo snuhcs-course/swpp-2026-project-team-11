@@ -96,9 +96,12 @@ menus members are told (each arm picks them as the engine does), total questions
 3. `group`'s mean regret per member is below `separate_matched`'s: with the same number
    of questions, choosing them for the group beats each member's own questions.
 4. `group`'s mean regret per member is below `most_menus`'s.
+5. The menus `group` tells members are, on mean, more similar to their targets than those
+   `most_menus` tells them.
 
 Criteria 1–3 were fixed before the first run; criterion 4 was added after it, before
-the second case sets were frozen.
+the second case sets were frozen; criterion 5, before the third. `no_one_unhappy` and the
+better of the two picks are reported, not judged.
 
 ```bash
 python manage.py benchmark_group --date 2026-11-10 --dir DIR                   # freezes DIR/cases.json; commit it
