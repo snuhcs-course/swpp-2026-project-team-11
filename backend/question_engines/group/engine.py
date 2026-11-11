@@ -1,13 +1,14 @@
 """Group mode: each member answers their own question every round; the group gets up to two restaurants.
 
 Every member keeps a decision-tree intent belief b_i(f): the probability that menu f is the
-one they feel like. P_i(r) = sum of b_i over the menus restaurant r serves that i can eat,
-the probability that i finds their menu at r. The group score is the Nash welfare
-G(r) = sum_i log P_i(r): the log probability that everyone finds their menu there. It
-chooses the questions; the result adds a restaurant scored differently (see PICKS).
+one they feel like. S_i(r) = sum_f b_i(f) fit_i(r, f) is i's expected satisfaction at
+restaurant r, where fit_i(r, f) is the similarity of f to the closest menu at r that i can
+eat. The group score is the Nash welfare G(r) = sum_i log S_i(r). It chooses the
+questions; the result adds a restaurant scored differently (see PICKS).
 No ORM, HTTP or LLM imports.
 """
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy as np
 
@@ -15,13 +16,14 @@ from question_engines.decision_tree.catalog import CandidateCatalog
 from question_engines.decision_tree.contracts import LANGUAGES, answer_options, translate
 from question_engines.decision_tree.planning import IntentModel
 
-FLOOR = 1e-12  # P_i(r) of a restaurant with nothing the member can eat
-MAX_MEMBERS = 6  # The stop rule enumerates all 6^members joint answers of a round.
+FLOOR = 1e-12  # log S_i(r) of a restaurant with nothing the member can eat
+MAX_MEMBERS = 8
+JOINT_LIMIT = 6 ** 5  # the stop rule enumerates this many joint answers of a round, then samples
 
 
 @dataclass(frozen=True)
 class GroupConfig:
-    question_cost: float = .02  # log-probability per member question; uncalibrated
+    question_cost: float = .0005  # log-satisfaction per member question (README, dev check)
     max_rounds: int = 4
     language: str = "en"
 
@@ -60,19 +62,33 @@ def closest(features, belief, options):
     return int(options[int(np.argmin(distance))])
 
 
+@lru_cache(maxsize=16)
+def fit(catalog, banned):
+    """fit[r, f]: similarity (1 - mean absolute feature difference) of menu f to the closest
+    menu restaurant r serves that is not in `banned`; 0 where there is none, positive elsewhere."""
+    ids = [c.food_id for c in catalog.candidates]
+    x = features(catalog)
+    _, serves = restaurants(catalog)
+    table = np.zeros(serves.shape)
+    for r, row in enumerate(serves & ~np.isin(ids, list(banned))):
+        if row.any():
+            table[r] = np.maximum(1 - np.abs(x[:, None] - x[row]).mean(-1).min(1), FLOOR)
+    return table
+
+
 # Recommendation kinds, in order; each is a restaurant the earlier kinds did not pick and
 # where every member has a menu. A kind with no such restaurant left is omitted.
 PICKS = (
-    "balanced",        # highest Nash welfare sum_i log P_i(r): likely that everyone finds a menu
-    "no_one_unhappy",  # highest min_i P_i(r): the least likely member is best served
+    "balanced",        # highest Nash welfare sum_i log S_i(r)
+    "no_one_unhappy",  # highest min_i S_i(r): the least satisfied member is best served
 )
 
 
-def picks(serves, beliefs):
-    """[(kind, restaurant index)] for member beliefs over menus shaped (members, F)."""
-    chances = beliefs @ serves.T
-    servable = (chances > 0).all(0)  # beliefs are zero exactly on the menus a member cannot eat
-    scores = (np.log(np.maximum(chances, FLOOR)).sum(0), chances.min(0))
+def picks(satisfaction):
+    """[(kind, restaurant index)] for expected satisfactions S shaped (members, R); S is 0
+    exactly where a member has nothing to eat."""
+    servable = (satisfaction > 0).all(0)
+    scores = (np.log(np.maximum(satisfaction, FLOOR)).sum(0), satisfaction.min(0))
     chosen = []
     for score in scores:
         rest = [int(r) for r in np.argsort(-score, kind="stable") if servable[r] and r not in chosen]
@@ -83,6 +99,7 @@ def picks(serves, beliefs):
 @dataclass
 class _Member:
     allowed: np.ndarray
+    fit: np.ndarray
     belief: np.ndarray
     salience: np.ndarray
     answers: dict
@@ -105,7 +122,6 @@ class GroupEngine:
         if not self.model.identity_intents:
             raise ValueError("Group mode needs actual sales menus")
         self.names, self.serves = restaurants(self.catalog)
-        self._menus = self.serves.T.astype(float)
         self.features = features(self.catalog)
         ids = np.array([c.food_id for c in self.catalog.candidates])
         self.members = []
@@ -114,9 +130,9 @@ class GroupEngine:
             if not allowed.any():
                 raise ValueError("Every member needs a menu they can eat")
             belief = self.model.prior * allowed
-            self.members.append(_Member(allowed, belief / belief.sum(),
+            self.members.append(_Member(allowed, fit(self.catalog, frozenset(banned)), belief / belief.sum(),
                                         self.model.salience_prior.copy(), {}))
-        if not (self.serves @ np.array([m.allowed for m in self.members]).T).all(1).any():
+        if not (self.satisfaction() > 0).all(0).any():
             raise ValueError("No restaurant has a menu for every member")
         self.round = 0
         self._pending = self._plan() if len(self.names) > 1 else {}
@@ -125,16 +141,17 @@ class GroupEngine:
     def finished(self):
         return not self._pending
 
-    def beliefs(self):
-        return np.array([m.belief for m in self.members])
+    def satisfaction(self):
+        """Each member's expected satisfaction at each restaurant: (members, R)."""
+        return np.array([m.fit @ m.belief for m in self.members])
 
     def _logs(self, member):
-        """Log P(r) now (R,), after each answer to each question (Q, 6, R), and P(answer) (Q, 6)."""
+        """Log S(r) now (R,), after each answer to each question (Q, 6, R), and P(answer) (Q, 6)."""
         likelihood = self.model.all_likelihoods(member.salience, np.arange(len(member.belief)))
         weights = likelihood * member.belief
         mass = weights.sum(-1)
-        after = (weights @ self._menus) / np.maximum(mass, FLOOR)[..., None]
-        return np.log(np.maximum(member.belief @ self._menus, FLOOR)), np.log(np.maximum(after, FLOOR)), mass
+        after = (weights @ member.fit.T) / np.maximum(mass, FLOOR)[..., None]
+        return np.log(np.maximum(member.fit @ member.belief, FLOOR)), np.log(np.maximum(after, FLOOR)), mass
 
     def _choose(self, member, others, total, logs, mass):
         """The question whose answer best improves the group decision.
@@ -158,6 +175,7 @@ class GroupEngine:
         tables = [self._logs(m) for m in self.members]
         total = sum(current for current, _, _ in tables)
         questions, joint, probability = {}, np.zeros((1, len(self.names))), np.ones(1)
+        rng = np.random.default_rng(self.round)
         for i, (member, (current, logs, mass)) in enumerate(zip(self.members, tables)):
             qi = self._choose(member, total - current, total, logs, mass)
             if qi is None:
@@ -166,6 +184,9 @@ class GroupEngine:
                 questions[i], outcomes, chances = qi, logs[qi], mass[qi]
             joint = (joint[:, None] + outcomes[None]).reshape(-1, len(self.names))
             probability = (probability[:, None] * chances[None]).reshape(-1)
+            if len(probability) > JOINT_LIMIT:
+                rows = rng.choice(len(probability), JOINT_LIMIT, p=probability / probability.sum())
+                joint, probability = joint[rows], np.full(JOINT_LIMIT, 1 / JOINT_LIMIT)
         value = probability @ joint.max(-1) - (probability @ joint).max()
         if self.round and value <= self.config.question_cost * len(questions):
             return {}
@@ -200,7 +221,7 @@ class GroupEngine:
             raise ValueError("The group still has questions to answer")
         return {"type": "recommendation", "rounds": self.round,
                 "picks": [{"kind": kind, "restaurant": self.names[r], "menus": self._menus_at(r)}
-                          for kind, r in picks(self.serves, self.beliefs())]}
+                          for kind, r in picks(self.satisfaction())]}
 
     def _menus_at(self, r):
         menus = []

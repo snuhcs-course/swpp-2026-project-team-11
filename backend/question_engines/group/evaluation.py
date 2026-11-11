@@ -16,10 +16,10 @@ import numpy as np
 from question_engines.decision_tree.catalog import CandidateCatalog
 from question_engines.decision_tree.engine import DecisionTreeEngine
 from question_engines.decision_tree.evaluation import ResponseOracle
-from .engine import GroupConfig, GroupEngine, PICKS, closest, features, picks, restaurants
+from .engine import GroupConfig, GroupEngine, PICKS, closest, features, fit, picks, restaurants
 
 SITUATIONS = ("similar", "conflict", "restricted")
-SIZES = (2, 3, 5)
+SIZES = (2, 4, 6, 8)
 ARMS = ("group", "separate", "separate_matched", "most_menus")
 ALLERGIES = ("pork", "wheat", "milk", "egg")  # one member of a restricted group has one of these
 SEPARATE_LIMIT = 20  # questions per separate session, as in the engine benchmark
@@ -129,6 +129,7 @@ def compare(candidates, schema, safe, cases, respond, *, config=None, workers=1)
             return float(np.mean([similarity[i, closest(x, b, o)] if o.size else 0.
                                   for i, (b, o) in enumerate(zip(beliefs, options))]))
 
+        fits = [fit(catalog, frozenset(banned)) for banned in excluded]
         group = GroupEngine(catalog, None, excluded, config=config)
         while not group.finished:
             for i, step in group.questions().items():
@@ -141,10 +142,10 @@ def compare(candidates, schema, safe, cases, respond, *, config=None, workers=1)
         # Separate sessions as they stop by themselves, and capped at the group's round count.
         for arm, cap in (("separate", SEPARATE_LIMIT), ("separate_matched", group.round)):
             beliefs, asked = _separate(catalogs, catalog, members, ask, cap)
-            chosen = picks(serves, beliefs)
+            chosen = picks(np.array([f @ b for f, b in zip(fits, beliefs)]))
             result[arm] = _outcome(names, truth, chosen, told(chosen[0][1], beliefs), sum(asked), max(asked))
-        # Every menu equally likely: the restaurants with the most menus.
-        chosen = picks(serves, np.full(allowed.shape, 1 / len(ids)))
+        # Every menu equally likely to be the one wanted: the restaurants with the most menus.
+        chosen = picks(np.tile(serves.mean(1), (len(members), 1)))
         uniform = allowed / allowed.sum(1, keepdims=True)
         result["most_menus"] = _outcome(names, truth, chosen, told(chosen[0][1], uniform), 0, 0)
         return result
