@@ -73,3 +73,10 @@ def test_pass_needs_half_the_questions_and_little_regret_in_every_check():
     assert not verdict(row(5, .05), row(10, .04), row(5, .05))["regret_vs_matched"]
     assert not verdict(row(5, .03), row(10, .02), row(5, .05), row(0, .03))["regret_vs_most_menus"]
     assert not verdict(row(5, .03, .8), row(10, .02), row(5, .05))["menu_vs_most_menus"]
+
+
+def test_a_case_with_one_pick_counts_only_for_that_kind():
+    case = compare(CANDIDATES, SCHEMA, SAFE, build_cases(CATALOG, SAFE, groups=1, seed=7)[:1], oracle(CATALOG, 7))["cases"][0]
+    alone = dict(case, group=dict(case["group"], picks={"balanced": case["group"]["picks"]["balanced"]}))
+    picks = summarize([case, alone])["similar"]["group"]["picks"]
+    assert (picks["balanced"]["cases"], picks["no_one_unhappy"]["cases"]) == (2, 1)

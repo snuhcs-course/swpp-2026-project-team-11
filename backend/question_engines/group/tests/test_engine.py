@@ -63,7 +63,14 @@ def test_a_spread_belief_gets_the_menu_in_the_middle_not_a_likeliest_one():
 def test_a_member_is_never_offered_a_menu_they_cannot_eat():
     result = play(GroupEngine(MENUS, SCHEMA, [set(), {2}]))
     assert result[0]["restaurant"] != "Both hall"
-    assert all(p["menus"][1] is None or p["menus"][1]["food_id"] != 2 for p in result)
+    assert all(p["menus"][1]["food_id"] != 2 for p in result)
+
+
+def test_every_pick_has_a_menu_for_every_member():
+    result = play(GroupEngine(MENUS, SCHEMA, [set(), {1, 2, 4}]))  # member 1 eats only at Mixed hall
+    assert [p["restaurant"] for p in result] == ["Mixed hall"]
+    serves = np.eye(3, dtype=bool)
+    assert picks(serves, np.array([[.5, .25, .25], [1, 0, 0]])) == [("balanced", 0)]
 
 
 def test_more_menus_mean_more_chances_not_a_name_order_tie():
@@ -91,6 +98,8 @@ def test_rejects_invalid_groups_and_answers():
         GroupEngine(MENUS, SCHEMA, [set()])
     with pytest.raises(ValueError):
         GroupEngine(MENUS, SCHEMA, [set(), {1, 2, 3, 4}])
+    with pytest.raises(ValueError):
+        GroupEngine(MENUS, SCHEMA, [{2, 3, 4}, {1, 2, 4}])  # no restaurant serves both
     with pytest.raises(ValueError):
         GroupEngine([menu(1, "Dish", .5, .5, "Hall", profile=None)], SCHEMA, [set(), set()])
     engine = GroupEngine(MENUS, SCHEMA, [set(), set()])
