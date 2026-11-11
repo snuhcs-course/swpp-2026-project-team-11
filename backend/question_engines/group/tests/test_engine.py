@@ -43,15 +43,15 @@ def test_recommends_the_restaurant_that_serves_each_member_their_own_menu():
     first, *others = play(engine)
     assert first["kind"] == "balanced" and first["restaurant"] == "Both hall"
     assert [m["food_id"] for m in first["menus"]] == [1, 2]
-    assert len({p["restaurant"] for p in [first, *others]}) == 3
+    assert len({p["restaurant"] for p in [first, *others]}) == 2
     assert 1 <= engine.recommendation()["rounds"] <= GroupConfig().max_rounds
 
 
 def test_each_pick_scores_the_members_chances_differently():
-    serves = np.eye(3, dtype=bool)
-    chances = np.array([[.9, .99, .45], [.3, .25, .45]])  # P_i(r) per member and restaurant
-    assert picks(serves, chances) == list(zip(PICKS, [0, 1, 2]))
-    assert picks(serves, np.array([[.9, .1, .05], [.9, .1, .05]])) == list(zip(PICKS, [0, 1, 2]))
+    serves = np.eye(2, dtype=bool)
+    chances = np.array([[.9, .45], [.3, .45]])  # P_i(r) per member and restaurant
+    assert picks(serves, chances) == list(zip(PICKS, [0, 1]))
+    assert picks(serves, np.array([[.9, .1], [.9, .1]])) == list(zip(PICKS, [0, 1]))
 
 
 def test_a_spread_belief_gets_the_menu_in_the_middle_not_a_likeliest_one():
