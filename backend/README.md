@@ -16,7 +16,7 @@ The P10 question engine now consumes this candidate set. See the
 Python API, interactive demo, snapshots, and paired benchmark. Its demo requires
 no model API key when using the shared fixture.
 
-Group mode (i4-P3) recommends two restaurants for a group from per-member questions
+Group mode (i4-P3) recommends up to two restaurants for a group from per-member questions
 on the same model; see the [group mode guide](question_engines/group/README.md).
 
 The P13/P14 LLM engine (MVP2) consumes the same candidate set but sends only the

@@ -24,7 +24,9 @@ closest in expectation to the one they want (1 - mean absolute feature differenc
 averaged over `b_i`). The likeliest menu would be arbitrary while `b_i` is still spread. A restaurant serving more menus starts with more probability: with no answer
 it is the one recommended.
 
-A second restaurant follows, the best other one under its own score:
+A second restaurant follows, the best other one under its own score. Every pick is a
+restaurant with a menu for every member; a kind with no such restaurant left is omitted,
+and a group that no restaurant can serve is rejected:
 
 | kind | score | meaning |
 | --- | --- | --- |
@@ -229,3 +231,10 @@ groups, and no better in general `conflict` and `restricted` groups.
 `no_one_unhappy` (reported only) did not raise the least satisfied member's similarity
 in the 12-group general sets (.824 to .826 in `conflict`, .880 to .885 in `restricted`)
 and lowered it in the cafeteria.
+
+A replay of these 12-group cases afterwards, from the cached answers, found a bug: in 6 of
+36 cafeteria `restricted` cases the allergic member could eat at only one restaurant, and
+`no_one_unhappy` named another one where they had nothing (every other restaurant tied at
+`min_i P_i = 0`, and name order won). Picks are now limited to restaurants with a menu for
+every member. No `balanced` pick changes, so the verdicts above stand; those 6 cases now
+get one pick.
