@@ -3,8 +3,8 @@
 Every member keeps a decision-tree intent belief b_i(f): the probability that menu f is the
 one they feel like. S_i(r) = sum_f b_i(f) fit_i(r, f) is i's expected satisfaction at
 restaurant r, where fit_i(r, f) is the similarity of f to the closest menu at r that i can
-eat. The group score is the Nash welfare G(r) = sum_i log S_i(r). It chooses the
-questions; the result adds a restaurant scored differently (see PICKS).
+eat. The group score is the Nash welfare G(r) = sum_i log S_i(r); it chooses the questions
+and the first pick, and a second pick is scored differently (see PICKS).
 No ORM, HTTP or LLM imports.
 """
 from dataclasses import dataclass
@@ -17,7 +17,7 @@ from question_engines.decision_tree.contracts import LANGUAGES, answer_options, 
 from question_engines.decision_tree.planning import IntentModel
 from question_engines.decision_tree.preference import PreferencePlanner
 
-FLOOR = 1e-12  # log S_i(r) of a restaurant with nothing the member can eat
+FLOOR = 1e-12  # keeps log S_i(r) finite where a member has nothing to eat
 MAX_MEMBERS = 8
 
 

@@ -93,8 +93,7 @@ def _outcome(names, truth, chosen, menu, questions, rounds):
     nash = np.log(EPSILON + truth).sum(0)
     regret = (nash.max() - nash) / len(truth)
     r = chosen[0][1]
-    return {"restaurant": names[r], "best": bool(nash[r] >= nash.max() - 1e-12),
-            "regret": float(regret[r] * len(truth)), "regret_per_member": float(regret[r]),
+    return {"restaurant": names[r], "best": bool(nash[r] >= nash.max() - 1e-12), "regret_per_member": float(regret[r]),
             "min_satisfaction": float(truth[:, r].min()), "menu_satisfaction": menu,
             "picks": {kind: {"restaurant": names[p], "regret_per_member": float(regret[p]),
                              "mean_satisfaction": float(truth[:, p].mean()),
