@@ -121,7 +121,8 @@ The first run freezes `--groups` cases (default 6) per situation and size from t
 menus and `--seed`, and stops. Later runs refuse menus that differ from the frozen ones.
 The LLM members are the engine benchmark's simulated user (`METCHU_SIMULATOR_MODEL`),
 told only the target's name; their answers are cached in `DIR/answers.jsonl`, shared by
-the arms. Similarity and the answer model come from the same features, so absolute
+the arms, and each question is asked once even when cases run in parallel. `most_menus`
+picks only restaurants where every member can eat, like the other arms. Similarity and the answer model come from the same features, so absolute
 satisfaction is optimistic; the comparison between arms is what the criteria judge.
 Taking the best menu of a restaurant also favors restaurants with many menus, which
 `most_menus` makes visible.
@@ -144,6 +145,15 @@ general run stopped once on an OpenAI connection error and resumed from its cach
 `llm.json` counts only the 4,215 calls after it; the recorded tokens are 0.24M input and
 0.05M output (cafeteria) and 1.65M and 0.33M (general, without the first 938 calls).
 
+The PR review then found two benchmark faults. `most_menus` could pick a restaurant with
+nothing for the allergic member (12 of 48 cafeteria `restricted` groups; its regret there
+was .185), and parallel cases could ask the same question twice (17 cafeteria and 5
+general questions; 3 and 1 got different answers, so arms could see different answers).
+Both are fixed. The cafeteria reports were replayed from the cached answers with no new
+call, so their `llm.json` shows 0 calls (the paid run's usage is in commit 2ddb37d); two
+`similar` groups changed and no verdict did. The general reports had no such pick and
+were not replayed.
+
 | Passed situations | cafeteria | general |
 | --- | --- | --- |
 | LLM members | none (all fail 1; `similar` also fails 3) | `conflict`, `restricted` (`similar` fails 2) |
@@ -153,10 +163,10 @@ general run stopped once on an OpenAI connection error and resumed from its cach
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | questions: group / separate | 20.0 / 36.9 | 20.0 / 35.8 | 20.0 / 34.3 | 20.0 / 48.0 | 20.0 / 50.9 | 20.0 / 49.6 |
 | regret per member: group | .013 | .011 | .009 | .033 | .018 | .014 |
-| separate / matched / most menus | .007 / .009 / .046 | .007 / .011 / .012 | .003 / .014 / .185 | .009 / .034 / .086 | .017 / .020 / .061 | .011 / .014 / .051 |
+| separate / matched / most menus | .007 / .009 / .046 | .007 / .011 / .012 | .003 / .014 / .011 | .009 / .034 / .086 | .017 / .020 / .061 | .011 / .014 / .051 |
 | group − separate (95%) | +.006 ± .006 | +.004 ± .007 | +.006 ± .006 | +.024 ± .009 | +.001 ± .005 | +.003 ± .004 |
 | group − matched (95%) | +.004 ± .006 | −.001 ± .007 | −.005 ± .007 | −.001 ± .008 | −.001 ± .003 | −.000 ± .003 |
-| told-menu similarity: group / most menus | .886 / .819 | .831 / .777 | .863 / .779 | .909 / .846 | .825 / .789 | .892 / .845 |
+| told-menu similarity: group / most menus | .887 / .819 | .831 / .777 | .863 / .835 | .909 / .846 | .825 / .789 | .892 / .845 |
 
 The cafeteria fails criterion 1 as before: LLM members end their own sessions after
 about 7 questions, so 4 rounds are 54–58% of them. General `similar` groups still lose
@@ -186,7 +196,8 @@ the separate questions, while `separate_matched` reached .034.
 ### Earlier versions
 
 Each version's cases, answers and reports are in `engine_benchmark_results/`; the
-detailed tables are in this file's Git history.
+detailed tables are in this file's Git history. Their `most_menus` results in
+`restricted` groups have the fault fixed above.
 
 | version (judged) | cases | LLM members failed | what the results showed, and the next change |
 | --- | --- | --- | --- |
