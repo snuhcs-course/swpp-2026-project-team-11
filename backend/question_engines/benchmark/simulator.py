@@ -133,6 +133,7 @@ class Simulator:
         self.cache = {}
         self.usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
         self._lock = threading.Lock()  # sessions may run in parallel threads
+        self._asking = {}  # a lock per key, so parallel threads ask each question once
         if self.cache_path and self.cache_path.exists():
             for line in self.cache_path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
@@ -143,14 +144,21 @@ class Simulator:
         return hashlib.sha256(json.dumps([kind, persona, item, PROMPT_ID, self.model],
                                          ensure_ascii=False).encode()).hexdigest()
 
-    def _remember(self, key, value, **readable):
-        """Cache `value`; the file line also says what was asked, for reading it later."""
+    def _once(self, key, ask, **readable):
+        """The cached value of `key`, from `ask()` the first time; the file line also says what
+        was asked, for reading it later."""
         with self._lock:
-            self.cache[key] = value
-            if self.cache_path:
-                with open(self.cache_path, "a", encoding="utf-8") as f:
-                    f.write(json.dumps({"key": key, "value": value, **readable, "prompt_id": PROMPT_ID,
-                                        "model": self.model}, ensure_ascii=False) + "\n")
+            lock = self._asking.setdefault(key, threading.Lock())
+        with lock:
+            if key not in self.cache:
+                value = ask()
+                with self._lock:
+                    self.cache[key] = value
+                    if self.cache_path:
+                        with open(self.cache_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps({"key": key, "value": value, **readable, "prompt_id": PROMPT_ID,
+                                                "model": self.model}, ensure_ascii=False) + "\n")
+        return self.cache[key]
 
     def _ask(self, model, text):
         from langchain_core.messages import HumanMessage, SystemMessage
@@ -168,17 +176,13 @@ class Simulator:
         return reply["parsed"]
 
     def answer(self, persona: str, question: str) -> str:
-        key = self._key("answer", persona, question)
-        if key not in self.cache:
-            options = ", ".join(f"{i} ({ANSWER_LABELS[i]})" for i in ANSWER_IDS)
-            reply = self._ask(Reply, f"{persona}\n\nThe app asks: \"{question}\"\nAnswer with one of: {options}.")
-            self._remember(key, reply.answer, kind="answer", persona=persona, question=question)
-        return self.cache[key]
+        options = ", ".join(f"{i} ({ANSWER_LABELS[i]})" for i in ANSWER_IDS)
+        text = f"{persona}\n\nThe app asks: \"{question}\"\nAnswer with one of: {options}."
+        return self._once(self._key("answer", persona, question), lambda: self._ask(Reply, text).answer,
+                          kind="answer", persona=persona, question=question)
 
     def takes(self, persona: str, proposal: str, served: bool = True, *, menu_id: int | None = None) -> bool:
         text = (TAKE_PROMPT if served else INSTEAD_PROMPT).format(persona=persona, proposal=proposal)
-        key = self._key("take", persona, text if menu_id is None else [menu_id, text])
-        if key not in self.cache:
-            reply = self._ask(Verdict, text)
-            self._remember(key, bool(reply.accept), kind="take", persona=persona, proposal=proposal, served=served, menu_id=menu_id)
-        return self.cache[key]
+        return self._once(self._key("take", persona, text if menu_id is None else [menu_id, text]),
+                          lambda: bool(self._ask(Verdict, text).accept),
+                          kind="take", persona=persona, proposal=proposal, served=served, menu_id=menu_id)
