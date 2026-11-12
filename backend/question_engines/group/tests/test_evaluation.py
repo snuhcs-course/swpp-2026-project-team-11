@@ -80,3 +80,18 @@ def test_a_case_with_one_pick_counts_only_for_that_kind():
     alone = dict(case, group=dict(case["group"], picks={"balanced": case["group"]["picks"]["balanced"]}))
     picks = summarize([case, alone])["similar"]["group"]["picks"]
     assert (picks["balanced"]["cases"], picks["no_one_unhappy"]["cases"]) == (2, 1)
+
+
+def test_most_menus_picks_only_where_every_member_can_eat():
+    safe = SAFE | {"milk": {3, 6}}  # only Hall 2, the smallest, has a menu without milk
+    case = {"situation": "restricted", "size": 2, "members": [{"target": 3, "allergy": "milk"}, {"target": 1, "allergy": None}]}
+    most = compare(CANDIDATES, SCHEMA, safe, [case], oracle(CATALOG, 7))["cases"][0]["most_menus"]
+    assert list(most["picks"]) == ["balanced"] and most["restaurant"] == "Hall 2"
+    assert most["min_satisfaction"] > 0
+
+
+def test_a_group_with_one_restaurant_is_compared_without_questions():
+    candidates = [dict(c, offers=[dict(c["offers"][0], restaurant="Hall 0")]) for c in CANDIDATES]
+    cases = build_cases(CandidateCatalog(candidates, SCHEMA), SAFE, groups=1, seed=7)
+    for case in compare(candidates, SCHEMA, SAFE, cases, oracle(CATALOG, 7))["cases"]:
+        assert case["group"]["rounds"] == case["separate_matched"]["questions"] == 0

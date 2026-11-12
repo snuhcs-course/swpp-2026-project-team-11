@@ -7,7 +7,9 @@ import os
 import pathlib
 import random
 import tempfile
+import time
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from unittest import mock
 
@@ -139,6 +141,18 @@ class SimulatorTests(SimpleTestCase):
             self.assertEqual(user.answer("You feel like eating: 짬뽕.", "Spicy?"), "no")
         self.assertEqual(len(llm.calls), 1)
         self.assertEqual(user.usage, {"calls": 1, "input_tokens": 300, "output_tokens": 10})
+
+    def test_parallel_threads_ask_a_question_once(self):
+        class SlowLLM(FakeUserLLM):
+            def with_structured_output(self, model, include_raw=False):
+                run = super().with_structured_output(model, include_raw)
+                return SimpleNamespace(invoke=lambda messages: (time.sleep(.05), run.invoke(messages))[1])
+
+        llm = SlowLLM(answer="no")
+        user = simulator.Simulator(llm)
+        with ThreadPoolExecutor(8) as pool:
+            answers = list(pool.map(lambda _: user.answer("p", "Spicy?"), range(8)))
+        self.assertEqual((answers, len(llm.calls)), (["no"] * 8, 1))
 
     def test_cache_file_survives_a_restart_and_can_be_read(self):
         with tempfile.TemporaryDirectory() as folder:
