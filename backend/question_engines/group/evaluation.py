@@ -78,9 +78,9 @@ def _separate(catalogs, catalog, members, ask, max_questions):
     """Each member's own preference session until it would propose a menu: (beliefs, questions)."""
     beliefs, asked = [], []
     for i, member in enumerate(members):
-        engine = DecisionTreeEngine(catalogs[member["allergy"]], config={"max_questions": max_questions})
+        engine = DecisionTreeEngine(catalogs[member["allergy"]], config={"max_questions": max(max_questions, 1)})
         step = engine.start()
-        while step["type"] == "question":
+        while step["type"] == "question" and engine.question_count < max_questions:
             step = engine.answer(step["question_id"], ask(i, step))
         probabilities = engine.probabilities
         beliefs.append([probabilities.get(c.food_id, 0.) for c in catalog.candidates])
@@ -143,8 +143,9 @@ def compare(candidates, schema, safe, cases, respond, *, config=None, workers=1)
             beliefs, asked = _separate(catalogs, catalog, members, ask, cap)
             chosen = picks(np.array([f @ b for f, b in zip(fits, beliefs)]))
             result[arm] = _outcome(names, truth, chosen, told(chosen[0][1], beliefs), sum(asked), max(asked))
-        # Every menu equally likely to be the one wanted: the restaurants with the most menus.
-        chosen = picks(np.tile(serves.mean(1), (len(members), 1)))
+        # Every menu equally likely to be the one wanted: the restaurants with the most menus
+        # among those where every member can eat.
+        chosen = picks(serves.mean(1) * (serves[None] & allowed[:, None]).any(-1))
         uniform = allowed / allowed.sum(1, keepdims=True)
         result["most_menus"] = _outcome(names, truth, chosen, told(chosen[0][1], uniform), 0, 0)
         return result
