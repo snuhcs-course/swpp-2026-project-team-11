@@ -41,7 +41,7 @@ def test_compare_reports_every_arm_per_situation_and_size():
         assert matched["rounds"] <= group["rounds"]
         for arm in ARMS:
             outcome = case[arm]
-            assert outcome["regret"] >= 0 and 0 < outcome["menu_satisfaction"] <= 1
+            assert outcome["regret_per_member"] >= 0 and 0 < outcome["menu_satisfaction"] <= 1
             assert list(outcome["picks"]) == list(PICKS)
             assert outcome["picks"]["balanced"]["restaurant"] == outcome["restaurant"]
             assert outcome["best_pick_regret_per_member"] <= outcome["regret_per_member"]
