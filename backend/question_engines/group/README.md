@@ -1,9 +1,10 @@
 # Group mode (i4-P3)
 
 A group rarely agrees on one dish, so group mode recommends **restaurants**, two of
-different character, and each member's own menu at each. Every round, each member answers a question chosen for them.
-The package is pure Python + NumPy on top of the decision tree's intent model; the RL
-and LLM engines are not used. There is no REST endpoint or client screen yet.
+different character, and each member's own menu at each. Every round, each member
+answers a question chosen for them. The package is pure Python + NumPy on top of the
+decision tree's intent model; the RL and LLM engines are not used. There is no REST
+endpoint or client screen yet.
 
 ## Model
 
@@ -19,14 +20,12 @@ G(r)        = sum_i log S_i(r)                                          # Nash w
 ```
 
 Similarity is 1 - mean absolute feature difference, as in the benchmark: a menu like the
-one a member wants counts for most of a match. An earlier version scored the probability
-`P_i(r)` that the wanted menu itself is served, which only counts menus and favored the
-largest restaurants. A restaurant is an offer's `restaurant` name, so `자하연식당>2층` and
-`>3층` are separate. Distance is not part of the score. The first recommendation is
-`argmax G` and, for each member, the menu there closest in expectation to the one they
-want (similarity averaged over `b_i`). The likeliest menu would be arbitrary while `b_i`
-is still spread. The `fit` table of a catalog takes about 3 s for the 6,227 general
-menus and is cached per catalog and excluded menus.
+one a member wants counts for most of a match. A restaurant is an offer's `restaurant`
+name, so `자하연식당>2층` and `>3층` are separate. Distance is not part of the score.
+The first recommendation is `argmax G` and, for each member, the menu there closest in
+expectation to the one they want (similarity averaged over `b_i`). The likeliest menu
+would be arbitrary while `b_i` is still spread. The `fit` table of a catalog takes about
+3 s for the 6,227 general menus and is cached per catalog and excluded menus.
 
 A second restaurant follows, the best other one under its own score. Every pick is a
 restaurant with a menu for every member; a kind with no such restaurant left is omitted,
@@ -53,8 +52,7 @@ gets the question their own preference session would ask (`PreferencePlanner`, a
 single-user session), and none when that session would stop. In the first round all
 members are alike, so they get the same question. The group stops after `max_rounds` (4)
 or when no member has a question; a group whose menus come from one restaurant gets it
-without a question. A stop rule that weighed the value of the next round against a cost
-per question was dropped (see the dev check below). `max_rounds` is set by that check.
+without a question. Results explain `max_rounds` and why a cost-based stop rule was dropped.
 Sums over a restaurant's menus are one matrix product, so a round over the 6,227 general
 menus and 584 restaurants of a lunch takes about a second per member.
 
@@ -82,17 +80,17 @@ similarity to that target among its menus they can eat; the true group score is
 - `most_menus`: the restaurant with the most menus, without a question.
 
 Every arm makes two picks the same way from `S_i` (`most_menus` from each restaurant's
-share of the menus, so its picks are the two largest restaurants). The criteria judge the first pick;
-`picks` reports each one's regret and mean and least satisfaction, and
+share of the menus, so its picks are the two largest restaurants). The criteria judge
+the first pick; `picks` reports each one's regret and mean and least satisfaction, and
 `best_pick_regret_per_member` the regret if the group chose the truly better of the two.
 
 Situations are `similar` (targets among each other's ten nearest menus), `conflict`
 (far-apart targets) and `restricted` (one member has one of pork, wheat, milk or egg,
 when a menu without it exists), each with groups of 2, 4, 6 and 8 (2, 3 and 5 in the
-case sets before 2026-11-12). Results are per
-situation, never averaged across them: the share of groups given the truly best
-restaurant, Nash regret per member, the least satisfied member, the mean similarity of the
-menus members are told (each arm picks them as the engine does), total questions and rounds.
+case sets before 2026-11-12). Results are per situation, never averaged across them:
+the share of groups given the truly best restaurant, Nash regret per member, the least
+satisfied member, the mean similarity of the menus members are told (each arm picks them
+as the engine does), total questions and rounds.
 
 **Pass criteria** (`evaluation.py`). In every situation:
 
@@ -116,184 +114,30 @@ python manage.py benchmark_group --date 2026-11-10 --dir DIR --simulator llm   #
 python manage.py benchmark_group --source general --dir DIR2 ...               # the restaurants near the stations
 ```
 
-The first run freezes `--groups` cases (default 6) per situation and size from the menus and `--seed`, and
-stops. Later runs refuse menus that differ from the frozen ones. The LLM members are the
-engine benchmark's simulated user (`METCHU_SIMULATOR_MODEL`), told only the target's name;
-their answers are cached in `DIR/answers.jsonl`, shared by the arms. Similarity and the
-answer model come from the same features, so absolute satisfaction is optimistic; the
-comparison between arms is what the criteria judge. Taking the best menu of a restaurant
-also favors restaurants with many menus, which `most_menus` makes visible.
+The first run freezes `--groups` cases (default 6) per situation and size from the
+menus and `--seed`, and stops. Later runs refuse menus that differ from the frozen ones.
+The LLM members are the engine benchmark's simulated user (`METCHU_SIMULATOR_MODEL`),
+told only the target's name; their answers are cached in `DIR/answers.jsonl`, shared by
+the arms. Similarity and the answer model come from the same features, so absolute
+satisfaction is optimistic; the comparison between arms is what the criteria judge.
+Taking the best menu of a restaurant also favors restaurants with many menus, which
+`most_menus` makes visible.
 
 ## Results
 
-### First version: preference fit (2026-11-10, 11/02 lunch)
+Since 2026-11-11 the menus are the 11/10 lunch from a copy of the live server's food DB
+taken 2026-11-10 23:27 (release `local-hours-fab28cd3fe36`; kept outside Git): 244
+cafeteria menus at 22 restaurants and 6,227 general menus at 584 restaurants. The live
+release also filters general menus by opening hours (4,227 at lunch); `main` does not
+yet. LLM members used `openai:gpt-6-luna`, prompt `45d1d4125724`, in every run. Later
+answer caches started from earlier runs', so only new questions were paid for.
 
-The first version scored `U_i(r)` as the best preference fit (`PreferencePlanner.fit`,
-normalized over the answered features) and `G(r) = sum_i log(.05 + U_i(r))`. Results are
-in `engine_benchmark_results/group-2026-11-02/` (`llm.json` with `openai:gpt-6-luna`,
-prompt `45d1d4125724`, 846 calls; `oracle.json`). **It failed every situation with both
-simulators.** It met criterion 1, but not criterion 2, and criterion 3 only for
-`restricted` with the oracle.
+### Current engine (2026-11-12)
 
-| LLM members, mean | similar | conflict | restricted |
-| --- | ---: | ---: | ---: |
-| questions: group / separate | 4.4 / 21.4 | 6.9 / 21.4 | 8.1 / 21.9 |
-| regret per member: group / separate / matched | .183 / .023 / .074 | .056 / .002 / .028 | .037 / .021 / .026 |
-| truly best restaurant: group / separate | 11% / 72% | 39% / 83% | 50% / 56% |
-
-Replaying the cached answers showed why. After one shared YES (often "something served
-hot") every member's fit was about .95 at many restaurants. Their Nash welfare tied, the
-next round looked worthless and the group stopped (19 of 54 LLM groups after one round);
-the tie went to the first name in sorted order (동원관식당, 21 of 54). The separate arms
-then aggregated fits too; they now aggregate beliefs like the group.
-
-The current belief version was checked on those already-seen cases with oracle members
-before new cases were frozen. A prior that is uniform over restaurants instead of menus
-was tried there and dropped: it failed every check in every situation.
-
-### Belief version (2026-11-11, 11/10 lunch)
-
-Menus come from a copy of the live server's food DB taken 2026-11-10 23:27 (release
-`local-hours-fab28cd3fe36`; kept outside Git): 244 cafeteria menus at 22 restaurants,
-and 6,227 general menus at 584 restaurants. The live release also filters general
-menus by opening hours (4,227 at lunch); `main` does not yet. Results are in
-`engine_benchmark_results/group-2026-11-10-cafeteria/` and `-general/`; LLM members
-used `openai:gpt-6-luna`, prompt `45d1d4125724` (1,066 and 1,832 calls).
-
-| Passed situations | cafeteria | general |
-| --- | --- | --- |
-| LLM members | all three | conflict, restricted (similar fails criterion 2) |
-| oracle members | similar, conflict (restricted fails 3) | none (similar fails 2; conflict, restricted fail 3) |
-
-| LLM members, mean | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| questions: group / separate | 4.2 / 21.7 | 8.0 / 23.7 | 6.6 / 24.2 | 9.3 / 32.8 | 11.8 / 34.0 | 10.3 / 33.2 |
-| regret per member: group | .017 | .007 | .008 | .062 | .040 | .039 |
-| separate / matched / most menus | .004 / .048 / .096 | .005 / .020 / .010 | .006 / .018 / .154 | .033 / .080 / .090 | .024 / .046 / .069 | .024 / .049 / .077 |
-
-Group mode asks 21–35% of the questions of separate sessions, and with the same number
-of questions it chooses better than they do in every LLM situation. Each situation has
-18 groups: most differences from `separate` and `separate_matched` lie within their
-95% intervals, so criteria 2 and 3 pass on point estimates, not as established effects.
-In the cafeteria the restaurant with the most menus (220동식당) is the group's choice in
-34 of 54 groups, and 30 groups stop after one round.
-
-These results predate two fixes found by reading the general cases. Members were told
-their likeliest menu at the restaurant (a 술국 lover was told 한돈 족발한상), which no
-criterion scored; they are now told the closest menu, and `menu_satisfaction` reports it.
-Three general `similar` groups had two members with the same target, because a menu with
-a twin of identical features could be drawn as its own neighbour. Asking more rounds was
-also checked on these cases with oracle members: a question cost of .005 or .001 instead
-of .02 adds 1–3 questions per group and changes regret by at most .008 per member, so
-the cost stays.
-
-### Two picks (dev check, already-seen 11/10 cases, oracle members)
-
-On the cases above, before any new freeze, with oracle members (regret per member):
-
-| | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| group: `balanced` / `no_one_unhappy` | .024 / .090 | .009 / .027 | .022 / .171 | .055 / .071 | .061 / .042 | .051 / .044 |
-| group: better of the two | .009 | .005 | .000 | .039 | .037 | .031 |
-| `most_menus`: better of the two | .016 | .005 | .150 | .057 | .045 | .042 |
-
-In general `conflict` and `restricted` groups the `no_one_unhappy` pick beats `balanced` in
-regret, and in `conflict` also in its least satisfied member (.845 against .813). In the
-cafeteria it is mostly the 75-1동 food court (41 of 54 groups) and does worse. A third
-pick was tried and dropped: `sum_i P_i(r)` never beat `balanced`, even in mean
-satisfaction. Replayed on the cached LLM answers, a menu-count-normalized "specialty"
-score chose specialties of the wrong dish (스키야키 for two 시샤모 lovers) and did worse in every situation.
-
-### Fixed engine, two picks (2026-11-11, 11/10 lunch)
-
-The engine with the fixes and two picks above, judged by criteria 1–5 on new case sets
-of 6 and 12 groups per situation and size (`group-2026-11-10-{cafeteria,general}-g6`
-and `-g12`; 18 and 36 groups per situation). LLM members used `openai:gpt-6-luna`, prompt
-`45d1d4125724`; each answer cache started from the earlier 11/10 run's (and the 6-group
-set's for the 12-group set), so 517, 607, 1,670 and 2,889 new calls were made.
-
-| LLM members | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
-| --- | --- | --- | --- | --- | --- | --- |
-| 6 groups | pass | pass | pass | fails 2 | pass | pass |
-| 12 groups | fails 2 | pass | pass | pass | fails 3 | fails 3 |
-
-| LLM members, 12 groups, mean | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| questions: group / separate | 3.9 / 24.3 | 8.5 / 24.0 | 5.8 / 22.8 | 10.5 / 30.1 | 11.3 / 34.2 | 10.2 / 30.6 |
-| regret per member: group | .037 | .013 | .021 | .042 | .045 | .037 |
-| separate / matched / most menus | .008 / .055 / .072 | .015 / .033 / .022 | .013 / .024 / .197 | .024 / .058 / .078 | .031 / .045 / .069 | .020 / .035 / .063 |
-| group − separate (95% interval) | +.030 ± .017 | −.003 ± .008 | +.008 ± .009 | +.018 ± .014 | +.014 ± .010 | +.017 ± .010 |
-| group − matched (95% interval) | −.018 ± .018 | −.021 ± .010 | −.003 ± .009 | −.016 ± .014 | +.000 ± .007 | +.003 ± .008 |
-| told-menu similarity: group / most menus | .840 / .814 | .817 / .781 | .833 / .770 | .894 / .845 | .823 / .790 | .888 / .859 |
-| better of two picks: group | .012 | .008 | .009 | .034 | .035 | .025 |
-
-Criteria 1, 4 and 5 pass everywhere. The verdicts of criteria 2 and 3 flip between the
-two sizes; the 12-group intervals are the firmer evidence. Group mode asks about a third
-of the questions of separate sessions and loses .01–.03 regret per member to them. With
-the same number of questions it does better in the cafeteria's `similar` and `conflict`
-groups, and no better in general `conflict` and `restricted` groups.
-`no_one_unhappy` (reported only) did not raise the least satisfied member's similarity
-in the 12-group general sets (.824 to .826 in `conflict`, .880 to .885 in `restricted`)
-and lowered it in the cafeteria.
-
-A replay of these 12-group cases afterwards, from the cached answers, found a bug: in 6 of
-36 cafeteria `restricted` cases the allergic member could eat at only one restaurant, and
-`no_one_unhappy` named another one where they had nothing (every other restaurant tied at
-`min_i P_i = 0`, and name order won). Picks are now limited to restaurants with a menu for
-every member. No `balanced` pick changes, so the verdicts above stand; those 6 cases now
-get one pick.
-
-### Expected satisfaction (dev check, already-judged 11/10 12-group cases, oracle members)
-
-After the bug above, the restaurant score changed from `P_i` to `S_i` in every arm, for
-questions, stopping and both picks. The old cost, .02 log-probability, stops after one round
-in log-satisfaction units, so the cost was chosen on these already-judged cases (regret per
-member, `group` / `separate` / `separate_matched`, and `group` questions):
-
-| question cost | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
-| --- | --- | --- | --- | --- | --- | --- |
-| .002 | .038 / .014 / .057, 4.2 q | .020 / .018 / .022, 5.1 | .023 / .015 / .024, 4.1 | .058 / .025 / .059, 3.4 | .023 / .021 / .023, 3.6 | .023 / .011 / .027, 3.9 |
-| **.0005** | .024 / .014 / .035, 7.1 | .016 / .018 / .022, 8.5 | .021 / .015 / .022, 6.0 | .055 / .025 / .056, 4.2 | .022 / .021 / .023, 5.6 | .023 / .011 / .022, 7.1 |
-| .0002 | .021 / .014 / .028, 7.9 | .016 / .018 / .023, 10.0 | .016 / .015 / .017, 7.2 | .055 / .025 / .056, 4.3 | .024 / .021 / .024, 7.1 | .024 / .011 / .020, 7.8 |
-
-With `P_i`, `group` regret in the general sets was .057 / .051 / .041. `S_i` halves it in
-`conflict` and `restricted`; `separate` gains as much, since it aggregates the same way.
-General `similar` groups stop after about four questions at any cost: one round's answers
-rarely change the leading restaurant, so the myopic value of another round is small.
-`no_one_unhappy` still does not raise the least satisfied member (general `conflict`
-.857 for `balanced`, .831 for it).
-
-The engine above was played with oracle members on the cases frozen next, with 2, 4, 6
-and 8 members (`group-2026-11-10-*-n2468/oracle.json`). Cafeteria passed every situation;
-general `similar` failed criterion 2 (.061 against .032) after 5.5 questions, and
-`conflict` and `restricted` failed criterion 3 by .002 and .001. Since the engine changed
-after these results, those cases judge nothing further.
-
-### Questions until the round limit (dev check, already-judged 11/10 12-group cases, oracle members)
-
-General `similar` groups stopped because no single round could change the leading
-restaurant, while forcing more rounds lowered their regret (.055 at 4.2 questions, .047 at
-13.3, .038 at 26.7). Looking two rounds ahead did not change the stop, and asking for
-the most informative question instead of the margin did not change the regret. What
-helped was asking a member whose answer cannot move the group what their own preference
-session would ask, so the cost-based stop rule was dropped:
-
-| regret per member (questions) | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
-| --- | --- | --- | --- | --- | --- | --- |
-| cost-based stop, .0005 | .024 (7.1) | .016 (8.5) | .021 (6.0) | .055 (4.2) | .022 (5.6) | .023 (7.1) |
-| own question, 4 rounds | .021 (13.3) | .017 (13.3) | .019 (12.7) | .045 (13.3) | .022 (13.3) | .022 (13.3) |
-| `separate` / `separate_matched` | .014 / .029 | .018 / .022 | .015 / .024 | .025 / .050 | .021 / .022 | .011 / .018 |
-
-Six rounds lowered general `similar` to .040 but at 48% of the separate questions, and
-`separate_matched` reached .034, so `max_rounds` stays 4.
-
-### Own questions, 2–8 members (2026-11-12, 11/10 lunch)
-
-The engine above, judged by criteria 1–5 on new cases frozen before any run
+Judged by criteria 1–5 on cases frozen before any run
 (`group-2026-11-10-{cafeteria,general}-final/`, seed 20261115): 12 groups per situation
-and size, sizes 2, 4, 6 and 8, so 48 groups per situation. LLM members used
-`openai:gpt-6-luna`, prompt `45d1d4125724`, 637 and 5,438 new calls (2.38M input and
-0.48M output tokens); the answer caches started from the earlier 11/10 runs.
+and size, so 48 groups per situation. The LLM run made 637 and 5,438 new calls (2.38M
+input and 0.48M output tokens).
 
 | Passed situations | cafeteria | general |
 | --- | --- | --- |
@@ -311,10 +155,41 @@ and size, sizes 2, 4, 6 and 8, so 48 groups per situation. LLM members used
 
 Asking every member until the round limit costs criterion 1 in the cafeteria: LLM
 members end their own sessions after about 7 questions, so 4 rounds are 53–56% of them.
-In the general `similar` groups the change did not close the gap to separate sessions:
-with 4 questions each the group does as well as `separate_matched` (.045 against .049),
-and separate sessions, at about 10 questions each, reach .012. The gap grows with the
-group (8 members: .066 against .006), since a member's answers say nothing about the
-others' tastes in this model. `no_one_unhappy` again does not raise the least satisfied
-member (general `conflict` .834 for `balanced`, .817 for it).
+In general `similar` groups the group does as well as `separate_matched` with 4
+questions each (.045 against .049), while separate sessions reach .012 with about 10.
+The gap grows with the group (8 members: .066 against .006), since a member's answers
+say nothing about the others' tastes in this model. `no_one_unhappy` does not raise the
+least satisfied member (general `conflict` .834 for `balanced`, .817 for it).
 
+How the questions were chosen was set on the already-judged 12-group cases (below) with
+oracle members. The previous engine stopped when the value of another round fell below
+a cost per question; general `similar` groups stopped after about four questions,
+because one round's answers rarely change the leading restaurant. Looking two rounds
+ahead did not change the stop, and asking the most informative question did not lower
+regret. Asking each member whose answer cannot move the group their own question did:
+
+| regret per member (questions) | cafeteria similar | conflict | restricted | general similar | conflict | restricted |
+| --- | --- | --- | --- | --- | --- | --- |
+| cost-based stop, .0005 | .024 (7.1) | .016 (8.5) | .021 (6.0) | .055 (4.2) | .022 (5.6) | .023 (7.1) |
+| own question, 4 rounds | .021 (13.3) | .017 (13.3) | .019 (12.7) | .045 (13.3) | .022 (13.3) | .022 (13.3) |
+| `separate` / `separate_matched` | .014 / .029 | .018 / .022 | .015 / .024 | .025 / .050 | .021 / .022 | .011 / .018 |
+
+Six rounds lowered general `similar` to .040 but at 48% of the separate questions, and
+`separate_matched` reached .034, so `max_rounds` stays 4.
+
+### Earlier versions
+
+Each version's cases, answers and reports are in `engine_benchmark_results/`; the
+detailed tables are in this file's Git history.
+
+| version (judged) | cases | LLM members failed | what the results showed, and the next change |
+| --- | --- | --- | --- |
+| best preference fit `U_i` (2026-11-10, 11/02 lunch) | `group-2026-11-02/`, 846 calls | every situation (criteria 2 and 3) | After one shared YES every member's fit was about .95 at many restaurants; the group stopped after one round and name order broke the tie. Scored beliefs instead. |
+| probability `P_i(r)` that the wanted menu is served (2026-11-11) | `group-2026-11-10-{cafeteria,general}/`, 2,898 calls | general `similar` (2) | Members were told their likeliest menu (a 술국 lover got 한돈 족발한상); they are now told the closest. Twin menus could make two `similar` members want the same one. |
+| `P_i`, two picks (2026-11-11) | `-g6/` and `-g12/` (18 and 36 groups), 5,683 calls | 12 groups: cafeteria `similar` (2), general `conflict` and `restricted` (3) | `no_one_unhappy` could name a restaurant with nothing for an allergic member; picks now need a menu for every member. `P_i` only counts menus and favored the largest restaurants; scored `S_i` instead. |
+| `S_i`, cost-based stop .0005 (oracle only) | `-n2468/` | — | General `similar` failed criterion 2 (.061 against .032) after 5.5 questions. Changed to own questions until the round limit; the engine changed after these results, so the cases judge nothing further. |
+
+Tried and dropped on already-seen cases: a prior uniform over restaurants instead of
+menus (failed every check), a third pick by `sum_i P_i(r)` (never beat `balanced`), and a
+menu-count-normalized "specialty" score (스키야키 for two 시샤모 lovers).
+`no_one_unhappy` has not raised the least satisfied member in any judgement.
