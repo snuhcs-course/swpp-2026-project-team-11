@@ -1,4 +1,4 @@
-"""Group mode: each member answers their own question every round; the group gets up to two restaurants.
+"""Group mode: every member answers the same question each round; the group gets up to two restaurants.
 
 Every member keeps a decision-tree intent belief b_i(f): the probability that menu f is the
 one they feel like. S_i(r) = sum_f b_i(f) fit_i(r, f) is i's expected satisfaction at
@@ -103,7 +103,7 @@ class _Member:
 
 
 class GroupEngine:
-    """Rounds of per-member questions, then up to two restaurants and each member's menu at each.
+    """Rounds of one shared question, then up to two restaurants and each member's menu at each.
 
     `candidates` is a list of menu rows or a prebuilt CandidateCatalog. `excluded` holds,
     per member, the food IDs they cannot eat (allergies, bans). Members answer in any
@@ -144,39 +144,49 @@ class GroupEngine:
         return np.array([m.fit @ m.belief for m in self.members])
 
     def _logs(self, member):
-        """Log S(r) now (R,), after each answer to each question (Q, 6, R), and P(answer) (Q, 6)."""
+        """Log S(r) now (R,), after each answer to each question (Q, 6, R), P(answer) (Q, 6),
+        and each answer's expected information about the member's intent (Q,)."""
         likelihood = self.model.all_likelihoods(member.salience, np.arange(len(member.belief)))
         weights = likelihood * member.belief
         mass = weights.sum(-1)
         after = (weights @ member.fit.T) / np.maximum(mass, FLOOR)[..., None]
-        return np.log(np.maximum(member.fit @ member.belief, FLOOR)), np.log(np.maximum(after, FLOOR)), mass
+        ratio = likelihood / np.maximum(mass, FLOOR)[..., None]
+        information = (weights * np.log(np.maximum(ratio, FLOOR))).sum((1, 2))
+        return (np.log(np.maximum(member.fit @ member.belief, FLOOR)), np.log(np.maximum(after, FLOOR)),
+                mass, information)
 
-    def _choose(self, member, group, mass):
-        """The question whose answer best improves the group decision, E_a[max_r G] - max_r E_a[G].
-
-        When no answer can change the leading restaurant, the question the member's own
-        preference session would ask; None when that session would stop too.
-        """
-        gain = np.einsum("qa,qa->q", group.max(-1), mass) - np.einsum("qa,qar->qr", mass, group).max(-1)
-        gain[list(member.answers)] = -np.inf
-        if gain.max() > 1e-12:
-            return int(gain.argmax())
+    def _would_ask(self, member):
+        """Whether the member's own preference session would ask another question."""
         rejected = {int(self.model.alias_ids[f]) for f in np.flatnonzero(~member.allowed)}
         action, _ = self.planner.plan(member.belief, member.salience, member.answers, rejected)
-        return action.index if action is not None and action.kind == "question" else None
+        return action is not None and action.kind == "question"
 
     def _plan(self):
-        """The next round's questions by member; {} after `max_rounds` or when no member has one."""
+        """The next round's question, the same for every member: {member: question}.
+
+        The question whose answers best improve the group decision, summed over members
+        with the others fixed: E_a[max_r G] - max_r E_a[G]. When no answer can change the
+        leading restaurant, the most informative question about the members' tastes, as
+        long as one member's own session would still ask. {} after `max_rounds` or then.
+        """
         if self.round >= self.config.max_rounds:
             return {}
         tables = [self._logs(m) for m in self.members]
-        total = sum(current for current, _, _ in tables)
-        questions = {}
-        for i, (member, (current, logs, mass)) in enumerate(zip(self.members, tables)):
-            qi = self._choose(member, total - current + logs, mass)
-            if qi is not None:
-                questions[i] = qi
-        return questions
+        total = sum(current for current, _, _, _ in tables)
+        gain = sum(np.einsum("qa,qa->q", (total - current + logs).max(-1), mass)
+                   - np.einsum("qa,qar->qr", mass, total - current + logs).max(-1)
+                   for current, logs, mass, _ in tables)
+        asked = list(self.members[0].answers)
+        gain[asked] = -np.inf
+        if gain.max() > 1e-12:
+            qi = int(gain.argmax())
+        elif any(self._would_ask(m) for m in self.members):
+            information = sum(info for _, _, _, info in tables)
+            information[asked] = -np.inf
+            qi = int(information.argmax())
+        else:
+            return {}
+        return dict.fromkeys(range(len(self.members)), qi)
 
     def questions(self):
         """The current round's unanswered question steps, by member index."""
