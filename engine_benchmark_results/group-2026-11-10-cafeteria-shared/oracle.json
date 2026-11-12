@@ -1055,25 +1055,25 @@
         }
       },
       "most_menus": {
-        "best_restaurant": 0.3958333333333333,
-        "regret_per_member": 0.1849670275505042,
-        "best_pick_regret_per_member": 0.18063453514298353,
-        "min_satisfaction": 0.6494497632800833,
-        "menu_satisfaction": 0.7785892865926932,
+        "best_restaurant": 0.6458333333333334,
+        "regret_per_member": 0.01094784855949514,
+        "best_pick_regret_per_member": 0.009419975466489707,
+        "min_satisfaction": 0.8621638626525948,
+        "menu_satisfaction": 0.834970779705496,
         "questions": 0.0,
         "rounds": 0.0,
         "picks": {
           "balanced": {
             "cases": 48,
-            "regret_per_member": 0.1849670275505042,
-            "mean_satisfaction": 0.876047871914944,
-            "min_satisfaction": 0.6494497632800833
+            "regret_per_member": 0.01094784855949514,
+            "mean_satisfaction": 0.9328271785566021,
+            "min_satisfaction": 0.8621638626525948
           },
           "no_one_unhappy": {
-            "cases": 48,
-            "regret_per_member": 0.2390293877112956,
-            "mean_satisfaction": 0.8246563906065479,
-            "min_satisfaction": 0.6064854132716794
+            "cases": 36,
+            "regret_per_member": 0.07986269674536861,
+            "mean_satisfaction": 0.8724440641948868,
+            "min_satisfaction": 0.8086472176955727
           }
         }
       },
@@ -1157,25 +1157,25 @@
             }
           },
           "most_menus": {
-            "best_restaurant": 0.4166666666666667,
-            "regret_per_member": 0.272632824634438,
-            "best_pick_regret_per_member": 0.2603898402192539,
-            "min_satisfaction": 0.7762373737373739,
-            "menu_satisfaction": 0.7744570707070707,
+            "best_restaurant": 0.5833333333333334,
+            "regret_per_member": 0.020830519633006635,
+            "best_pick_regret_per_member": 0.01607618195186039,
+            "min_satisfaction": 0.9164646464646465,
+            "menu_satisfaction": 0.8566540404040404,
             "questions": 0.0,
             "rounds": 0.0,
             "picks": {
               "balanced": {
                 "cases": 12,
-                "regret_per_member": 0.272632824634438,
-                "mean_satisfaction": 0.8672474747474747,
-                "min_satisfaction": 0.7762373737373739
+                "regret_per_member": 0.020830519633006635,
+                "mean_satisfaction": 0.9488131313131314,
+                "min_satisfaction": 0.9164646464646465
               },
               "no_one_unhappy": {
-                "cases": 12,
-                "regret_per_member": 0.34781773040888697,
-                "mean_satisfaction": 0.7949747474747474,
-                "min_satisfaction": 0.6969191919191918
+                "cases": 10,
+                "regret_per_member": 0.11995303443549647,
+                "mean_satisfaction": 0.8629393939393939,
+                "min_satisfaction": 0.8363030303030301
               }
             }
           }
@@ -1251,25 +1251,25 @@
             }
           },
           "most_menus": {
-            "best_restaurant": 0.4166666666666667,
-            "regret_per_member": 0.19850762672527877,
-            "best_pick_regret_per_member": 0.19808445085223822,
-            "min_satisfaction": 0.6440151515151514,
-            "menu_satisfaction": 0.7807086911181823,
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.0073160285242069535,
+            "best_pick_regret_per_member": 0.006892852651166371,
+            "min_satisfaction": 0.8592929292929293,
+            "menu_satisfaction": 0.8423248527343438,
             "questions": 0.0,
             "rounds": 0.0,
             "picks": {
               "balanced": {
                 "cases": 12,
-                "regret_per_member": 0.19850762672527877,
-                "mean_satisfaction": 0.8697531135211585,
-                "min_satisfaction": 0.6440151515151514
+                "regret_per_member": 0.0073160285242069535,
+                "mean_satisfaction": 0.932859174127219,
+                "min_satisfaction": 0.8592929292929293
               },
               "no_one_unhappy": {
-                "cases": 12,
-                "regret_per_member": 0.25242087060265583,
-                "mean_satisfaction": 0.8185461570470977,
-                "min_satisfaction": 0.6110679157129805
+                "cases": 9,
+                "regret_per_member": 0.07428861218228128,
+                "mean_satisfaction": 0.8724218120897329,
+                "min_satisfaction": 0.8147572209506406
               }
             }
           }
@@ -1345,25 +1345,25 @@
             }
           },
           "most_menus": {
-            "best_restaurant": 0.5,
-            "regret_per_member": 0.1323530649505019,
-            "best_pick_regret_per_member": 0.13072896825615749,
-            "min_satisfaction": 0.6239022317091613,
-            "menu_satisfaction": 0.7814033515904916,
+            "best_restaurant": 0.75,
+            "regret_per_member": 0.006639539387500809,
+            "best_pick_regret_per_member": 0.0057055605696659005,
+            "min_satisfaction": 0.838686491060245,
+            "menu_satisfaction": 0.8227392608122517,
             "questions": 0.0,
             "rounds": 0.0,
             "picks": {
               "balanced": {
                 "cases": 12,
-                "regret_per_member": 0.1323530649505019,
-                "mean_satisfaction": 0.8859690254033422,
-                "min_satisfaction": 0.6239022317091613
+                "regret_per_member": 0.006639539387500809,
+                "mean_satisfaction": 0.9265149609465686,
+                "min_satisfaction": 0.838686491060245
               },
               "no_one_unhappy": {
-                "cases": 12,
-                "regret_per_member": 0.17726449696429147,
-                "mean_satisfaction": 0.8436641463596667,
-                "min_satisfaction": 0.5894191919191919
+                "cases": 9,
+                "regret_per_member": 0.05437566981908345,
+                "mean_satisfaction": 0.8803358902741754,
+                "min_satisfaction": 0.7858922558922559
               }
             }
           }
@@ -1439,25 +1439,25 @@
             }
           },
           "most_menus": {
-            "best_restaurant": 0.25,
-            "regret_per_member": 0.1363745938917982,
-            "best_pick_regret_per_member": 0.13333488124428447,
-            "min_satisfaction": 0.5536442961586464,
-            "menu_satisfaction": 0.7777880329550286,
+            "best_restaurant": 0.5833333333333334,
+            "regret_per_member": 0.009005306693266166,
+            "best_pick_regret_per_member": 0.009005306693266166,
+            "min_satisfaction": 0.8342113837925583,
+            "menu_satisfaction": 0.8181649648713486,
             "questions": 0.0,
             "rounds": 0.0,
             "picks": {
               "balanced": {
                 "cases": 12,
-                "regret_per_member": 0.1363745938917982,
-                "mean_satisfaction": 0.8812218739878005,
-                "min_satisfaction": 0.5536442961586464
+                "regret_per_member": 0.009005306693266166,
+                "mean_satisfaction": 0.92312144783949,
+                "min_satisfaction": 0.8342113837925583
               },
               "no_one_unhappy": {
-                "cases": 12,
-                "regret_per_member": 0.1786144528693482,
-                "mean_satisfaction": 0.84144051154468,
-                "min_satisfaction": 0.5285353535353535
+                "cases": 8,
+                "regret_per_member": 0.06469352505825283,
+                "mean_satisfaction": 0.8754716312933516,
+                "min_satisfaction": 0.7928030303030303
               }
             }
           }
@@ -13246,26 +13246,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 1.5222612188617115,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.375,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8272727272727273,
+        "menu_satisfaction": 0.8643939393939394,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 1.5222612188617115,
-            "mean_satisfaction": 0.41363636363636364,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 1.4323974580532575,
-            "mean_satisfaction": 0.5,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.9136363636363636,
+            "min_satisfaction": 0.8272727272727273
           }
         },
-        "best_pick_regret_per_member": 1.4323974580532575,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -13338,26 +13332,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 1.4993664411554646,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.38606060606060605,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8554545454545455,
+        "menu_satisfaction": 0.883030303030303,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 1.4993664411554646,
-            "mean_satisfaction": 0.44893939393939397,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 1.5418849624984206,
-            "mean_satisfaction": 0.4103030303030303,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.9277272727272727,
+            "min_satisfaction": 0.8554545454545455
           }
         },
-        "best_pick_regret_per_member": 1.4993664411554646,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -14538,26 +14526,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.7561880207455183,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.6378787878787879,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8545454545454545,
+        "menu_satisfaction": 0.8803030303030303,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.7561880207455183,
-            "mean_satisfaction": 0.6765151515151515,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.7612935117149532,
-            "mean_satisfaction": 0.6719696969696969,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.9204545454545454,
+            "min_satisfaction": 0.8545454545454545
           }
         },
-        "best_pick_regret_per_member": 0.7561880207455183,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -14756,26 +14738,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.7772135814859088,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.5991666666666666,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8545454545454545,
+        "menu_satisfaction": 0.8461363636363636,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.7772135814859088,
-            "mean_satisfaction": 0.6803030303030303,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.8370114658746056,
-            "mean_satisfaction": 0.6237878787878788,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.945530303030303,
+            "min_satisfaction": 0.8545454545454545
           }
         },
-        "best_pick_regret_per_member": 0.7772135814859088,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -15800,26 +15776,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.7608975761814349,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.6181818181818182,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8742424242424243,
+        "menu_satisfaction": 0.8681818181818182,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.7608975761814349,
-            "mean_satisfaction": 0.6753787878787878,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.7621479600017793,
-            "mean_satisfaction": 0.675,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.9234848484848485,
+            "min_satisfaction": 0.8742424242424243
           }
         },
-        "best_pick_regret_per_member": 0.7608975761814349,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -16538,26 +16508,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.47894584391423517,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.6819191919191919,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8848484848484849,
+        "menu_satisfaction": 0.8495959595959596,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.47894584391423517,
-            "mean_satisfaction": 0.8028787878787879,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.551475038528367,
-            "mean_satisfaction": 0.7336868686868687,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.9410101010101011,
+            "min_satisfaction": 0.8848484848484849
           }
         },
-        "best_pick_regret_per_member": 0.47894584391423517,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -17150,26 +17114,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.5430292927095719,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.7006460379071658,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8651515151515151,
+        "menu_satisfaction": 0.8616722005497195,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.5430292927095719,
-            "mean_satisfaction": 0.7279479740464462,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.5347478781914581,
-            "mean_satisfaction": 0.7369554356138076,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.9293679947230017,
+            "min_satisfaction": 0.8651515151515151
           }
         },
-        "best_pick_regret_per_member": 0.5347478781914581,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -17258,26 +17216,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.4865871701322057,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.6850524660232304,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8274111122130037,
+        "menu_satisfaction": 0.8523804463650279,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.4865871701322057,
-            "mean_satisfaction": 0.7941847876074836,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.5515700184799216,
-            "mean_satisfaction": 0.7303044395477452,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.941184680318329,
+            "min_satisfaction": 0.8274111122130037
           }
         },
-        "best_pick_regret_per_member": 0.4865871701322057,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -17642,26 +17594,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.39430914983158055,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.690569652547726,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8274111122130037,
+        "menu_satisfaction": 0.8077323044707405,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.39430914983158055,
-            "mean_satisfaction": 0.8020022270692491,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.4479491975469118,
-            "mean_satisfaction": 0.7495465114789908,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.9399036617538982,
+            "min_satisfaction": 0.8274111122130037
           }
         },
-        "best_pick_regret_per_member": 0.39430914983158055,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -18562,26 +18508,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.3821357408511795,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.7129924242424244,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8651515151515151,
+        "menu_satisfaction": 0.8379924242424243,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.3821357408511795,
-            "mean_satisfaction": 0.8185606060606061,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.4151434131995956,
-            "mean_satisfaction": 0.7869806614482586,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.944469696969697,
+            "min_satisfaction": 0.8651515151515151
           }
         },
-        "best_pick_regret_per_member": 0.3821357408511795,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -18678,26 +18618,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.3843403702214608,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.7023237000652669,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8303030303030303,
+        "menu_satisfaction": 0.8206690796229397,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.3843403702214608,
-            "mean_satisfaction": 0.7754075327860663,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.3478638184512959,
-            "mean_satisfaction": 0.8090313698075517,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.9018540146247236,
+            "min_satisfaction": 0.8303030303030303
           }
         },
-        "best_pick_regret_per_member": 0.3478638184512959,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
@@ -18794,26 +18728,20 @@
         "rounds": 4
       },
       "most_menus": {
-        "restaurant": "220동식당",
-        "best": false,
-        "regret_per_member": 0.36764618547816363,
-        "min_satisfaction": 0.0,
-        "menu_satisfaction": 0.7127272727272727,
+        "restaurant": "75-1동 4층 푸드코트",
+        "best": true,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.843939393939394,
+        "menu_satisfaction": 0.8367424242424242,
         "picks": {
           "balanced": {
-            "restaurant": "220동식당",
-            "regret_per_member": 0.36764618547816363,
-            "mean_satisfaction": 0.7901515151515152,
-            "min_satisfaction": 0.0
-          },
-          "no_one_unhappy": {
-            "restaurant": "버거운버거",
-            "regret_per_member": 0.4148688047683526,
-            "mean_satisfaction": 0.7479545454545454,
-            "min_satisfaction": 0.0
+            "restaurant": "75-1동 4층 푸드코트",
+            "regret_per_member": 0.0,
+            "mean_satisfaction": 0.902689393939394,
+            "min_satisfaction": 0.843939393939394
           }
         },
-        "best_pick_regret_per_member": 0.36764618547816363,
+        "best_pick_regret_per_member": 0.0,
         "questions": 0,
         "rounds": 0
       }
