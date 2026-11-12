@@ -88,7 +88,20 @@ def test_eight_members_take_turns_until_the_group_is_decided():
         GroupEngine(MENUS, SCHEMA, [set()] * 9)
 
 
-def test_members_keep_learning_their_own_taste_while_the_restaurants_tie():
+def test_every_member_answers_the_same_new_question_each_round():
+    engine = GroupEngine(MENUS, SCHEMA, [set(), {2}, set()])  # member 1 cannot eat the mild soup
+    wants = WANTS + [{"q:spicy": "no", "q:soupy": "no", "q:noodle": "yes"}]
+    asked = []
+    while not engine.finished:
+        steps = engine.questions()
+        assert set(steps) == {0, 1, 2} and len({s["question_id"] for s in steps.values()}) == 1
+        asked.append(steps[0]["question_id"])
+        for member, step in steps.items():
+            engine.answer(member, step["question_id"], wants[member].get(step["question_id"], "any"))
+    assert len(asked) == len(set(asked)) == engine.round > 1
+
+
+def test_the_group_keeps_learning_tastes_while_the_restaurants_tie():
     tied = [dict(m, offers=[{"restaurant": r, "meal": "LU", "price": 5000} for r in ("A hall", "B hall")]) for m in MENUS]
     engine = GroupEngine(tied, SCHEMA, [set(), set()])
     play(engine)
