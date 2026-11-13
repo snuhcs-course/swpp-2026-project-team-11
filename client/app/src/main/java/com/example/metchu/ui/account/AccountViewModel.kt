@@ -35,6 +35,19 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
     private val _error = MutableLiveData<Int?>(null)
     val error: LiveData<Int?> = _error
 
+    init {
+        // The saved account may have been revoked while the app was closed.
+        if (repository.account != null) viewModelScope.launch {
+            try {
+                _account.value = repository.refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "saved account not confirmed; still signed in", e)
+            }
+        }
+    }
+
     fun logIn(username: String, password: String) {
         if (username.isBlank() || password.isEmpty()) return fail(R.string.account_error_empty)
         request { repository.logIn(username.trim(), password) }

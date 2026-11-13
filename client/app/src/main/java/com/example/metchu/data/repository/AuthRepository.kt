@@ -3,6 +3,7 @@ package com.example.metchu.data.repository
 import com.example.metchu.data.network.AccountUser
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.AuthApi
+import com.example.metchu.data.network.AuthError
 import com.example.metchu.data.network.Credentials
 import com.example.metchu.data.network.GoogleTokenRequest
 import com.example.metchu.data.network.RetrofitInstance
@@ -37,6 +38,24 @@ class AuthRepository(private val store: AccountStore, private val api: AuthApi =
         val account = store.account ?: return
         store.account = null
         api.logOut(account.authorization)
+    }
+
+    /**
+     * Asks the server whether the saved account still stands, and returns the account signed in
+     * afterwards. Only a confirmed rejection (`not_authenticated`) forgets it; an unreachable
+     * server or any other failure throws and leaves it signed in.
+     */
+    suspend fun refresh(): Account? {
+        val account = store.account ?: return null
+        val user = try {
+            api.me(account.authorization).user.checked()
+        } catch (e: HttpException) {
+            if (errorCode(e) != AuthError.NOT_AUTHENTICATED) throw e
+            null
+        }
+        // A log-out or Google link made while the server answered stays as it is.
+        if (store.account == account) store.account = user?.let { account.copy(user = it) }
+        return store.account
     }
 
     /** Forgets an account the server no longer accepts. */
