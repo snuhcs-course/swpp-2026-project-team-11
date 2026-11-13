@@ -120,6 +120,56 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun refreshSendsTheTokenAndKeepsTheServersAccount() = runTest {
+        store.account = signedIn
+        reply("auth_account")
+        assertEquals(signedIn, repository.refresh())
+
+        val request = server.takeRequest()
+        assertEquals("GET" to "/api/auth/me/", request.method to request.path)
+        assertEquals("Token device-token", request.getHeader("Authorization"))
+
+        // Google was linked on another device in the meantime.
+        server.enqueue(MockResponse().setBody(
+            """{"user": {"username": "metchu_user", "google_email": "minji@example.com", "has_password": true}}"""
+        ))
+        val linked = signedIn.copy(user = signedIn.user.copy(googleEmail = "minji@example.com"))
+        assertEquals(linked, repository.refresh())
+        assertEquals(linked, store.account)
+    }
+
+    @Test
+    fun refreshForgetsATokenTheServerRejects() = runTest {
+        store.account = signedIn
+        reply("error_not_authenticated", 401)
+        assertNull(repository.refresh())
+        assertNull(store.account)
+    }
+
+    @Test
+    fun refreshKeepsTheAccountUnlessTheServerRejectsIt() = runTest {
+        store.account = signedIn
+        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
+        server.enqueue(MockResponse().setResponseCode(401).setBody("<html>Unauthorized</html>"))
+        server.enqueue(MockResponse().setResponseCode(500))
+        for (failure in listOf(IOException::class.java, HttpException::class.java, HttpException::class.java)) {
+            try {
+                repository.refresh()
+                fail("expected ${failure.simpleName}")
+            } catch (e: Exception) {
+                assertTrue(failure.isInstance(e))
+            }
+            assertEquals(signedIn, store.account)
+        }
+    }
+
+    @Test
+    fun refreshAsksNothingForAGuest() = runTest {
+        assertNull(repository.refresh())
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
     fun anIncompleteReplyIsRejected() = runTest {
         server.enqueue(MockResponse().setResponseCode(201).setBody("""{"token": "t"}"""))
         try {

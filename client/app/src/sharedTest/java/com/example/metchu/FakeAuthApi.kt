@@ -22,6 +22,9 @@ class FakeAuthApi : AuthApi {
     fun reply(value: Any) { replies.add { value } }
     fun fail(error: Throwable) { replies.add { throw error } }
 
+    /** Answers with [block]'s value, running it as the call is made. */
+    fun answer(block: () -> Any) { replies.add(block) }
+
     @Suppress("UNCHECKED_CAST")
     private fun <T> next(call: String): T {
         calls.add(call)

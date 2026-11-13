@@ -48,6 +48,69 @@ class AccountViewModelTest {
 
     private fun httpError(code: Int, fixture: String) = Fixtures.httpError(code, Fixtures.json(fixture))
 
+    /** Starts the app with [signedIn] saved, after the server has confirmed it. */
+    private fun launchSignedIn() {
+        api.calls.clear()
+        store.account = signedIn
+        api.reply(AccountReply(signedIn.user))
+        viewModel = AccountViewModel(AuthRepository(store, api))
+        assertEquals(listOf("me Token device-token"), api.calls)
+        api.calls.clear()
+    }
+
+    @Test
+    fun aGuestLaunchAsksNothing() {
+        assertEquals(emptyList<String>(), api.calls)
+        assertNull(viewModel.account.value)
+    }
+
+    @Test
+    fun aSavedAccountTheServerRejectsIsSignedOutOnLaunch() {
+        store.account = signedIn
+        api.fail(httpError(401, "error_not_authenticated"))
+        viewModel = AccountViewModel(AuthRepository(store, api))
+        assertEquals(listOf("me Token device-token"), api.calls)
+        assertNull(viewModel.account.value)
+        assertNull(store.account)
+        assertNull(viewModel.error.value)
+    }
+
+    @Test
+    fun aSavedAccountStaysSignedInWhenTheServerCannotSay() {
+        store.account = signedIn
+        api.fail(IOException("unreachable"))
+        viewModel = AccountViewModel(AuthRepository(store, api))
+        assertEquals(signedIn, viewModel.account.value)
+
+        api.fail(httpError(503, "error_google_unavailable"))
+        viewModel = AccountViewModel(AuthRepository(store, api))
+        assertEquals(signedIn, viewModel.account.value)
+        assertEquals(signedIn, store.account)
+        assertNull(viewModel.error.value)
+    }
+
+    @Test
+    fun theLaunchCheckShowsTheServersAccount() {
+        val linked = AccountUser("metchu_user", "minji@example.com", hasPassword = true)
+        store.account = signedIn
+        api.reply(AccountReply(linked))
+        viewModel = AccountViewModel(AuthRepository(store, api))
+        assertEquals(signedIn.copy(user = linked), viewModel.account.value)
+        assertEquals(signedIn.copy(user = linked), store.account)
+    }
+
+    @Test
+    fun loggingOutWhileTheLaunchCheckRunsStaysLoggedOut() {
+        store.account = signedIn
+        api.answer {
+            store.account = null
+            AccountReply(signedIn.user)
+        }
+        viewModel = AccountViewModel(AuthRepository(store, api))
+        assertNull(viewModel.account.value)
+        assertNull(store.account)
+    }
+
     @Test
     fun loggingInShowsTheAccount() {
         api.reply(Fixtures.signedIn())
@@ -119,8 +182,7 @@ class AccountViewModelTest {
 
     @Test
     fun linkingGoogleShowsTheLinkedAddress() {
-        store.account = signedIn
-        viewModel = AccountViewModel(AuthRepository(store, api))
+        launchSignedIn()
         api.reply(AccountReply(AccountUser("metchu_user", "minji@example.com", hasPassword = true)))
         viewModel.linkGoogle { "google-id-token" }
         assertEquals(listOf("link Token device-token google-id-token"), api.calls)
@@ -129,8 +191,7 @@ class AccountViewModelTest {
 
     @Test
     fun aTokenTheServerNoLongerTakesSignsOut() {
-        store.account = signedIn
-        viewModel = AccountViewModel(AuthRepository(store, api))
+        launchSignedIn()
         api.fail(httpError(401, "error_not_authenticated"))
         viewModel.linkGoogle { "google-id-token" }
         assertEquals(R.string.account_error_signed_out, viewModel.error.value)
@@ -140,8 +201,7 @@ class AccountViewModelTest {
 
     @Test
     fun loggingOutForgetsTheAccountEvenOffline() {
-        store.account = signedIn
-        viewModel = AccountViewModel(AuthRepository(store, api))
+        launchSignedIn()
         api.fail(IOException("unreachable"))
         viewModel.logOut()
         assertEquals(listOf("logout Token device-token"), api.calls)
@@ -149,8 +209,7 @@ class AccountViewModelTest {
         assertNull(store.account)
         assertNull(viewModel.error.value)
 
-        store.account = signedIn
-        viewModel = AccountViewModel(AuthRepository(store, api))
+        launchSignedIn()
         api.reply(Response.success(Unit))
         viewModel.logOut()
         assertNull(viewModel.account.value)
