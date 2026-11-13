@@ -148,12 +148,15 @@ class Simulator:
         """The cached value of `key`, from `ask()` the first time; the file line also says what
         was asked, for reading it later."""
         with self._lock:
+            if key in self.cache:
+                return self.cache[key]
             lock = self._asking.setdefault(key, threading.Lock())
         with lock:
             if key not in self.cache:
                 value = ask()
                 with self._lock:
                     self.cache[key] = value
+                    del self._asking[key]
                     if self.cache_path:
                         with open(self.cache_path, "a", encoding="utf-8") as f:
                             f.write(json.dumps({"key": key, "value": value, **readable, "prompt_id": PROMPT_ID,
