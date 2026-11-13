@@ -3,7 +3,8 @@
 Each member wants a target menu and answers through `respond` (a ResponseOracle, or the
 LLM simulated user in the command). Their true satisfaction with a restaurant is the best
 feature similarity to that target (1 - mean absolute difference, as in benchmark/metrics.py)
-among its menus they can eat, and the true group score is sum_i log(EPSILON + that).
+among the restaurant's offers they can eat, and the true group score is
+sum_i log(EPSILON + that).
 Every arm of a case gets the same answer for the same member and question. Results are
 reported per situation, never averaged across them.
 """
@@ -35,13 +36,16 @@ def _similarity(x, rows):
 
 
 def build_cases(catalog, safe, *, groups, seed):
-    """`groups` cases per situation and size; `safe` maps each allergy to the food IDs without it.
+    """`groups` cases per situation and size; `safe` maps each allergy to the (food ID,
+    restaurant) offers without it.
 
-    A restricted group's first member has one allergy that leaves at least one menu.
+    A restricted group's first member has one allergy that leaves at least one menu, and
+    wants a menu they can eat somewhere.
     """
     ids = [c.food_id for c in catalog.candidates]
     x = features(catalog)
-    usable = sorted(key for key in safe if safe[key] & set(ids))
+    edible = {key: sorted({food_id for food_id, _ in offers}) for key, offers in safe.items()}
+    usable = sorted(key for key in safe if edible[key])
     rng = random.Random(seed)
     cases = []
     for situation in SITUATIONS:
@@ -59,7 +63,7 @@ def build_cases(catalog, safe, *, groups, seed):
                         chosen.append(rng.choice(far))
                 else:
                     allergy = rng.choice(usable)
-                    chosen = [ids.index(rng.choice(sorted(safe[allergy] & set(ids))))]
+                    chosen = [ids.index(rng.choice(edible[allergy]))]
                     chosen += [rng.randrange(len(ids)) for _ in range(size - 1)]
                 cases.append({"situation": situation, "size": size,
                               "members": [{"target": ids[j], "allergy": allergy if i == 0 else None}
@@ -75,7 +79,8 @@ def oracle(catalog, seed):
 
 
 def _separate(catalogs, catalog, members, ask, max_questions):
-    """Each member's own preference session until it would propose a menu: (beliefs, questions)."""
+    """Each member's own preference session until it would propose a menu: (beliefs, questions).
+    An allergic member's session has the menus they can eat somewhere, with the same food IDs."""
     beliefs, asked = [], []
     for i, member in enumerate(members):
         engine = DecisionTreeEngine(catalogs[member["allergy"]], config={"max_questions": max(max_questions, 1)})
@@ -88,14 +93,14 @@ def _separate(catalogs, catalog, members, ask, max_questions):
     return np.array(beliefs), asked
 
 
-def _outcome(names, truth, chosen, menu, questions, rounds):
+def _outcome(places, truth, chosen, menu, questions, rounds):
     """The first pick decides the criteria; `picks` reports each against the truth."""
     nash = np.log(EPSILON + truth).sum(0)
     regret = (nash.max() - nash) / len(truth)
     r = chosen[0][1]
-    return {"restaurant": names[r], "best": bool(nash[r] >= nash.max() - 1e-12), "regret_per_member": float(regret[r]),
+    return {"restaurant": places[r], "best": bool(nash[r] >= nash.max() - 1e-12), "regret_per_member": float(regret[r]),
             "min_satisfaction": float(truth[:, r].min()), "menu_satisfaction": menu,
-            "picks": {kind: {"restaurant": names[p], "regret_per_member": float(regret[p]),
+            "picks": {kind: {"restaurant": places[p], "regret_per_member": float(regret[p]),
                              "mean_satisfaction": float(truth[:, p].mean()),
                              "min_satisfaction": float(truth[:, p].min())} for kind, p in chosen},
             "best_pick_regret_per_member": float(min(regret[p] for _, p in chosen)),
@@ -106,29 +111,35 @@ def compare(candidates, schema, safe, cases, respond, *, config=None, workers=1)
     config = config if isinstance(config, GroupConfig) else GroupConfig(**(config or {}))
     catalog = CandidateCatalog(candidates, schema)
     ids = [c.food_id for c in catalog.candidates]
-    names, serves = restaurants(catalog)
+    places, serves = restaurants(catalog)
     x = features(catalog)
     allergies = {m["allergy"] for case in cases for m in case["members"]} - {None}
-    catalogs = {None: catalog} | {key: CandidateCatalog([c for c in candidates if c["food_id"] in safe[key]], schema)
-                                  for key in allergies}
+    row, column = {p: r for r, p in enumerate(places)}, {food_id: f for f, food_id in enumerate(ids)}
+    eligible, catalogs = {None: serves}, {None: catalog}
+    for key in allergies:
+        eligible[key] = np.zeros_like(serves)
+        for food_id, at in safe[key]:
+            eligible[key][row[at], column[food_id]] = True
+        edible = {ids[f] for f in np.flatnonzero(eligible[key].any(0))}
+        catalogs[key] = CandidateCatalog([c for c in candidates if c["food_id"] in edible], schema)
 
     def run(n, case):
         members = case["members"]
-        excluded = [set(ids) - safe[m["allergy"]] if m["allergy"] else set() for m in members]
-        allowed = np.array([[food_id not in banned for food_id in ids] for banned in excluded])
-        similarity = _similarity(x, [ids.index(m["target"]) for m in members]) * allowed
-        truth = np.array([np.where(serves, row, 0).max(1) for row in similarity])
+        can_eat = np.array([eligible[m["allergy"]] for m in members])  # (members, R, F)
+        excluded = [{(ids[f], places[r]) for r, f in np.argwhere(serves & ~mask)} for mask in can_eat]
+        similarity = _similarity(x, [ids.index(m["target"]) for m in members])
+        truth = np.array([np.where(mask, s, 0).max(1) for mask, s in zip(can_eat, similarity)])
 
         def ask(i, step):
             return respond(n, i, members[i]["target"], step)
 
         def told(r, beliefs):
             """Mean similarity to their targets of the menus each member would be told at r."""
-            options = [np.flatnonzero(serves[r] & row) for row in allowed]
+            options = [np.flatnonzero(mask[r]) for mask in can_eat]
             return float(np.mean([similarity[i, closest(x, b, o)] if o.size else 0.
                                   for i, (b, o) in enumerate(zip(beliefs, options))]))
 
-        fits = [fit(catalog, frozenset(banned)) for banned in excluded]
+        fits = [fit(catalog, mask) for mask in can_eat]
         group = GroupEngine(catalog, None, excluded, config=config)
         while not group.finished:
             for i, step in group.questions().items():
@@ -136,25 +147,27 @@ def compare(candidates, schema, safe, cases, respond, *, config=None, workers=1)
         chosen = group.recommendation()["picks"]
         menu = float(np.mean([similarity[i, ids.index(m["food_id"])] if m else 0.
                               for i, m in enumerate(chosen[0]["menus"])]))
-        result = dict(case, group=_outcome(names, truth, [(p["kind"], names.index(p["restaurant"])) for p in chosen],
-                                           menu, sum(len(m.answers) for m in group.members), group.round))
+        at = [(p["kind"], row[p["restaurant"], p["lat"], p["lng"]]) for p in chosen]
+        result = dict(case, group=_outcome(places, truth, at, menu, sum(len(m.answers) for m in group.members),
+                                           group.round))
         # Separate sessions as they stop by themselves, and capped at the group's round count.
         for arm, cap in (("separate", SEPARATE_LIMIT), ("separate_matched", group.round)):
             beliefs, asked = _separate(catalogs, catalog, members, ask, cap)
             chosen = picks(np.array([f @ b for f, b in zip(fits, beliefs)]))
-            result[arm] = _outcome(names, truth, chosen, told(chosen[0][1], beliefs), sum(asked), max(asked))
+            result[arm] = _outcome(places, truth, chosen, told(chosen[0][1], beliefs), sum(asked), max(asked))
         # Every menu equally likely to be the one wanted: the restaurants with the most menus
         # among those where every member can eat.
-        chosen = picks(serves.mean(1) * (serves[None] & allowed[:, None]).any(-1))
+        chosen = picks(serves.mean(1) * can_eat.any(-1))
+        allowed = can_eat.any(1)
         uniform = allowed / allowed.sum(1, keepdims=True)
-        result["most_menus"] = _outcome(names, truth, chosen, told(chosen[0][1], uniform), 0, 0)
+        result["most_menus"] = _outcome(places, truth, chosen, told(chosen[0][1], uniform), 0, 0)
         return result
 
     with ThreadPoolExecutor(workers) as pool:
         results = list(pool.map(run, range(len(cases)), cases))
     return {"config": {"epsilon": EPSILON, "group": asdict(config), "separate_limit": SEPARATE_LIMIT,
-                       "safe_menus": {key: len(safe[key]) for key in sorted(safe)},
-                       "menus": len(ids), "restaurants": len(names), "catalog": catalog.fingerprint},
+                       "safe_offers": {key: len(safe[key]) for key in sorted(safe)},
+                       "menus": len(ids), "restaurants": len(places), "catalog": catalog.fingerprint},
             "summary": summarize(results), "cases": results}
 
 
@@ -188,5 +201,5 @@ def summarize(results):
                   "menu_vs_most_menus": means["group"]["menu_satisfaction"] > means["most_menus"]["menu_satisfaction"]}
         summary[situation] = {"cases": len(rows), **means, "checks": checks, "passed": all(checks.values()),
                               "by_size": {size: _means([c for c in rows if c["size"] == size])
-                                          for size in SIZES if any(c["size"] == size for c in rows)}}
+                                          for size in sorted({c["size"] for c in rows})}}
     return summary
