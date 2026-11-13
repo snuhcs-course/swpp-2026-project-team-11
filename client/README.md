@@ -317,9 +317,13 @@ token hidden, so no password reaches the debug log:
 | `POST /api/auth/signup/`, `POST /api/auth/login/` | `{"username", "password"}` | `{"token", "user"}`; the app keeps both |
 | `POST /api/auth/google/` | `{"id_token"}` from Google's picker | `{"token", "user", "created"}` |
 | `POST /api/auth/google/link/` | `{"id_token"}`, with `Authorization: Token <token>` | `{"user"}` with `google_email` |
+| `GET /api/auth/me/` | `Authorization: Token <token>` | `{"user"}`; asked once at launch for a saved account |
 | `POST /api/auth/logout/` | `Authorization: Token <token>` | 204; the app forgets the account even if this fails |
 
-A 401 `not_authenticated` signs the app out. Recommendation requests do not send the token yet.
+A 401 `not_authenticated`, at launch or on any account request, signs the app out. The launch
+check also takes the server's view of the account, such as a Google link made on another device.
+An unreachable server or any other error at launch keeps the account signed in. Recommendation
+requests do not send the token yet.
 
 Every success returns the same session state:
 
