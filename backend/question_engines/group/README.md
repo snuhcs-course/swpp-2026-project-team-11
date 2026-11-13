@@ -170,9 +170,10 @@ branches with one name were one restaurant serving the union of their menus; and
 allergic member's own sessions dropped the menus merged under another food ID. All are
 fixed, and the cases now record the allergy restrictions (added from the same DB copy).
 The cafeteria has none of these, and its reports replayed unchanged with no new call.
-The general oracle report changed in 5 groups (1 `similar`, 4 `restricted`) and no
-verdict. The general LLM report below is still from before these fixes: replaying it
-needs 8 questions that are not in the cache.
+The general reports were replayed too, which also gives every arm one answer per
+question: the oracle report changed in 5 groups (1 `similar`, 4 `restricted`), and the
+LLM report, after 8 new questions (3,103 input and 370 output tokens), in 2 (1 `similar`,
+1 `restricted`). No verdict and no mean in the table below changed.
 
 | Passed situations | cafeteria | general |
 | --- | --- | --- |
