@@ -10,8 +10,10 @@ endpoint or client screen yet.
 
 Each member keeps their own decision-tree intent belief `b_i(f)`, the probability that
 menu `f` is the one they feel like (uniform over menus before any answer; the same
-answer model as the single-user engine). Menus a member cannot eat (allergies, bans)
-have belief 0 for that member only.
+answer model as the single-user engine). A member excludes the offers they cannot eat,
+each a menu at one restaurant: equivalent menus share a food ID, and one restaurant's
+may hold an allergen another's does not. A menu they can eat nowhere has belief 0 for
+that member only.
 
 ```text
 fit_i(r, f) = similarity of f to the closest menu at r that i can eat   # 0 if there is none
@@ -20,12 +22,14 @@ G(r)        = sum_i log S_i(r)                                          # Nash w
 ```
 
 Similarity is 1 - mean absolute feature difference, as in the benchmark: a menu like the
-one a member wants counts for most of a match. A restaurant is an offer's `restaurant`
-name, so `자하연식당>2층` and `>3층` are separate. Distance is not part of the score.
+one a member wants counts for most of a match. A restaurant is a place, an offer's
+`restaurant` name with its coordinates: branches of one chain are separate, and so are
+`자하연식당>2층` and `>3층`. Distance is not part of the score.
 The first recommendation is `argmax G` and, for each member, the menu there closest in
 expectation to the one they want (similarity averaged over `b_i`). The likeliest menu
-would be arbitrary while `b_i` is still spread. The `fit` table of a catalog takes about
-3 s for the 6,227 general menus and is cached per catalog and excluded menus.
+would be arbitrary while `b_i` is still spread. The `fit` table over every served menu
+takes about 3 s for the 6,227 general menus; it is built once per catalog and shared
+read-only, and a member's exclusions recompute only the rows of the restaurants they change.
 
 A second restaurant follows, the best other one under its own score. Every pick is a
 restaurant with a menu for every member; a kind with no such restaurant left is omitted,
@@ -56,24 +60,24 @@ stops after `max_rounds` (4), or when no member's own preference session
 (`PreferencePlanner`, as in a single-user session) would ask another question while no
 answer can change the leading restaurant; a group whose menus come from one restaurant
 gets it without a question. Results explain these choices. Sums over a restaurant's
-menus are one matrix product, so a round over the 6,227 general menus and 584
+menus are one matrix product, so a round over the 6,227 general menus and 586
 restaurants of a lunch takes about a second per member.
 
 ```python
 from question_engines.group import GroupEngine
 
-engine = GroupEngine(candidates, schema, excluded=[set(), {food_id_with_pork}])
+engine = GroupEngine(candidates, schema, excluded=[set(), {(food_id, ("식당", 37.48, 126.95))}])
 while not engine.finished:
     for member, step in engine.questions().items():   # the round's question, per member who has not answered
         engine.answer(member, step["question_id"], answer_id)
-result = engine.recommendation()   # {"picks": [{"kind", "restaurant", "menus": [food or None per member]}], "rounds"}
+result = engine.recommendation()   # {"picks": [{"kind", "restaurant", "lat", "lng", "menus": [food or None per member]}], "rounds"}
 ```
 
 ## Benchmark
 
 `benchmark_group` compares four arms on the same simulated members, each wanting one
 target menu. A member's true satisfaction with a restaurant is the best feature
-similarity to that target among its menus they can eat; the true group score is
+similarity to that target among the offers there they can eat; the true group score is
 `sum_i log(.05 + satisfaction_i)`.
 
 - `group`: this engine.
@@ -87,7 +91,7 @@ share of the menus, so its picks are the two largest restaurants). The criteria 
 the first pick; `picks` reports each one's regret and mean and least satisfaction, and
 `best_pick_regret_per_member` the regret if the group chose the truly better of the two.
 
-Situations are `similar` (targets among each other's ten nearest menus), `conflict`
+Situations are `similar` (targets among the first member's ten nearest menus), `conflict`
 (far-apart targets) and `restricted` (one member has one of pork, wheat, milk or egg,
 when a menu without it exists), each with groups of 2, 4, 6 and 8 (2, 3 and 5 in the
 case sets before 2026-11-12). Results are per situation, never averaged across them:
@@ -118,11 +122,17 @@ python manage.py benchmark_group --source general --dir DIR2 ...               #
 ```
 
 The first run freezes `--groups` cases (default 6) per situation and size from the
-menus and `--seed`, and stops. Later runs refuse menus that differ from the frozen ones.
+menus and `--seed`, and stops. Later runs refuse menus or allergy restrictions that
+differ from the frozen ones. An allergic member can eat an offer when the catalog
+without that allergen keeps it. That catalog merges equivalent menus again, under other
+food IDs, so its offers are matched to the full catalog's by menu title, features and
+offer; the command stops if one does not match exactly one.
 The LLM members are the engine benchmark's simulated user (`METCHU_SIMULATOR_MODEL`),
 told only the target's name; their answers are cached in `DIR/answers.jsonl`, shared by
 the arms, and each question is asked once even when cases run in parallel. `most_menus`
-picks only restaurants where every member can eat, like the other arms. Similarity and the answer model come from the same features, so absolute
+picks only restaurants where every member can eat, like the other arms. An allergic
+member's own sessions see the menus they can eat somewhere, under the group's food IDs.
+Similarity and the answer model come from the same features, so absolute
 satisfaction is optimistic; the comparison between arms is what the criteria judge.
 Taking the best menu of a restaurant also favors restaurants with many menus, which
 `most_menus` makes visible.
@@ -153,6 +163,16 @@ Both are fixed. The cafeteria reports were replayed from the cached answers with
 call, so their `llm.json` shows 0 calls (the paid run's usage is in commit 2ddb37d); two
 `similar` groups changed and no verdict did. The general reports had no such pick and
 were not replayed.
+
+A second review found three more. Allergy eligibility was kept per menu, so an
+equivalent menu safe at one restaurant counted as safe at every restaurant serving it;
+branches with one name were one restaurant serving the union of their menus; and an
+allergic member's own sessions dropped the menus merged under another food ID. All are
+fixed, and the cases now record the allergy restrictions (added from the same DB copy).
+The cafeteria has none of these, and its reports replayed unchanged with no new call.
+The general oracle report changed in 5 groups (1 `similar`, 4 `restricted`) and no
+verdict. The general LLM report below is still from before these fixes: replaying it
+needs 8 questions that are not in the cache.
 
 | Passed situations | cafeteria | general |
 | --- | --- | --- |
@@ -196,8 +216,8 @@ the separate questions, while `separate_matched` reached .034.
 ### Earlier versions
 
 Each version's cases, answers and reports are in `engine_benchmark_results/`; the
-detailed tables are in this file's Git history. Their `most_menus` results in
-`restricted` groups have the fault fixed above.
+detailed tables are in this file's Git history. They have the faults fixed above:
+`most_menus` in `restricted` groups, allergies per menu and restaurants per name.
 
 | version (judged) | cases | LLM members failed | what the results showed, and the next change |
 | --- | --- | --- | --- |
