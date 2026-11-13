@@ -3,7 +3,7 @@ import pytest
 
 from question_engines.group import GroupConfig, GroupEngine
 from question_engines.decision_tree.catalog import CandidateCatalog
-from question_engines.group.engine import PICKS, closest, fit, picks
+from question_engines.group.engine import PICKS, closest, fit, picks, place, restaurants
 
 SCHEMA = [{"key": "spicy"}, {"key": "soupy"}, {"key": "noodle"}]
 
@@ -22,6 +22,11 @@ MENUS = [
 ]
 # Member 0 wants spicy and dry food; member 1 wants mild soup.
 WANTS = [{"q:spicy": "yes", "q:soupy": "no"}, {"q:spicy": "no", "q:soupy": "yes"}]
+
+
+def banned(*food_ids, menus=MENUS):
+    """Every offer of these menus: what a member who cannot eat them excludes."""
+    return {(m["food_id"], place(o)) for m in menus if m["food_id"] in food_ids for o in m["offers"]}
 
 
 def play(engine, wants=WANTS):
@@ -61,23 +66,62 @@ def test_a_spread_belief_gets_the_menu_in_the_middle_not_a_likeliest_one():
 
 
 def test_a_member_is_never_offered_a_menu_they_cannot_eat():
-    result = play(GroupEngine(MENUS, SCHEMA, [set(), {2}]))
+    result = play(GroupEngine(MENUS, SCHEMA, [set(), banned(2)]))
     assert result[0]["restaurant"] != "Both hall"
     assert all(p["menus"][1]["food_id"] != 2 for p in result)
 
 
 def test_every_pick_has_a_menu_for_every_member():
-    result = play(GroupEngine(MENUS, SCHEMA, [set(), {1, 2, 4}]))  # member 1 eats only at Mixed hall
+    result = play(GroupEngine(MENUS, SCHEMA, [set(), banned(1, 2, 4)]))  # member 1 eats only at Mixed hall
     assert [p["restaurant"] for p in result] == ["Mixed hall"]
     assert picks(np.array([[.5, .25, .25], [1, 0, 0]])) == [("balanced", 0)]
 
 
 def test_a_similar_menu_counts_for_most_of_a_match():
     catalog = CandidateCatalog(MENUS, SCHEMA)
+    _, serves = restaurants(catalog)
     spicy_hall, spicy_soup = 3, 2  # restaurants and menus in sorted order
-    assert fit(catalog, frozenset())[spicy_hall, spicy_soup] == pytest.approx(1 - .9 / 3)
-    assert fit(catalog, frozenset())[spicy_hall, 0] == 1
-    assert not fit(catalog, frozenset({1}))[spicy_hall].any()
+    assert fit(catalog, serves)[spicy_hall, spicy_soup] == pytest.approx(1 - .9 / 3)
+    assert fit(catalog, serves)[spicy_hall, 0] == 1
+    without_stir_fry = serves.copy()
+    without_stir_fry[:, 0] = False
+    assert not fit(catalog, without_stir_fry)[spicy_hall].any()
+    assert fit(catalog, without_stir_fry)[0, 0] < 1 == fit(catalog, serves)[0, 0]  # Both hall still has the soup
+
+
+def test_the_shared_fit_table_cannot_be_changed_in_place():
+    catalog = CandidateCatalog(MENUS, SCHEMA)
+    with pytest.raises(ValueError):
+        fit(catalog, restaurants(catalog)[1])[0, 0] = 0
+
+
+def test_an_allergen_at_one_restaurant_rules_out_only_that_offer():
+    # One stir-fry served at A and B; A's has the member's allergen, B's does not.
+    menus = [menu(1, "Stir-fry", .95, .05, "A hall", "B hall"), menu(2, "Soup", .05, .95, "A hall")]
+    unsafe = {(1, ("A hall", None, None))}
+    wants = [WANTS[0], WANTS[0]]
+    assert play(GroupEngine(menus, SCHEMA, [set(), set()]), wants)[0]["restaurant"] == "A hall"
+    result = play(GroupEngine(menus, SCHEMA, [unsafe, set()]), wants)
+    assert result[0]["restaurant"] == "B hall" and result[0]["menus"][0]["food_id"] == 1
+    assert all(p["menus"][0]["food_id"] != 1 for p in result if p["restaurant"] == "A hall")
+
+
+def test_branches_with_one_name_are_different_restaurants():
+    def at(lat):
+        return {"restaurant": "Chain", "meal": "LU", "price": 5000, "lat": lat, "lng": 127.}
+
+    menus = [dict(MENUS[0], offers=[at(37.1), {"restaurant": "Mixed hall", "meal": "LU", "price": 5000}]),
+             dict(MENUS[1], offers=[at(37.2), {"restaurant": "Mixed hall", "meal": "LU", "price": 5000}])]
+    first, *others = play(GroupEngine(menus, SCHEMA, [set(), set()]))
+    assert first["restaurant"] == "Mixed hall"  # no single Chain branch serves both menus
+    assert {(p["restaurant"], p["lat"]) for p in others} <= {("Chain", 37.1), ("Chain", 37.2)}
+
+
+def test_stops_once_every_question_is_asked():
+    engine = GroupEngine(MENUS, SCHEMA, [set(), set()], config={"max_rounds": 10})
+    for member in engine.members:
+        member.answers = dict.fromkeys(range(len(engine.model.questions)), 0)
+    assert engine._plan() == {}
 
 
 def test_eight_members_take_turns_until_the_group_is_decided():
@@ -89,7 +133,7 @@ def test_eight_members_take_turns_until_the_group_is_decided():
 
 
 def test_every_member_answers_the_same_new_question_each_round():
-    engine = GroupEngine(MENUS, SCHEMA, [set(), {2}, set()])  # member 1 cannot eat the mild soup
+    engine = GroupEngine(MENUS, SCHEMA, [set(), banned(2), set()])  # member 1 cannot eat the mild soup
     wants = WANTS + [{"q:spicy": "no", "q:soupy": "no", "q:noodle": "yes"}]
     asked = []
     while not engine.finished:
@@ -127,9 +171,9 @@ def test_rejects_invalid_groups_and_answers():
     with pytest.raises(ValueError):
         GroupEngine(MENUS, SCHEMA, [set()])
     with pytest.raises(ValueError):
-        GroupEngine(MENUS, SCHEMA, [set(), {1, 2, 3, 4}])
+        GroupEngine(MENUS, SCHEMA, [set(), banned(1, 2, 3, 4)])
     with pytest.raises(ValueError):
-        GroupEngine(MENUS, SCHEMA, [{2, 3, 4}, {1, 2, 4}])  # no restaurant serves both
+        GroupEngine(MENUS, SCHEMA, [banned(2, 3, 4), banned(1, 2, 4)])  # no restaurant serves both
     with pytest.raises(ValueError):
         GroupEngine([menu(1, "Dish", .5, .5, "Hall", profile=None)], SCHEMA, [set(), set()])
     engine = GroupEngine(MENUS, SCHEMA, [set(), set()])
