@@ -4,6 +4,7 @@ import com.example.metchu.data.model.RestaurantMenu
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.RetrofitInstance
+import com.example.metchu.data.network.SignedIn
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.HttpException
@@ -29,6 +30,10 @@ object Fixtures {
         RetrofitInstance.gson.fromJson(json(name), SessionState::class.java)
 
     fun menu(): RestaurantMenu = RetrofitInstance.gson.fromJson(json("menu"), RestaurantMenu::class.java)
+
+    /** A sign-in reply (backend/accounts), captured from a local server on SQLite. */
+    fun signedIn(name: String = "auth_signed_in"): SignedIn =
+        RetrofitInstance.gson.fromJson(json(name), SignedIn::class.java)
 
     fun error(name: String): ApiErrorResponse =
         RetrofitInstance.gson.fromJson(json(name), ApiErrorResponse::class.java)

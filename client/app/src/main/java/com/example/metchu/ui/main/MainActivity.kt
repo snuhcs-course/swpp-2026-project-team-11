@@ -11,7 +11,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.metchu.data.location.FusedLocationSource
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
+import com.example.metchu.data.repository.AuthRepository
+import com.example.metchu.data.repository.DeviceAccountStore
 import com.example.metchu.data.repository.SettingsStore
+import com.example.metchu.ui.account.AccountViewModel
+import com.example.metchu.ui.account.AccountViewModelFactory
 import com.example.metchu.ui.theme.MetchuTheme
 
 /**
@@ -26,6 +30,10 @@ class MainActivity : AppCompatActivity() {
         RecommendViewModelFactory(AppContainer.repository)
     }
 
+    private val accounts: AccountViewModel by viewModels {
+        AccountViewModelFactory(AppContainer.authRepository ?: AuthRepository(DeviceAccountStore(applicationContext)))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // A transparent navigation bar, also with the three buttons: screens keep their content
         // above it, and the ones that scroll under it draw their own fade (NavigationBarFade).
@@ -37,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         val location = AppContainer.locationSource ?: FusedLocationSource(applicationContext)
         setContent {
             MetchuTheme {
-                MetchuApp(viewModel, allergies, settings, location)
+                MetchuApp(viewModel, accounts, AppContainer.google, allergies, settings, location)
             }
         }
     }

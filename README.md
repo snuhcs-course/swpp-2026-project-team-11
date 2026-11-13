@@ -203,7 +203,9 @@ cd client && ./gradlew connectedDebugAndroidTest                    # 14 UI test
 - Only the 2026-11-02 menu is included. Other dates need a menu fetch and a
   Gemini key for tagging.
 - Sessions live in server memory; restarting the server ends them.
-- The API has no login. It is meant for a local demo, not a public server.
+- Signing in (a username and password, or Google) is optional and only identifies the
+  user so far: recommendation sessions work the same for a guest and are not tied to an
+  account ([backend/README.md](backend/README.md), "Accounts").
 - We have not yet measured how often people accept the first proposal.
 
 ## Agent workflow

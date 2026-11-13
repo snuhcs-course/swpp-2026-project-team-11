@@ -11,6 +11,7 @@ python-dotenv==1.*
 pytest==9.*
 pytest-django==4.*
 requests==2.*
+google-auth==2.*  # checks Google sign-in ID tokens (accounts/google.py)
 numpy>=2.2,<3
 # Shared database (Supabase Postgres) through DATABASE_URL; see backend/README.md.
 dj-database-url==3.*

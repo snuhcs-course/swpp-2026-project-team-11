@@ -37,6 +37,42 @@
     <string name="setup_tip_body">The globe changes the language, and Settings your allergies.</string>
     <string name="setup_tip_done">Got it</string>
 
+    <!-- account -->
+    <string name="account_log_in_title">Log in</string>
+    <string name="account_sign_up_title">Create an account</string>
+    <string name="account_lead">You can use Metchu without an account. You can also sign in later in Settings.</string>
+    <string name="account_username">Username</string>
+    <string name="account_password">Password</string>
+    <string name="account_password_again">Password again</string>
+    <string name="account_rules">Username: 3–30 letters, digits or . @ + - _. Password: at least 8 characters, not only digits or a common word.</string>
+    <string name="account_log_in">Log in</string>
+    <string name="account_sign_up">Create account</string>
+    <string name="account_need_one">No account? Create one</string>
+    <string name="account_have_one">Have an account? Log in</string>
+    <string name="account_or">or</string>
+    <string name="account_google">Continue with Google</string>
+    <string name="account_skip">Not now</string>
+    <string name="settings_account">Account</string>
+    <string name="account_guest">Not signed in</string>
+    <string name="account_guest_hint">Recommendations work the same without an account.</string>
+    <string name="account_open">Log in or sign up</string>
+    <string name="account_google_none">No Google account linked</string>
+    <string name="account_google_linked">Google account linked</string>
+    <string name="account_google_linked_as">Google account linked · %1$s</string>
+    <string name="account_link_google">Link Google</string>
+    <string name="account_log_out">Log out</string>
+    <string name="account_error_empty">Enter a username and a password.</string>
+    <string name="account_error_mismatch">The two passwords differ.</string>
+    <string name="account_error_username">Use 3–30 letters, digits or . @ + - _ for the username.</string>
+    <string name="account_error_taken">That username is taken.</string>
+    <string name="account_error_weak">Choose a longer, less common password (at least 8 characters, not only digits).</string>
+    <string name="account_error_credentials">Wrong username or password.</string>
+    <string name="account_error_google">Google sign-in didn’t work. Try again or use a username.</string>
+    <string name="account_error_google_unavailable">Google sign-in isn’t available on the server right now.</string>
+    <string name="account_error_google_in_use">That Google account is already linked to another account.</string>
+    <string name="account_error_already_linked">This account is already linked to another Google account.</string>
+    <string name="account_error_signed_out">You were signed out. Log in again.</string>
+
     <string name="meal_breakfast">Breakfast</string>
     <string name="meal_lunch">Lunch</string>
     <string name="meal_dinner">Dinner</string>

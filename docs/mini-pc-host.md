@@ -53,6 +53,13 @@ Ask the phone's Codex to perform this checklist on the mini PC:
    the previous release pointer and the previous `daily_menus.py`, and restart it
    before re-enabling updates.
 
+Accounts (i4-P6): the release that adds `backend/accounts` needs step 5's `migrate`
+(`accounts 0001` creates the token and Google-link tables). For Google sign-in, add
+`METCHU_GOOGLE_CLIENT_ID` (the web OAuth client ID, backend/README.md "Accounts") to the
+host's private environment and restart; without it, password accounts work and Google
+sign-in answers 503. `private/menu.sqlite3` then holds password hashes and token hashes,
+so its backups stay as private as the database.
+
 Stop/start drops active in-memory dialogues. New sessions use the new source;
 a cached APK can display the original names with the existing JSON shape.
 The numerical `food_id` field is now an opaque sales-menu candidate ID, so

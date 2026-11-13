@@ -19,6 +19,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -30,6 +32,7 @@ import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
+import com.example.metchu.data.repository.AuthRepository
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.repository.SettingsStore
@@ -61,6 +64,7 @@ class MainActivityTest {
     val compose = createEmptyComposeRule()
 
     private val api = FakeApi()
+    private val authApi = FakeAuthApi()
     private var location: UserLocation? = null
     private lateinit var scenario: ActivityScenario<MainActivity>
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -75,6 +79,7 @@ class MainActivityTest {
     fun setUp() {
         AppContainer.repository = RecommendRepository(api)
         AppContainer.locationSource = LocationSource { location }
+        AppContainer.authRepository = AuthRepository(MemoryAccountStore(), authApi)
         // The start screen asks for location; a system dialog would cover the screen.
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         for (permission in listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) {
@@ -89,7 +94,7 @@ class MainActivityTest {
     fun tearDown() = scenario.close()
 
     private fun clearPrefs() {
-        for (file in listOf("profile", "settings")) {
+        for (file in listOf("profile", "settings", "account")) {
             context.getSharedPreferences(file, Context.MODE_PRIVATE).edit().clear().commit()
         }
     }
@@ -176,13 +181,22 @@ class MainActivityTest {
         assertEquals("create ${other.code} rl en", api.calls.last())
     }
 
-    @Test
-    fun theFirstLaunchAsksTheLanguageThenTheAllergiesThenPointsToTheSettings() {
+    /** The first launch's language step; the locale switch arrives a moment later, which Compose does not wait for. */
+    private fun pickEnglishFirst() {
         clearPrefs()
         relaunch()
-        // The locale switch arrives a moment later, which Compose does not wait for.
         tap("language_en")
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag("setupNext").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("accountSkip").fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    private fun type(tag: String, text: String) = compose.onNodeWithTag(tag).performTextInput(text)
+
+    @Test
+    fun theFirstLaunchAsksTheLanguageThenTheAllergiesThenPointsToTheSettings() {
+        pickEnglishFirst()
+        // An account is optional.
+        tap("accountSkip")
+        compose.onNodeWithTag("setupNext").assertIsDisplayed()
         tap("allergen_${Allergen.EGG.id}")
         tap("allergen_${Allergen.PINE_NUT.id}")
         tap("setupNext")
@@ -199,6 +213,49 @@ class MainActivityTest {
         relaunch()
         compose.onNodeWithTag("start").assertIsDisplayed()
         compose.onNodeWithTag("setupTip").assertDoesNotExist()
+        assertEquals(emptyList<String>(), authApi.calls)
+    }
+
+    @Test
+    fun signingUpOnTheFirstLaunchGoesOnToTheAllergies() {
+        pickEnglishFirst()
+        tap("accountSwitch")
+        type("accountUsername", "metchu_user")
+        type("accountPassword", "bap-meokja-2026")
+        type("accountConfirm", "bap-meokja-2026")
+        authApi.reply(Fixtures.signedIn())
+        tap("accountSubmit")
+        compose.onNodeWithTag("setupNext").assertIsDisplayed()
+        assertEquals(listOf("signup metchu_user"), authApi.calls)
+
+        // Signed in, back from the allergies skips the account step.
+        tap("back")
+        compose.onNodeWithTag("language_en").assertIsDisplayed()
+    }
+
+    @Test
+    fun aGuestLogsInFromTheSettingsAndOutAgain() {
+        tap("settings")
+        compose.onNodeWithText(text(R.string.account_guest)).assertIsDisplayed()
+        tap("accountOpen")
+        type("accountUsername", "metchu_user")
+        type("accountPassword", "wrong-pass-2026")
+        authApi.fail(Fixtures.httpError(401, Fixtures.json("error_invalid_credentials")))
+        tap("accountSubmit")
+        compose.onNodeWithTag("accountError").assertTextEquals(text(R.string.account_error_credentials))
+
+        compose.onNodeWithTag("accountPassword").performTextClearance()
+        type("accountPassword", "bap-meokja-2026")
+        authApi.reply(Fixtures.signedIn())
+        tap("accountSubmit")
+        // Signed in: back on the settings, which name the account.
+        compose.onNodeWithTag("accountName").assertTextEquals("metchu_user")
+        compose.onNodeWithTag("accountError").assertDoesNotExist()
+
+        authApi.reply(retrofit2.Response.success(Unit))
+        tap("accountLogOut")
+        compose.onNodeWithTag("accountOpen").assertIsDisplayed()
+        assertEquals(listOf("login metchu_user", "login metchu_user", "logout Token ${Fixtures.signedIn().token}"), authApi.calls)
     }
 
     @Test

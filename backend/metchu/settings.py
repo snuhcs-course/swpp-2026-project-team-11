@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'menus',
     'recommend',
+    'accounts',
 ]
 
 MIDDLEWARE = [
@@ -177,3 +178,11 @@ if RECOMMEND_DT_POLICY not in ('preference', 'lookahead', 'greedy'):
     raise ValueError(
         f"METCHU_DT_POLICY must be preference, lookahead or greedy: {RECOMMEND_DT_POLICY!r}"
     )
+
+
+# Accounts (accounts/)
+
+# Google sign-in: the client ID of the team's web OAuth client, which the app names as
+# its server client so that Google addresses the ID tokens to it (accounts/google.py).
+# Unset, Google sign-in answers 503; username and password accounts still work.
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('METCHU_GOOGLE_CLIENT_ID', '')
