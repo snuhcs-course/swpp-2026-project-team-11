@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -33,13 +34,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.example.metchu.BuildConfig
 import com.example.metchu.R
+import com.example.metchu.data.auth.GoogleTokenSource
 import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
@@ -47,6 +51,8 @@ import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.Place
 import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.data.repository.Setup
+import com.example.metchu.ui.account.AccountScreen
+import com.example.metchu.ui.account.AccountViewModel
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.floating
@@ -63,15 +69,17 @@ import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 
 /**
- * Which screen is up. Before a session: the first launch's steps, then start or settings.
- * During one: the step's screen.
+ * Which screen is up. Before a session: the first launch's steps, then start, settings, or
+ * the account screen opened from the settings. During one: the step's screen.
  */
-private enum class Screen { LANGUAGE, ALLERGIES, START, SETTINGS, QUESTION, RESULT, UNAVAILABLE }
+private enum class Screen { LANGUAGE, ACCOUNT, ALLERGIES, START, SETTINGS, QUESTION, RESULT, UNAVAILABLE }
 
-private fun screenOf(session: SessionState?, setup: Setup, settingsOpen: Boolean): Screen = when (session?.step?.type) {
+private fun screenOf(session: SessionState?, setup: Setup, settingsOpen: Boolean, accountOpen: Boolean): Screen = when (session?.step?.type) {
     null -> when {
         setup == Setup.LANGUAGE -> Screen.LANGUAGE
+        setup == Setup.ACCOUNT -> Screen.ACCOUNT
         setup == Setup.ALLERGIES -> Screen.ALLERGIES
+        settingsOpen && accountOpen -> Screen.ACCOUNT
         settingsOpen -> Screen.SETTINGS
         else -> Screen.START
     }
@@ -81,7 +89,14 @@ private fun screenOf(session: SessionState?, setup: Setup, settingsOpen: Boolean
 }
 
 @Composable
-fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, settings: SettingsStore, location: LocationSource) {
+fun MetchuApp(
+    viewModel: RecommendViewModel,
+    accounts: AccountViewModel,
+    google: GoogleTokenSource,
+    allergyStore: AllergyStore,
+    settings: SettingsStore,
+    location: LocationSource
+) {
     val session by viewModel.session.observeAsState()
     val loading by viewModel.loading.observeAsState(false)
     val error by viewModel.error.observeAsState()
@@ -91,11 +106,18 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     val canResume by viewModel.canResume.observeAsState(false)
     val menus by viewModel.menus.observeAsState(emptyMap())
     val banned by viewModel.banned.observeAsState(emptySet())
+    val account by accounts.account.observeAsState()
+    val accountBusy by accounts.busy.observeAsState(false)
+    val accountError by accounts.error.observeAsState()
 
     // Stored at once, so a launch picks up where the last one stopped.
     var setup by remember { mutableStateOf(settings.setup) }
     val advance = { next: Setup -> setup = next; settings.setup = next }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    var accountOpen by rememberSaveable { mutableStateOf(false) }
+    // Google's account picker opens over the activity.
+    val context = LocalContext.current
+    val googleToken: suspend () -> String? = { google.idToken(context) }
     // Once per launch: kept here, so leaving the start screen does not bring the location notice back.
     var locationAsked by rememberSaveable { mutableStateOf(false) }
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
@@ -106,10 +128,19 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
     // The server writes its questions in the language the app is showing.
     val language = if (LocalConfiguration.current.locales[0].language == "ko") "ko" else "en"
 
-    val screen = screenOf(session, setup, settingsOpen)
+    val screen = screenOf(session, setup, settingsOpen, accountOpen)
     val closeSettings = {
         allergyStore.allergies = allergies
         settingsOpen = false
+        accounts.clearError()
+    }
+    val openAccount = { accounts.clearError(); accountOpen = true }
+    val closeAccount = { accounts.clearError(); accountOpen = false }
+    // Signed in on the account screen: go on to where the user was headed.
+    LaunchedEffect(account != null) {
+        if (account == null) return@LaunchedEffect
+        if (setup == Setup.ACCOUNT) advance(Setup.ALLERGIES)
+        if (accountOpen) closeAccount()
     }
 
     Box(Modifier.fillMaxSize().background(Color.White)) {
@@ -133,13 +164,33 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
         ) { target ->
             val current = session
             when (target) {
-                Screen.LANGUAGE -> LanguageSetupScreen(onPick = { tag -> advance(Setup.ALLERGIES); setLanguage(tag) })
+                Screen.LANGUAGE -> LanguageSetupScreen(onPick = { tag ->
+                    advance(if (account == null) Setup.ACCOUNT else Setup.ALLERGIES)
+                    setLanguage(tag)
+                })
+                Screen.ACCOUNT -> {
+                    // On the first launch this is a setup step; otherwise it was opened from the settings.
+                    val back = if (setup == Setup.ACCOUNT) ({ accounts.clearError(); advance(Setup.LANGUAGE) }) else closeAccount
+                    BackHandler(onBack = back)
+                    AccountScreen(
+                        busy = accountBusy,
+                        error = accountError,
+                        onLogIn = accounts::logIn,
+                        onSignUp = accounts::signUp,
+                        onGoogle = { accounts.google(googleToken) }.takeIf { BuildConfig.HAS_GOOGLE_SIGN_IN },
+                        onModeChange = accounts::clearError,
+                        onBack = back,
+                        onSkip = { accounts.clearError(); advance(Setup.ALLERGIES) }.takeIf { setup == Setup.ACCOUNT }
+                    )
+                }
                 Screen.ALLERGIES -> {
-                    BackHandler { advance(Setup.LANGUAGE) }
+                    // Signed in, there is no account step to go back to.
+                    val back = { advance(if (account == null) Setup.ACCOUNT else Setup.LANGUAGE) }
+                    BackHandler(onBack = back)
                     AllergySetupScreen(
                         allergies = allergies,
                         onAllergies = { allergies = it; allergyStore.allergies = it },
-                        onBack = { advance(Setup.LANGUAGE) },
+                        onBack = back,
                         onNext = { advance(Setup.TIP) }
                     )
                 }
@@ -160,8 +211,14 @@ fun MetchuApp(viewModel: RecommendViewModel, allergyStore: AllergyStore, setting
                 Screen.SETTINGS -> {
                     BackHandler(onBack = closeSettings)
                     SettingsScreen(
+                        account = account,
+                        accountBusy = accountBusy,
+                        accountError = accountError,
                         allergies = allergies,
                         engine = engine,
+                        onAccount = openAccount,
+                        onLinkGoogle = { accounts.linkGoogle(googleToken) }.takeIf { BuildConfig.HAS_GOOGLE_SIGN_IN },
+                        onLogOut = accounts::logOut,
                         onAllergies = { allergies = it; allergyStore.allergies = it },
                         onEngine = { engine = it; settings.engine = it },
                         onBack = closeSettings

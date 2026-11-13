@@ -158,6 +158,33 @@ Labels are estimates for presentation, not menu, allergen or feature corrections
 The preprocessing prompt and `PREPROCESS_VERSION` are unchanged.
 
 
+
+## Interaction logs
+
+Set `METCHU_INTERACTION_LOG_DIR` to a private directory to collect server-side
+interaction events. It is disabled when unset. The server appends one JSON line
+for each session start, answer, recommendation request, feedback, undo or ban.
+Events include a random session-specific logging ID, UTC time, engine, meal,
+menu date, source and distance scope, candidate counts before and after the distance filter,
+and the server-generated question or recommendation step. Recommendations include
+the dish ID, display name and up to ten restaurant names. Validated user location
+and allergy choices are recorded once at session start. No IP, device identifier,
+API session token, question text, explanation text or raw request body is recorded.
+
+Files use UTC dates (`interactions-YYYY-MM-DD.jsonl`). The current day and previous
+29 calendar days are retained; the running server prunes older matching files at
+startup and hourly, even when no sessions occur. Logs are outside the recommendation
+DB, which can stay read-only. A file error is reported to the operational log and
+never fails a recommendation request. The current writer is thread-safe within one
+server process. Keep the directory private; these records include sensitive location
+and allergy selections.
+
+Only server requests and resulting steps are captured: app-only navigation, a
+request that never reaches the server, and a confirmed session end are not tracked.
+The session ID in the log is independent of the public API session token; it is not
+a persistent user identifier. Do not treat missing later events as proof that a user
+accepted, quit or was dissatisfied.
+
 ## Daily menu preprocessing (P7)
 
 A cafeteria menu line is not always one dish. `fetch_menus` resolves every line into the dishes
@@ -269,6 +296,35 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
 
 > **주의:** `--dry-run`이 LLM에 보낼 줄 수를 알려 줍니다. 실제 실행 전에 호출 수를 확인하세요. 2026-11-02 스냅샷은 640곳, 서로 다른 메뉴 줄 9,659개로 전처리 호출이 약 387회, 알레르기 호출이 약 366회입니다.
 > 머지 후 첫 07:00 매일 작업의 `migrate`가 Supabase에 새 테이블 `menus_storemenu`를 만듭니다. 그 뒤 RLS SQL을 다시 실행하세요.
+
+## Accounts (i4-P6)
+
+Signing in is optional; it is there so that the group mode can tell users apart.
+`accounts/` keeps Django's own `auth.User` (a username and a PBKDF2 password hash) and adds
+two tables: `AuthToken`, one per signed-in device, holding only the SHA-256 of the token the
+app sends as `Authorization: Token <token>`, and `GoogleIdentity`, the Google account (its
+stable `sub` and, when Google verified it, the address) linked to a user. The full API is in
+the docstring of `accounts/views.py`:
+
+| Request | Body | Reply |
+| --- | --- | --- |
+| `POST /api/auth/signup/` | `{"username", "password"}` | 201 `{"token", "user"}` |
+| `POST /api/auth/login/` | `{"username", "password"}` | `{"token", "user"}` |
+| `POST /api/auth/google/` | `{"id_token"}` | `{"token", "user", "created"}`, 201 for a new account |
+| `POST /api/auth/google/link/` | `{"id_token"}`, signed in | `{"user"}` |
+| `GET /api/auth/me/` | signed in | `{"user"}` |
+| `POST /api/auth/logout/` | signed in | 204, ends this device's token only |
+
+`user` is `{"username", "google_email", "has_password"}`. Usernames are 3–30 letters, digits or
+`. @ + - _`, unique ignoring case; passwords must pass `AUTH_PASSWORD_VALIDATORS`. A wrong
+username and a wrong password get the same 401. Google sign-in makes an account named after the
+address, without a password, the first time; linking lets an existing account sign in either way.
+
+Google sign-in needs `METCHU_GOOGLE_CLIENT_ID`, the client ID of the team's **web** OAuth client
+(the app's `metchu.googleWebClientId`, see client/README.md); without it those two requests answer
+503 and password accounts still work. The server checks each ID token with `google-auth`
+(signature, expiry, issuer and that audience); that fetches Google's public keys, so it needs the
+network. Tests patch the check and need neither. Recommendation sessions do not read the token yet.
 
 ## Shared database: Supabase (P8)
 
@@ -434,7 +490,7 @@ keys from `menus/allergens.py` (the 19 allergens Korean food labels must declare
 them **or a dish without current tags**, before the selected engine sees the candidates. A combo line
 ("돈가스 카레우동") is bought whole, so 카레우동 is not offered there to someone allergic to pork,
 though it can still be offered where it is served alone. The feature version is chosen among
-the dishes that are left. Without allergies nothing changes. The phone keeps the allergies; the server stores nothing about the user.
+the dishes that are left. Without allergies nothing changes. The phone keeps the allergies; the server does not store them, also for a signed-in user (see "Accounts").
 
 The result screen can also ban a food group, or a menu without one, for the rest of
 the session (i3-A14): `POST /api/sessions/<id>/ban/` takes a `food_group` or the

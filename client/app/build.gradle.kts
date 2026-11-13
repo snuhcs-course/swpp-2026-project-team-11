@@ -34,6 +34,12 @@ android {
         val mapsApiKey = localProperties.getProperty("metchu.mapsApiKey").orEmpty()
         manifestPlaceholders["mapsApiKey"] = mapsApiKey
         buildConfigField("boolean", "HAS_MAPS_KEY", mapsApiKey.isNotBlank().toString())
+
+        // The client ID of the team's web OAuth client (the server's METCHU_GOOGLE_CLIENT_ID).
+        // Google addresses the sign-in token to it. Without one the app hides Google sign-in.
+        val googleWebClientId = localProperties.getProperty("metchu.googleWebClientId").orEmpty()
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
+        buildConfigField("boolean", "HAS_GOOGLE_SIGN_IN", googleWebClientId.isNotBlank().toString())
     }
 
     buildTypes {
@@ -94,6 +100,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.maps.compose)
     implementation(libs.play.services.location)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     androidTestImplementation(platform(libs.androidx.compose.bom))

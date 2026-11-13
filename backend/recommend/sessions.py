@@ -83,6 +83,12 @@ class RecommendSession:
                  location: tuple[float, float] | None, allergies: frozenset[str],
                  source: str = "cafeteria", language: str = "en", distance_scope: str | None = None):
         self.session_id = uuid.uuid4().hex
+        self.interaction_id = uuid.uuid4().hex
+        self.source = source
+        self.distance_scope = distance_scope
+        self.location_available = location is not None
+        self.logged_allergies = sorted(allergies)
+        self.logged_location = {"lat": location[0], "lng": location[1]} if location is not None else None
         self.engine_name = engine
         self.date = date
         self.meal = meal
@@ -99,6 +105,7 @@ class RecommendSession:
                 candidates, schema = get_catalog(date, meal, allergies)
         except ValueError as error:
             raise EngineUnavailable("Invalid stored menu features.") from error
+        self.candidates_before_distance = len(candidates)
         if distance_scope == "near" and location is not None:
             candidates = with_distances(candidates, location, NEARBY_METERS, exclude_unknown=True)
         else:
