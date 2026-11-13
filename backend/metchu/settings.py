@@ -140,6 +140,9 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# Optional private, day-rotated interaction logs; unset means disabled.
+INTERACTION_LOG_DIR = os.environ.get("METCHU_INTERACTION_LOG_DIR", "").strip()
+
 # Recommendation sessions (recommend/sessions.py)
 
 # No question limit by default: the engine asks until it is ready to guess, and

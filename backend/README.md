@@ -155,6 +155,33 @@ Labels are estimates for presentation, not menu, allergen or feature corrections
 The preprocessing prompt and `PREPROCESS_VERSION` are unchanged.
 
 
+
+## Interaction logs
+
+Set `METCHU_INTERACTION_LOG_DIR` to a private directory to collect server-side
+interaction events. It is disabled when unset. The server appends one JSON line
+for each session start, answer, recommendation request, feedback, undo or ban.
+Events include a random session-specific logging ID, UTC time, engine, meal,
+menu date, source and distance scope, candidate counts before and after the distance filter,
+and the server-generated question or recommendation step. Recommendations include
+the dish ID, display name and up to ten restaurant names. Validated user location
+and allergy choices are recorded once at session start. No IP, device identifier,
+API session token, question text, explanation text or raw request body is recorded.
+
+Files use UTC dates (`interactions-YYYY-MM-DD.jsonl`). The current day and previous
+29 calendar days are retained; the running server prunes older matching files at
+startup and hourly, even when no sessions occur. Logs are outside the recommendation
+DB, which can stay read-only. A file error is reported to the operational log and
+never fails a recommendation request. The current writer is thread-safe within one
+server process. Keep the directory private; these records include sensitive location
+and allergy selections.
+
+Only server requests and resulting steps are captured: app-only navigation, a
+request that never reaches the server, and a confirmed session end are not tracked.
+The session ID in the log is independent of the public API session token; it is not
+a persistent user identifier. Do not treat missing later events as proof that a user
+accepted, quit or was dissatisfied.
+
 ## Daily menu preprocessing (P7)
 
 A cafeteria menu line is not always one dish. `fetch_menus` resolves every line into the dishes
