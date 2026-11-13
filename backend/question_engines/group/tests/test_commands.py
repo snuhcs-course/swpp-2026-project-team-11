@@ -39,7 +39,7 @@ class GroupBenchmarkCommandTests(TestCase):
 
     def test_refuses_other_menus_and_missing_ones(self):
         with tempfile.TemporaryDirectory() as directory:
-            (Path(directory) / "cases.json").write_text(json.dumps({"catalog": "other", "cases": []}))
+            (Path(directory) / "cases.json").write_text(json.dumps({"catalog": "other", "cases": []}), encoding="utf-8")
             with self.assertRaisesMessage(CommandError, "메뉴와 지금 메뉴가 다릅니다"):
                 call_command(*RUN, "--dir", directory, stdout=io.StringIO())
             with self.assertRaisesMessage(CommandError, "cafeteria LU 메뉴가 없습니다"):
