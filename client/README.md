@@ -203,11 +203,15 @@ emulator, set a position under Extended controls > Location (for example
 | When | Screen | Actions |
 | --- | --- | --- |
 | first launch | Language (asked in both), then Account (log in or sign up, optional), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear (bottom-left), with a tip that both change there anytime | a language goes on at once; on Account, "Not now" goes on as a guest and signing in goes on by itself; ‹ on Allergies returns to Account (to Language once signed in); on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
-| no session | Start: "Today I'll have [lunch] [nearby]", a round start button, a faded map around the user, or around the SNU administration building until location is allowed | the meal and the distance open a small menu under them, without dimming the screen; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home |
+| no session | Start: "Today I'll have [lunch] [nearby] [for me]", a round start button, a faded map around the user, or around the SNU administration building until location is allowed | the meal and the distance open a small menu under them, without dimming the screen; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home; "for me" / "with friends" switches to group mode, where the button creates a room (a guest names themselves first) and "Join with a code" (top-right) opens Join |
 | gear | Settings: the account (signed out: "Log in or sign up"; signed in: the username, whether Google is linked, "Link Google" and "Log out"), one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button; "Log in or sign up" opens the Account screen, which returns here once signed in |
 | Account | Log in or Create an account: username, password (twice to create one), the rules, "Continue with Google" in a build with a Google client ID | the line under the button switches between the two; errors show under the fields; the token is kept in its own preferences file, which backup leaves out |
 | `question` | The current question under the past ones, one grey line each with the answer on the right; a five-step slider with "I'm not sure"; a progress bar | dragging along the slider or tapping a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); home in the top-right corner; "Recommend now" floats bottom-right once there is an answer |
 | `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user, a ban link and the cafeterias, one row per cafeteria | "Find another" (bottom-right) turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; home in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row glides the map to it, and the menu icon at its end lists what that cafeteria serves at that meal in a sheet built like the result sheet (its handle closes it; long menus scroll with faded edges), the proposed dish in orange; once a food group makes up two of the last three proposals, "Don't suggest any <group>" keeps that group out of the rest of the session, even after ‹ (a dish without a group offers "Don't suggest this dish" at once), and turns into Undo; a new session starts without bans; the locate button centers the map on the user, then turns it with the phone; the sheet's handle, dish name and description drag or tap it between folded, half and full |
+| Join | Four code boxes filled from an in-app number pad, and a name field for a guest | "Join" turns orange once the code (and a guest's name) is there; ‹ returns to the start screen |
+| room `lobby` | The code in large digits, "Send invite" (Android's share sheet), who is here with "Me" / "Host" and their allergies | the host's "Start · N" needs two people; others see "The host will start"; ‹ or Back leaves the room |
+| room `asking` | Members' circles across the top (orange ring and check once answered, never what), the past rounds with this phone's answer, the shared question, the five-step scale, the rounds and the seconds left | an answer is final; then "Waiting for …"; after 10 s the server counts silence as "doesn't matter"; the host's "Recommend now" appears after the first round; home leaves |
+| room `done` | Map pins and chips for the one or two restaurants (by name), under "Today's lunch" (the meal picked at the start), each member's dish there with its price and "Great fit" / "Good fit", this phone's first, then the restaurant's other dishes | chips or pins switch restaurant; the host's "Go here" decides, and every phone then shows "Meet at …"; home leaves |
 | `unavailable` | Why nothing can be recommended today; with allergies saved, that no dish is known to be free of them and that Settings can change them | ‹ returns to the start screen |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
@@ -275,7 +279,10 @@ data/model/Allergen.kt              the allergens the server accepts (backend/me
 data/network/ApiService.kt          Retrofit endpoints and request bodies
 data/network/RetrofitInstance.kt    server address and HTTP client
 data/location/LocationSource.kt     where the device is when a session starts
-data/repository/RecommendRepository.kt   the only class that calls Retrofit
+data/model/RoomState.kt             a group room as one member sees it
+data/network/RoomApi.kt             Retrofit endpoints of the group rooms
+data/repository/RecommendRepository.kt   the session requests; with RoomRepository the only classes that call Retrofit
+data/repository/RoomRepository.kt   the room requests, with the member token
 data/repository/AllergyStore.kt     the user's allergies, on this device
 data/repository/SettingsStore.kt    the engine and the distance choice, on this device
 ui/main/MainActivity.kt             hosts the Compose app
@@ -285,6 +292,7 @@ ui/start/                           start screen and the meal choice
 ui/settings/                        allergies and engine
 ui/question/                        question history, five-step scale, progress
 ui/result/                          result map and sheet, cafeteria distances, nothing to recommend
+ui/group/                           group mode: join, lobby, shared question, restaurants; GroupViewModel polls the room
 ui/common/                          shared buttons, pills, bottom and picker sheets, location
 ui/theme/Theme.kt                   colors, font and text sizes of the design foundation board
 ```
@@ -307,6 +315,14 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | `POST /api/sessions/<id>/ban/` | `{"food_id" or "food_group", "banned"}` | Keep one dish, or every dish of a `food_group`, out of the rest of the session (`banned: false` lets it back). The step on screen stays; the next action that would show the dish turns it down, and an undo that would goes back further. Bans end with the session |
 | `GET /api/sessions/<id>/reason/` | | `{"food_id", "reason", "source"}`: why the dish on screen suits the user, in the session's language. `source` is `llm`, or `template` when the server has no key or the LLM failed. With no dish on screen, a 409 `stale_step` |
 | `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy or by distance are not listed. An unknown restaurant has no dishes |
+
+The group room requests (backend/README.md "Group rooms") go through `RoomApi` and
+`RoomRepository`, on a client that hides `Authorization` and `X-Member-Token` in the debug log.
+Creating or joining sends the account token when signed in and a name otherwise; every later
+request sends the member token the reply returned. `GroupViewModel` polls `GET /api/rooms/<code>/`
+every second until the host has decided, and counts the seconds left down between replies. A
+409 `stale_step` (the round moved on) waits for the next poll; `room_not_found` or `not_member`
+on a poll takes the phone back to the start screen.
 
 The account requests (`backend/accounts`, see backend/README.md "Accounts") go through
 `AuthApi` and `AuthRepository`, on a separate HTTP client that logs headers only, with the
@@ -390,7 +406,7 @@ Server behavior to know about:
 | --- | --- | --- |
 | REST API and `serve_public` (`backend/recommend/tests`) | `python -m pytest backend/recommend` | Python only |
 | Account API (`backend/accounts/tests`) | `python -m pytest backend/accounts` | Python only |
-| JSON contract, repository, ViewModel, progress, meal and cafeteria list (`app/src/test`) | `./gradlew testDebugUnitTest` | JDK only |
+| JSON contract, repository, ViewModels (also the group room's), progress, meal and cafeteria list (`app/src/test`) | `./gradlew testDebugUnitTest` | JDK only |
 | The Compose screens against a fake server (`app/src/androidTest`) | `./gradlew connectedDebugAndroidTest` | a running emulator or phone |
 
 `app/src/sharedTest` holds what the two client suites share: a fake `ApiService`
@@ -402,6 +418,10 @@ it includes a set listed once at its whole price. The RL question fixture was ca
 The `auth_*.json` and account `error_*.json` replies were captured on 2026-11-10 from a local
 server on its own SQLite database (the token is that throwaway database's); `FakeAuthApi` stands
 in for the account server.
+The `room_*.json` replies and `error_room_not_found.json` were captured on 2026-11-13 from the
+room views on a local SQLite with the 2026-11-02 snapshot (two members, cafeteria lunch, the
+host answering three seconds in; the member token replaced by `member-token`); `FakeRoomApi`
+stands in for the room server.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 
