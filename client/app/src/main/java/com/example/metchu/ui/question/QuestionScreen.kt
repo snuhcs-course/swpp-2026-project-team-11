@@ -136,7 +136,7 @@ private val Levels = listOf(
 fun answerColor(answerId: String): Color = Levels.firstOrNull { it.id == answerId }?.ink ?: MetchuColors.Grey400
 
 @StringRes
-private fun answerLabel(answerId: String): Int =
+internal fun answerLabel(answerId: String): Int =
     Levels.firstOrNull { it.id == answerId }?.label ?: R.string.answer_unknown
 
 /**
@@ -409,7 +409,7 @@ private fun lerpStyle(from: TextStyle, to: TextStyle, t: Float): TextStyle = fro
 
 /** "I'm not sure", the five circles and their three captions. */
 @Composable
-private fun AnswerScale(offered: Set<String>, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit) {
+internal fun AnswerScale(offered: Set<String>, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit) {
     // The prototype's row is 358 wide (353 + 2.5 on each side) on a 393 screen; circles,
     // icons and captions scale with the row so narrower phones keep the same gaps.
     BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 17.5.dp, end = 17.5.dp, bottom = 20.dp)) {

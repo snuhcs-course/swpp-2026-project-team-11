@@ -42,12 +42,29 @@ object RetrofitInstance {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
+    // Room requests carry the account token and the member token; neither reaches the debug log.
+    private val roomClient = OkHttpClient.Builder()
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
+            else HttpLoggingInterceptor.Level.NONE
+            redactHeader("Authorization")
+            redactHeader(RoomApi.MEMBER)
+        })
+        .connectTimeout(5, TimeUnit.SECONDS)
+        // Starting a room builds the group's tables over the whole menu, which takes a few seconds.
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
+
     val api: ApiService by lazy { create(BuildConfig.BASE_URL) }
+
+    val roomApi: RoomApi by lazy { createRooms(BuildConfig.BASE_URL) }
 
     val authApi: AuthApi by lazy { createAuth(BuildConfig.BASE_URL) }
 
     /** [baseUrl] must end with a slash. Tests point this at a local fake server. */
     fun create(baseUrl: String): ApiService = retrofit(baseUrl, client).create(ApiService::class.java)
+
+    fun createRooms(baseUrl: String): RoomApi = retrofit(baseUrl, roomClient).create(RoomApi::class.java)
 
     fun createAuth(baseUrl: String): AuthApi = retrofit(baseUrl, authClient).create(AuthApi::class.java)
 

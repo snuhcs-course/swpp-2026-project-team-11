@@ -320,6 +320,8 @@ object Icons {
     /** A menu card: a rounded sheet with three lines, the last one short. */
     val Menu = line("menu", "M7.5 3h9A2.5 2.5 0 0 1 19 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18.5v-13A2.5 2.5 0 0 1 7.5 3zM8.5 8h7M8.5 12h7M8.5 16h4", 2f)
     val Resume = line("resume", "M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11", 2.1f)
+    /** A rounded key pad with three dots, for entering a room's code. */
+    val Keypad = line("keypad", "M6.5 6h11a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3zM7.5 12h.01M11 12h.01M14.5 12h.01", 2f)
 
     /** Locate: a target with four ticks. */
     val Locate = line("locate", "M18.5 12a6.5 6.5 0 1 1-13 0 6.5 6.5 0 1 1 13 0M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3", 2f)

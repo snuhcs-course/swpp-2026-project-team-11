@@ -335,7 +335,7 @@ private fun PeekFacts(cafeteria: Cafeteria, modifier: Modifier = Modifier) {
 }
 
 @StringRes
-private fun captionFor(meal: String?): Int = when (meal) {
+internal fun captionFor(meal: String?): Int = when (meal) {
     "BR" -> R.string.result_caption_breakfast
     "LU" -> R.string.result_caption_lunch
     "DN" -> R.string.result_caption_dinner
@@ -679,12 +679,12 @@ private fun mealName(meal: String): String = stringResource(
 )
 
 @Composable
-private fun priceText(price: Int?): String =
+internal fun priceText(price: Int?): String =
     price?.let { stringResource(R.string.price_won, NumberFormat.getIntegerInstance(Locale.US).format(it)) }
         ?: stringResource(R.string.price_unknown)
 
 @Composable
-private fun distanceText(meters: Int): String =
+internal fun distanceText(meters: Int): String =
     if (meters < 1000) stringResource(R.string.distance_m, meters)
     else stringResource(R.string.distance_km, meters / 1000.0)
 
@@ -765,7 +765,8 @@ private fun CafeteriaMap(
                     zIndex = if (on) 1f else 0f,
                     onClick = { onSelect(cafeteria.offer.restaurant); true }
                 ) {
-                    MapPin(cafeteria, on)
+                    val name = cafeteria.offer.restaurant.substringBefore('>')
+                    MapPin(cafeteria.meters?.let { "$name · ${distanceText(it)}" } ?: name, on)
                 }
             }
         }
@@ -806,7 +807,7 @@ private fun LocateButton(mode: Locate, modifier: Modifier = Modifier, onClick: (
 }
 
 @Composable
-private fun MapPin(cafeteria: Cafeteria, on: Boolean) {
+internal fun MapPin(label: String, on: Boolean) {
     // Padding leaves room for the shadows inside the marker's bitmap.
     Column(
         Modifier.padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 6.dp),
@@ -820,8 +821,6 @@ private fun MapPin(cafeteria: Cafeteria, on: Boolean) {
                 .background(if (on) MetchuColors.Primary else Color.White)
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
-            val name = cafeteria.offer.restaurant.substringBefore('>')
-            val label = cafeteria.meters?.let { "$name · ${distanceText(it)}" } ?: name
             Text(label, style = MetchuType.Caption.copy(fontWeight = MetchuType.Item.fontWeight), color = if (on) Color.White else MetchuColors.Grey900)
         }
         Box(

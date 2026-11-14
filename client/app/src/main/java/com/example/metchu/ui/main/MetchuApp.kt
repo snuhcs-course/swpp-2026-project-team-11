@@ -45,6 +45,7 @@ import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.auth.GoogleTokenSource
 import com.example.metchu.data.location.LocationSource
+import com.example.metchu.data.model.RoomState
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.AllergyStore
@@ -57,6 +58,12 @@ import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.floating
 import com.example.metchu.ui.common.setLanguage
+import com.example.metchu.ui.group.GroupQuestionScreen
+import com.example.metchu.ui.group.GroupResultScreen
+import com.example.metchu.ui.group.GroupViewModel
+import com.example.metchu.ui.group.JoinScreen
+import com.example.metchu.ui.group.LobbyScreen
+import com.example.metchu.ui.group.NameDialog
 import com.example.metchu.ui.question.QuestionScreen
 import com.example.metchu.ui.result.ResultScreen
 import com.example.metchu.ui.result.UnavailableScreen
@@ -70,11 +77,22 @@ import com.example.metchu.ui.theme.MetchuType
 
 /**
  * Which screen is up. Before a session: the first launch's steps, then start, settings, or
- * the account screen opened from the settings. During one: the step's screen.
+ * the account screen opened from the settings. During one: the step's screen. In a group
+ * room: the room's stage, ahead of everything else.
  */
-private enum class Screen { LANGUAGE, ACCOUNT, ALLERGIES, START, SETTINGS, QUESTION, RESULT, UNAVAILABLE }
+private enum class Screen { LANGUAGE, ACCOUNT, ALLERGIES, START, SETTINGS, QUESTION, RESULT, UNAVAILABLE, JOIN, LOBBY, GROUP_QUESTION, GROUP_RESULT }
 
-private fun screenOf(session: SessionState?, setup: Setup, settingsOpen: Boolean, accountOpen: Boolean): Screen = when (session?.step?.type) {
+private fun screenOf(session: SessionState?, room: RoomState?, setup: Setup, settingsOpen: Boolean, accountOpen: Boolean, joinOpen: Boolean): Screen = when {
+    room != null -> when (room.status) {
+        RoomState.LOBBY -> Screen.LOBBY
+        RoomState.ASKING -> Screen.GROUP_QUESTION
+        else -> Screen.GROUP_RESULT
+    }
+    session == null && joinOpen -> Screen.JOIN
+    else -> soloScreenOf(session, setup, settingsOpen, accountOpen)
+}
+
+private fun soloScreenOf(session: SessionState?, setup: Setup, settingsOpen: Boolean, accountOpen: Boolean): Screen = when (session?.step?.type) {
     null -> when {
         setup == Setup.LANGUAGE -> Screen.LANGUAGE
         setup == Setup.ACCOUNT -> Screen.ACCOUNT
@@ -91,6 +109,7 @@ private fun screenOf(session: SessionState?, setup: Setup, settingsOpen: Boolean
 @Composable
 fun MetchuApp(
     viewModel: RecommendViewModel,
+    group: GroupViewModel,
     accounts: AccountViewModel,
     google: GoogleTokenSource,
     allergyStore: AllergyStore,
@@ -109,6 +128,10 @@ fun MetchuApp(
     val account by accounts.account.observeAsState()
     val accountBusy by accounts.busy.observeAsState(false)
     val accountError by accounts.error.observeAsState()
+    val room by group.room.observeAsState()
+    val roomHistory by group.history.observeAsState(emptyList())
+    val roomBusy by group.busy.observeAsState(false)
+    val roomError by group.error.observeAsState()
 
     // Stored at once, so a launch picks up where the last one stopped.
     var setup by remember { mutableStateOf(settings.setup) }
@@ -127,8 +150,19 @@ fun MetchuApp(
     var meal by rememberSaveable { mutableStateOf(Meal.now()) }
     // The server writes its questions in the language the app is showing.
     val language = if (LocalConfiguration.current.locales[0].language == "ko") "ko" else "en"
+    // "With friends" on the start screen, and the join screen opened from there.
+    var together by rememberSaveable { mutableStateOf(false) }
+    var joinOpen by rememberSaveable { mutableStateOf(false) }
+    // A guest names themselves before creating a room; the name is offered again next time.
+    var askName by rememberSaveable { mutableStateOf(false) }
+    var guestName by rememberSaveable { mutableStateOf("") }
+    val distanceScope = if (place == Place.NEAR) "near" else "any"
+    val createRoom = { name: String? ->
+        group.create(account?.token, name, allergies, language, meal.code, { location.current() }, distanceScope)
+    }
+    LaunchedEffect(room != null) { if (room != null) joinOpen = false }
 
-    val screen = screenOf(session, setup, settingsOpen, accountOpen)
+    val screen = screenOf(session, room, setup, settingsOpen, accountOpen, joinOpen)
     val closeSettings = {
         allergyStore.allergies = allergies
         settingsOpen = false
@@ -197,16 +231,25 @@ fun MetchuApp(
                 Screen.START -> StartScreen(
                     meal = meal,
                     place = place,
-                    loading = loading,
+                    loading = loading || roomBusy,
                     tip = setup == Setup.TIP,
                     askForLocation = !locationAsked,
                     onMeal = { meal = it },
                     onPlace = { place = it; settings.place = it },
                     onSettings = { settingsOpen = true },
+                    group = together,
+                    onGroup = { together = it },
+                    onJoin = { group.clearError(); joinOpen = true },
                     onResume = viewModel::resume.takeIf { canResume },
                     onTipDone = { advance(Setup.DONE) },
                     onLocationAsked = { locationAsked = true },
-                    onStart = { meal -> viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = if (place == Place.NEAR) "near" else "any") }
+                    onStart = { meal ->
+                        when {
+                            !together -> viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope)
+                            account == null -> askName = true
+                            else -> createRoom(null)
+                        }
+                    }
                 )
                 Screen.SETTINGS -> {
                     BackHandler(onBack = closeSettings)
@@ -262,6 +305,28 @@ fun MetchuApp(
                         onBan = viewModel::ban
                     )
                 }
+                Screen.JOIN -> {
+                    val back = { group.clearError(); joinOpen = false }
+                    BackHandler(onBack = back)
+                    JoinScreen(
+                        guest = account == null,
+                        busy = roomBusy,
+                        onJoin = { code, name -> group.join(account?.token, code, name, allergies, language) },
+                        onBack = back
+                    )
+                }
+                Screen.LOBBY -> room?.let {
+                    BackHandler(onBack = group::leave)
+                    LobbyScreen(it, roomBusy, onStart = group::start, onLeave = group::leave)
+                }
+                Screen.GROUP_QUESTION -> room?.takeIf { it.question != null }?.let {
+                    BackHandler(onBack = group::leave)
+                    GroupQuestionScreen(it, roomHistory, roomBusy, group::answer, group::recommendNow, group::leave)
+                }
+                Screen.GROUP_RESULT -> room?.let {
+                    BackHandler(onBack = group::leave)
+                    GroupResultScreen(it, roomBusy, onDecide = group::decide, onHome = group::leave)
+                }
                 Screen.UNAVAILABLE -> if (current != null) {
                     BackHandler { viewModel.startOver() }
                     UnavailableScreen(current, hasAllergies = allergies.isNotEmpty(), onBack = viewModel::startOver)
@@ -269,7 +334,15 @@ fun MetchuApp(
             }
         }
 
-        ErrorBanner(error, onRetry = viewModel::retry, Modifier.align(Alignment.TopCenter))
+        ErrorBanner(roomError ?: error, onRetry = viewModel::retry, Modifier.align(Alignment.TopCenter))
+
+        if (askName) {
+            NameDialog(
+                initial = guestName,
+                onName = { guestName = it; askName = false; createRoom(it) },
+                onDismiss = { askName = false }
+            )
+        }
     }
 }
 

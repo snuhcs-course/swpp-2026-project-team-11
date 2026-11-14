@@ -16,6 +16,8 @@ import com.example.metchu.data.repository.DeviceAccountStore
 import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.ui.account.AccountViewModel
 import com.example.metchu.ui.account.AccountViewModelFactory
+import com.example.metchu.ui.group.GroupViewModel
+import com.example.metchu.ui.group.GroupViewModelFactory
 import com.example.metchu.ui.theme.MetchuTheme
 
 /**
@@ -28,6 +30,10 @@ class MainActivity : AppCompatActivity() {
 
     private val viewModel: RecommendViewModel by viewModels {
         RecommendViewModelFactory(AppContainer.repository)
+    }
+
+    private val group: GroupViewModel by viewModels {
+        GroupViewModelFactory(AppContainer.rooms)
     }
 
     private val accounts: AccountViewModel by viewModels {
@@ -45,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         val location = AppContainer.locationSource ?: FusedLocationSource(applicationContext)
         setContent {
             MetchuTheme {
-                MetchuApp(viewModel, accounts, AppContainer.google, allergies, settings, location)
+                MetchuApp(viewModel, group, accounts, AppContainer.google, allergies, settings, location)
             }
         }
     }

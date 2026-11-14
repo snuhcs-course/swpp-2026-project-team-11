@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -103,11 +104,12 @@ val ActionCenterFromBottom = 202.dp
 /** The SNU administration building (Building 60), shown until the user's position is known. */
 val CampusCenter = Point(37.4600, 126.9520)
 
-private enum class Sheet { MEAL, PLACE }
+private enum class Sheet { MEAL, PLACE, WHO }
 
 /**
- * "Today I'll have [lunch] [nearby]": the meal and the distance are picked inside the
- * sentence, and the round button starts a session. The map behind the button fades in
+ * "Today I'll have [lunch] [nearby] [for me]": the meal, the distance and whether friends
+ * join ([group]) are picked inside the sentence, and the round button starts a session, or
+ * with friends creates a room; "Join with a code" (top right) enters someone else's. The map behind the button fades in
  * from the background; the button stands where the user is. With [tip], a tip over the
  * screen points to the globe and the gear, where the language and the allergies change.
  * With [askForLocation] and no permission yet, a notice says why before the system asks,
@@ -123,6 +125,9 @@ fun StartScreen(
     onMeal: (Meal) -> Unit,
     onPlace: (Place) -> Unit,
     onSettings: () -> Unit,
+    group: Boolean,
+    onGroup: (Boolean) -> Unit,
+    onJoin: () -> Unit,
     onResume: (() -> Unit)?,
     onTipDone: () -> Unit,
     onLocationAsked: () -> Unit,
@@ -150,7 +155,8 @@ fun StartScreen(
         Column(Modifier.statusBarsPadding().alpha(words)) {
             // Home tapped by mistake: the session left is one tap away.
             TopRow(arrangement = Arrangement.End) {
-                if (onResume != null) ResumeButton(onResume)
+                if (group) TopPill(Icons.Keypad, stringResource(R.string.group_join_open), "joinRoom", onJoin)
+                else if (onResume != null) TopPill(Icons.Resume, stringResource(R.string.resume), "resume", onResume)
             }
             Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp)) {
                 val title = MetchuType.Title
@@ -168,12 +174,19 @@ fun StartScreen(
                         stringResource(R.string.start_place_change), "placeToken"
                     ) { sheet = Sheet.PLACE }
                 }
-                Text(stringResource(R.string.start_line4), style = title)
-                Text(stringResource(R.string.start_sub), Modifier.padding(top = 16.dp), style = MetchuType.Lead)
+                Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
+                    Token(
+                        stringResource(if (group) R.string.start_who_group else R.string.start_who_solo).let { if (english) it.uppercase() else it },
+                        stringResource(R.string.start_who_change), "whoToken"
+                    ) { sheet = Sheet.WHO }
+                    Text(stringResource(R.string.start_line4), Modifier.padding(start = 8.dp), style = title)
+                }
+                Text(stringResource(if (group) R.string.start_sub_group else R.string.start_sub), Modifier.padding(top = 16.dp), style = MetchuType.Lead)
             }
         }
 
         StartButton(
+            label = stringResource(if (group) R.string.group_create else R.string.start_button),
             loading = loading,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
@@ -195,11 +208,27 @@ fun StartScreen(
         // Under the choice it changes: the title, two lines and a 4 dp gap below the top row.
         ChoicePopup(
             visible = sheet != null,
-            title = stringResource(if (shownSheet == Sheet.PLACE) R.string.start_place_sheet else R.string.start_meal_sheet),
-            width = if (shownSheet == Sheet.PLACE) 248.dp else 168.dp,
+            title = stringResource(when (shownSheet) {
+                Sheet.MEAL -> R.string.start_meal_sheet
+                Sheet.PLACE -> R.string.start_place_sheet
+                Sheet.WHO -> R.string.start_who_sheet
+            }),
+            width = when (shownSheet) {
+                Sheet.MEAL -> 168.dp
+                Sheet.PLACE -> 248.dp
+                Sheet.WHO -> 272.dp
+            },
             modifier = Modifier.statusBarsPadding()
-                .padding(start = 14.dp, top = TopRowHeight + 10.dp + TitleLine * (if (shownSheet == Sheet.PLACE) 3 else 2) + 4.dp),
-            options = if (shownSheet == Sheet.PLACE) {
+                .padding(start = 14.dp, top = TopRowHeight + 10.dp + TitleLine * (shownSheet.ordinal + 2) + 4.dp),
+            options = if (shownSheet == Sheet.WHO) {
+                listOf(false, true).map {
+                    PickerOption(
+                        stringResource(if (it) R.string.who_group_option else R.string.who_solo_option),
+                        stringResource(if (it) R.string.who_group_note else R.string.who_solo_note),
+                        selected = it == group
+                    ) { onGroup(it); sheet = null }
+                }
+            } else if (shownSheet == Sheet.PLACE) {
                 Place.entries.map {
                     PickerOption(
                         stringResource(if (it == Place.NEAR) R.string.place_near_option else R.string.place_any_option),
@@ -352,7 +381,7 @@ private val CornerButtonBottom = 18.dp
 private val TitleLine = 39.dp
 
 @Composable
-private fun StartButton(loading: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun StartButton(label: String, loading: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interaction = remember { MutableInteractionSource() }
     Box(
         modifier
@@ -367,12 +396,13 @@ private fun StartButton(loading: Boolean, onClick: () -> Unit, modifier: Modifie
     ) {
         // Finding the user and starting the session can take seconds.
         if (rememberSlow(loading)) Spinner(Color.White, 32.dp)
-        else Text(stringResource(R.string.start_button), style = MetchuType.Button, color = Color.White, textAlign = TextAlign.Center)
+        else Text(label, style = MetchuType.Button, color = Color.White, textAlign = TextAlign.Center)
     }
 }
 
+/** A white pill in the top row: "Resume" a session left, or "Join with a code". */
 @Composable
-private fun ResumeButton(onClick: () -> Unit) {
+private fun TopPill(icon: ImageVector, text: String, tag: String, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     Row(
         Modifier
@@ -383,12 +413,12 @@ private fun ResumeButton(onClick: () -> Unit) {
             .background(Color.White)
             .clickable(interaction, indication = null, role = Role.Button, onClick = onClick)
             .padding(start = 12.dp, end = 16.dp)
-            .testTag("resume"),
+            .testTag(tag),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Image(Icons.Resume, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900))
-        Text(stringResource(R.string.resume), style = MetchuType.Button.copy(fontSize = 15.sp))
+        Image(icon, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey900))
+        Text(text, style = MetchuType.Button.copy(fontSize = 15.sp))
     }
 }
 
