@@ -3,6 +3,7 @@ import datetime
 import io
 import pathlib
 import tempfile
+from unittest import mock
 
 import openpyxl
 
@@ -11,6 +12,7 @@ from django.test import SimpleTestCase, TestCase
 
 from menus.features.benchmark import review
 from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION, LLM_FEATURE_KEYS
+from menus.management.commands import export_feature_review
 from menus.models import Food, MenuItem, Restaurant, StoreMenu
 
 
@@ -115,6 +117,13 @@ class ReviewTests(SimpleTestCase):
         self.assertEqual([(r["stratum"], r["population"]) for r in rows],
                          [("other", {"hard": 5, "other": 15}), ("hard", {"hard": 5, "other": 15})])
 
+    def test_reading_a_workbook_closes_it(self):  # a read-only book left open is locked on Windows
+        path = self.folder / "kim.xlsx"
+        review.write(path, "kim", "general", [dish(1, "짬뽕")], {"other": 1})
+        with mock.patch.object(openpyxl.Workbook, "close", autospec=True, side_effect=openpyxl.Workbook.close) as close:
+            review.load([path, path])
+        self.assertEqual(close.call_count, 2)
+
     def test_a_wrong_mark_or_status_names_the_cell(self):
         path = self.folder / "kim.xlsx"
         review.write(path, "kim", "general", [dish(1, "짬뽕")], {"other": 1})
@@ -162,6 +171,17 @@ class ReviewTests(SimpleTestCase):
         self.assertEqual((summary["strata"]["hard"]["done"], summary["strata"]["hard"]["pool"]), (10, 25))
         self.assertAlmostEqual(summary["strata"]["hard"]["mean"], 1 - 5 / 320)
         self.assertIn("| general | hard | 25 | 10 | 98.4% | 100.0% |", review.report({"general": summary}))
+
+    def test_a_stratum_without_completed_rows_cannot_pass(self):
+        population = {"hard": 20, "other": 60}
+        reviews = [rated("kim", 1, stratum="hard", population=population),
+                   rated("kim", 2, stratum="other", population=population, status=review.UNKNOWN)]
+        summary = review.summarize(reviews)["general"]
+        self.assertEqual((summary["fields"]["mean"]["overall"], summary["complete"]), (1.0, False))
+        self.assertFalse(summary["passed"])
+        self.assertIn("| incomplete | - | - |", review.report({"general": summary}))
+        reviews.append(rated("kim", 3, stratum="other", population=population))
+        self.assertTrue(review.summarize(reviews)["general"]["passed"])
 
     def test_agreement_on_shared_dishes(self):
         reviews = [rated("kim", 1, [("spicy", "mean")]), rated("lee", 1, [("spicy", "mean"), ("sweet", "std")]),
@@ -261,6 +281,9 @@ class CommandTests(TestCase):
               "feature 버전": "v1"}, {}),
             ({"원본 메뉴명": "보류 메뉴", "구성 음식(원본 연결)": "보류", "feature 버전": FEATURE_VERSION}, {}),
         ])
+        with mock.patch.object(openpyxl.Workbook, "close", autospec=True, side_effect=openpyxl.Workbook.close) as close:
+            self.assertEqual(len(export_feature_review.workbook_dishes(path)), 2)
+        self.assertEqual(close.call_count, 1)  # a read-only book left open is locked on Windows
         self.assertIn("general: 음식 2개 중 2개", self.export("--workbook", str(path), "--overlap", "2"))
         self.assertEqual([row[:4] + row[6:] for row in self.assignment("general")],
                          [["11", "LA갈비", "", "육류,고기요리", "kim, lee"], ["13", "LA갈비", "세트", "한식", "kim, lee"]])

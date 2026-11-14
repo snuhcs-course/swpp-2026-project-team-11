@@ -693,9 +693,9 @@ class CommandTests(TestCase):
         self.assertEqual(set(summary["1_main_metrics"]["in_menu"]), {"decision_tree", "llm"})
         self.assertEqual(summary["5_latency_and_cost"]["in_menu"]["decision_tree"]["cost_usd"], 0.0)
 
-    def play(self, human, tester="lee", pick="4", certainty="1", fail_at=None):
+    def play(self, human, tester="lee", pick="4", certainty="1", fail_at=None, failure=RuntimeError):
         """Play the tester's next round: `pick` and `certainty` when a new wish is asked for, "yes" to
-        every question, "y" to every proposal, satisfaction 4; the `fail_at`-th question raises."""
+        every question, "y" to every proposal, satisfaction 4; the `fail_at`-th question raises `failure`."""
         first = iter([pick, certainty])
         asked = [0]
 
@@ -708,17 +708,16 @@ class CommandTests(TestCase):
                 return next(first)
             asked[0] += 1
             if asked[0] == fail_at:
-                raise RuntimeError("terminal closed")
+                raise failure("terminal closed")
             return "1"
 
         out = io.StringIO()
         with mock.patch("builtins.input", answer), \
-             mock.patch.object(play_engine_session, "situations", return_value=list(SITUATIONS)), \
              mock.patch("recommend.management.commands.play_engine_session.build_llm",
                         return_value=FakeEngineLLM(questions=1, pick="짬뽕")), \
              mock.patch("recommend.management.commands.play_engine_session.LLMSettings.from_env"):
             call_command("play_engine_session", "--scenarios", str(self.scenarios), "--output", str(human),
-                         "--tester", tester, stdout=out)
+                         "--tester", tester, "--order", "0", stdout=out)
         return out.getvalue()
 
     def test_a_person_plays_one_wish_on_every_engine_and_the_simulator_is_checked(self):
@@ -733,6 +732,7 @@ class CommandTests(TestCase):
         self.assertEqual((wish["situation"], wish["certainty"], wish["round"]), ("in_menu", "high", 0))
         self.assertEqual([t["name"] for t in wish["targets"]], ["짬뽕"])
         self.assertEqual({(r["outcome"], r["satisfaction"]) for r in rows}, {("accepted", 4)})
+        self.assertEqual({tuple(r["anytime"]) for r in rows}, {("0",)})  # no extra waits for "recommend now"
         self.assertTrue(all(r["trace"][0]["question"] for r in rows))
         self.assertEqual(next(r for r in rows if r["engine"] == "llm")["llm"]["fallbacks"], 0)  # Korean questions
         for engine in STUDY_ENGINES:
@@ -755,8 +755,12 @@ class CommandTests(TestCase):
         self.assertEqual(sum("proposal" in r for r in checked), len(person))  # not the rule's verdicts
 
         folder = self.folder / "report"
-        call_command("benchmark_engines", "--scenarios", str(self.scenarios), "--human", str(human),
-                     "--simulator-check", str(check), "--output-dir", str(folder), stdout=io.StringIO())
+        args = ["benchmark_engines", "--scenarios", str(self.scenarios), "--human", str(human),
+                "--simulator-check", str(check), "--output-dir", str(folder)]
+        with self.assertRaisesMessage(CommandError, "--human-only"):  # a forgotten --sessions
+            call_command(*args, stdout=io.StringIO())
+        self.assertFalse(folder.exists())
+        call_command(*args, "--human-only", stdout=io.StringIO())
         text = (folder / "report.md").read_text(encoding="utf-8")
         self.assertNotIn("## 1. Main metrics", text)  # people's sessions only
         self.assertIn("1 testers, 1 complete rounds", text)
@@ -778,8 +782,22 @@ class CommandTests(TestCase):
         self.play(human, pick="1,5")  # the next round is the next situation
         self.assertEqual(self.lines(human)[-1]["scenario_data"]["situation"], "multiple")
 
+    def test_a_round_stopped_in_its_first_session_keeps_its_wish(self):
+        self.build()
+        human = self.folder / "human.jsonl"
+        with self.assertRaises(KeyboardInterrupt):  # Ctrl-C: no session is saved
+            self.play(human, fail_at=1, failure=KeyboardInterrupt)
+        self.assertFalse(human.exists())
+        out = self.play(human, pick="5")
+        self.assertIn("이어서", out)
+        rows = self.lines(human)
+        self.assertEqual(sorted(r["engine"] for r in rows), sorted(STUDY_ENGINES))
+        self.assertEqual({t["name"] for r in rows for t in r["scenario_data"]["targets"]}, {"짬뽕"})
+
     def test_a_tester_meets_every_situation_and_every_engine_in_every_position(self):
-        self.assertEqual(sorted(play_engine_session.situations("kim")), sorted(SITUATIONS))
+        orders = [play_engine_session.situations(order) for order in range(len(SITUATIONS))]
+        for situations in orders + [list(column) for column in zip(*orders)]:  # a Latin square over the testers
+            self.assertEqual(sorted(situations), sorted(SITUATIONS))
         orders = [play_engine_session.engine_order("kim", n) for n in range(len(STUDY_ENGINES))]
         for position in range(len(STUDY_ENGINES)):
             self.assertEqual(sorted(order[position] for order in orders), sorted(STUDY_ENGINES))
@@ -790,12 +808,12 @@ class CommandTests(TestCase):
             return play_engine_session.choose_targets(situation, CANDIDATES, lambda prompt="": next(answers),
                                                       out.append), out
 
-        targets, _ = pick("multiple", "1", "1,1", "4,5")
+        targets, _ = pick("multiple", "1", "1,1", "1,01", "4,5")
         self.assertEqual([t["name"] for t in targets], ["짬뽕", "물냉면"])
-        targets, out = pick("not_in_menu", "볶음", "마라탕")
+        targets, out = pick("not_in_menu", "볶음", "마라 탕")
         self.assertIn("오늘 메뉴에 있습니다", out[-1])  # 볶음밥 is served
         self.assertEqual((targets[0]["name"], targets[0]["matches"], targets[0]["features"]["spicy"]),
-                         ("마라탕", [], 1.0))  # features from the database
+                         ("마라 탕", [], 1.0))  # features from the database, whatever the spacing
         targets, _ = pick("not_in_menu", "평양냉면집 만두")
         self.assertIsNone(targets[0]["features"])  # never tagged: no similarity
         targets, out = pick("close_alternative", "1")
