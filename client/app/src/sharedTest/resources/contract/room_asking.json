@@ -1,0 +1,64 @@
+{
+  "code": "9942",
+  "status": "asking",
+  "date": "2026-11-02",
+  "meal": "LU",
+  "me": 0,
+  "host": 0,
+  "members": [
+    {
+      "id": 0,
+      "name": "지민",
+      "allergies": [
+        "egg"
+      ],
+      "left": false,
+      "answered": true
+    },
+    {
+      "id": 1,
+      "name": "서연",
+      "allergies": [
+        "pork"
+      ],
+      "left": false,
+      "answered": false
+    }
+  ],
+  "round": 0,
+  "max_rounds": 4,
+  "question": {
+    "question_id": "q:soupy",
+    "text": "국물 있는 음식이 당기나요?",
+    "options": [
+      {
+        "id": "yes",
+        "label": "좋아요"
+      },
+      {
+        "id": "probably_yes",
+        "label": "아마 그래요"
+      },
+      {
+        "id": "any",
+        "label": "상관없어요"
+      },
+      {
+        "id": "probably_no",
+        "label": "별로예요"
+      },
+      {
+        "id": "no",
+        "label": "아니에요"
+      },
+      {
+        "id": "unknown",
+        "label": "잘 모르겠어요"
+      }
+    ]
+  },
+  "my_answer": "yes",
+  "seconds_left": 7.0,
+  "picks": null,
+  "decided": null
+}

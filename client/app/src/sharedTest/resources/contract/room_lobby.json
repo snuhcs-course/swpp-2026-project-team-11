@@ -1,0 +1,35 @@
+{
+  "code": "9942",
+  "status": "lobby",
+  "date": "2026-11-02",
+  "meal": "LU",
+  "me": 1,
+  "host": 0,
+  "members": [
+    {
+      "id": 0,
+      "name": "지민",
+      "allergies": [
+        "egg"
+      ],
+      "left": false,
+      "answered": false
+    },
+    {
+      "id": 1,
+      "name": "서연",
+      "allergies": [
+        "pork"
+      ],
+      "left": false,
+      "answered": false
+    }
+  ],
+  "round": 0,
+  "max_rounds": 4,
+  "question": null,
+  "my_answer": null,
+  "seconds_left": null,
+  "picks": null,
+  "decided": null
+}

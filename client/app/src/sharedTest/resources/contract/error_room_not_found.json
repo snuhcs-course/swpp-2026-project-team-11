@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "room_not_found",
+    "message": "No room is open with this code."
+  }
+}

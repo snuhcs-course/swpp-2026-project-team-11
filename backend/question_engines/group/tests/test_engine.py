@@ -142,3 +142,12 @@ def test_rejects_invalid_groups_and_answers():
 def test_korean_questions():
     engine = GroupEngine(MENUS, SCHEMA, [set(), set()], config={"language": "ko"})
     assert engine.questions()[0]["options"][0]["label"] == "좋아요"
+
+
+def test_stop_recommends_from_the_answers_so_far():
+    engine = GroupEngine(MENUS, SCHEMA, [set(), set()])
+    step = engine.questions()[0]
+    engine.answer(0, step["question_id"], WANTS[0].get(step["question_id"], "any"))
+    engine.stop()
+    assert engine.finished and engine.questions() == {}
+    assert engine.recommendation()["rounds"] == 0

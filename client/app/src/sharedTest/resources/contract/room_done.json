@@ -1,0 +1,474 @@
+{
+  "code": "9942",
+  "status": "done",
+  "date": "2026-11-02",
+  "meal": "LU",
+  "me": 0,
+  "host": 0,
+  "members": [
+    {
+      "id": 0,
+      "name": "지민",
+      "allergies": [
+        "egg"
+      ],
+      "left": false,
+      "answered": false
+    },
+    {
+      "id": 1,
+      "name": "서연",
+      "allergies": [
+        "pork"
+      ],
+      "left": false,
+      "answered": false
+    }
+  ],
+  "round": 0,
+  "max_rounds": 4,
+  "question": null,
+  "my_answer": null,
+  "seconds_left": null,
+  "picks": [
+    {
+      "restaurant": "버거운버거",
+      "kind": "balanced",
+      "lat": 37.46328,
+      "lng": 126.95015,
+      "distance_m": 400,
+      "menus": [
+        {
+          "member_id": 0,
+          "food": {
+            "food_id": 6,
+            "name": "한입떡말이 세트 - 눈꽃치즈떡볶이 + 김말이 10조각 =",
+            "display_name": "한입떡말이 세트 - 눈꽃치즈떡볶이 + 김말이 10조각",
+            "food_group": "분식",
+            "offers": [
+              {
+                "restaurant": "버거운버거",
+                "meal": "LU",
+                "price": 6900,
+                "lat": 37.46328,
+                "lng": 126.95015,
+                "distance_m": 400
+              }
+            ]
+          },
+          "fit": "good"
+        },
+        {
+          "member_id": 1,
+          "food": {
+            "food_id": 55,
+            "name": "화이트어니언강정(소) : 5,500원 / (중)",
+            "display_name": "화이트어니언강정(소)",
+            "food_group": "치킨",
+            "offers": [
+              {
+                "restaurant": "버거운버거",
+                "meal": "LU",
+                "price": 5500,
+                "lat": 37.46328,
+                "lng": 126.95015,
+                "distance_m": 400
+              }
+            ]
+          },
+          "fit": "great"
+        }
+      ],
+      "others": [
+        {
+          "food_id": 57,
+          "display_name": "눈꽃치즈떡볶이 / 투움바떡볶이",
+          "meal": "LU",
+          "price": 4900
+        },
+        {
+          "food_id": 36,
+          "display_name": "달콤비프치즈베이크",
+          "meal": "LU",
+          "price": 6000
+        },
+        {
+          "food_id": 60,
+          "display_name": "닭가슴살샐러드",
+          "meal": "LU",
+          "price": 5500
+        },
+        {
+          "food_id": 34,
+          "display_name": "더블불고기버거",
+          "meal": "LU",
+          "price": 6400
+        },
+        {
+          "food_id": 25,
+          "display_name": "더블비프버거",
+          "meal": "LU",
+          "price": 9500
+        },
+        {
+          "food_id": 32,
+          "display_name": "더블통새우버거",
+          "meal": "LU",
+          "price": 7700
+        },
+        {
+          "food_id": 19,
+          "display_name": "데리마요치킨버거",
+          "meal": "LU",
+          "price": 5600
+        },
+        {
+          "food_id": 17,
+          "display_name": "딥치즈치킨버거",
+          "meal": "LU",
+          "price": 5700
+        },
+        {
+          "food_id": 46,
+          "display_name": "매운양념치킨",
+          "meal": "LU",
+          "price": 12900
+        },
+        {
+          "food_id": 39,
+          "display_name": "매콤치킨치즈베이크",
+          "meal": "LU",
+          "price": 5400
+        },
+        {
+          "food_id": 13,
+          "display_name": "버거운치킨버거",
+          "meal": "LU",
+          "price": 5200
+        },
+        {
+          "food_id": 43,
+          "display_name": "베이컨에그치즈베이크",
+          "meal": "LU",
+          "price": 5900
+        },
+        {
+          "food_id": 33,
+          "display_name": "불고기버거",
+          "meal": "LU",
+          "price": 4400
+        },
+        {
+          "food_id": 56,
+          "display_name": "불닭레드핫강정(소)",
+          "meal": "LU",
+          "price": 5500
+        },
+        {
+          "food_id": 30,
+          "display_name": "불닭통모짜치즈버거",
+          "meal": "LU",
+          "price": 8400
+        },
+        {
+          "food_id": 35,
+          "display_name": "불새버거",
+          "meal": "LU",
+          "price": 6600
+        },
+        {
+          "food_id": 24,
+          "display_name": "비프해쉬버거",
+          "meal": "LU",
+          "price": 7300
+        },
+        {
+          "food_id": 38,
+          "display_name": "소시지치즈베이크",
+          "meal": "LU",
+          "price": 5400
+        },
+        {
+          "food_id": 48,
+          "display_name": "소이마요치킨",
+          "meal": "LU",
+          "price": 11900
+        },
+        {
+          "food_id": 58,
+          "display_name": "쉬림프샐러드",
+          "meal": "LU",
+          "price": 6500
+        },
+        {
+          "food_id": 37,
+          "display_name": "쉬림프치즈베이크",
+          "meal": "LU",
+          "price": 5900
+        },
+        {
+          "food_id": 47,
+          "display_name": "스노우치킨",
+          "meal": "LU",
+          "price": 11900
+        },
+        {
+          "food_id": 16,
+          "display_name": "스노우치킨버거",
+          "meal": "LU",
+          "price": 5600
+        },
+        {
+          "food_id": 9,
+          "display_name": "싱글통다리 세트 - 버거운치킨버거 + 후라이드통다리 1조각 + 음료 1잔",
+          "meal": "LU",
+          "price": 12000
+        },
+        {
+          "food_id": 45,
+          "display_name": "양념치킨",
+          "meal": "LU",
+          "price": 11900
+        },
+        {
+          "food_id": 14,
+          "display_name": "양념치킨버거",
+          "meal": "LU",
+          "price": 5600
+        },
+        {
+          "food_id": 22,
+          "display_name": "에그마요휠렛버거",
+          "meal": "LU",
+          "price": 6100
+        },
+        {
+          "food_id": 59,
+          "display_name": "에그베이컨샐러드",
+          "meal": "LU",
+          "price": 5500
+        },
+        {
+          "food_id": 23,
+          "display_name": "육즙가득비프버거",
+          "meal": "LU",
+          "price": 6300
+        },
+        {
+          "food_id": 52,
+          "display_name": "자메이카통다리",
+          "meal": "LU",
+          "price": 6100
+        },
+        {
+          "food_id": 61,
+          "display_name": "치킨샐러드",
+          "meal": "LU",
+          "price": 5500
+        },
+        {
+          "food_id": 50,
+          "display_name": "칠리마요치킨",
+          "meal": "LU",
+          "price": 12900
+        },
+        {
+          "food_id": 20,
+          "display_name": "칠리마요치킨버거",
+          "meal": "LU",
+          "price": 5800
+        },
+        {
+          "food_id": 21,
+          "display_name": "칠리크런치버거",
+          "meal": "LU",
+          "price": 7100
+        },
+        {
+          "food_id": 10,
+          "display_name": "커플통다리 세트 - 버거운치킨버거 + 육즙가득비프버거 + 후라이드통다리 + 음료 2잔",
+          "meal": "LU",
+          "price": 19400
+        },
+        {
+          "food_id": 53,
+          "display_name": "케이준순살강정(소)",
+          "meal": "LU",
+          "price": 5000
+        },
+        {
+          "food_id": 40,
+          "display_name": "콘치즈베이크",
+          "meal": "LU",
+          "price": 5300
+        },
+        {
+          "food_id": 26,
+          "display_name": "클래식치즈버거",
+          "meal": "LU",
+          "price": 5900
+        },
+        {
+          "food_id": 29,
+          "display_name": "통모짜치즈버거",
+          "meal": "LU",
+          "price": 8400
+        },
+        {
+          "food_id": 31,
+          "display_name": "통새우버거",
+          "meal": "LU",
+          "price": 5900
+        },
+        {
+          "food_id": 27,
+          "display_name": "투움바더블새우버거",
+          "meal": "LU",
+          "price": 7400
+        },
+        {
+          "food_id": 28,
+          "display_name": "투움바비프새우버거",
+          "meal": "LU",
+          "price": 8700
+        },
+        {
+          "food_id": 41,
+          "display_name": "풀치즈베이크",
+          "meal": "LU",
+          "price": 4900
+        },
+        {
+          "food_id": 8,
+          "display_name": "한입강정 세트 - 버거운치킨버거 + 케이준순살강정(소) + 음료1잔",
+          "meal": "LU",
+          "price": 11100
+        },
+        {
+          "food_id": 5,
+          "display_name": "한입떡복이 세트 - 눈꽃치즈떡볶이 + 순살후라이드치킨 반마리 + 음료 1잔",
+          "meal": "LU",
+          "price": 16700
+        },
+        {
+          "food_id": 12,
+          "display_name": "한입버거운시그니처버거",
+          "meal": "LU",
+          "price": 9900
+        },
+        {
+          "food_id": 7,
+          "display_name": "한입베이크 세트 - 달콤비프치즈베이크 + 케이준순살강정(소) + 음료 1잔",
+          "meal": "LU",
+          "price": 12000
+        },
+        {
+          "food_id": 11,
+          "display_name": "한입치킨 세트 - 버거운치킨버거 + 후라이드치킨 반마리 + 음료 1잔",
+          "meal": "LU",
+          "price": 17100
+        },
+        {
+          "food_id": 49,
+          "display_name": "핫소마요치킨",
+          "meal": "LU",
+          "price": 12900
+        },
+        {
+          "food_id": 15,
+          "display_name": "핫치킨버거",
+          "meal": "LU",
+          "price": 5600
+        },
+        {
+          "food_id": 54,
+          "display_name": "허니치즈강정(소)",
+          "meal": "LU",
+          "price": 5500
+        },
+        {
+          "food_id": 18,
+          "display_name": "화이트어니언치킨버거",
+          "meal": "LU",
+          "price": 5900
+        },
+        {
+          "food_id": 44,
+          "display_name": "후라이드치킨",
+          "meal": "LU",
+          "price": 10900
+        },
+        {
+          "food_id": 51,
+          "display_name": "후라이드통다리",
+          "meal": "LU",
+          "price": 5900
+        },
+        {
+          "food_id": 42,
+          "display_name": "휠렛불갈비치즈베이크",
+          "meal": "LU",
+          "price": 6000
+        }
+      ]
+    },
+    {
+      "restaurant": "자하연식당>3층",
+      "kind": "no_one_unhappy",
+      "lat": 37.46098,
+      "lng": 126.95252,
+      "distance_m": 118,
+      "menus": [
+        {
+          "member_id": 0,
+          "food": {
+            "food_id": 104,
+            "name": "뚝배기불고기",
+            "display_name": "뚝배기불고기",
+            "food_group": "국밥",
+            "offers": [
+              {
+                "restaurant": "자하연식당>3층",
+                "meal": "LU",
+                "price": 13000,
+                "lat": 37.46098,
+                "lng": 126.95252,
+                "distance_m": 118
+              }
+            ]
+          },
+          "fit": "great"
+        },
+        {
+          "member_id": 1,
+          "food": {
+            "food_id": 105,
+            "name": "<+세미뷔페>+호박부추전+연근해바라기씨조림+그린샐러드+파계란국+후식+<뷔페 특성상 메뉴의 조기품절+가능성이 있으니 양해 부탁드립니다>",
+            "display_name": "호박부추전+연근해바라기씨조림+그린샐러드+파계란국+후식",
+            "food_group": "",
+            "offers": [
+              {
+                "restaurant": "자하연식당>3층",
+                "meal": "LU",
+                "price": null,
+                "lat": 37.46098,
+                "lng": 126.95252,
+                "distance_m": 118
+              }
+            ]
+          },
+          "fit": "good"
+        }
+      ],
+      "others": [
+        {
+          "food_id": 103,
+          "display_name": "두부명란찌개",
+          "meal": "LU",
+          "price": 12000
+        }
+      ]
+    }
+  ],
+  "decided": "버거운버거"
+}
