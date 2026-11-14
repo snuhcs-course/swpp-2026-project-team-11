@@ -257,9 +257,16 @@ locales). A new session asks the server for the app's language (`en` or `ko`), s
 questions come in that language too. Food and cafeteria names are shown as the
 server sends them, in Korean.
 
+While nothing else is open, a soft circle keeps spreading from the start button
+to invite a tap. While a session starts, the start screen searches: the sentence gives way to what
+is happening (finding the user, loading today's menus, picking the first
+question), the start button shrinks into the user's dot with ripples spreading
+from it, and the map fills the screen, zoomed out to the campus.
+The search shows for at least 1.2 s, so a quick reply does not cut it short.
+
 A tapped answer stays filled while its request runs; other taps are ignored. A
 request that takes more than 0.3 s shows a spinner, in the start button while a
-session starts and at the end of the phase line on the question screen. A failed request shows a banner at the top. Retry is offered for transient failures. An unsupported start configuration stays on the start screen so the user can change Settings.
+room is created and at the end of the phase line on the question screen. A failed request shows a banner at the top. Retry is offered for transient failures. An unsupported start configuration stays on the start screen so the user can change Settings.
 Screens are white under a transparent navigation bar; scrolling ones fade into
 white above it. Screens change with 0.3 s fades. An answered question shrinks
 into the list and the next one fades in below it; going from a question to a result, the
