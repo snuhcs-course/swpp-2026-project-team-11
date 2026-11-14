@@ -9,6 +9,12 @@ LLM 가상 사용자로만 돌렸던 평가를 사람이 같은 조건으로 합
 | 테스터 4명 (구본재, 김신서, 이민규, 이승호) | 1부 추천 평가 → 2부 feature 검토 | `.jsonl` 1개, `.xlsx` 2개 → 구본재 |
 | 구본재 | 수합, 커밋, 보고서 | - |
 
+1부의 상황 순서는 테스터마다 다릅니다. 명령의 `--order`에 아래 번호를 씁니다.
+
+| 테스터 | 김신서 | 구본재 | 이민규 | 이승호 |
+|---|---|---|---|---|
+| `--order` | 0 (Iteration 3에 마침) | 1 | 2 | 3 |
+
 - 마감: 2026-11-06
 - 설계와 통과 기준: [벤치마크 README](../backend/question_engines/benchmark/README.md#user-study-p21), [backend README](../backend/README.md#human-review-of-the-extracted-features-p21)
 
@@ -44,7 +50,7 @@ python manage.py loaddata menus_2026-11-02
 ```bash
 export DATABASE_URL=sqlite:///p21.sqlite3 METCHU_MAX_QUESTIONS=20
 R=../engine_benchmark_results/2026-11-02
-python manage.py play_engine_session --scenarios $R/scenarios.json --tester 이름 \
+python manage.py play_engine_session --scenarios $R/scenarios.json --tester 이름 --order 번호 \
     --output $R/9_user_study/human/이름.jsonl
 ```
 
@@ -92,9 +98,9 @@ python manage.py play_engine_session --scenarios $R/scenarios.json --tester 이�
 
 Ctrl-C로 멈췄거나 네트워크 오류가 났으면 **같은 명령을 다시 실행**합니다.
 
-- 같은 소원으로 그 라운드를 이어서 합니다.
+- 같은 소원으로 그 라운드를 이어서 합니다. 첫 세션이 끝나기 전에 멈춰도 고른 소원은 `이름.round.json`에 남아 있습니다.
 - 오류로 끝난 세션은 다시 합니다.
-- `.jsonl` 파일은 고치거나 지우지 않습니다.
+- `.jsonl`과 `.round.json` 파일은 고치거나 지우지 않습니다.
 
 #### 제출
 
@@ -155,7 +161,8 @@ LLM이 음식 이름만 보고 뽑은 32개 feature의 mean과 std가 그 음식
 ```bash
 cd backend
 R=../engine_benchmark_results/2026-11-02
-python manage.py benchmark_engines --scenarios $R/scenarios.json --human $R/9_user_study/human/*.jsonl --output-dir $R
+python manage.py benchmark_engines --scenarios $R/scenarios.json --human $R/9_user_study/human/*.jsonl \
+    --human-only --output-dir $R
 F=../feature_benchmark_results/2026-11-02-review
 python manage.py report_feature_review --reviews $F/*.xlsx --output $F/report.md
 ```

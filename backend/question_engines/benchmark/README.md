@@ -55,7 +55,9 @@ The steps can also be run one by one: `build_engine_scenarios`, `collect_engine_
 People play the decision tree, the RL policy and the LLM engine under the simulated user's
 setup, on `engine_benchmark_results/2026-11-02/scenarios.json` (the shared snapshot's lunch and
 dinner, built by `build_engine_scenarios --date 2026-11-02 --meal LU --meal DN`). Each tester
-plays four rounds, one per situation, in turn from a start chosen by their name. A round:
+plays four rounds, one per situation, in turn from the start `--order` gives (0-3, one per tester:
+a Latin square, so each situation comes first, second, third and fourth once). The menu follows the
+round, so a situation lands on different menus for different testers. A round:
 
 1. The command names the situation and lists the menu. The tester picks what they really want
    that fits it: one menu (`in_menu`), two or three equally good menus (`multiple`), a dish that
@@ -68,7 +70,9 @@ plays four rounds, one per situation, in turn from a start chosen by their name.
 4. Proposals are judged as the simulated user's are: a picked menu is accepted by the rule, next
    to a close alternative nothing else is, and otherwise the person decides with the simulator's
    criterion (essentially the same dish; for a dish not served, the same craving). After each
-   session the tester rates the result from 1 to 5.
+   session the tester rates the result from 1 to 5. "Recommend now" is asked only before the first
+   question (the no-question baseline), so an LLM session makes the tester wait for one such call,
+   not three.
 
 Play on a separate local database with the snapshot loaded (`migrate`, `loaddata menus_2026-11-02`):
 a dish typed in for `not_in_menu` takes its features from there, and an explicit `DATABASE_URL`
@@ -78,18 +82,29 @@ collector are in [docs/p21-human-evaluation.md](../../../docs/p21-human-evaluati
 ```bash
 export DATABASE_URL=sqlite:///p21.sqlite3 METCHU_MAX_QUESTIONS=20   # the question limit of the simulated runs
 R=../engine_benchmark_results/2026-11-02
-python manage.py play_engine_session --scenarios $R/scenarios.json --output $R/9_user_study/human/kim.jsonl --tester kim
-# once per round (four times); a stopped round continues with the same wish, a failed session is played again
-python manage.py benchmark_engines --scenarios $R/scenarios.json --human $R/9_user_study/human/*.jsonl --output-dir $R
+python manage.py play_engine_session --scenarios $R/scenarios.json --output $R/9_user_study/human/kim.jsonl \
+    --tester kim --order 1
+# once per round (four times); a stopped round continues with the same wish (kept in kim.round.json
+# from the moment it is chosen), a failed session is played again
+python manage.py benchmark_engines --scenarios $R/scenarios.json --human $R/9_user_study/human/*.jsonl \
+    --human-only --output-dir $R
 python manage.py validate_simulator --human $R/9_user_study/human/*.jsonl --output $R/9_user_study/simulator_check.jsonl --dry-run
 ```
 
-The LLM engine's sessions call OpenRouter (`OPENROUTER_API_KEY`): about 15 calls per session,
-three of them for "recommend now", roughly $0.01-0.02 (16 sessions for four testers).
-`benchmark_engines` with `--human` alone writes only section 9: per situation and engine, and per
-self-reported certainty. `validate_simulator` asks the simulated user every question people
-answered and the verdicts they gave themselves (paid; `--dry-run` counts them first); pass its
-output to `benchmark_engines --simulator-check`. The simulated benchmark still compares the
+The LLM engine's sessions call OpenRouter (`OPENROUTER_API_KEY`): about 13 calls per session,
+one of them for "recommend now", roughly $0.01-0.02 (16 sessions for four testers).
+`benchmark_engines --human-only` (in place of `--sessions`) writes only section 9: per situation
+and engine, and per self-reported certainty; without either flag it stops, so a forgotten
+`--sessions` cannot overwrite a full report. `validate_simulator` asks the simulated user every
+question people answered and the verdicts they gave themselves (paid; `--dry-run` counts them
+first); pass its output to `benchmark_engines --simulator-check`. People saw the questions in
+Korean and the simulator is asked them in Korean, while the simulated benchmark asks in English:
+the agreement describes the simulator on Korean questions.
+
+김신서's 12 sessions (Iteration 3) were played before two changes: "recommend now" was also asked
+after 2 and 4 answers, so each of their LLM sessions waited for up to two more LLM calls (the
+other engines answer at once), and the start came from the tester's name (in_menu first, the same as
+`--order 0`, which is therefore theirs). Read their LLM satisfaction with that in mind. The simulated benchmark still compares the
 decision tree and the LLM engine only; its 2026-11-02 run would reuse this scenario file.
 
 ## Scenarios (`scenarios.py`)

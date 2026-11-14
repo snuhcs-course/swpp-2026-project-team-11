@@ -618,7 +618,8 @@ python manage.py report_feature_review --reviews $R/*.xlsx --output $R/report.md
 - Accuracy: the share of reasonable values on completed rows, for means and stds separately, the
   hard and other dishes weighted by their share of the pool so the oversampling does not lower it;
   the report also gives each stratum's own accuracy. Pass, per source and field, fixed before the
-  review: overall >= 95% and every feature >= 85%; a source passes when both fields pass.
+  review: overall >= 95% and every feature >= 85%; a source passes when both fields pass. While a
+  stratum of the pool has no completed row, the report says incomplete instead of a pass.
 - Each rater reviews different dishes, as many hard ones as the others; `<source>_assignment.csv`
   says who has which. `--overlap` would give that many dishes to every rater, and the report would
   add their agreement (none here).
@@ -686,7 +687,7 @@ and commit. Teammates then run `python manage.py loaddata menus_<date>`.
 | `demo_llm_engine --date [--meal] [--smoke] [--output]` | run the MVP2 LLM question engine | **yes** (OpenRouter) |
 | `run_engine_benchmark --name [--date ...] [--counts] [--repeats] [--limit] [--dry-run]` | the question engine benchmark into `engine_benchmark_results/NAME/` ([guide](question_engines/benchmark/README.md)) | **yes** (OpenRouter + simulated user) |
 | `build_engine_scenarios` / `collect_engine_sessions` / `benchmark_engines` | its steps one by one; only `collect_engine_sessions` calls an LLM | for sessions |
-| `play_engine_session --scenarios --output --tester` / `validate_simulator` | the benchmark's user study: a person plays one wish on every engine, hidden (P21) | for LLM sessions |
+| `play_engine_session --scenarios --output --tester --order` / `validate_simulator` | the benchmark's user study: a person plays one wish on every engine, hidden (P21) | for LLM sessions |
 
 ## Data model (`menus/models.py`)
 
