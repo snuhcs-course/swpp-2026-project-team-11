@@ -1,6 +1,6 @@
 # Feature extraction: human review
 
-Accuracy: the share of values judged reasonable on completed rows, the hard and other dishes weighted by their share of the pool (hard dishes are half of each sample). Pass, per source and for means and stds each: overall >= 95% and every feature >= 85% (fixed before the review). A mean is wrong when it is 0.3 or more off the rubric; a std when it plainly contradicts the recipe spread. Agreement: the share of values two raters of a shared dish judged alike; X agreement: the same among values either of them marked X.
+Accuracy: the share of values judged reasonable on completed rows, the hard and other dishes weighted by their share of the pool (hard dishes are half of each sample). Pass, per source and for means and stds each: overall >= 95% and every feature >= 85% (fixed before the review); incomplete while a stratum of the pool has no completed row. A mean is wrong when it is 0.3 or more off the rubric; a std when it plainly contradicts the recipe spread. Agreement: the share of values two raters of a shared dish judged alike; X agreement: the same among values either of them marked X.
 
 | source | raters | dishes | completed | unknown | mean | worst mean | std | worst std | pass | agreement (shared dishes) | X agreement |
 |---|---|---|---|---|---|---|---|---|---|---|---|
