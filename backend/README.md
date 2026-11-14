@@ -347,7 +347,8 @@ in server memory, like sessions; the API is commented at the end of `recommend/v
 Every request after create or join sends the returned member token as `X-Member-Token`. A
 signed-in member (`Authorization: Token ...`) is shown by username; anyone else sends a `name`.
 `state` is `{"code", "status": "lobby" | "asking" | "done", "date", "meal", "me", "host",
-"members", "round", "max_rounds", "question", "my_answer", "seconds_left", "picks", "decided"}`;
+"members", "round", "max_rounds", "question", "my_answer", "seconds_left", "round_seconds", "picks",
+"decided"}`;
 `members` are `{"id", "name", "allergies", "left", "answered"}` and each pick is `{"restaurant",
 "kind", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others"}`; `others` are the
 restaurant's other dishes, shaped like a session's `menu` dishes. `fit` is `great` when
@@ -356,10 +357,11 @@ the restaurant is among that member's best tenth of the places they can eat at, 
 - The creator hosts. A room has a four-digit code and 2 to 8 members; nobody joins after the start
   (409 `room_started`). The host's meal, source, distance and location apply to everyone.
 - Each member reads the question in their own language. An answer cannot be changed. A member
-  silent for `ROUND_SECONDS` (10) answers "any"; deadlines are checked whenever the room is read
-  or acted on, so the phones' polling moves it on.
+  silent for `ROUND_SECONDS` (15) answers "unknown": unlike "any" ("doesn't matter"), it moves
+  neither the engine's belief about their dish nor how relevant it takes the question's family to
+  be. Deadlines are checked whenever the room is read or acted on, so the phones' polling moves it on.
 - Only the host starts, stops early ("recommend now": the engine's `stop()`) and decides. When the
-  host leaves, a random remaining member hosts; a member who leaves after the start answers "any".
+  host leaves, a random remaining member hosts; a member who leaves after the start answers "unknown".
 - A member's allergies remove dishes only from their own choice. Rooms end with the process and
   are not in the interaction log. With `source=all` and no distance cut, starting a room and each
   round take seconds (the engine's tables over thousands of menus).
