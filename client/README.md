@@ -221,7 +221,9 @@ not offer is dimmed. Pressing the slider brings a handle out of the middle that
 follows the finger with a tick of haptic feedback per answer; letting go picks
 it, and letting go well above or below the row cancels. The answer shows under
 the question meanwhile; once picked, both shrink into the question's line in
-the list, and going back plays this in reverse.
+the list, and going back plays this in reverse. When the next question comes,
+in a session or a group round, the handle glides back into the middle circle and
+fades out as the circles grow back.
 
 The server keeps no question texts, so `RecommendViewModel` remembers the
 answered questions and trims the list to the step's `question_count` after
