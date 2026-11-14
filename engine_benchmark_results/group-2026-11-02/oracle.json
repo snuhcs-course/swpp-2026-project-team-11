@@ -1,0 +1,2830 @@
+{
+  "config": {
+    "epsilon": 0.05,
+    "group": {
+      "question_cost": 0.02,
+      "max_rounds": 4,
+      "language": "en"
+    },
+    "separate_limit": 20,
+    "safe_menus": {
+      "egg": 24,
+      "milk": 33,
+      "pork": 58,
+      "wheat": 0
+    },
+    "catalog": "e76f8df4e4a7f107dee7dd145547c24c5e801c9c02f81f6231aafffcc2696607",
+    "date": "2026-11-02",
+    "meal": "LU",
+    "simulator": "oracle"
+  },
+  "summary": {
+    "similar": {
+      "cases": 18,
+      "group": {
+        "best_restaurant": 0.5,
+        "regret_per_member": 0.0633667695404866,
+        "min_satisfaction": 0.8963179612381624,
+        "questions": 9.11111111111111,
+        "rounds": 2.7222222222222223
+      },
+      "separate": {
+        "best_restaurant": 0.7222222222222222,
+        "regret_per_member": 0.022024823308762227,
+        "min_satisfaction": 0.9419031442233137,
+        "questions": 29.166666666666668,
+        "rounds": 10.777777777777779
+      },
+      "separate_matched": {
+        "best_restaurant": 0.5,
+        "regret_per_member": 0.05372796880749537,
+        "min_satisfaction": 0.9088693005078119,
+        "questions": 9.11111111111111,
+        "rounds": 2.7222222222222223
+      },
+      "checks": {
+        "questions": true,
+        "regret_vs_separate": false,
+        "regret_vs_matched": false
+      },
+      "passed": false,
+      "by_size": {
+        "2": {
+          "group": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.09741275157892816,
+            "min_satisfaction": 0.8789803591979776,
+            "questions": 5.0,
+            "rounds": 2.5
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.05215977648207925,
+            "min_satisfaction": 0.9320054940030817,
+            "questions": 15.5,
+            "rounds": 9.5
+          },
+          "separate_matched": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.04290050579778037,
+            "min_satisfaction": 0.9312479182455059,
+            "questions": 5.0,
+            "rounds": 2.5
+          }
+        },
+        "3": {
+          "group": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.06871606317082303,
+            "min_satisfaction": 0.8622462517892368,
+            "questions": 9.0,
+            "rounds": 3.0
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.00630774187647234,
+            "min_satisfaction": 0.9288049487678697,
+            "questions": 28.666666666666668,
+            "rounds": 11.333333333333334
+          },
+          "separate_matched": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.09526956039954271,
+            "min_satisfaction": 0.8403094782274244,
+            "questions": 9.0,
+            "rounds": 3.0
+          }
+        },
+        "5": {
+          "group": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.023971493871708594,
+            "min_satisfaction": 0.9477272727272726,
+            "questions": 13.333333333333334,
+            "rounds": 2.6666666666666665
+          },
+          "separate": {
+            "best_restaurant": 0.8333333333333334,
+            "regret_per_member": 0.007606951567735089,
+            "min_satisfaction": 0.9648989898989898,
+            "questions": 43.333333333333336,
+            "rounds": 11.5
+          },
+          "separate_matched": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.02301384022516302,
+            "min_satisfaction": 0.955050505050505,
+            "questions": 13.333333333333334,
+            "rounds": 2.6666666666666665
+          }
+        }
+      }
+    },
+    "conflict": {
+      "cases": 18,
+      "group": {
+        "best_restaurant": 0.16666666666666666,
+        "regret_per_member": 0.08709424377557706,
+        "min_satisfaction": 0.7582881737594199,
+        "questions": 8.944444444444445,
+        "rounds": 2.7222222222222223
+      },
+      "separate": {
+        "best_restaurant": 0.6666666666666666,
+        "regret_per_member": 0.017697818476551053,
+        "min_satisfaction": 0.7992030754721211,
+        "questions": 33.72222222222222,
+        "rounds": 13.222222222222221
+      },
+      "separate_matched": {
+        "best_restaurant": 0.4444444444444444,
+        "regret_per_member": 0.038844108368653464,
+        "min_satisfaction": 0.7944012170344035,
+        "questions": 8.944444444444445,
+        "rounds": 2.7222222222222223
+      },
+      "checks": {
+        "questions": true,
+        "regret_vs_separate": false,
+        "regret_vs_matched": false
+      },
+      "passed": false,
+      "by_size": {
+        "2": {
+          "group": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.092000314250407,
+            "min_satisfaction": 0.7551548560062447,
+            "questions": 5.333333333333333,
+            "rounds": 2.6666666666666665
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.008655505258912406,
+            "min_satisfaction": 0.819949494949495,
+            "questions": 22.333333333333332,
+            "rounds": 13.0
+          },
+          "separate_matched": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.06767824432187242,
+            "min_satisfaction": 0.7928565130035808,
+            "questions": 5.333333333333333,
+            "rounds": 2.6666666666666665
+          }
+        },
+        "3": {
+          "group": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.0976569149358495,
+            "min_satisfaction": 0.7769895707543869,
+            "questions": 9.0,
+            "rounds": 3.0
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.027172734862663108,
+            "min_satisfaction": 0.8084919165716542,
+            "questions": 28.833333333333332,
+            "rounds": 12.5
+          },
+          "separate_matched": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.015160765559950372,
+            "min_satisfaction": 0.8221175200669429,
+            "questions": 9.0,
+            "rounds": 3.0
+          }
+        },
+        "5": {
+          "group": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.07162550214047467,
+            "min_satisfaction": 0.7427200945176281,
+            "questions": 12.5,
+            "rounds": 2.5
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.017265215308077637,
+            "min_satisfaction": 0.7691678148952142,
+            "questions": 50.0,
+            "rounds": 14.166666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.033693315224137606,
+            "min_satisfaction": 0.7682296180326865,
+            "questions": 12.5,
+            "rounds": 2.5
+          }
+        }
+      }
+    },
+    "restricted": {
+      "cases": 18,
+      "group": {
+        "best_restaurant": 0.3333333333333333,
+        "regret_per_member": 0.05952120563032995,
+        "min_satisfaction": 0.8250931485287806,
+        "questions": 10.777777777777779,
+        "rounds": 3.2777777777777777
+      },
+      "separate": {
+        "best_restaurant": 0.5555555555555556,
+        "regret_per_member": 0.022095459375138373,
+        "min_satisfaction": 0.8566630177418253,
+        "questions": 29.333333333333332,
+        "rounds": 10.833333333333334
+      },
+      "separate_matched": {
+        "best_restaurant": 0.2222222222222222,
+        "regret_per_member": 0.06960384384632709,
+        "min_satisfaction": 0.8137820918411823,
+        "questions": 10.722222222222221,
+        "rounds": 3.2777777777777777
+      },
+      "checks": {
+        "questions": true,
+        "regret_vs_separate": false,
+        "regret_vs_matched": true
+      },
+      "passed": false,
+      "by_size": {
+        "2": {
+          "group": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.05317946205419597,
+            "min_satisfaction": 0.8942059341490375,
+            "questions": 7.0,
+            "rounds": 3.5
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.028778471909663345,
+            "min_satisfaction": 0.9159231058662093,
+            "questions": 16.833333333333332,
+            "rounds": 10.166666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.07997206015722384,
+            "min_satisfaction": 0.8591984027020331,
+            "questions": 6.833333333333333,
+            "rounds": 3.5
+          }
+        },
+        "3": {
+          "group": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.06813123616865742,
+            "min_satisfaction": 0.7858585858585859,
+            "questions": 9.5,
+            "rounds": 3.1666666666666665
+          },
+          "separate": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.02370937226702788,
+            "min_satisfaction": 0.8290615242667637,
+            "questions": 25.833333333333332,
+            "rounds": 10.166666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.10317146583636216,
+            "min_satisfaction": 0.7711041712129597,
+            "questions": 9.5,
+            "rounds": 3.1666666666666665
+          }
+        },
+        "5": {
+          "group": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.05725291866813642,
+            "min_satisfaction": 0.7952149255787182,
+            "questions": 15.833333333333334,
+            "rounds": 3.1666666666666665
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.013798533948723902,
+            "min_satisfaction": 0.8250044230925028,
+            "questions": 45.333333333333336,
+            "rounds": 12.166666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.025668005545395278,
+            "min_satisfaction": 0.8110437016085547,
+            "questions": 15.833333333333334,
+            "rounds": 3.1666666666666665
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 43,
+          "allergy": null
+        },
+        {
+          "target": 36,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 12,
+        "rounds": 7
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 4,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 78,
+          "allergy": null
+        },
+        {
+          "target": 89,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.13702951775515268,
+        "regret_per_member": 0.06851475887757634,
+        "min_satisfaction": 0.8696969696969696,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.956060606060606,
+        "questions": 18,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.13702951775515268,
+        "regret_per_member": 0.06851475887757634,
+        "min_satisfaction": 0.8696969696969696,
+        "questions": 4,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 99,
+          "allergy": null
+        },
+        {
+          "target": 106,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.16766725762163887,
+        "regret_per_member": 0.08383362881081943,
+        "min_satisfaction": 0.8231268675883023,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.20328642069993386,
+        "regret_per_member": 0.10164321034996693,
+        "min_satisfaction": 0.8390026609881873,
+        "questions": 16,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.20328642069993386,
+        "regret_per_member": 0.10164321034996693,
+        "min_satisfaction": 0.8390026609881873,
+        "questions": 8,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 45,
+          "allergy": null
+        },
+        {
+          "target": 53,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "301동식당",
+        "best": false,
+        "regret": 0.4291140125962216,
+        "regret_per_member": 0.2145570062981108,
+        "min_satisfaction": 0.7886340754783511,
+        "questions": 2,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 19,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 2,
+        "rounds": 1
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 77,
+          "allergy": null
+        },
+        {
+          "target": 74,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.43514223097412486,
+        "regret_per_member": 0.21757111548706243,
+        "min_satisfaction": 0.7924242424242425,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.4226308970850171,
+        "regret_per_member": 0.21131544854250855,
+        "min_satisfaction": 0.7969696969696969,
+        "questions": 15,
+        "rounds": 8
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.17449013111827782,
+        "regret_per_member": 0.08724506555913891,
+        "min_satisfaction": 0.8787878787878788,
+        "questions": 8,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 34,
+          "allergy": null
+        },
+        {
+          "target": 25,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 13,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 4,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 74,
+          "allergy": null
+        },
+        {
+          "target": 95,
+          "allergy": null
+        },
+        {
+          "target": 100,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.29280715780024913,
+        "regret_per_member": 0.09760238593341637,
+        "min_satisfaction": 0.7924242424242425,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "예술계식당",
+        "best": false,
+        "regret": 0.08522960289689405,
+        "regret_per_member": 0.028409867632298014,
+        "min_satisfaction": 0.8560606060606061,
+        "questions": 25,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "기숙사식당>아워홈",
+        "best": false,
+        "regret": 0.4111430409274268,
+        "regret_per_member": 0.13704768030914227,
+        "min_satisfaction": 0.7419130531451692,
+        "questions": 3,
+        "rounds": 1
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 74,
+          "allergy": null
+        },
+        {
+          "target": 75,
+          "allergy": null
+        },
+        {
+          "target": 77,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.25405195395446356,
+        "regret_per_member": 0.08468398465148785,
+        "min_satisfaction": 0.8787878787878788,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "공대간이식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 36,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "예술계식당",
+        "best": false,
+        "regret": 0.4509509960112238,
+        "regret_per_member": 0.15031699867040793,
+        "min_satisfaction": 0.8378787878787879,
+        "questions": 12,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 95,
+          "allergy": null
+        },
+        {
+          "target": 83,
+          "allergy": null
+        },
+        {
+          "target": 98,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8905354558078387,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "예술계식당",
+        "best": false,
+        "regret": 0.028309750879608075,
+        "regret_per_member": 0.009436583626536025,
+        "min_satisfaction": 0.8777664255584253,
+        "questions": 30,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "자하연식당>3층",
+        "best": false,
+        "regret": 0.1374340752607897,
+        "regret_per_member": 0.04581135842026324,
+        "min_satisfaction": 0.854880549170584,
+        "questions": 12,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 99,
+          "allergy": null
+        },
+        {
+          "target": 8,
+          "allergy": null
+        },
+        {
+          "target": 5,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8390026609881873,
+        "questions": 9,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8390026609881873,
+        "questions": 34,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8390026609881873,
+        "questions": 9,
+        "rounds": 3
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 27,
+          "allergy": null
+        },
+        {
+          "target": 21,
+          "allergy": null
+        },
+        {
+          "target": 13,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 19,
+        "rounds": 7
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 12,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 75,
+          "allergy": null
+        },
+        {
+          "target": 81,
+          "allergy": null
+        },
+        {
+          "target": 96,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "3식당",
+        "best": false,
+        "regret": 0.6900300253201019,
+        "regret_per_member": 0.23001000844003397,
+        "min_satisfaction": 0.7727272727272727,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "공대간이식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 28,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.7153239749923285,
+        "regret_per_member": 0.23844132499744283,
+        "min_satisfaction": 0.7681818181818182,
+        "questions": 6,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 25,
+          "allergy": null
+        },
+        {
+          "target": 12,
+          "allergy": null
+        },
+        {
+          "target": 29,
+          "allergy": null
+        },
+        {
+          "target": 26,
+          "allergy": null
+        },
+        {
+          "target": 25,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 15,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 53,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 15,
+        "rounds": 3
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 44,
+          "allergy": null
+        },
+        {
+          "target": 48,
+          "allergy": null
+        },
+        {
+          "target": 51,
+          "allergy": null
+        },
+        {
+          "target": 108,
+          "allergy": null
+        },
+        {
+          "target": 11,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.22820854703205268,
+        "regret_per_member": 0.04564170940641053,
+        "min_satisfaction": 0.8984848484848484,
+        "questions": 15,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.22820854703205268,
+        "regret_per_member": 0.04564170940641053,
+        "min_satisfaction": 0.8984848484848484,
+        "questions": 32,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9636363636363636,
+        "questions": 15,
+        "rounds": 3
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 97,
+          "allergy": null
+        },
+        {
+          "target": 78,
+          "allergy": null
+        },
+        {
+          "target": 90,
+          "allergy": null
+        },
+        {
+          "target": 94,
+          "allergy": null
+        },
+        {
+          "target": 101,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8909090909090909,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8909090909090909,
+        "questions": 51,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.19947893763568547,
+        "regret_per_member": 0.03989578752713709,
+        "min_satisfaction": 0.8696969696969696,
+        "questions": 10,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 16,
+          "allergy": null
+        },
+        {
+          "target": 20,
+          "allergy": null
+        },
+        {
+          "target": 50,
+          "allergy": null
+        },
+        {
+          "target": 15,
+          "allergy": null
+        },
+        {
+          "target": 55,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.4909362691192052,
+        "regret_per_member": 0.09818725382384104,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 38,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.4909362691192052,
+        "regret_per_member": 0.09818725382384104,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 10,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 15,
+          "allergy": null
+        },
+        {
+          "target": 39,
+          "allergy": null
+        },
+        {
+          "target": 13,
+          "allergy": null
+        },
+        {
+          "target": 20,
+          "allergy": null
+        },
+        {
+          "target": 19,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 42,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 20,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 39,
+          "allergy": null
+        },
+        {
+          "target": 22,
+          "allergy": null
+        },
+        {
+          "target": 41,
+          "allergy": null
+        },
+        {
+          "target": 15,
+          "allergy": null
+        },
+        {
+          "target": 38,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 44,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 10,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 69,
+          "allergy": null
+        },
+        {
+          "target": 11,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.26360217841808287,
+        "regret_per_member": 0.13180108920904143,
+        "min_satisfaction": 0.7025779368038623,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8560606060606061,
+        "questions": 27,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8560606060606061,
+        "questions": 4,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 22,
+          "allergy": null
+        },
+        {
+          "target": 81,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.2256895780431949,
+        "regret_per_member": 0.11284478902159745,
+        "min_satisfaction": 0.7344118052942122,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "공대간이식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8393939393939394,
+        "questions": 24,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.2256895780431949,
+        "regret_per_member": 0.11284478902159745,
+        "min_satisfaction": 0.7344118052942122,
+        "questions": 8,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 32,
+          "allergy": null
+        },
+        {
+          "target": 81,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.2974008489733946,
+        "regret_per_member": 0.1487004244866973,
+        "min_satisfaction": 0.7242424242424242,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.012832440069884293,
+        "regret_per_member": 0.006416220034942147,
+        "min_satisfaction": 0.7712121212121212,
+        "questions": 27,
+        "rounds": 18
+      },
+      "separate_matched": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.14743924523927146,
+        "regret_per_member": 0.07371962261963573,
+        "min_satisfaction": 0.7818181818181817,
+        "questions": 4,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 81,
+          "allergy": null
+        },
+        {
+          "target": 65,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "공대간이식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.7833333333333333,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.09103362303706458,
+        "regret_per_member": 0.04551681151853229,
+        "min_satisfaction": 0.7909090909090909,
+        "questions": 19,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.25894678655244063,
+        "regret_per_member": 0.12947339327622032,
+        "min_satisfaction": 0.7560606060606061,
+        "questions": 8,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 81,
+          "allergy": null
+        },
+        {
+          "target": 61,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.31731116557021166,
+        "regret_per_member": 0.15865558278510583,
+        "min_satisfaction": 0.7393939393939395,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "공대간이식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8151515151515152,
+        "questions": 20,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.18006332202756198,
+        "regret_per_member": 0.09003166101378099,
+        "min_satisfaction": 0.7818181818181817,
+        "questions": 4,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 85,
+          "allergy": null
+        },
+        {
+          "target": 28,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8469696969696969,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8469696969696969,
+        "questions": 17,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8469696969696969,
+        "questions": 4,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 8,
+          "allergy": null
+        },
+        {
+          "target": 81,
+          "allergy": null
+        },
+        {
+          "target": 59,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.341364432600239,
+        "regret_per_member": 0.11378814420007967,
+        "min_satisfaction": 0.7818181818181817,
+        "questions": 9,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.2731526775396695,
+        "regret_per_member": 0.09105089251322317,
+        "min_satisfaction": 0.7956860127596102,
+        "questions": 31,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "공대간이식당",
+        "best": false,
+        "regret": 0.1772755092341341,
+        "regret_per_member": 0.05909183641137803,
+        "min_satisfaction": 0.7818181818181819,
+        "questions": 9,
+        "rounds": 3
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 102,
+          "allergy": null
+        },
+        {
+          "target": 96,
+          "allergy": null
+        },
+        {
+          "target": 11,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "301동식당",
+        "best": false,
+        "regret": 0.3449515822735445,
+        "regret_per_member": 0.11498386075784817,
+        "min_satisfaction": 0.7861798487687459,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "공대간이식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8232924403317581,
+        "questions": 32,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.09224628210583088,
+        "regret_per_member": 0.030748760701943628,
+        "min_satisfaction": 0.753030303030303,
+        "questions": 3,
+        "rounds": 1
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 54,
+          "allergy": null
+        },
+        {
+          "target": 96,
+          "allergy": null
+        },
+        {
+          "target": 86,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "공대간이식당",
+        "best": false,
+        "regret": 0.003371988739141754,
+        "regret_per_member": 0.0011239962463805847,
+        "min_satisfaction": 0.8636363636363636,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8181818181818181,
+        "questions": 28,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "공대간이식당",
+        "best": false,
+        "regret": 0.003371988739141754,
+        "regret_per_member": 0.0011239962463805847,
+        "min_satisfaction": 0.8636363636363636,
+        "questions": 12,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 29,
+          "allergy": null
+        },
+        {
+          "target": 103,
+          "allergy": null
+        },
+        {
+          "target": 76,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.20385103670384527,
+        "regret_per_member": 0.06795034556794842,
+        "min_satisfaction": 0.7954545454545454,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8303804625632181,
+        "questions": 31,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8303804625632181,
+        "questions": 12,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 94,
+          "allergy": null
+        },
+        {
+          "target": 17,
+          "allergy": null
+        },
+        {
+          "target": 76,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.4071271113252477,
+        "regret_per_member": 0.1357090371084159,
+        "min_satisfaction": 0.7045454545454546,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8303804625632181,
+        "questions": 27,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8303804625632181,
+        "questions": 6,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 108,
+          "allergy": null
+        },
+        {
+          "target": 72,
+          "allergy": null
+        },
+        {
+          "target": 66,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "수의대식당",
+        "best": false,
+        "regret": 0.4571583172032731,
+        "regret_per_member": 0.15238610573442438,
+        "min_satisfaction": 0.7303030303030302,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.2159565499882664,
+        "regret_per_member": 0.07198551666275547,
+        "min_satisfaction": 0.753030303030303,
+        "questions": 24,
+        "rounds": 9
+      },
+      "separate_matched": {
+        "restaurant": "공대간이식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8734593467903737,
+        "questions": 12,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 57,
+          "allergy": null
+        },
+        {
+          "target": 65,
+          "allergy": null
+        },
+        {
+          "target": 81,
+          "allergy": null
+        },
+        {
+          "target": 24,
+          "allergy": null
+        },
+        {
+          "target": 88,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "자하연식당>2층",
+        "best": false,
+        "regret": 0.7473879302263549,
+        "regret_per_member": 0.14947758604527098,
+        "min_satisfaction": 0.703030303030303,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.27294288239729325,
+        "regret_per_member": 0.05458857647945865,
+        "min_satisfaction": 0.7909090909090909,
+        "questions": 59,
+        "rounds": 17
+      },
+      "separate_matched": {
+        "restaurant": "자하연식당>3층",
+        "best": false,
+        "regret": 0.5903157049418403,
+        "regret_per_member": 0.11806314098836805,
+        "min_satisfaction": 0.7772727272727272,
+        "questions": 10,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 10,
+          "allergy": null
+        },
+        {
+          "target": 72,
+          "allergy": null
+        },
+        {
+          "target": 106,
+          "allergy": null
+        },
+        {
+          "target": 58,
+          "allergy": null
+        },
+        {
+          "target": 84,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.753030303030303,
+        "questions": 15,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "공대간이식당",
+        "best": false,
+        "regret": 0.24501357684503589,
+        "regret_per_member": 0.049002715369007174,
+        "min_satisfaction": 0.7318181818181818,
+        "questions": 43,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.753030303030303,
+        "questions": 15,
+        "rounds": 3
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 15,
+          "allergy": null
+        },
+        {
+          "target": 96,
+          "allergy": null
+        },
+        {
+          "target": 83,
+          "allergy": null
+        },
+        {
+          "target": 58,
+          "allergy": null
+        },
+        {
+          "target": 76,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "301동식당",
+        "best": false,
+        "regret": 0.207666394773577,
+        "regret_per_member": 0.041533278954715404,
+        "min_satisfaction": 0.792684203469405,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.753030303030303,
+        "questions": 42,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.753030303030303,
+        "questions": 20,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 72,
+          "allergy": null
+        },
+        {
+          "target": 65,
+          "allergy": null
+        },
+        {
+          "target": 67,
+          "allergy": null
+        },
+        {
+          "target": 94,
+          "allergy": null
+        },
+        {
+          "target": 28,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.12411761615057298,
+        "regret_per_member": 0.024823523230114598,
+        "min_satisfaction": 0.7681818181818182,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.753030303030303,
+        "questions": 47,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "공대간이식당",
+        "best": false,
+        "regret": 0.3489444168747794,
+        "regret_per_member": 0.06978888337495588,
+        "min_satisfaction": 0.7363636363636363,
+        "questions": 20,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 95,
+          "allergy": null
+        },
+        {
+          "target": 17,
+          "allergy": null
+        },
+        {
+          "target": 70,
+          "allergy": null
+        },
+        {
+          "target": 64,
+          "allergy": null
+        },
+        {
+          "target": 63,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.6042125743483457,
+        "regret_per_member": 0.12084251486966915,
+        "min_satisfaction": 0.7045454545454546,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "301동식당",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.7831887075531038,
+        "questions": 59,
+        "rounds": 19
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.07153933490750863,
+        "regret_per_member": 0.014307866981501726,
+        "min_satisfaction": 0.786650435468846,
+        "questions": 5,
+        "rounds": 1
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 28,
+          "allergy": null
+        },
+        {
+          "target": 74,
+          "allergy": null
+        },
+        {
+          "target": 80,
+          "allergy": null
+        },
+        {
+          "target": 83,
+          "allergy": null
+        },
+        {
+          "target": 70,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "301동식당",
+        "best": false,
+        "regret": 0.46538054871538914,
+        "regret_per_member": 0.09307610974307783,
+        "min_satisfaction": 0.7348484848484849,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.803030303030303,
+        "questions": 50,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.803030303030303,
+        "questions": 5,
+        "rounds": 1
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 52,
+          "allergy": "egg"
+        },
+        {
+          "target": 17,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 6,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 20,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.4728850339306568,
+        "regret_per_member": 0.2364425169653284,
+        "min_satisfaction": 0.7212121212121212,
+        "questions": 6,
+        "rounds": 3
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 86,
+          "allergy": "milk"
+        },
+        {
+          "target": 95,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "공대간이식당",
+        "best": false,
+        "regret": 0.24936000743039832,
+        "regret_per_member": 0.12468000371519916,
+        "min_satisfaction": 0.8469696969696969,
+        "questions": 6,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9515151515151515,
+        "questions": 21,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "3식당",
+        "best": false,
+        "regret": 0.14143802504006928,
+        "regret_per_member": 0.07071901252003464,
+        "min_satisfaction": 0.8899548113179725,
+        "questions": 6,
+        "rounds": 3
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 31,
+          "allergy": "pork"
+        },
+        {
+          "target": 17,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 6,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 15,
+        "rounds": 8
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 6,
+        "rounds": 3
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 83,
+          "allergy": "milk"
+        },
+        {
+          "target": 59,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "자하연식당>3층",
+        "best": false,
+        "regret": 0.20078096406893853,
+        "regret_per_member": 0.10039048203446926,
+        "min_satisfaction": 0.7818181818181817,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.15732908976494525,
+        "regret_per_member": 0.07866454488247263,
+        "min_satisfaction": 0.8075757575757576,
+        "questions": 16,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.15732908976494525,
+        "regret_per_member": 0.07866454488247263,
+        "min_satisfaction": 0.8075757575757576,
+        "questions": 8,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 72,
+          "allergy": "egg"
+        },
+        {
+          "target": 106,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9091749988336192,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9091749988336192,
+        "questions": 16,
+        "rounds": 8
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9091749988336192,
+        "questions": 8,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 95,
+          "allergy": "pork"
+        },
+        {
+          "target": 100,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.18801257315101486,
+        "regret_per_member": 0.09400628657550743,
+        "min_satisfaction": 0.8272727272727273,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.18801257315101486,
+        "regret_per_member": 0.09400628657550743,
+        "min_satisfaction": 0.8272727272727273,
+        "questions": 13,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.18801257315101486,
+        "regret_per_member": 0.09400628657550743,
+        "min_satisfaction": 0.8272727272727273,
+        "questions": 7,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 9,
+          "allergy": "pork"
+        },
+        {
+          "target": 74,
+          "allergy": null
+        },
+        {
+          "target": 69,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.09505511160554309,
+        "regret_per_member": 0.0316850372018477,
+        "min_satisfaction": 0.7803030303030303,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.09505511160554309,
+        "regret_per_member": 0.0316850372018477,
+        "min_satisfaction": 0.7803030303030303,
+        "questions": 22,
+        "rounds": 8
+      },
+      "separate_matched": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.09505511160554309,
+        "regret_per_member": 0.0316850372018477,
+        "min_satisfaction": 0.7803030303030303,
+        "questions": 6,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 71,
+          "allergy": "egg"
+        },
+        {
+          "target": 60,
+          "allergy": null
+        },
+        {
+          "target": 12,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.793939393939394,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.793939393939394,
+        "questions": 24,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.3667823449836115,
+        "regret_per_member": 0.12226078166120384,
+        "min_satisfaction": 0.7863636363636364,
+        "questions": 12,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 107,
+          "allergy": "milk"
+        },
+        {
+          "target": 7,
+          "allergy": null
+        },
+        {
+          "target": 34,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "학생회관식당",
+        "best": false,
+        "regret": 0.20565510328567316,
+        "regret_per_member": 0.06855170109522439,
+        "min_satisfaction": 0.7742424242424243,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.24086219028935713,
+        "regret_per_member": 0.08028739676311904,
+        "min_satisfaction": 0.8031570243884607,
+        "questions": 29,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "301동식당",
+        "best": false,
+        "regret": 0.5072347387546396,
+        "regret_per_member": 0.16907824625154655,
+        "min_satisfaction": 0.7493523000050302,
+        "questions": 12,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 37,
+          "allergy": "pork"
+        },
+        {
+          "target": 14,
+          "allergy": null
+        },
+        {
+          "target": 50,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "동원관식당",
+        "best": false,
+        "regret": 0.8746157686489119,
+        "regret_per_member": 0.2915385895496373,
+        "min_satisfaction": 0.703030303030303,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 25,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.7098470188628235,
+        "regret_per_member": 0.23661567295427452,
+        "min_satisfaction": 0.7712121212121212,
+        "questions": 6,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 102,
+          "allergy": "milk"
+        },
+        {
+          "target": 58,
+          "allergy": null
+        },
+        {
+          "target": 89,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8515151515151516,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.03981513141589607,
+        "regret_per_member": 0.013271710471965356,
+        "min_satisfaction": 0.7848484848484849,
+        "questions": 32,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.03981513141589607,
+        "regret_per_member": 0.013271710471965356,
+        "min_satisfaction": 0.7848484848484849,
+        "questions": 12,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 89,
+          "allergy": "milk"
+        },
+        {
+          "target": 73,
+          "allergy": null
+        },
+        {
+          "target": 16,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.051036267495705556,
+        "regret_per_member": 0.017012089165235184,
+        "min_satisfaction": 0.8121212121212121,
+        "questions": 9,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.051036267495705556,
+        "regret_per_member": 0.017012089165235184,
+        "min_satisfaction": 0.8121212121212121,
+        "questions": 23,
+        "rounds": 9
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.1383520394320052,
+        "regret_per_member": 0.046117346477335064,
+        "min_satisfaction": 0.7545454545454545,
+        "questions": 9,
+        "rounds": 3
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 95,
+          "allergy": "pork"
+        },
+        {
+          "target": 76,
+          "allergy": null
+        },
+        {
+          "target": 97,
+          "allergy": null
+        },
+        {
+          "target": 66,
+          "allergy": null
+        },
+        {
+          "target": 33,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "301동식당",
+        "best": false,
+        "regret": 0.3082046471744556,
+        "regret_per_member": 0.06164092943489112,
+        "min_satisfaction": 0.7742424242424242,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "두레미담",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8149309695461933,
+        "questions": 50,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "자하연식당>3층",
+        "best": false,
+        "regret": 0.2545800306894608,
+        "regret_per_member": 0.050916006137892156,
+        "min_satisfaction": 0.8,
+        "questions": 20,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 52,
+          "allergy": "egg"
+        },
+        {
+          "target": 44,
+          "allergy": null
+        },
+        {
+          "target": 73,
+          "allergy": null
+        },
+        {
+          "target": 103,
+          "allergy": null
+        },
+        {
+          "target": 94,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.18939594675357646,
+        "regret_per_member": 0.03787918935071529,
+        "min_satisfaction": 0.7818181818181817,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8121212121212121,
+        "questions": 43,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.18939594675357646,
+        "regret_per_member": 0.03787918935071529,
+        "min_satisfaction": 0.7818181818181817,
+        "questions": 10,
+        "rounds": 2
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 68,
+          "allergy": "pork"
+        },
+        {
+          "target": 41,
+          "allergy": null
+        },
+        {
+          "target": 49,
+          "allergy": null
+        },
+        {
+          "target": 44,
+          "allergy": null
+        },
+        {
+          "target": 35,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.7952934080006845,
+        "regret_per_member": 0.1590586816001369,
+        "min_satisfaction": 0.7818181818181817,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8525484137547764,
+        "questions": 54,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8525484137547764,
+        "questions": 5,
+        "rounds": 1
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 107,
+          "allergy": "milk"
+        },
+        {
+          "target": 64,
+          "allergy": null
+        },
+        {
+          "target": 68,
+          "allergy": null
+        },
+        {
+          "target": 101,
+          "allergy": null
+        },
+        {
+          "target": 18,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": false,
+        "regret": 0.07355557760677017,
+        "regret_per_member": 0.014711115521354035,
+        "min_satisfaction": 0.7772727272727273,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "공대간이식당",
+        "best": false,
+        "regret": 0.11787929796965413,
+        "regret_per_member": 0.023575859593930826,
+        "min_satisfaction": 0.817318207842345,
+        "questions": 42,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.18830184744733108,
+        "regret_per_member": 0.03766036948946622,
+        "min_satisfaction": 0.7484848484848485,
+        "questions": 20,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 51,
+          "allergy": "pork"
+        },
+        {
+          "target": 44,
+          "allergy": null
+        },
+        {
+          "target": 76,
+          "allergy": null
+        },
+        {
+          "target": 64,
+          "allergy": null
+        },
+        {
+          "target": 87,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8303804625632181,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8303804625632181,
+        "questions": 41,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "버거운버거",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8303804625632181,
+        "questions": 20,
+        "rounds": 4
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 6,
+          "allergy": "egg"
+        },
+        {
+          "target": 68,
+          "allergy": null
+        },
+        {
+          "target": 104,
+          "allergy": null
+        },
+        {
+          "target": 101,
+          "allergy": null
+        },
+        {
+          "target": 105,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "기숙사식당>아워홈",
+        "best": false,
+        "regret": 0.351137980508606,
+        "regret_per_member": 0.0702275961017212,
+        "min_satisfaction": 0.8257575757575757,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "자하연식당>2층",
+        "best": false,
+        "regret": 0.2960767204920629,
+        "regret_per_member": 0.05921534409841258,
+        "min_satisfaction": 0.8227272727272728,
+        "questions": 42,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "두레미담",
+        "best": false,
+        "regret": 0.13776234147149,
+        "regret_per_member": 0.027552468294298,
+        "min_satisfaction": 0.853030303030303,
+        "questions": 20,
+        "rounds": 4
+      }
+    }
+  ]
+}

@@ -1,0 +1,3413 @@
+{
+  "config": {
+    "epsilon": 0.05,
+    "group": {
+      "question_cost": 0.02,
+      "max_rounds": 4,
+      "language": "en"
+    },
+    "separate_limit": 20,
+    "safe_menus": {
+      "egg": 3604,
+      "milk": 3916,
+      "pork": 3457,
+      "wheat": 624
+    },
+    "menus": 6227,
+    "restaurants": 584,
+    "catalog": "63d02eff04b13deafbdab5c6083f59ae7ac815a64d34b9125620af1d246e786f",
+    "source": "general",
+    "date": null,
+    "meal": "LU",
+    "simulator": "llm",
+    "simulator_model": "openai:gpt-6-luna",
+    "simulator_prompt_id": "45d1d4125724"
+  },
+  "summary": {
+    "similar": {
+      "cases": 18,
+      "group": {
+        "best_restaurant": 0.2222222222222222,
+        "regret_per_member": 0.06241392816757439,
+        "min_satisfaction": 0.9331986531986531,
+        "questions": 9.333333333333334,
+        "rounds": 3.0
+      },
+      "separate": {
+        "best_restaurant": 0.4444444444444444,
+        "regret_per_member": 0.03249458831328032,
+        "min_satisfaction": 0.9608996043031226,
+        "questions": 32.77777777777778,
+        "rounds": 11.222222222222221
+      },
+      "separate_matched": {
+        "best_restaurant": 0.1111111111111111,
+        "regret_per_member": 0.07968162604808657,
+        "min_satisfaction": 0.9167003367003367,
+        "questions": 9.333333333333334,
+        "rounds": 3.0
+      },
+      "most_menus": {
+        "best_restaurant": 0.1111111111111111,
+        "regret_per_member": 0.08989717743969614,
+        "min_satisfaction": 0.906060606060606,
+        "questions": 0.0,
+        "rounds": 0.0
+      },
+      "checks": {
+        "questions": true,
+        "regret_vs_separate": false,
+        "regret_vs_matched": true,
+        "regret_vs_most_menus": true
+      },
+      "passed": false,
+      "by_size": {
+        "2": {
+          "group": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.058034999061879124,
+            "min_satisfaction": 0.9376262626262625,
+            "questions": 7.333333333333333,
+            "rounds": 3.6666666666666665
+          },
+          "separate": {
+            "best_restaurant": 0.5,
+            "regret_per_member": 0.04406969517853393,
+            "min_satisfaction": 0.9495016698428937,
+            "questions": 19.0,
+            "rounds": 10.5
+          },
+          "separate_matched": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.08652834183267095,
+            "min_satisfaction": 0.9104545454545455,
+            "questions": 7.333333333333333,
+            "rounds": 3.6666666666666665
+          },
+          "most_menus": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.07727122447371246,
+            "min_satisfaction": 0.918939393939394,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "3": {
+          "group": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.04606102135626219,
+            "min_satisfaction": 0.9451515151515152,
+            "questions": 9.0,
+            "rounds": 3.0
+          },
+          "separate": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.04496559924321255,
+            "min_satisfaction": 0.9431466380159689,
+            "questions": 26.166666666666668,
+            "rounds": 10.166666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.0518908337569276,
+            "min_satisfaction": 0.9402525252525252,
+            "questions": 9.0,
+            "rounds": 3.0
+          },
+          "most_menus": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.09071172568861942,
+            "min_satisfaction": 0.9005050505050504,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "5": {
+          "group": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.08314576408458191,
+            "min_satisfaction": 0.9168181818181819,
+            "questions": 11.666666666666666,
+            "rounds": 2.3333333333333335
+          },
+          "separate": {
+            "best_restaurant": 0.6666666666666666,
+            "regret_per_member": 0.008448470518094503,
+            "min_satisfaction": 0.9900505050505051,
+            "questions": 53.166666666666664,
+            "rounds": 13.0
+          },
+          "separate_matched": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.10062570255466115,
+            "min_satisfaction": 0.8993939393939394,
+            "questions": 11.666666666666666,
+            "rounds": 2.3333333333333335
+          },
+          "most_menus": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.10170858215675656,
+            "min_satisfaction": 0.8987373737373737,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        }
+      }
+    },
+    "conflict": {
+      "cases": 18,
+      "group": {
+        "best_restaurant": 0.1111111111111111,
+        "regret_per_member": 0.039485019633351486,
+        "min_satisfaction": 0.833016027870735,
+        "questions": 11.777777777777779,
+        "rounds": 3.6666666666666665
+      },
+      "separate": {
+        "best_restaurant": 0.1111111111111111,
+        "regret_per_member": 0.024335737376595216,
+        "min_satisfaction": 0.8435872130415374,
+        "questions": 34.0,
+        "rounds": 12.5
+      },
+      "separate_matched": {
+        "best_restaurant": 0.1111111111111111,
+        "regret_per_member": 0.04550731465984347,
+        "min_satisfaction": 0.8218743024602406,
+        "questions": 11.777777777777779,
+        "rounds": 3.6666666666666665
+      },
+      "most_menus": {
+        "best_restaurant": 0.0,
+        "regret_per_member": 0.06869358905949488,
+        "min_satisfaction": 0.7999132707421874,
+        "questions": 0.0,
+        "rounds": 0.0
+      },
+      "checks": {
+        "questions": true,
+        "regret_vs_separate": true,
+        "regret_vs_matched": true,
+        "regret_vs_most_menus": true
+      },
+      "passed": true,
+      "by_size": {
+        "2": {
+          "group": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.04605225682464823,
+            "min_satisfaction": 0.871777164986313,
+            "questions": 8.0,
+            "rounds": 4.0
+          },
+          "separate": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.03862556339161203,
+            "min_satisfaction": 0.8796939638267295,
+            "questions": 21.666666666666668,
+            "rounds": 12.333333333333334
+          },
+          "separate_matched": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.06407772261811431,
+            "min_satisfaction": 0.8417783378765872,
+            "questions": 8.0,
+            "rounds": 4.0
+          },
+          "most_menus": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.09567852036659578,
+            "min_satisfaction": 0.8057374481366214,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "3": {
+          "group": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.04047709653260803,
+            "min_satisfaction": 0.8322146935464042,
+            "questions": 11.5,
+            "rounds": 3.8333333333333335
+          },
+          "separate": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.021738225742934086,
+            "min_satisfaction": 0.8146391850943662,
+            "questions": 30.5,
+            "rounds": 12.166666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.04051851581861792,
+            "min_satisfaction": 0.8287883444246468,
+            "questions": 11.5,
+            "rounds": 3.8333333333333335
+          },
+          "most_menus": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.06279364107171052,
+            "min_satisfaction": 0.812408406947629,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "5": {
+          "group": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.0319257055427982,
+            "min_satisfaction": 0.7950562250794878,
+            "questions": 15.833333333333334,
+            "rounds": 3.1666666666666665
+          },
+          "separate": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.012643422995239547,
+            "min_satisfaction": 0.8364284902035166,
+            "questions": 49.833333333333336,
+            "rounds": 13.0
+          },
+          "separate_matched": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.0319257055427982,
+            "min_satisfaction": 0.7950562250794878,
+            "questions": 15.833333333333334,
+            "rounds": 3.1666666666666665
+          },
+          "most_menus": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.04760860574017831,
+            "min_satisfaction": 0.7815939571423116,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        }
+      }
+    },
+    "restricted": {
+      "cases": 18,
+      "group": {
+        "best_restaurant": 0.05555555555555555,
+        "regret_per_member": 0.038957258232086386,
+        "min_satisfaction": 0.8908721807688094,
+        "questions": 10.277777777777779,
+        "rounds": 3.111111111111111
+      },
+      "separate": {
+        "best_restaurant": 0.2222222222222222,
+        "regret_per_member": 0.024136567360174097,
+        "min_satisfaction": 0.9115693982462365,
+        "questions": 33.22222222222222,
+        "rounds": 12.666666666666666
+      },
+      "separate_matched": {
+        "best_restaurant": 0.0,
+        "regret_per_member": 0.04898561975561609,
+        "min_satisfaction": 0.8836244260829225,
+        "questions": 10.277777777777779,
+        "rounds": 3.111111111111111
+      },
+      "most_menus": {
+        "best_restaurant": 0.0,
+        "regret_per_member": 0.07663741559329336,
+        "min_satisfaction": 0.8643906992873278,
+        "questions": 0.0,
+        "rounds": 0.0
+      },
+      "checks": {
+        "questions": true,
+        "regret_vs_separate": true,
+        "regret_vs_matched": true,
+        "regret_vs_most_menus": true
+      },
+      "passed": true,
+      "by_size": {
+        "2": {
+          "group": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.04231601547330268,
+            "min_satisfaction": 0.9116161616161618,
+            "questions": 6.333333333333333,
+            "rounds": 3.1666666666666665
+          },
+          "separate": {
+            "best_restaurant": 0.3333333333333333,
+            "regret_per_member": 0.027658698044227426,
+            "min_satisfaction": 0.9383333333333334,
+            "questions": 20.0,
+            "rounds": 11.333333333333334
+          },
+          "separate_matched": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.06257440156423702,
+            "min_satisfaction": 0.8914141414141414,
+            "questions": 6.333333333333333,
+            "rounds": 3.1666666666666665
+          },
+          "most_menus": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.08377092311679184,
+            "min_satisfaction": 0.875909090909091,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "3": {
+          "group": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.03732136998038805,
+            "min_satisfaction": 0.9087634660778624,
+            "questions": 9.5,
+            "rounds": 3.1666666666666665
+          },
+          "separate": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.020430728727555497,
+            "min_satisfaction": 0.9184455684760833,
+            "questions": 29.5,
+            "rounds": 13.0
+          },
+          "separate_matched": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.041608101169382024,
+            "min_satisfaction": 0.9107575757575758,
+            "questions": 9.5,
+            "rounds": 3.1666666666666665
+          },
+          "most_menus": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.08210149664125499,
+            "min_satisfaction": 0.86623821355261,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        },
+        "5": {
+          "group": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.03723438924256845,
+            "min_satisfaction": 0.8522369146124037,
+            "questions": 15.0,
+            "rounds": 3.0
+          },
+          "separate": {
+            "best_restaurant": 0.16666666666666666,
+            "regret_per_member": 0.024320275308739356,
+            "min_satisfaction": 0.8779292929292929,
+            "questions": 50.166666666666664,
+            "rounds": 13.666666666666666
+          },
+          "separate_matched": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.042774356533229224,
+            "min_satisfaction": 0.8487015610770502,
+            "questions": 15.0,
+            "rounds": 3.0
+          },
+          "most_menus": {
+            "best_restaurant": 0.0,
+            "regret_per_member": 0.06403982702183325,
+            "min_satisfaction": 0.8510247934002826,
+            "questions": 0.0,
+            "rounds": 0.0
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 11710,
+          "allergy": null
+        },
+        {
+          "target": 11710,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.0824859170680983,
+        "regret_per_member": 0.04124295853404915,
+        "min_satisfaction": 0.9575757575757575,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "나래족발",
+        "best": false,
+        "regret": 0.16969336195552787,
+        "regret_per_member": 0.08484668097776393,
+        "min_satisfaction": 0.9145857766331207,
+        "questions": 12,
+        "rounds": 6
+      },
+      "separate_matched": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.0824859170680983,
+        "regret_per_member": 0.04124295853404915,
+        "min_satisfaction": 0.9575757575757575,
+        "questions": 4,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.17796208950535453,
+        "regret_per_member": 0.08898104475267726,
+        "min_satisfaction": 0.9106060606060606,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 10724,
+          "allergy": null
+        },
+        {
+          "target": 10724,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.14977054990456778,
+        "regret_per_member": 0.07488527495228389,
+        "min_satisfaction": 0.9242424242424242,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "도시락 빨간벽돌",
+        "best": false,
+        "regret": 0.25514208404509253,
+        "regret_per_member": 0.12757104202254627,
+        "min_satisfaction": 0.8742424242424243,
+        "questions": 20,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "네네치킨 봉천현대점",
+        "best": false,
+        "regret": 0.43692951852523837,
+        "regret_per_member": 0.21846475926261918,
+        "min_satisfaction": 0.793939393939394,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.16852068723547975,
+        "regret_per_member": 0.08426034361773987,
+        "min_satisfaction": 0.9151515151515152,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 11834,
+          "allergy": null
+        },
+        {
+          "target": 7880,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "면식당 낙성대점",
+        "best": false,
+        "regret": 0.25760682286287995,
+        "regret_per_member": 0.12880341143143997,
+        "min_satisfaction": 0.8469696969696969,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "곤조",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9681818181818181,
+        "questions": 28,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "향라선촨촨향",
+        "best": false,
+        "regret": 0.12056984656356264,
+        "regret_per_member": 0.06028492328178132,
+        "min_satisfaction": 0.9196969696969697,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2625197427805122,
+        "regret_per_member": 0.1312598713902561,
+        "min_satisfaction": 0.8484848484848485,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 13854,
+          "allergy": null
+        },
+        {
+          "target": 14550,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "피자스쿨 낙성대역점",
+        "best": false,
+        "regret": 0.10400089614178681,
+        "regret_per_member": 0.05200044807089341,
+        "min_satisfaction": 0.94,
+        "questions": 18,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "도미노피자 낙성대점",
+        "best": false,
+        "regret": 0.1595393570683814,
+        "regret_per_member": 0.0797696785341907,
+        "min_satisfaction": 0.9096969696969697,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 8356,
+          "allergy": null
+        },
+        {
+          "target": 8357,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.20655669890700346,
+        "regret_per_member": 0.10327834945350173,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 21,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "네네치킨 봉천현대점",
+        "best": false,
+        "regret": 0.23881546276677068,
+        "regret_per_member": 0.11940773138338534,
+        "min_satisfaction": 0.8818181818181818,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.16225108962473678,
+        "regret_per_member": 0.08112554481236839,
+        "min_satisfaction": 0.9181818181818182,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 14835,
+          "allergy": null
+        },
+        {
+          "target": 14834,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 15,
+        "rounds": 9
+      },
+      "separate_matched": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.15600108453846628,
+        "regret_per_member": 0.07800054226923314,
+        "min_satisfaction": 0.9212121212121213,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 7656,
+          "allergy": null
+        },
+        {
+          "target": 7559,
+          "allergy": null
+        },
+        {
+          "target": 8159,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.06735030657448282,
+        "regret_per_member": 0.022450102191494275,
+        "min_satisfaction": 0.9681818181818181,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "나래족발",
+        "best": false,
+        "regret": 0.29434038262835216,
+        "regret_per_member": 0.09811346087611739,
+        "min_satisfaction": 0.894031343247328,
+        "questions": 23,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.06735030657448282,
+        "regret_per_member": 0.022450102191494275,
+        "min_satisfaction": 0.9681818181818181,
+        "questions": 6,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2882612517969705,
+        "regret_per_member": 0.0960870839323235,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 9796,
+          "allergy": null
+        },
+        {
+          "target": 9790,
+          "allergy": null
+        },
+        {
+          "target": 9794,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "면식당 낙성대점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "멘츠루 서울대입구점",
+        "best": false,
+        "regret": 0.2452551567276647,
+        "regret_per_member": 0.08175171890922157,
+        "min_satisfaction": 0.9175757575757576,
+        "questions": 28,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "면식당 낙성대점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.4796730896402428,
+        "regret_per_member": 0.15989102988008094,
+        "min_satisfaction": 0.8448484848484848,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 10922,
+          "allergy": null
+        },
+        {
+          "target": 11808,
+          "allergy": null
+        },
+        {
+          "target": 11812,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.12389933716443445,
+        "regret_per_member": 0.041299779054811483,
+        "min_satisfaction": 0.9424242424242424,
+        "questions": 9,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "왁버거 서울대입구역",
+        "best": false,
+        "regret": 0.10301982699917124,
+        "regret_per_member": 0.03433994233305708,
+        "min_satisfaction": 0.9454545454545454,
+        "questions": 26,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.12389933716443445,
+        "regret_per_member": 0.041299779054811483,
+        "min_satisfaction": 0.9424242424242424,
+        "questions": 9,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.12389933716443445,
+        "regret_per_member": 0.041299779054811483,
+        "min_satisfaction": 0.9424242424242424,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 12828,
+          "allergy": null
+        },
+        {
+          "target": 12847,
+          "allergy": null
+        },
+        {
+          "target": 12828,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.3734733189031677,
+        "regret_per_member": 0.1244911063010559,
+        "min_satisfaction": 0.8727272727272727,
+        "questions": 9,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.0970978948710559,
+        "regret_per_member": 0.032365964957018635,
+        "min_satisfaction": 0.9566666666666667,
+        "questions": 30,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.3734733189031677,
+        "regret_per_member": 0.1244911063010559,
+        "min_satisfaction": 0.8727272727272727,
+        "questions": 9,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.31666764037525574,
+        "regret_per_member": 0.10555588012508525,
+        "min_satisfaction": 0.8884848484848484,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 13680,
+          "allergy": null
+        },
+        {
+          "target": 7887,
+          "allergy": null
+        },
+        {
+          "target": 13681,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "불초찜닭",
+        "best": false,
+        "regret": 0.06966752515158178,
+        "regret_per_member": 0.023222508383860595,
+        "min_satisfaction": 0.9618181818181818,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "불초찜닭",
+        "best": false,
+        "regret": 0.06966752515158178,
+        "regret_per_member": 0.023222508383860595,
+        "min_satisfaction": 0.9618181818181818,
+        "questions": 24,
+        "rounds": 8
+      },
+      "separate_matched": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.17460414836355925,
+        "regret_per_member": 0.058201382787853084,
+        "min_satisfaction": 0.9324242424242424,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.21715996216240657,
+        "regret_per_member": 0.07238665405413552,
+        "min_satisfaction": 0.9121212121212121,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 3,
+      "members": [
+        {
+          "target": 7742,
+          "allergy": null
+        },
+        {
+          "target": 9915,
+          "allergy": null
+        },
+        {
+          "target": 12035,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.19470789661905252,
+        "regret_per_member": 0.06490263220635084,
+        "min_satisfaction": 0.9257575757575758,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "그릴하우스 샤로수길본점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9833333333333334,
+        "questions": 26,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.19470789661905252,
+        "regret_per_member": 0.06490263220635084,
+        "min_satisfaction": 0.9257575757575758,
+        "questions": 6,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2071497812558397,
+        "regret_per_member": 0.06904992708527989,
+        "min_satisfaction": 0.9181818181818182,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 8086,
+          "allergy": null
+        },
+        {
+          "target": 8068,
+          "allergy": null
+        },
+        {
+          "target": 8072,
+          "allergy": null
+        },
+        {
+          "target": 8073,
+          "allergy": null
+        },
+        {
+          "target": 8079,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.5163917472675086,
+        "regret_per_member": 0.10327834945350171,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 54,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.5163917472675086,
+        "regret_per_member": 0.10327834945350171,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 9669,
+          "allergy": null
+        },
+        {
+          "target": 9674,
+          "allergy": null
+        },
+        {
+          "target": 9680,
+          "allergy": null
+        },
+        {
+          "target": 9677,
+          "allergy": null
+        },
+        {
+          "target": 9673,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.7188353309181825,
+        "regret_per_member": 0.1437670661836365,
+        "min_satisfaction": 0.8593939393939394,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "당나발포차 샤로수길점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 46,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.7188353309181825,
+        "regret_per_member": 0.1437670661836365,
+        "min_satisfaction": 0.8593939393939394,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.7188353309181825,
+        "regret_per_member": 0.1437670661836365,
+        "min_satisfaction": 0.8593939393939394,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 14478,
+          "allergy": null
+        },
+        {
+          "target": 14463,
+          "allergy": null
+        },
+        {
+          "target": 14458,
+          "allergy": null
+        },
+        {
+          "target": 14459,
+          "allergy": null
+        },
+        {
+          "target": 14457,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2606453271747332,
+        "regret_per_member": 0.05212906543494664,
+        "min_satisfaction": 0.9466666666666667,
+        "questions": 5,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "피자스쿨 낙성대역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 59,
+        "rounds": 20
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2606453271747332,
+        "regret_per_member": 0.05212906543494664,
+        "min_satisfaction": 0.9466666666666667,
+        "questions": 5,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2606453271747332,
+        "regret_per_member": 0.05212906543494664,
+        "min_satisfaction": 0.9466666666666667,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 8903,
+          "allergy": null
+        },
+        {
+          "target": 8893,
+          "allergy": null
+        },
+        {
+          "target": 8892,
+          "allergy": null
+        },
+        {
+          "target": 8887,
+          "allergy": null
+        },
+        {
+          "target": 8889,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.8470907597902334,
+        "regret_per_member": 0.1694181519580467,
+        "min_satisfaction": 0.8363636363636364,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "삼백돈 돈가츠 서울대입구역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 55,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.8470907597902334,
+        "regret_per_member": 0.1694181519580467,
+        "min_satisfaction": 0.8363636363636364,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.8470907597902334,
+        "regret_per_member": 0.1694181519580467,
+        "min_satisfaction": 0.8363636363636364,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 12166,
+          "allergy": null
+        },
+        {
+          "target": 12172,
+          "allergy": null
+        },
+        {
+          "target": 11659,
+          "allergy": null
+        },
+        {
+          "target": 11657,
+          "allergy": null
+        },
+        {
+          "target": 12930,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.15140975738679943,
+        "regret_per_member": 0.030281951477359886,
+        "min_satisfaction": 0.9615151515151515,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.15140975738679943,
+        "regret_per_member": 0.030281951477359886,
+        "min_satisfaction": 0.9615151515151515,
+        "questions": 55,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.15140975738679943,
+        "regret_per_member": 0.030281951477359886,
+        "min_satisfaction": 0.9615151515151515,
+        "questions": 20,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.5786273894195169,
+        "regret_per_member": 0.11572547788390337,
+        "min_satisfaction": 0.8772727272727273,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "similar",
+      "size": 5,
+      "members": [
+        {
+          "target": 7569,
+          "allergy": null
+        },
+        {
+          "target": 7571,
+          "allergy": null
+        },
+        {
+          "target": 7576,
+          "allergy": null
+        },
+        {
+          "target": 7581,
+          "allergy": null
+        },
+        {
+          "target": 7574,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 15,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "후추네",
+        "best": false,
+        "regret": 0.10204435815603566,
+        "regret_per_member": 0.02040887163120713,
+        "min_satisfaction": 0.9787878787878788,
+        "questions": 50,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.5243981541023776,
+        "regret_per_member": 0.10487963082047551,
+        "min_satisfaction": 0.8954545454545455,
+        "questions": 15,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.6460586574000307,
+        "regret_per_member": 0.12921173148000614,
+        "min_satisfaction": 0.8727272727272728,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 8694,
+          "allergy": null
+        },
+        {
+          "target": 8857,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.10327834945350173,
+        "regret_per_member": 0.051639174726750864,
+        "min_satisfaction": 0.896969696969697,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "25센치꼬치앤오뎅바 서울대입구점",
+        "best": false,
+        "regret": 0.07488527495228389,
+        "regret_per_member": 0.037442637476141946,
+        "min_satisfaction": 0.9242424242424242,
+        "questions": 21,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "닭장맥주 서울대입구점",
+        "best": false,
+        "regret": 0.17212754971266642,
+        "regret_per_member": 0.08606377485633321,
+        "min_satisfaction": 0.8269231947068652,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.24489413565390034,
+        "regret_per_member": 0.12244706782695017,
+        "min_satisfaction": 0.8201722856045224,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 9949,
+          "allergy": null
+        },
+        {
+          "target": 8857,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.04879016416943205,
+        "regret_per_member": 0.024395082084716024,
+        "min_satisfaction": 0.95,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.04879016416943205,
+        "regret_per_member": 0.024395082084716024,
+        "min_satisfaction": 0.95,
+        "questions": 19,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "닭장맥주 서울대입구점",
+        "best": false,
+        "regret": 0.20877287139067063,
+        "regret_per_member": 0.10438643569533532,
+        "min_satisfaction": 0.8269231947068652,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.24329541429020335,
+        "regret_per_member": 0.12164770714510167,
+        "min_satisfaction": 0.8201722856045224,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 11240,
+          "allergy": null
+        },
+        {
+          "target": 8257,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.09679556093427125,
+        "regret_per_member": 0.04839778046713562,
+        "min_satisfaction": 0.8091462220514144,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.09590938048675715,
+        "regret_per_member": 0.047954690243378575,
+        "min_satisfaction": 0.7776458605523933,
+        "questions": 31,
+        "rounds": 17
+      },
+      "separate_matched": {
+        "restaurant": "파앤피파스타하우스 샤로수길점",
+        "best": false,
+        "regret": 0.11502819605448575,
+        "regret_per_member": 0.057514098027242874,
+        "min_satisfaction": 0.7619725569077748,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.09590938048675715,
+        "regret_per_member": 0.047954690243378575,
+        "min_satisfaction": 0.7776458605523933,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 13725,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "브런치빈 서울대입구역점",
+        "best": false,
+        "regret": 0.09074523649223075,
+        "regret_per_member": 0.045372618246115375,
+        "min_satisfaction": 0.8090909090909091,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "브런치빈 서울대입구역점",
+        "best": false,
+        "regret": 0.09074523649223075,
+        "regret_per_member": 0.045372618246115375,
+        "min_satisfaction": 0.8090909090909091,
+        "questions": 21,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.08601311357418506,
+        "regret_per_member": 0.04300655678709253,
+        "min_satisfaction": 0.8393939393939394,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.08601311357418506,
+        "regret_per_member": 0.04300655678709253,
+        "min_satisfaction": 0.8393939393939394,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 10581,
+          "allergy": null
+        },
+        {
+          "target": 8857,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.01677249852820148,
+        "regret_per_member": 0.00838624926410074,
+        "min_satisfaction": 0.9525549871227503,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "25센치꼬치앤오뎅바 서울대입구점",
+        "best": false,
+        "regret": 0.01677249852820148,
+        "regret_per_member": 0.00838624926410074,
+        "min_satisfaction": 0.9525549871227503,
+        "questions": 17,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "당나발포차 샤로수길점",
+        "best": false,
+        "regret": 0.01677249852820148,
+        "regret_per_member": 0.00838624926410074,
+        "min_satisfaction": 0.9525549871227503,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.24028731370742834,
+        "regret_per_member": 0.12014365685371417,
+        "min_satisfaction": 0.8201722856045224,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 13833,
+          "allergy": null
+        },
+        {
+          "target": 13295,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "한앤둘치킨 서울대입구역점",
+        "best": false,
+        "regret": 0.19624527231814154,
+        "regret_per_member": 0.09812263615907077,
+        "min_satisfaction": 0.8129011746831076,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "보배반점 서울대입구역점",
+        "best": false,
+        "regret": 0.13640420607043902,
+        "regret_per_member": 0.06820210303521951,
+        "min_satisfaction": 0.8646296019519001,
+        "questions": 21,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "향라선촨촨향",
+        "best": false,
+        "regret": 0.17021844215716242,
+        "regret_per_member": 0.08510922107858121,
+        "min_satisfaction": 0.842902154421328,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2377428866866752,
+        "regret_per_member": 0.1188714433433376,
+        "min_satisfaction": 0.7568680320598293,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 12190,
+          "allergy": null
+        },
+        {
+          "target": 10372,
+          "allergy": null
+        },
+        {
+          "target": 10603,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "서울대입구 토모",
+        "best": false,
+        "regret": 0.08108239870947778,
+        "regret_per_member": 0.027027466236492593,
+        "min_satisfaction": 0.768156886351438,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "당나발포차 샤로수길점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.7948031660390653,
+        "questions": 24,
+        "rounds": 9
+      },
+      "separate_matched": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.1279878350652254,
+        "regret_per_member": 0.042662611688408465,
+        "min_satisfaction": 0.7640414960061326,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.15474646175159076,
+        "regret_per_member": 0.05158215391719692,
+        "min_satisfaction": 0.8303096823532172,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 10715,
+          "allergy": null
+        },
+        {
+          "target": 11296,
+          "allergy": null
+        },
+        {
+          "target": 12886,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.07538068608230351,
+        "regret_per_member": 0.02512689536076784,
+        "min_satisfaction": 0.8739393939393939,
+        "questions": 9,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.07002709072883857,
+        "regret_per_member": 0.023342363576279525,
+        "min_satisfaction": 0.8118181818181818,
+        "questions": 35,
+        "rounds": 17
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.07538068608230351,
+        "regret_per_member": 0.02512689536076784,
+        "min_satisfaction": 0.8739393939393939,
+        "questions": 9,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.07538068608230351,
+        "regret_per_member": 0.02512689536076784,
+        "min_satisfaction": 0.8739393939393939,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 13907,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 12211,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.16140920101204026,
+        "regret_per_member": 0.05380306700401342,
+        "min_satisfaction": 0.803030303030303,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "다이조부 낙성대점",
+        "best": false,
+        "regret": 0.05494622726333412,
+        "regret_per_member": 0.01831540908777804,
+        "min_satisfaction": 0.7621212121212122,
+        "questions": 30,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.16140920101204026,
+        "regret_per_member": 0.05380306700401342,
+        "min_satisfaction": 0.803030303030303,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.15439592588619244,
+        "regret_per_member": 0.05146530862873081,
+        "min_satisfaction": 0.8012121212121213,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 7382,
+          "allergy": null
+        },
+        {
+          "target": 10313,
+          "allergy": null
+        },
+        {
+          "target": 9736,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2428576408451616,
+        "regret_per_member": 0.0809525469483872,
+        "min_satisfaction": 0.8084848484848485,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "면식당 낙성대점",
+        "best": false,
+        "regret": 0.10759946077410153,
+        "regret_per_member": 0.03586648692470051,
+        "min_satisfaction": 0.8242424242424242,
+        "questions": 31,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2428576408451616,
+        "regret_per_member": 0.0809525469483872,
+        "min_satisfaction": 0.8084848484848485,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2428576408451616,
+        "regret_per_member": 0.0809525469483872,
+        "min_satisfaction": 0.8084848484848485,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 12695,
+          "allergy": null
+        },
+        {
+          "target": 8482,
+          "allergy": null
+        },
+        {
+          "target": 13089,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8965822842411426,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "목현",
+        "best": false,
+        "regret": 0.06259389072729646,
+        "regret_per_member": 0.020864630242432153,
+        "min_satisfaction": 0.8302205243934139,
+        "questions": 30,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8965822842411426,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.22216005456393467,
+        "regret_per_member": 0.07405335152131155,
+        "min_satisfaction": 0.8036363636363636,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 3,
+      "members": [
+        {
+          "target": 7286,
+          "allergy": null
+        },
+        {
+          "target": 13295,
+          "allergy": null
+        },
+        {
+          "target": 10913,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "당나발포차 샤로수길점",
+        "best": false,
+        "regret": 0.1678578109379614,
+        "regret_per_member": 0.055952603645987135,
+        "min_satisfaction": 0.8430944452312994,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "보배반점 서울대입구역점",
+        "best": false,
+        "regret": 0.09612139387924282,
+        "regret_per_member": 0.03204046462641427,
+        "min_satisfaction": 0.8646296019519001,
+        "questions": 33,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.12169792173039196,
+        "regret_per_member": 0.04056597391013065,
+        "min_satisfaction": 0.82665174084606,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2807447701616066,
+        "regret_per_member": 0.09358159005386886,
+        "min_satisfaction": 0.7568680320598293,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 8819,
+          "allergy": null
+        },
+        {
+          "target": 14660,
+          "allergy": null
+        },
+        {
+          "target": 7516,
+          "allergy": null
+        },
+        {
+          "target": 10771,
+          "allergy": null
+        },
+        {
+          "target": 14183,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "사케앤살몬",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.7888686867156145,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "당나발포차 샤로수길점",
+        "best": false,
+        "regret": 0.006161047161784727,
+        "regret_per_member": 0.0012322094323569456,
+        "min_satisfaction": 0.804055338316858,
+        "questions": 52,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "사케앤살몬",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.7888686867156145,
+        "questions": 20,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.3293702703423333,
+        "regret_per_member": 0.06587405406846666,
+        "min_satisfaction": 0.7778787878787878,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 14432,
+          "allergy": null
+        },
+        {
+          "target": 13292,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 12214,
+          "allergy": null
+        },
+        {
+          "target": 12447,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.16344721434363824,
+        "regret_per_member": 0.032689442868727644,
+        "min_satisfaction": 0.7568680320598293,
+        "questions": 15,
+        "rounds": 3
+      },
+      "separate": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.07364163141127306,
+        "regret_per_member": 0.014728326282254612,
+        "min_satisfaction": 0.82665174084606,
+        "questions": 50,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.16344721434363824,
+        "regret_per_member": 0.032689442868727644,
+        "min_satisfaction": 0.7568680320598293,
+        "questions": 15,
+        "rounds": 3
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.16344721434363824,
+        "regret_per_member": 0.032689442868727644,
+        "min_satisfaction": 0.7568680320598293,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 9857,
+          "allergy": null
+        },
+        {
+          "target": 13834,
+          "allergy": null
+        },
+        {
+          "target": 10069,
+          "allergy": null
+        },
+        {
+          "target": 9648,
+          "allergy": null
+        },
+        {
+          "target": 13102,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.20450493753852766,
+        "regret_per_member": 0.04090098750770553,
+        "min_satisfaction": 0.79,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "당나발포차 샤로수길점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.8651515151515151,
+        "questions": 43,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.20450493753852766,
+        "regret_per_member": 0.04090098750770553,
+        "min_satisfaction": 0.79,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.20450493753852766,
+        "regret_per_member": 0.04090098750770553,
+        "min_satisfaction": 0.79,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 7955,
+          "allergy": null
+        },
+        {
+          "target": 13292,
+          "allergy": null
+        },
+        {
+          "target": 11114,
+          "allergy": null
+        },
+        {
+          "target": 9535,
+          "allergy": null
+        },
+        {
+          "target": 7614,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.010772107452445001,
+        "regret_per_member": 0.0021544214904890002,
+        "min_satisfaction": 0.82665174084606,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.010772107452445001,
+        "regret_per_member": 0.0021544214904890002,
+        "min_satisfaction": 0.82665174084606,
+        "questions": 47,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.010772107452445001,
+        "regret_per_member": 0.0021544214904890002,
+        "min_satisfaction": 0.82665174084606,
+        "questions": 20,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.15188884303151512,
+        "regret_per_member": 0.030377768606303025,
+        "min_satisfaction": 0.7568680320598293,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 8451,
+          "allergy": null
+        },
+        {
+          "target": 8257,
+          "allergy": null
+        },
+        {
+          "target": 7866,
+          "allergy": null
+        },
+        {
+          "target": 10402,
+          "allergy": null
+        },
+        {
+          "target": 8197,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.21291898387851865,
+        "regret_per_member": 0.04258379677570373,
+        "min_satisfaction": 0.7776458605523933,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.16806927543005273,
+        "regret_per_member": 0.033613855086010544,
+        "min_satisfaction": 0.8242424242424242,
+        "questions": 53,
+        "rounds": 17
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.21291898387851865,
+        "regret_per_member": 0.04258379677570373,
+        "min_satisfaction": 0.7776458605523933,
+        "questions": 20,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.21291898387851865,
+        "regret_per_member": 0.04258379677570373,
+        "min_satisfaction": 0.7776458605523933,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "conflict",
+      "size": 5,
+      "members": [
+        {
+          "target": 8946,
+          "allergy": null
+        },
+        {
+          "target": 10313,
+          "allergy": null
+        },
+        {
+          "target": 14666,
+          "allergy": null
+        },
+        {
+          "target": 11440,
+          "allergy": null
+        },
+        {
+          "target": 13919,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.36612792307081654,
+        "regret_per_member": 0.07322558461416331,
+        "min_satisfaction": 0.8303030303030303,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "야나기 샤로수길점",
+        "best": false,
+        "regret": 0.12065862840163089,
+        "regret_per_member": 0.024131725680326177,
+        "min_satisfaction": 0.8718181818181818,
+        "questions": 54,
+        "rounds": 12
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.36612792307081654,
+        "regret_per_member": 0.07322558461416331,
+        "min_satisfaction": 0.8303030303030303,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.36612792307081654,
+        "regret_per_member": 0.07322558461416331,
+        "min_satisfaction": 0.8303030303030303,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 13521,
+          "allergy": "milk"
+        },
+        {
+          "target": 11132,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.14971461077818668,
+        "regret_per_member": 0.07485730538909334,
+        "min_satisfaction": 0.8742424242424243,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.14971461077818668,
+        "regret_per_member": 0.07485730538909334,
+        "min_satisfaction": 0.8742424242424243,
+        "questions": 25,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "우월전",
+        "best": false,
+        "regret": 0.02750044307509613,
+        "regret_per_member": 0.013750221537548065,
+        "min_satisfaction": 0.9090909090909091,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.16014740748564238,
+        "regret_per_member": 0.08007370374282119,
+        "min_satisfaction": 0.8666666666666667,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 10108,
+          "allergy": "pork"
+        },
+        {
+          "target": 9949,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 4,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 1.0,
+        "questions": 16,
+        "rounds": 8
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.1504697922592368,
+        "regret_per_member": 0.0752348961296184,
+        "min_satisfaction": 0.8984848484848484,
+        "questions": 4,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.1504697922592368,
+        "regret_per_member": 0.0752348961296184,
+        "min_satisfaction": 0.8984848484848484,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 12631,
+          "allergy": "wheat"
+        },
+        {
+          "target": 13033,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "소우주",
+        "best": false,
+        "regret": 0.05808478489155826,
+        "regret_per_member": 0.02904239244577913,
+        "min_satisfaction": 0.9127272727272727,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "소우주",
+        "best": false,
+        "regret": 0.05808478489155826,
+        "regret_per_member": 0.02904239244577913,
+        "min_satisfaction": 0.9127272727272727,
+        "questions": 17,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "낙성대우리한우소곱창",
+        "best": false,
+        "regret": 0.20580009060435567,
+        "regret_per_member": 0.10290004530217783,
+        "min_satisfaction": 0.8566666666666667,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.14583851345212867,
+        "regret_per_member": 0.07291925672606434,
+        "min_satisfaction": 0.9066666666666666,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 9701,
+          "allergy": "wheat"
+        },
+        {
+          "target": 10003,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.0858695029509435,
+        "regret_per_member": 0.04293475147547175,
+        "min_satisfaction": 0.9242424242424242,
+        "questions": 2,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "후추네",
+        "best": false,
+        "regret": 0.052117216146051956,
+        "regret_per_member": 0.026058608073025978,
+        "min_satisfaction": 0.9242424242424242,
+        "questions": 21,
+        "rounds": 11
+      },
+      "separate_matched": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.0858695029509435,
+        "regret_per_member": 0.04293475147547175,
+        "min_satisfaction": 0.9242424242424242,
+        "questions": 2,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.16086742966354203,
+        "regret_per_member": 0.08043371483177102,
+        "min_satisfaction": 0.8484848484848485,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 14847,
+          "allergy": "pork"
+        },
+        {
+          "target": 9682,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.13923801210665984,
+        "regret_per_member": 0.06961900605332992,
+        "min_satisfaction": 0.8342424242424242,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "당나발포차 샤로수길점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9566666666666667,
+        "questions": 15,
+        "rounds": 8
+      },
+      "separate_matched": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.13923801210665984,
+        "regret_per_member": 0.06961900605332992,
+        "min_satisfaction": 0.8342424242424242,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.19947453754131014,
+        "regret_per_member": 0.09973726877065507,
+        "min_satisfaction": 0.8593939393939394,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 8767,
+          "allergy": "milk"
+        },
+        {
+          "target": 10519,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.07488527495228378,
+        "regret_per_member": 0.03744263747614189,
+        "min_satisfaction": 0.9242424242424243,
+        "questions": 8,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "부여집",
+        "best": false,
+        "regret": 0.07198776471493226,
+        "regret_per_member": 0.03599388235746613,
+        "min_satisfaction": 0.9621212121212122,
+        "questions": 26,
+        "rounds": 18
+      },
+      "separate_matched": {
+        "restaurant": "향라선촨촨향",
+        "best": false,
+        "regret": 0.14201497777455227,
+        "regret_per_member": 0.07100748888727614,
+        "min_satisfaction": 0.9257575757575758,
+        "questions": 8,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.1884533969996419,
+        "regret_per_member": 0.09422669849982095,
+        "min_satisfaction": 0.8757575757575757,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 12415,
+          "allergy": "pork"
+        },
+        {
+          "target": 7665,
+          "allergy": null
+        },
+        {
+          "target": 9084,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.19194849065130792,
+        "regret_per_member": 0.06398283021710265,
+        "min_satisfaction": 0.8909090909090909,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "오뉴 샤로수길본점",
+        "best": false,
+        "regret": 0.061950466438799895,
+        "regret_per_member": 0.020650155479599964,
+        "min_satisfaction": 0.9027272727272727,
+        "questions": 38,
+        "rounds": 19
+      },
+      "separate_matched": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.0734877166045224,
+        "regret_per_member": 0.0244959055348408,
+        "min_satisfaction": 0.9287878787878788,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.185979215576758,
+        "regret_per_member": 0.061993071858919335,
+        "min_satisfaction": 0.9090909090909091,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 13012,
+          "allergy": "wheat"
+        },
+        {
+          "target": 13493,
+          "allergy": null
+        },
+        {
+          "target": 14799,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.025410876465908866,
+        "regret_per_member": 0.008470292155302955,
+        "min_satisfaction": 0.946060606060606,
+        "questions": 3,
+        "rounds": 1
+      },
+      "separate": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.025410876465908866,
+        "regret_per_member": 0.008470292155302955,
+        "min_satisfaction": 0.946060606060606,
+        "questions": 27,
+        "rounds": 15
+      },
+      "separate_matched": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.025410876465908866,
+        "regret_per_member": 0.008470292155302955,
+        "min_satisfaction": 0.946060606060606,
+        "questions": 3,
+        "rounds": 1
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.21380338742822091,
+        "regret_per_member": 0.07126779580940697,
+        "min_satisfaction": 0.8945454545454545,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 8689,
+          "allergy": "pork"
+        },
+        {
+          "target": 12939,
+          "allergy": null
+        },
+        {
+          "target": 13771,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "당나발포차 샤로수길점",
+        "best": false,
+        "regret": 0.05390252248427917,
+        "regret_per_member": 0.017967507494759723,
+        "min_satisfaction": 0.9278787878787879,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "오술차 서울대입구역점",
+        "best": false,
+        "regret": 0.13138657142417598,
+        "regret_per_member": 0.04379552380805866,
+        "min_satisfaction": 0.8924242424242425,
+        "questions": 28,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.27709906234176374,
+        "regret_per_member": 0.09236635411392125,
+        "min_satisfaction": 0.8824242424242424,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.30486792958403414,
+        "regret_per_member": 0.10162264319467805,
+        "min_satisfaction": 0.8445454545454545,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 10468,
+          "allergy": "egg"
+        },
+        {
+          "target": 10330,
+          "allergy": null
+        },
+        {
+          "target": 14054,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2526762428249036,
+        "regret_per_member": 0.08422541427496787,
+        "min_satisfaction": 0.8683383722247506,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "오봉집 서울대입구역점",
+        "best": false,
+        "regret": 0.0913233639385667,
+        "regret_per_member": 0.030441121312855566,
+        "min_satisfaction": 0.9294612896443784,
+        "questions": 26,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.04943013403117788,
+        "regret_per_member": 0.01647671134372596,
+        "min_satisfaction": 0.9384848484848485,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.2526762428249036,
+        "regret_per_member": 0.08422541427496787,
+        "min_satisfaction": 0.8683383722247506,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 7370,
+          "allergy": "milk"
+        },
+        {
+          "target": 13275,
+          "allergy": null
+        },
+        {
+          "target": 12362,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.10744892105110149,
+        "regret_per_member": 0.03581630701703383,
+        "min_satisfaction": 0.9209090909090909,
+        "questions": 6,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "이자카야 유리",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9484848484848485,
+        "questions": 24,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.12738790504796313,
+        "regret_per_member": 0.04246263501598771,
+        "min_satisfaction": 0.9075757575757576,
+        "questions": 6,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.39791327615964417,
+        "regret_per_member": 0.1326377587198814,
+        "min_satisfaction": 0.7975757575757576,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 3,
+      "members": [
+        {
+          "target": 11860,
+          "allergy": "milk"
+        },
+        {
+          "target": 9510,
+          "allergy": null
+        },
+        {
+          "target": 8049,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.04039760616948382,
+        "regret_per_member": 0.013465868723161273,
+        "min_satisfaction": 0.8984848484848484,
+        "questions": 12,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.0576818388285475,
+        "regret_per_member": 0.019227279609515834,
+        "min_satisfaction": 0.8915151515151515,
+        "questions": 34,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.19613012655754045,
+        "regret_per_member": 0.06537670885251348,
+        "min_satisfaction": 0.8612121212121212,
+        "questions": 12,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.12258688796902883,
+        "regret_per_member": 0.04086229598967628,
+        "min_satisfaction": 0.8833333333333333,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 12577,
+          "allergy": "pork"
+        },
+        {
+          "target": 11845,
+          "allergy": null
+        },
+        {
+          "target": 9474,
+          "allergy": null
+        },
+        {
+          "target": 13243,
+          "allergy": null
+        },
+        {
+          "target": 9361,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.42114565769319556,
+        "regret_per_member": 0.08422913153863912,
+        "min_satisfaction": 0.8094820937350287,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "김가네 관악구청점",
+        "best": true,
+        "regret": 0.0,
+        "regret_per_member": 0.0,
+        "min_satisfaction": 0.9227272727272727,
+        "questions": 55,
+        "rounds": 13
+      },
+      "separate_matched": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.42114565769319556,
+        "regret_per_member": 0.08422913153863912,
+        "min_satisfaction": 0.8094820937350287,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.42114565769319556,
+        "regret_per_member": 0.08422913153863912,
+        "min_satisfaction": 0.8094820937350287,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 9709,
+          "allergy": "milk"
+        },
+        {
+          "target": 8783,
+          "allergy": null
+        },
+        {
+          "target": 12136,
+          "allergy": null
+        },
+        {
+          "target": 10980,
+          "allergy": null
+        },
+        {
+          "target": 12243,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.05172207310937617,
+        "regret_per_member": 0.010344414621875233,
+        "min_satisfaction": 0.9121212121212121,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.07265774987175894,
+        "regret_per_member": 0.014531549974351788,
+        "min_satisfaction": 0.9151515151515152,
+        "questions": 45,
+        "rounds": 14
+      },
+      "separate_matched": {
+        "restaurant": "삼합대장 서울대입구역 본점",
+        "best": false,
+        "regret": 0.07126440545367892,
+        "regret_per_member": 0.014252881090735784,
+        "min_satisfaction": 0.8921212121212121,
+        "questions": 20,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.26666845798801475,
+        "regret_per_member": 0.05333369159760295,
+        "min_satisfaction": 0.8893939393939394,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 8672,
+          "allergy": "pork"
+        },
+        {
+          "target": 12348,
+          "allergy": null
+        },
+        {
+          "target": 14750,
+          "allergy": null
+        },
+        {
+          "target": 8890,
+          "allergy": null
+        },
+        {
+          "target": 11683,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.24105603411837087,
+        "regret_per_member": 0.04821120682367418,
+        "min_satisfaction": 0.8154545454545454,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.24105603411837087,
+        "regret_per_member": 0.04821120682367418,
+        "min_satisfaction": 0.8154545454545454,
+        "questions": 59,
+        "rounds": 17
+      },
+      "separate_matched": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.24105603411837087,
+        "regret_per_member": 0.04821120682367418,
+        "min_satisfaction": 0.8154545454545454,
+        "questions": 20,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.32400202921071064,
+        "regret_per_member": 0.06480040584214213,
+        "min_satisfaction": 0.8363636363636364,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 10407,
+          "allergy": "egg"
+        },
+        {
+          "target": 10200,
+          "allergy": null
+        },
+        {
+          "target": 13617,
+          "allergy": null
+        },
+        {
+          "target": 13991,
+          "allergy": null
+        },
+        {
+          "target": 11654,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.045419126846825,
+        "regret_per_member": 0.009083825369365,
+        "min_satisfaction": 0.8742424242424243,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.045419126846825,
+        "regret_per_member": 0.009083825369365,
+        "min_satisfaction": 0.8742424242424243,
+        "questions": 42,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "향라선촨촨향",
+        "best": false,
+        "regret": 0.2223297276377626,
+        "regret_per_member": 0.04446594552755252,
+        "min_satisfaction": 0.8427272727272728,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.17849713331021744,
+        "regret_per_member": 0.03569942666204349,
+        "min_satisfaction": 0.8924242424242425,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 9542,
+          "allergy": "egg"
+        },
+        {
+          "target": 13786,
+          "allergy": null
+        },
+        {
+          "target": 9737,
+          "allergy": null
+        },
+        {
+          "target": 7461,
+          "allergy": null
+        },
+        {
+          "target": 9658,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.05638159197043077,
+        "regret_per_member": 0.011276318394086155,
+        "min_satisfaction": 0.8884848484848484,
+        "questions": 20,
+        "rounds": 4
+      },
+      "separate": {
+        "restaurant": "도시락 빨간벽돌",
+        "best": false,
+        "regret": 0.27987631112716044,
+        "regret_per_member": 0.05597526222543209,
+        "min_satisfaction": 0.8445454545454545,
+        "questions": 43,
+        "rounds": 10
+      },
+      "separate_matched": {
+        "restaurant": "김밥친구 낙성대점",
+        "best": false,
+        "regret": 0.14533032274441526,
+        "regret_per_member": 0.029066064548883053,
+        "min_satisfaction": 0.8490909090909091,
+        "questions": 20,
+        "rounds": 4
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.3065010793749896,
+        "regret_per_member": 0.06130021587499792,
+        "min_satisfaction": 0.8445454545454545,
+        "questions": 0,
+        "rounds": 0
+      }
+    },
+    {
+      "situation": "restricted",
+      "size": 5,
+      "members": [
+        {
+          "target": 12362,
+          "allergy": "pork"
+        },
+        {
+          "target": 10270,
+          "allergy": null
+        },
+        {
+          "target": 14608,
+          "allergy": null
+        },
+        {
+          "target": 14882,
+          "allergy": null
+        },
+        {
+          "target": 7638,
+          "allergy": null
+        }
+      ],
+      "group": {
+        "restaurant": "속초오징어어시장 서울대입구역점",
+        "best": false,
+        "regret": 0.3013071935388551,
+        "regret_per_member": 0.06026143870777102,
+        "min_satisfaction": 0.8136363636363636,
+        "questions": 10,
+        "rounds": 2
+      },
+      "separate": {
+        "restaurant": "향라선촨촨향",
+        "best": false,
+        "regret": 0.09059903729806547,
+        "regret_per_member": 0.018119807459613092,
+        "min_satisfaction": 0.8954545454545455,
+        "questions": 57,
+        "rounds": 18
+      },
+      "separate_matched": {
+        "restaurant": "싸다김밥 낙성대역점",
+        "best": false,
+        "regret": 0.1821045483494535,
+        "regret_per_member": 0.0364209096698907,
+        "min_satisfaction": 0.8833333333333333,
+        "questions": 10,
+        "rounds": 2
+      },
+      "most_menus": {
+        "restaurant": "샐러리아 서울대입구점",
+        "best": false,
+        "regret": 0.42438045307786926,
+        "regret_per_member": 0.08487609061557386,
+        "min_satisfaction": 0.833939393939394,
+        "questions": 0,
+        "rounds": 0
+      }
+    }
+  ],
+  "simulator_usage": {
+    "calls": 1832,
+    "input_tokens": 716703,
+    "output_tokens": 153111
+  }
+}

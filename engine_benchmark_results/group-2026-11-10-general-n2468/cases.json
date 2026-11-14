@@ -1,0 +1,3753 @@
+{
+  "source": "general",
+  "date": null,
+  "meal": "LU",
+  "seed": 20261114,
+  "catalog": "63d02eff04b13deafbdab5c6083f59ae7ac815a64d34b9125620af1d246e786f",
+  "cases": [
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 7851,
+          "allergy": null
+        },
+        {
+          "target": 7801,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 12812,
+          "allergy": null
+        },
+        {
+          "target": 12783,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 12084,
+          "allergy": null
+        },
+        {
+          "target": 11819,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 8548,
+          "allergy": null
+        },
+        {
+          "target": 13860,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 7468,
+          "allergy": null
+        },
+        {
+          "target": 11540,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 9660,
+          "allergy": null
+        },
+        {
+          "target": 8543,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 14699,
+          "allergy": null
+        },
+        {
+          "target": 14702,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 7490,
+          "allergy": null
+        },
+        {
+          "target": 10231,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 13474,
+          "allergy": null
+        },
+        {
+          "target": 13855,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 11079,
+          "allergy": null
+        },
+        {
+          "target": 10792,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 14286,
+          "allergy": null
+        },
+        {
+          "target": 14284,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 2,
+      "members": [
+        {
+          "target": 9471,
+          "allergy": null
+        },
+        {
+          "target": 9448,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 11806,
+          "allergy": null
+        },
+        {
+          "target": 12443,
+          "allergy": null
+        },
+        {
+          "target": 12990,
+          "allergy": null
+        },
+        {
+          "target": 12444,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 10972,
+          "allergy": null
+        },
+        {
+          "target": 10971,
+          "allergy": null
+        },
+        {
+          "target": 10975,
+          "allergy": null
+        },
+        {
+          "target": 10976,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 10180,
+          "allergy": null
+        },
+        {
+          "target": 12325,
+          "allergy": null
+        },
+        {
+          "target": 12326,
+          "allergy": null
+        },
+        {
+          "target": 12330,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 9018,
+          "allergy": null
+        },
+        {
+          "target": 7457,
+          "allergy": null
+        },
+        {
+          "target": 9143,
+          "allergy": null
+        },
+        {
+          "target": 9020,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 13428,
+          "allergy": null
+        },
+        {
+          "target": 13411,
+          "allergy": null
+        },
+        {
+          "target": 13413,
+          "allergy": null
+        },
+        {
+          "target": 13412,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 8380,
+          "allergy": null
+        },
+        {
+          "target": 12158,
+          "allergy": null
+        },
+        {
+          "target": 13070,
+          "allergy": null
+        },
+        {
+          "target": 12305,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 13740,
+          "allergy": null
+        },
+        {
+          "target": 13744,
+          "allergy": null
+        },
+        {
+          "target": 13741,
+          "allergy": null
+        },
+        {
+          "target": 10471,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 10095,
+          "allergy": null
+        },
+        {
+          "target": 10099,
+          "allergy": null
+        },
+        {
+          "target": 10106,
+          "allergy": null
+        },
+        {
+          "target": 10103,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 14649,
+          "allergy": null
+        },
+        {
+          "target": 14615,
+          "allergy": null
+        },
+        {
+          "target": 14696,
+          "allergy": null
+        },
+        {
+          "target": 14697,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 9039,
+          "allergy": null
+        },
+        {
+          "target": 9022,
+          "allergy": null
+        },
+        {
+          "target": 9024,
+          "allergy": null
+        },
+        {
+          "target": 9028,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 12017,
+          "allergy": null
+        },
+        {
+          "target": 12023,
+          "allergy": null
+        },
+        {
+          "target": 12020,
+          "allergy": null
+        },
+        {
+          "target": 12019,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 4,
+      "members": [
+        {
+          "target": 11187,
+          "allergy": null
+        },
+        {
+          "target": 11194,
+          "allergy": null
+        },
+        {
+          "target": 11184,
+          "allergy": null
+        },
+        {
+          "target": 11188,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 13486,
+          "allergy": null
+        },
+        {
+          "target": 13488,
+          "allergy": null
+        },
+        {
+          "target": 13492,
+          "allergy": null
+        },
+        {
+          "target": 13485,
+          "allergy": null
+        },
+        {
+          "target": 13490,
+          "allergy": null
+        },
+        {
+          "target": 13489,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 8795,
+          "allergy": null
+        },
+        {
+          "target": 8803,
+          "allergy": null
+        },
+        {
+          "target": 7721,
+          "allergy": null
+        },
+        {
+          "target": 8798,
+          "allergy": null
+        },
+        {
+          "target": 7719,
+          "allergy": null
+        },
+        {
+          "target": 7724,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 12363,
+          "allergy": null
+        },
+        {
+          "target": 12364,
+          "allergy": null
+        },
+        {
+          "target": 12358,
+          "allergy": null
+        },
+        {
+          "target": 12366,
+          "allergy": null
+        },
+        {
+          "target": 12359,
+          "allergy": null
+        },
+        {
+          "target": 12357,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 9835,
+          "allergy": null
+        },
+        {
+          "target": 9830,
+          "allergy": null
+        },
+        {
+          "target": 9185,
+          "allergy": null
+        },
+        {
+          "target": 8501,
+          "allergy": null
+        },
+        {
+          "target": 9831,
+          "allergy": null
+        },
+        {
+          "target": 9836,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 9179,
+          "allergy": null
+        },
+        {
+          "target": 9152,
+          "allergy": null
+        },
+        {
+          "target": 9161,
+          "allergy": null
+        },
+        {
+          "target": 9160,
+          "allergy": null
+        },
+        {
+          "target": 9153,
+          "allergy": null
+        },
+        {
+          "target": 9155,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 14104,
+          "allergy": null
+        },
+        {
+          "target": 14110,
+          "allergy": null
+        },
+        {
+          "target": 14103,
+          "allergy": null
+        },
+        {
+          "target": 14106,
+          "allergy": null
+        },
+        {
+          "target": 14111,
+          "allergy": null
+        },
+        {
+          "target": 14112,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 11017,
+          "allergy": null
+        },
+        {
+          "target": 10970,
+          "allergy": null
+        },
+        {
+          "target": 10968,
+          "allergy": null
+        },
+        {
+          "target": 10969,
+          "allergy": null
+        },
+        {
+          "target": 10971,
+          "allergy": null
+        },
+        {
+          "target": 10975,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 13919,
+          "allergy": null
+        },
+        {
+          "target": 11730,
+          "allergy": null
+        },
+        {
+          "target": 11989,
+          "allergy": null
+        },
+        {
+          "target": 11154,
+          "allergy": null
+        },
+        {
+          "target": 13918,
+          "allergy": null
+        },
+        {
+          "target": 11130,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 9651,
+          "allergy": null
+        },
+        {
+          "target": 9449,
+          "allergy": null
+        },
+        {
+          "target": 8529,
+          "allergy": null
+        },
+        {
+          "target": 9443,
+          "allergy": null
+        },
+        {
+          "target": 9447,
+          "allergy": null
+        },
+        {
+          "target": 9656,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 12318,
+          "allergy": null
+        },
+        {
+          "target": 10880,
+          "allergy": null
+        },
+        {
+          "target": 10868,
+          "allergy": null
+        },
+        {
+          "target": 10877,
+          "allergy": null
+        },
+        {
+          "target": 10867,
+          "allergy": null
+        },
+        {
+          "target": 12317,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 13754,
+          "allergy": null
+        },
+        {
+          "target": 9476,
+          "allergy": null
+        },
+        {
+          "target": 9654,
+          "allergy": null
+        },
+        {
+          "target": 7688,
+          "allergy": null
+        },
+        {
+          "target": 13797,
+          "allergy": null
+        },
+        {
+          "target": 9526,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 6,
+      "members": [
+        {
+          "target": 11699,
+          "allergy": null
+        },
+        {
+          "target": 10943,
+          "allergy": null
+        },
+        {
+          "target": 11704,
+          "allergy": null
+        },
+        {
+          "target": 11700,
+          "allergy": null
+        },
+        {
+          "target": 10952,
+          "allergy": null
+        },
+        {
+          "target": 11703,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 9936,
+          "allergy": null
+        },
+        {
+          "target": 9933,
+          "allergy": null
+        },
+        {
+          "target": 9934,
+          "allergy": null
+        },
+        {
+          "target": 10047,
+          "allergy": null
+        },
+        {
+          "target": 9937,
+          "allergy": null
+        },
+        {
+          "target": 9935,
+          "allergy": null
+        },
+        {
+          "target": 10051,
+          "allergy": null
+        },
+        {
+          "target": 7630,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 12835,
+          "allergy": null
+        },
+        {
+          "target": 12843,
+          "allergy": null
+        },
+        {
+          "target": 12830,
+          "allergy": null
+        },
+        {
+          "target": 12838,
+          "allergy": null
+        },
+        {
+          "target": 12842,
+          "allergy": null
+        },
+        {
+          "target": 12831,
+          "allergy": null
+        },
+        {
+          "target": 12836,
+          "allergy": null
+        },
+        {
+          "target": 12834,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 14355,
+          "allergy": null
+        },
+        {
+          "target": 14353,
+          "allergy": null
+        },
+        {
+          "target": 14351,
+          "allergy": null
+        },
+        {
+          "target": 10461,
+          "allergy": null
+        },
+        {
+          "target": 10959,
+          "allergy": null
+        },
+        {
+          "target": 10962,
+          "allergy": null
+        },
+        {
+          "target": 10960,
+          "allergy": null
+        },
+        {
+          "target": 14357,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 10168,
+          "allergy": null
+        },
+        {
+          "target": 10165,
+          "allergy": null
+        },
+        {
+          "target": 11610,
+          "allergy": null
+        },
+        {
+          "target": 11603,
+          "allergy": null
+        },
+        {
+          "target": 10169,
+          "allergy": null
+        },
+        {
+          "target": 10164,
+          "allergy": null
+        },
+        {
+          "target": 10170,
+          "allergy": null
+        },
+        {
+          "target": 11600,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 9654,
+          "allergy": null
+        },
+        {
+          "target": 9526,
+          "allergy": null
+        },
+        {
+          "target": 12055,
+          "allergy": null
+        },
+        {
+          "target": 9477,
+          "allergy": null
+        },
+        {
+          "target": 12054,
+          "allergy": null
+        },
+        {
+          "target": 12059,
+          "allergy": null
+        },
+        {
+          "target": 8576,
+          "allergy": null
+        },
+        {
+          "target": 9921,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 9294,
+          "allergy": null
+        },
+        {
+          "target": 10271,
+          "allergy": null
+        },
+        {
+          "target": 9293,
+          "allergy": null
+        },
+        {
+          "target": 10294,
+          "allergy": null
+        },
+        {
+          "target": 10269,
+          "allergy": null
+        },
+        {
+          "target": 10270,
+          "allergy": null
+        },
+        {
+          "target": 7876,
+          "allergy": null
+        },
+        {
+          "target": 7884,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 14802,
+          "allergy": null
+        },
+        {
+          "target": 14803,
+          "allergy": null
+        },
+        {
+          "target": 14800,
+          "allergy": null
+        },
+        {
+          "target": 12620,
+          "allergy": null
+        },
+        {
+          "target": 12621,
+          "allergy": null
+        },
+        {
+          "target": 12624,
+          "allergy": null
+        },
+        {
+          "target": 14804,
+          "allergy": null
+        },
+        {
+          "target": 12622,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 10255,
+          "allergy": null
+        },
+        {
+          "target": 10223,
+          "allergy": null
+        },
+        {
+          "target": 10225,
+          "allergy": null
+        },
+        {
+          "target": 10227,
+          "allergy": null
+        },
+        {
+          "target": 10226,
+          "allergy": null
+        },
+        {
+          "target": 10220,
+          "allergy": null
+        },
+        {
+          "target": 10218,
+          "allergy": null
+        },
+        {
+          "target": 10224,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 12067,
+          "allergy": null
+        },
+        {
+          "target": 12070,
+          "allergy": null
+        },
+        {
+          "target": 12071,
+          "allergy": null
+        },
+        {
+          "target": 12069,
+          "allergy": null
+        },
+        {
+          "target": 12061,
+          "allergy": null
+        },
+        {
+          "target": 12062,
+          "allergy": null
+        },
+        {
+          "target": 12057,
+          "allergy": null
+        },
+        {
+          "target": 12064,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 11493,
+          "allergy": null
+        },
+        {
+          "target": 10231,
+          "allergy": null
+        },
+        {
+          "target": 10222,
+          "allergy": null
+        },
+        {
+          "target": 10161,
+          "allergy": null
+        },
+        {
+          "target": 10251,
+          "allergy": null
+        },
+        {
+          "target": 10230,
+          "allergy": null
+        },
+        {
+          "target": 9074,
+          "allergy": null
+        },
+        {
+          "target": 10261,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 11642,
+          "allergy": null
+        },
+        {
+          "target": 11632,
+          "allergy": null
+        },
+        {
+          "target": 11624,
+          "allergy": null
+        },
+        {
+          "target": 11634,
+          "allergy": null
+        },
+        {
+          "target": 11629,
+          "allergy": null
+        },
+        {
+          "target": 11633,
+          "allergy": null
+        },
+        {
+          "target": 11628,
+          "allergy": null
+        },
+        {
+          "target": 11625,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "similar",
+      "size": 8,
+      "members": [
+        {
+          "target": 11916,
+          "allergy": null
+        },
+        {
+          "target": 8905,
+          "allergy": null
+        },
+        {
+          "target": 8953,
+          "allergy": null
+        },
+        {
+          "target": 9376,
+          "allergy": null
+        },
+        {
+          "target": 9374,
+          "allergy": null
+        },
+        {
+          "target": 11917,
+          "allergy": null
+        },
+        {
+          "target": 10022,
+          "allergy": null
+        },
+        {
+          "target": 10021,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 12062,
+          "allergy": null
+        },
+        {
+          "target": 8482,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 9393,
+          "allergy": null
+        },
+        {
+          "target": 11136,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 10361,
+          "allergy": null
+        },
+        {
+          "target": 8857,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 10034,
+          "allergy": null
+        },
+        {
+          "target": 10372,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 9900,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 11152,
+          "allergy": null
+        },
+        {
+          "target": 8257,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 8212,
+          "allergy": null
+        },
+        {
+          "target": 10296,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 11864,
+          "allergy": null
+        },
+        {
+          "target": 8973,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 7216,
+          "allergy": null
+        },
+        {
+          "target": 9923,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 14745,
+          "allergy": null
+        },
+        {
+          "target": 13295,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 10418,
+          "allergy": null
+        },
+        {
+          "target": 8257,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 2,
+      "members": [
+        {
+          "target": 11647,
+          "allergy": null
+        },
+        {
+          "target": 8257,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 14641,
+          "allergy": null
+        },
+        {
+          "target": 8951,
+          "allergy": null
+        },
+        {
+          "target": 14550,
+          "allergy": null
+        },
+        {
+          "target": 10907,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 12007,
+          "allergy": null
+        },
+        {
+          "target": 8577,
+          "allergy": null
+        },
+        {
+          "target": 9535,
+          "allergy": null
+        },
+        {
+          "target": 7866,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 9046,
+          "allergy": null
+        },
+        {
+          "target": 14276,
+          "allergy": null
+        },
+        {
+          "target": 13409,
+          "allergy": null
+        },
+        {
+          "target": 8255,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 8457,
+          "allergy": null
+        },
+        {
+          "target": 8857,
+          "allergy": null
+        },
+        {
+          "target": 7866,
+          "allergy": null
+        },
+        {
+          "target": 8814,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 13791,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 7790,
+          "allergy": null
+        },
+        {
+          "target": 14662,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 8715,
+          "allergy": null
+        },
+        {
+          "target": 8857,
+          "allergy": null
+        },
+        {
+          "target": 11127,
+          "allergy": null
+        },
+        {
+          "target": 13102,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 10423,
+          "allergy": null
+        },
+        {
+          "target": 8258,
+          "allergy": null
+        },
+        {
+          "target": 7594,
+          "allergy": null
+        },
+        {
+          "target": 10043,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 11569,
+          "allergy": null
+        },
+        {
+          "target": 10376,
+          "allergy": null
+        },
+        {
+          "target": 13292,
+          "allergy": null
+        },
+        {
+          "target": 9973,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 10097,
+          "allergy": null
+        },
+        {
+          "target": 13292,
+          "allergy": null
+        },
+        {
+          "target": 12886,
+          "allergy": null
+        },
+        {
+          "target": 13815,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 10316,
+          "allergy": null
+        },
+        {
+          "target": 8973,
+          "allergy": null
+        },
+        {
+          "target": 11792,
+          "allergy": null
+        },
+        {
+          "target": 14664,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 11731,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 13295,
+          "allergy": null
+        },
+        {
+          "target": 12214,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 4,
+      "members": [
+        {
+          "target": 11828,
+          "allergy": null
+        },
+        {
+          "target": 10296,
+          "allergy": null
+        },
+        {
+          "target": 11807,
+          "allergy": null
+        },
+        {
+          "target": 7866,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 10452,
+          "allergy": null
+        },
+        {
+          "target": 13295,
+          "allergy": null
+        },
+        {
+          "target": 11115,
+          "allergy": null
+        },
+        {
+          "target": 8856,
+          "allergy": null
+        },
+        {
+          "target": 9536,
+          "allergy": null
+        },
+        {
+          "target": 9923,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 13334,
+          "allergy": null
+        },
+        {
+          "target": 8494,
+          "allergy": null
+        },
+        {
+          "target": 13840,
+          "allergy": null
+        },
+        {
+          "target": 10728,
+          "allergy": null
+        },
+        {
+          "target": 12671,
+          "allergy": null
+        },
+        {
+          "target": 12246,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 11691,
+          "allergy": null
+        },
+        {
+          "target": 8911,
+          "allergy": null
+        },
+        {
+          "target": 7866,
+          "allergy": null
+        },
+        {
+          "target": 13102,
+          "allergy": null
+        },
+        {
+          "target": 13834,
+          "allergy": null
+        },
+        {
+          "target": 10728,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 14180,
+          "allergy": null
+        },
+        {
+          "target": 9923,
+          "allergy": null
+        },
+        {
+          "target": 7866,
+          "allergy": null
+        },
+        {
+          "target": 14659,
+          "allergy": null
+        },
+        {
+          "target": 10021,
+          "allergy": null
+        },
+        {
+          "target": 10728,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 8379,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 12699,
+          "allergy": null
+        },
+        {
+          "target": 12248,
+          "allergy": null
+        },
+        {
+          "target": 14533,
+          "allergy": null
+        },
+        {
+          "target": 11163,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 11989,
+          "allergy": null
+        },
+        {
+          "target": 8257,
+          "allergy": null
+        },
+        {
+          "target": 10728,
+          "allergy": null
+        },
+        {
+          "target": 7762,
+          "allergy": null
+        },
+        {
+          "target": 14659,
+          "allergy": null
+        },
+        {
+          "target": 11136,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 7623,
+          "allergy": null
+        },
+        {
+          "target": 10372,
+          "allergy": null
+        },
+        {
+          "target": 11440,
+          "allergy": null
+        },
+        {
+          "target": 13295,
+          "allergy": null
+        },
+        {
+          "target": 11511,
+          "allergy": null
+        },
+        {
+          "target": 9534,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 14070,
+          "allergy": null
+        },
+        {
+          "target": 12699,
+          "allergy": null
+        },
+        {
+          "target": 9939,
+          "allergy": null
+        },
+        {
+          "target": 7616,
+          "allergy": null
+        },
+        {
+          "target": 14650,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 8908,
+          "allergy": null
+        },
+        {
+          "target": 7866,
+          "allergy": null
+        },
+        {
+          "target": 13843,
+          "allergy": null
+        },
+        {
+          "target": 10728,
+          "allergy": null
+        },
+        {
+          "target": 13436,
+          "allergy": null
+        },
+        {
+          "target": 8260,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 12908,
+          "allergy": null
+        },
+        {
+          "target": 10603,
+          "allergy": null
+        },
+        {
+          "target": 14277,
+          "allergy": null
+        },
+        {
+          "target": 13553,
+          "allergy": null
+        },
+        {
+          "target": 9534,
+          "allergy": null
+        },
+        {
+          "target": 10296,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 11868,
+          "allergy": null
+        },
+        {
+          "target": 12699,
+          "allergy": null
+        },
+        {
+          "target": 10372,
+          "allergy": null
+        },
+        {
+          "target": 14276,
+          "allergy": null
+        },
+        {
+          "target": 9144,
+          "allergy": null
+        },
+        {
+          "target": 7778,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 6,
+      "members": [
+        {
+          "target": 9234,
+          "allergy": null
+        },
+        {
+          "target": 8911,
+          "allergy": null
+        },
+        {
+          "target": 14563,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 8268,
+          "allergy": null
+        },
+        {
+          "target": 11136,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 8590,
+          "allergy": null
+        },
+        {
+          "target": 8482,
+          "allergy": null
+        },
+        {
+          "target": 13391,
+          "allergy": null
+        },
+        {
+          "target": 14650,
+          "allergy": null
+        },
+        {
+          "target": 8856,
+          "allergy": null
+        },
+        {
+          "target": 9648,
+          "allergy": null
+        },
+        {
+          "target": 14760,
+          "allergy": null
+        },
+        {
+          "target": 8289,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 13762,
+          "allergy": null
+        },
+        {
+          "target": 11296,
+          "allergy": null
+        },
+        {
+          "target": 14650,
+          "allergy": null
+        },
+        {
+          "target": 13433,
+          "allergy": null
+        },
+        {
+          "target": 9557,
+          "allergy": null
+        },
+        {
+          "target": 10728,
+          "allergy": null
+        },
+        {
+          "target": 13344,
+          "allergy": null
+        },
+        {
+          "target": 13904,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 14474,
+          "allergy": null
+        },
+        {
+          "target": 13295,
+          "allergy": null
+        },
+        {
+          "target": 10377,
+          "allergy": null
+        },
+        {
+          "target": 13201,
+          "allergy": null
+        },
+        {
+          "target": 9535,
+          "allergy": null
+        },
+        {
+          "target": 10082,
+          "allergy": null
+        },
+        {
+          "target": 11138,
+          "allergy": null
+        },
+        {
+          "target": 10728,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 10913,
+          "allergy": null
+        },
+        {
+          "target": 10296,
+          "allergy": null
+        },
+        {
+          "target": 9530,
+          "allergy": null
+        },
+        {
+          "target": 14740,
+          "allergy": null
+        },
+        {
+          "target": 9394,
+          "allergy": null
+        },
+        {
+          "target": 12243,
+          "allergy": null
+        },
+        {
+          "target": 10648,
+          "allergy": null
+        },
+        {
+          "target": 8977,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 11311,
+          "allergy": null
+        },
+        {
+          "target": 12699,
+          "allergy": null
+        },
+        {
+          "target": 14562,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 7617,
+          "allergy": null
+        },
+        {
+          "target": 14573,
+          "allergy": null
+        },
+        {
+          "target": 10372,
+          "allergy": null
+        },
+        {
+          "target": 10021,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 8942,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 14730,
+          "allergy": null
+        },
+        {
+          "target": 7790,
+          "allergy": null
+        },
+        {
+          "target": 14636,
+          "allergy": null
+        },
+        {
+          "target": 14277,
+          "allergy": null
+        },
+        {
+          "target": 12886,
+          "allergy": null
+        },
+        {
+          "target": 7885,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 12197,
+          "allergy": null
+        },
+        {
+          "target": 8257,
+          "allergy": null
+        },
+        {
+          "target": 14660,
+          "allergy": null
+        },
+        {
+          "target": 10649,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 10399,
+          "allergy": null
+        },
+        {
+          "target": 13349,
+          "allergy": null
+        },
+        {
+          "target": 10294,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 8340,
+          "allergy": null
+        },
+        {
+          "target": 11897,
+          "allergy": null
+        },
+        {
+          "target": 9634,
+          "allergy": null
+        },
+        {
+          "target": 11442,
+          "allergy": null
+        },
+        {
+          "target": 14277,
+          "allergy": null
+        },
+        {
+          "target": 13552,
+          "allergy": null
+        },
+        {
+          "target": 13433,
+          "allergy": null
+        },
+        {
+          "target": 10082,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 9635,
+          "allergy": null
+        },
+        {
+          "target": 10603,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 9928,
+          "allergy": null
+        },
+        {
+          "target": 12211,
+          "allergy": null
+        },
+        {
+          "target": 8323,
+          "allergy": null
+        },
+        {
+          "target": 8857,
+          "allergy": null
+        },
+        {
+          "target": 9540,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 11622,
+          "allergy": null
+        },
+        {
+          "target": 11136,
+          "allergy": null
+        },
+        {
+          "target": 13798,
+          "allergy": null
+        },
+        {
+          "target": 13553,
+          "allergy": null
+        },
+        {
+          "target": 14650,
+          "allergy": null
+        },
+        {
+          "target": 13434,
+          "allergy": null
+        },
+        {
+          "target": 10037,
+          "allergy": null
+        },
+        {
+          "target": 10863,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 9448,
+          "allergy": null
+        },
+        {
+          "target": 11296,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 8857,
+          "allergy": null
+        },
+        {
+          "target": 13834,
+          "allergy": null
+        },
+        {
+          "target": 8324,
+          "allergy": null
+        },
+        {
+          "target": 13292,
+          "allergy": null
+        },
+        {
+          "target": 11807,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "conflict",
+      "size": 8,
+      "members": [
+        {
+          "target": 7529,
+          "allergy": null
+        },
+        {
+          "target": 9634,
+          "allergy": null
+        },
+        {
+          "target": 12259,
+          "allergy": null
+        },
+        {
+          "target": 7617,
+          "allergy": null
+        },
+        {
+          "target": 14277,
+          "allergy": null
+        },
+        {
+          "target": 8973,
+          "allergy": null
+        },
+        {
+          "target": 10726,
+          "allergy": null
+        },
+        {
+          "target": 9532,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 11022,
+          "allergy": "milk"
+        },
+        {
+          "target": 13858,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 8394,
+          "allergy": "milk"
+        },
+        {
+          "target": 10751,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 11522,
+          "allergy": "wheat"
+        },
+        {
+          "target": 8656,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 9992,
+          "allergy": "pork"
+        },
+        {
+          "target": 14859,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 12558,
+          "allergy": "pork"
+        },
+        {
+          "target": 11792,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 11000,
+          "allergy": "wheat"
+        },
+        {
+          "target": 10237,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 14092,
+          "allergy": "egg"
+        },
+        {
+          "target": 12668,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 9346,
+          "allergy": "milk"
+        },
+        {
+          "target": 12334,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 12632,
+          "allergy": "wheat"
+        },
+        {
+          "target": 10184,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 11644,
+          "allergy": "milk"
+        },
+        {
+          "target": 9500,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 7234,
+          "allergy": "wheat"
+        },
+        {
+          "target": 8218,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 2,
+      "members": [
+        {
+          "target": 8712,
+          "allergy": "pork"
+        },
+        {
+          "target": 13630,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 11522,
+          "allergy": "wheat"
+        },
+        {
+          "target": 11179,
+          "allergy": null
+        },
+        {
+          "target": 8383,
+          "allergy": null
+        },
+        {
+          "target": 8292,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 11404,
+          "allergy": "pork"
+        },
+        {
+          "target": 11394,
+          "allergy": null
+        },
+        {
+          "target": 11587,
+          "allergy": null
+        },
+        {
+          "target": 7951,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 11498,
+          "allergy": "pork"
+        },
+        {
+          "target": 7398,
+          "allergy": null
+        },
+        {
+          "target": 11470,
+          "allergy": null
+        },
+        {
+          "target": 9998,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 12229,
+          "allergy": "pork"
+        },
+        {
+          "target": 10694,
+          "allergy": null
+        },
+        {
+          "target": 12369,
+          "allergy": null
+        },
+        {
+          "target": 11022,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 7799,
+          "allergy": "wheat"
+        },
+        {
+          "target": 7454,
+          "allergy": null
+        },
+        {
+          "target": 8508,
+          "allergy": null
+        },
+        {
+          "target": 11213,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 9723,
+          "allergy": "milk"
+        },
+        {
+          "target": 12505,
+          "allergy": null
+        },
+        {
+          "target": 13126,
+          "allergy": null
+        },
+        {
+          "target": 11697,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 8538,
+          "allergy": "wheat"
+        },
+        {
+          "target": 14441,
+          "allergy": null
+        },
+        {
+          "target": 8532,
+          "allergy": null
+        },
+        {
+          "target": 11190,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 10978,
+          "allergy": "wheat"
+        },
+        {
+          "target": 12143,
+          "allergy": null
+        },
+        {
+          "target": 10466,
+          "allergy": null
+        },
+        {
+          "target": 8410,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 12770,
+          "allergy": "pork"
+        },
+        {
+          "target": 7662,
+          "allergy": null
+        },
+        {
+          "target": 10457,
+          "allergy": null
+        },
+        {
+          "target": 12909,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 12806,
+          "allergy": "egg"
+        },
+        {
+          "target": 11060,
+          "allergy": null
+        },
+        {
+          "target": 13902,
+          "allergy": null
+        },
+        {
+          "target": 10939,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 12678,
+          "allergy": "milk"
+        },
+        {
+          "target": 11693,
+          "allergy": null
+        },
+        {
+          "target": 9951,
+          "allergy": null
+        },
+        {
+          "target": 10300,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 4,
+      "members": [
+        {
+          "target": 14363,
+          "allergy": "egg"
+        },
+        {
+          "target": 13096,
+          "allergy": null
+        },
+        {
+          "target": 7792,
+          "allergy": null
+        },
+        {
+          "target": 10194,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 11184,
+          "allergy": "pork"
+        },
+        {
+          "target": 10666,
+          "allergy": null
+        },
+        {
+          "target": 12666,
+          "allergy": null
+        },
+        {
+          "target": 7564,
+          "allergy": null
+        },
+        {
+          "target": 8573,
+          "allergy": null
+        },
+        {
+          "target": 9180,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 7708,
+          "allergy": "pork"
+        },
+        {
+          "target": 12862,
+          "allergy": null
+        },
+        {
+          "target": 11363,
+          "allergy": null
+        },
+        {
+          "target": 10043,
+          "allergy": null
+        },
+        {
+          "target": 12213,
+          "allergy": null
+        },
+        {
+          "target": 13586,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 13955,
+          "allergy": "milk"
+        },
+        {
+          "target": 13028,
+          "allergy": null
+        },
+        {
+          "target": 10086,
+          "allergy": null
+        },
+        {
+          "target": 8300,
+          "allergy": null
+        },
+        {
+          "target": 10842,
+          "allergy": null
+        },
+        {
+          "target": 11791,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 11270,
+          "allergy": "wheat"
+        },
+        {
+          "target": 13232,
+          "allergy": null
+        },
+        {
+          "target": 11422,
+          "allergy": null
+        },
+        {
+          "target": 14786,
+          "allergy": null
+        },
+        {
+          "target": 11545,
+          "allergy": null
+        },
+        {
+          "target": 8043,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 9061,
+          "allergy": "egg"
+        },
+        {
+          "target": 13629,
+          "allergy": null
+        },
+        {
+          "target": 11758,
+          "allergy": null
+        },
+        {
+          "target": 14276,
+          "allergy": null
+        },
+        {
+          "target": 14108,
+          "allergy": null
+        },
+        {
+          "target": 11691,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 12148,
+          "allergy": "milk"
+        },
+        {
+          "target": 8895,
+          "allergy": null
+        },
+        {
+          "target": 10466,
+          "allergy": null
+        },
+        {
+          "target": 12495,
+          "allergy": null
+        },
+        {
+          "target": 8470,
+          "allergy": null
+        },
+        {
+          "target": 8890,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 14850,
+          "allergy": "pork"
+        },
+        {
+          "target": 9571,
+          "allergy": null
+        },
+        {
+          "target": 11188,
+          "allergy": null
+        },
+        {
+          "target": 10967,
+          "allergy": null
+        },
+        {
+          "target": 10772,
+          "allergy": null
+        },
+        {
+          "target": 12042,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 14892,
+          "allergy": "pork"
+        },
+        {
+          "target": 8018,
+          "allergy": null
+        },
+        {
+          "target": 11481,
+          "allergy": null
+        },
+        {
+          "target": 12909,
+          "allergy": null
+        },
+        {
+          "target": 11110,
+          "allergy": null
+        },
+        {
+          "target": 10330,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 10231,
+          "allergy": "wheat"
+        },
+        {
+          "target": 11692,
+          "allergy": null
+        },
+        {
+          "target": 13680,
+          "allergy": null
+        },
+        {
+          "target": 9557,
+          "allergy": null
+        },
+        {
+          "target": 13783,
+          "allergy": null
+        },
+        {
+          "target": 8416,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 8693,
+          "allergy": "milk"
+        },
+        {
+          "target": 14606,
+          "allergy": null
+        },
+        {
+          "target": 12515,
+          "allergy": null
+        },
+        {
+          "target": 9770,
+          "allergy": null
+        },
+        {
+          "target": 10564,
+          "allergy": null
+        },
+        {
+          "target": 13473,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 10446,
+          "allergy": "wheat"
+        },
+        {
+          "target": 10451,
+          "allergy": null
+        },
+        {
+          "target": 11769,
+          "allergy": null
+        },
+        {
+          "target": 9566,
+          "allergy": null
+        },
+        {
+          "target": 8672,
+          "allergy": null
+        },
+        {
+          "target": 12985,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 6,
+      "members": [
+        {
+          "target": 9869,
+          "allergy": "milk"
+        },
+        {
+          "target": 13473,
+          "allergy": null
+        },
+        {
+          "target": 7453,
+          "allergy": null
+        },
+        {
+          "target": 10666,
+          "allergy": null
+        },
+        {
+          "target": 8379,
+          "allergy": null
+        },
+        {
+          "target": 8092,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 12667,
+          "allergy": "pork"
+        },
+        {
+          "target": 14395,
+          "allergy": null
+        },
+        {
+          "target": 10282,
+          "allergy": null
+        },
+        {
+          "target": 12748,
+          "allergy": null
+        },
+        {
+          "target": 9165,
+          "allergy": null
+        },
+        {
+          "target": 11194,
+          "allergy": null
+        },
+        {
+          "target": 13157,
+          "allergy": null
+        },
+        {
+          "target": 10767,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 9089,
+          "allergy": "milk"
+        },
+        {
+          "target": 8861,
+          "allergy": null
+        },
+        {
+          "target": 9491,
+          "allergy": null
+        },
+        {
+          "target": 7554,
+          "allergy": null
+        },
+        {
+          "target": 14781,
+          "allergy": null
+        },
+        {
+          "target": 9892,
+          "allergy": null
+        },
+        {
+          "target": 9947,
+          "allergy": null
+        },
+        {
+          "target": 12332,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 9022,
+          "allergy": "egg"
+        },
+        {
+          "target": 9666,
+          "allergy": null
+        },
+        {
+          "target": 13178,
+          "allergy": null
+        },
+        {
+          "target": 14284,
+          "allergy": null
+        },
+        {
+          "target": 14420,
+          "allergy": null
+        },
+        {
+          "target": 13482,
+          "allergy": null
+        },
+        {
+          "target": 7435,
+          "allergy": null
+        },
+        {
+          "target": 8007,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 12028,
+          "allergy": "milk"
+        },
+        {
+          "target": 9736,
+          "allergy": null
+        },
+        {
+          "target": 13429,
+          "allergy": null
+        },
+        {
+          "target": 10573,
+          "allergy": null
+        },
+        {
+          "target": 13842,
+          "allergy": null
+        },
+        {
+          "target": 13916,
+          "allergy": null
+        },
+        {
+          "target": 7501,
+          "allergy": null
+        },
+        {
+          "target": 11224,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 14458,
+          "allergy": "wheat"
+        },
+        {
+          "target": 14335,
+          "allergy": null
+        },
+        {
+          "target": 11208,
+          "allergy": null
+        },
+        {
+          "target": 11161,
+          "allergy": null
+        },
+        {
+          "target": 7602,
+          "allergy": null
+        },
+        {
+          "target": 14313,
+          "allergy": null
+        },
+        {
+          "target": 11192,
+          "allergy": null
+        },
+        {
+          "target": 9087,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 12123,
+          "allergy": "milk"
+        },
+        {
+          "target": 14132,
+          "allergy": null
+        },
+        {
+          "target": 13168,
+          "allergy": null
+        },
+        {
+          "target": 8546,
+          "allergy": null
+        },
+        {
+          "target": 12955,
+          "allergy": null
+        },
+        {
+          "target": 10792,
+          "allergy": null
+        },
+        {
+          "target": 9107,
+          "allergy": null
+        },
+        {
+          "target": 14697,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 10990,
+          "allergy": "milk"
+        },
+        {
+          "target": 12218,
+          "allergy": null
+        },
+        {
+          "target": 12757,
+          "allergy": null
+        },
+        {
+          "target": 12228,
+          "allergy": null
+        },
+        {
+          "target": 11031,
+          "allergy": null
+        },
+        {
+          "target": 9573,
+          "allergy": null
+        },
+        {
+          "target": 11814,
+          "allergy": null
+        },
+        {
+          "target": 13359,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 10240,
+          "allergy": "milk"
+        },
+        {
+          "target": 9553,
+          "allergy": null
+        },
+        {
+          "target": 8082,
+          "allergy": null
+        },
+        {
+          "target": 14262,
+          "allergy": null
+        },
+        {
+          "target": 9231,
+          "allergy": null
+        },
+        {
+          "target": 8940,
+          "allergy": null
+        },
+        {
+          "target": 9210,
+          "allergy": null
+        },
+        {
+          "target": 10890,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 10253,
+          "allergy": "wheat"
+        },
+        {
+          "target": 8811,
+          "allergy": null
+        },
+        {
+          "target": 13899,
+          "allergy": null
+        },
+        {
+          "target": 8980,
+          "allergy": null
+        },
+        {
+          "target": 12211,
+          "allergy": null
+        },
+        {
+          "target": 10779,
+          "allergy": null
+        },
+        {
+          "target": 13553,
+          "allergy": null
+        },
+        {
+          "target": 12578,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 8698,
+          "allergy": "pork"
+        },
+        {
+          "target": 7256,
+          "allergy": null
+        },
+        {
+          "target": 13620,
+          "allergy": null
+        },
+        {
+          "target": 11469,
+          "allergy": null
+        },
+        {
+          "target": 8815,
+          "allergy": null
+        },
+        {
+          "target": 11062,
+          "allergy": null
+        },
+        {
+          "target": 10211,
+          "allergy": null
+        },
+        {
+          "target": 13780,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 13323,
+          "allergy": "milk"
+        },
+        {
+          "target": 13258,
+          "allergy": null
+        },
+        {
+          "target": 10436,
+          "allergy": null
+        },
+        {
+          "target": 7762,
+          "allergy": null
+        },
+        {
+          "target": 12235,
+          "allergy": null
+        },
+        {
+          "target": 13142,
+          "allergy": null
+        },
+        {
+          "target": 11160,
+          "allergy": null
+        },
+        {
+          "target": 12354,
+          "allergy": null
+        }
+      ]
+    },
+    {
+      "situation": "restricted",
+      "size": 8,
+      "members": [
+        {
+          "target": 13524,
+          "allergy": "pork"
+        },
+        {
+          "target": 8140,
+          "allergy": null
+        },
+        {
+          "target": 7887,
+          "allergy": null
+        },
+        {
+          "target": 7273,
+          "allergy": null
+        },
+        {
+          "target": 11893,
+          "allergy": null
+        },
+        {
+          "target": 7479,
+          "allergy": null
+        },
+        {
+          "target": 10568,
+          "allergy": null
+        },
+        {
+          "target": 14180,
+          "allergy": null
+        }
+      ]
+    }
+  ]
+}
