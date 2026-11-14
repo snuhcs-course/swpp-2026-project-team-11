@@ -1,11 +1,8 @@
 package com.example.metchu.ui.group
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -48,8 +45,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -90,7 +85,6 @@ import kotlin.math.ceil
 fun GroupQuestionScreen(
     room: RoomState,
     history: List<AnsweredQuestion>,
-    timeouts: Int,
     busy: Boolean,
     onAnswer: (String) -> Unit,
     onRecommendNow: () -> Unit,
@@ -161,7 +155,6 @@ fun GroupQuestionScreen(
                         )
                     }
                 }
-                TimedOutNote(timeouts, Modifier.align(Alignment.End))
             }
 
             // A new question brings back a scale that can be answered.
@@ -261,27 +254,6 @@ private fun CaptionRow(caption: String, seconds: Int?, urgent: Boolean) {
     }
 }
 
-/** Says for a few seconds that the round before ran out and went in as "I'm not sure". */
-@Composable
-private fun TimedOutNote(timeouts: Int, modifier: Modifier = Modifier) {
-    var shown by remember { mutableStateOf(false) }
-    var seen by remember { mutableIntStateOf(timeouts) }
-    LaunchedEffect(timeouts) {
-        if (timeouts == seen) return@LaunchedEffect
-        seen = timeouts
-        shown = true
-        delay(TIMED_OUT_NOTE_MILLIS)
-        shown = false
-    }
-    AnimatedVisibility(shown, modifier, enter = fadeIn(tween(200)), exit = fadeOut(tween(300))) {
-        Text(
-            stringResource(R.string.group_timed_out),
-            Modifier.padding(top = 6.dp).semantics { liveRegion = LiveRegionMode.Polite }.testTag("timedOut"),
-            style = MetchuType.Caption
-        )
-    }
-}
-
 /** This phone's member first, then the others; an orange ring and a check once they have answered. */
 @Composable
 private fun AnsweredRow(members: List<RoomMember>) {
@@ -335,4 +307,3 @@ private fun RoundProgress(room: RoomState) {
 private const val TICK_MILLIS = 100L
 /** The last seconds of a round, when the clock turns orange and "I'm not sure" is marked. */
 private const val URGENT_SECONDS = 5
-private const val TIMED_OUT_NOTE_MILLIS = 3000L

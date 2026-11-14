@@ -49,10 +49,6 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
     private val _error = MutableLiveData<UiError?>(null)
     val error: LiveData<UiError?> = _error
 
-    /** How many rounds this member let run out, so the screen can say the last one did. */
-    private val _timeouts = MutableLiveData(0)
-    val timeouts: LiveData<Int> = _timeouts
-
     private var membership: Membership? = null
     private var polling: Job? = null
 
@@ -164,7 +160,6 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
         val asked = before?.question
         if (asked != null && asked.questionId != state.question?.questionId) {
             _history.value = _history.value.orEmpty() + AnsweredQuestion(asked.text, before.myAnswer ?: AnswerId.UNKNOWN)
-            if (before.myAnswer == null) _timeouts.value = (_timeouts.value ?: 0) + 1
         }
         _room.value = state
     }
