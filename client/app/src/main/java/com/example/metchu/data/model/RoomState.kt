@@ -20,6 +20,8 @@ data class RoomState(
     val question: RoomQuestion?,
     @SerializedName("my_answer") val myAnswer: String?,
     @SerializedName("seconds_left") val secondsLeft: Double?,
+    /** How long every round allows; silence then counts as "not sure". */
+    @SerializedName("round_seconds") val roundSeconds: Int,
     // done
     val picks: List<RoomPick>?,
     val decided: String?

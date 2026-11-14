@@ -13,8 +13,9 @@ may stop them early ("recommend now") and decides on a restaurant. Nobody joins 
 the start. When the host leaves, a random remaining member becomes host.
 
 Every round asks all members the same question (question_engines/group). A member who
-has not answered ROUND_SECONDS after the round began answers "any" (doesn't matter);
-an answer cannot be changed. A member who left answers "any" at once. Deadlines are
+has not answered ROUND_SECONDS after the round began answers "unknown" (not sure), which
+tells the engine nothing about them, unlike "any"; an answer cannot be changed. A member
+who left answers "unknown" at once. Deadlines are
 checked whenever the room is read or acted on, so phones polling the room move it on.
 
 The result is up to two restaurants, each with every member's dish there, the restaurant's
@@ -41,8 +42,8 @@ from question_engines.group.engine import MAX_MEMBERS, place
 
 from .sessions import EngineUnavailable, StaleStep, load_candidates, restaurant_menus
 
-ROUND_SECONDS = 10
-TIMEOUT_ANSWER = Answer.ANY.value
+ROUND_SECONDS = 15
+TIMEOUT_ANSWER = Answer.UNKNOWN.value
 ANSWER_IDS = {answer.value for answer in Answer}
 MAX_ROOMS = 200
 GREAT_SHARE = 0.1
@@ -146,7 +147,7 @@ class Room:
         self._answer_for([m.id for m in self.members if m.left])
 
     def _answer_for(self, member_ids: list[int]) -> None:
-        """Answers "any" for those members until the round they were in ends."""
+        """Answers for those silent members until the round they were in ends."""
         round_ = self.engine.round
         for member_id in member_ids:
             if self.status != "asking" or self.engine.round != round_:
@@ -164,7 +165,7 @@ class Room:
             self._new_round()
 
     def tick(self) -> None:
-        """Answers "any" for everyone still silent once the round's time is up."""
+        """Answers for everyone still silent once the round's time is up."""
         if self.status == "asking" and clock() - self.round_started >= ROUND_SECONDS:
             self._answer_for(sorted(self.engine.questions()))
 
@@ -243,6 +244,7 @@ class Room:
             "question": question,
             "my_answer": self.round_answers.get(member.id) if asking else None,
             "seconds_left": max(0.0, round(ROUND_SECONDS - (clock() - self.round_started), 1)) if asking else None,
+            "round_seconds": ROUND_SECONDS,
             "picks": self.picks,
             "decided": self.decided,
         }

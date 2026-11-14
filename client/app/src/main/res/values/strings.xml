@@ -218,10 +218,7 @@
     <string name="group_host_will_start">The host will start</string>
     <string name="group_leave">Leave room</string>
     <string name="group_answered">%1$d of %2$d answered</string>
-    <string name="group_waiting_one">Waiting for %1$s</string>
-    <string name="group_waiting_many">Waiting for %1$d more</string>
     <string name="group_round">Question %1$d · up to %2$d</string>
-    <string name="group_seconds">%1$ds left</string>
     <string name="group_each_dish">Suggested dishes</string>
     <string name="group_decide">Go here</string>
     <string name="group_host_picking">The host is choosing</string>
@@ -234,4 +231,12 @@
     <string name="group_fit_great">Great fit</string>
     <string name="group_fit_good">Good fit</string>
     <string name="group_other_dishes">More at this place</string>
+    <string name="group_ask">Question %1$d · answer within %2$d s</string>
+    <string name="group_soon">“I’m not sure” in %1$d s</string>
+    <string name="group_answered_caption">Question %1$d · answered</string>
+    <string name="group_timed_out">Time ran out on the last question, so it went in as “I’m not sure”.</string>
+    <string name="group_waiting_one">Waiting for %1$s · %2$d s</string>
+    <string name="group_waiting_many">Waiting for %1$d more · %2$d s</string>
+    <string name="group_seconds">%1$d s</string>
+    <string name="group_time_left">%1$d seconds left</string>
 </resources>

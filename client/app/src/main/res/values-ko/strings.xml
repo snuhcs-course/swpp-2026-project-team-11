@@ -202,10 +202,7 @@
     <string name="group_host_will_start">방장이 시작하면 넘어가요</string>
     <string name="group_leave">방 나가기</string>
     <string name="group_answered">%2$d명 중 %1$d명 답했어요</string>
-    <string name="group_waiting_one">%1$s님을 기다리는 중</string>
-    <string name="group_waiting_many">%1$d명을 기다리는 중</string>
     <string name="group_round">질문 %1$d · 최대 %2$d개</string>
-    <string name="group_seconds">%1$d초 남았어요</string>
     <string name="group_each_dish">추천 메뉴</string>
     <string name="group_decide">여기로 정하기</string>
     <string name="group_host_picking">방장이 고르는 중</string>
@@ -218,4 +215,12 @@
     <string name="group_fit_great">잘 맞아요</string>
     <string name="group_fit_good">무난해요</string>
     <string name="group_other_dishes">이 식당의 다른 메뉴</string>
+    <string name="group_ask">질문 %1$d · %2$d초 안에 답해 주세요</string>
+    <string name="group_soon">%1$d초 뒤 \'잘 모르겠어요\'로 넘어가요</string>
+    <string name="group_answered_caption">질문 %1$d · 답했어요</string>
+    <string name="group_timed_out">지난 질문은 시간이 다 돼서 \'잘 모르겠어요\'로 넘어갔어요.</string>
+    <string name="group_waiting_one">%1$s님을 기다리는 중 · %2$d초</string>
+    <string name="group_waiting_many">%1$d명을 기다리는 중 · %2$d초</string>
+    <string name="group_seconds">%1$d초</string>
+    <string name="group_time_left">남은 시간 %1$d초</string>
 </resources>

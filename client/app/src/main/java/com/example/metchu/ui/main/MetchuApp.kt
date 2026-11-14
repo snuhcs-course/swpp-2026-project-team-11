@@ -132,6 +132,7 @@ fun MetchuApp(
     val roomHistory by group.history.observeAsState(emptyList())
     val roomBusy by group.busy.observeAsState(false)
     val roomError by group.error.observeAsState()
+    val roomTimeouts by group.timeouts.observeAsState(0)
 
     // Stored at once, so a launch picks up where the last one stopped.
     var setup by remember { mutableStateOf(settings.setup) }
@@ -321,7 +322,7 @@ fun MetchuApp(
                 }
                 Screen.GROUP_QUESTION -> room?.takeIf { it.question != null }?.let {
                     BackHandler(onBack = group::leave)
-                    GroupQuestionScreen(it, roomHistory, roomBusy, group::answer, group::recommendNow, group::leave)
+                    GroupQuestionScreen(it, roomHistory, roomTimeouts, roomBusy, group::answer, group::recommendNow, group::leave)
                 }
                 Screen.GROUP_RESULT -> room?.let {
                     BackHandler(onBack = group::leave)

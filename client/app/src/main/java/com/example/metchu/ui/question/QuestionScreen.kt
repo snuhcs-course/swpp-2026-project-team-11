@@ -407,9 +407,9 @@ private fun lerpStyle(from: TextStyle, to: TextStyle, t: Float): TextStyle = fro
     letterSpacing = lerp(from.letterSpacing, to.letterSpacing, t)
 )
 
-/** "I'm not sure", the five circles and their three captions. */
+/** "I'm not sure", the five circles and their three captions. [markUnsure] shows "I'm not sure" in orange, as the answer about to be given. */
 @Composable
-internal fun AnswerScale(offered: Set<String>, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit) {
+internal fun AnswerScale(offered: Set<String>, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit, markUnsure: Boolean = false) {
     // The prototype's row is 358 wide (353 + 2.5 on each side) on a 393 screen; circles,
     // icons and captions scale with the row so narrower phones keep the same gaps.
     BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 17.5.dp, end = 17.5.dp, bottom = 20.dp)) {
@@ -426,8 +426,8 @@ internal fun AnswerScale(offered: Set<String>, loading: Boolean, onPick: (String
                             .semantics { role = Role.Button; contentDescription = unsure; onClick { onPick(AnswerId.UNKNOWN); true } }
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                             .testTag("answer_${AnswerId.UNKNOWN}"),
-                        style = MetchuType.Caption.copy(textDecoration = TextDecoration.Underline),
-                        color = MetchuColors.Grey600
+                        style = MetchuType.Caption.copy(textDecoration = TextDecoration.Underline, fontWeight = if (markUnsure) FontWeight.SemiBold else MetchuType.Caption.fontWeight),
+                        color = if (markUnsure) MetchuColors.Primary else MetchuColors.Grey600
                     )
                 }
             }
