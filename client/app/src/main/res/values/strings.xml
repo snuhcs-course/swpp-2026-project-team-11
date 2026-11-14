@@ -238,4 +238,9 @@
     <string name="group_waiting_many">Waiting for %1$d more · %2$d s</string>
     <string name="group_seconds">%1$d s</string>
     <string name="group_time_left">%1$d seconds left</string>
+    <string name="group_error_attempts">Too many wrong codes. Try again in a minute.</string>
+    <string name="group_leave_title">Leave this room?</string>
+    <string name="group_leave_body">Nobody can come back into a room once its questions have started.</string>
+    <string name="group_leave_confirm">Leave</string>
+    <string name="group_leave_stay">Stay</string>
 </resources>

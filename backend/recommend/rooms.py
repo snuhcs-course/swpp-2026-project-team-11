@@ -4,13 +4,14 @@
     join(code, name, allergies, language)       -> (Room, Member)
     get(code)                                   -> Room | None
     room.start(member) / answer(member, question_id, answer_id) / recommend_now(member)
-    room.decide(member, restaurant) / leave(member)
+    room.decide(member, pick) / leave(member)
     room.public_state(member)                   -> what that member's phone draws
 
 A room has a four-digit code and 2 to 8 members. Each phone holds its member's secret
 token. The host sets the meal, the restaurants and the location, starts the questions,
 may stop them early ("recommend now") and decides on a restaurant. Nobody joins after
-the start. When the host leaves, a random remaining member becomes host.
+the start, and a caller who tries JOIN_ATTEMPTS unknown codes waits JOIN_WINDOW seconds.
+When the host leaves, a random remaining member becomes host.
 
 Every round asks all members the same question (question_engines/group). A member who
 has not answered ROUND_SECONDS after the round began answers "unknown" (not sure), which
@@ -31,11 +32,12 @@ import random
 import secrets
 import threading
 import time
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from dataclasses import dataclass, field
 
 import numpy as np
 
+from menus.offers import safe_offers
 from question_engines.decision_tree.contracts import Answer, answer_options, translate
 from question_engines.group import GroupConfig, GroupEngine
 from question_engines.group.engine import MAX_MEMBERS, place
@@ -46,6 +48,10 @@ ROUND_SECONDS = 15
 TIMEOUT_ANSWER = Answer.UNKNOWN.value
 ANSWER_IDS = {answer.value for answer in Answer}
 MAX_ROOMS = 200
+MAX_ROUNDS = GroupConfig().max_rounds
+# A phone may try this many unknown codes per JOIN_WINDOW seconds: guessing a four-digit code takes long.
+JOIN_ATTEMPTS = 10
+JOIN_WINDOW = 60
 GREAT_SHARE = 0.1
 clock = time.monotonic
 
@@ -87,9 +93,10 @@ class Room:
         self.engine: GroupEngine | None = None
         self.round_started = 0.0
         self.round_answers: dict[int, str] = {}
+        self.rounds = 0  # the engine's count, kept once the engine is let go
         self.picks: list[dict] | None = None
         self.menus: dict[tuple, list[dict]] = {}
-        self.decided: str | None = None
+        self.decided: int | None = None
         self.lock = threading.Lock()
 
     def member(self, token: str | None) -> Member | None:
@@ -124,15 +131,16 @@ class Room:
         s = self.settings
         candidates, schema, _ = load_candidates(s.date, s.meal, frozenset(), s.source, s.location, s.distance_scope)
         self.menus = restaurant_menus(candidates, place)
+        offers = _offers(candidates)
         excluded = []
-        for m in self.members:
-            if m.allergies:
-                allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.source, s.location, s.distance_scope)
-                excluded.append(_offers(candidates) - _offers(allowed))
-            else:
-                excluded.append(set())
         try:
-            self.engine = GroupEngine(candidates, schema, excluded, config=GroupConfig(language="en"))
+            for m in self.members:
+                if m.allergies:
+                    allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.source, s.location, s.distance_scope)
+                    excluded.append(offers - safe_offers(candidates, allowed))
+                else:
+                    excluded.append(set())
+            self.engine = GroupEngine(candidates, schema, excluded, config=GroupConfig(max_rounds=MAX_ROUNDS, language="en"))
         except ValueError as error:
             raise RoomError("group_unavailable", str(error)) from error
         self.status = "asking"
@@ -202,14 +210,17 @@ class Room:
                 "menus": [{"member_id": m.id, "food": food, "fit": _fit(satisfaction[m.id], r)}
                           for m, food in zip(self.members, pick["menus"])],
                 "others": [dish for dish in self.menus.get(at, []) if dish["food_id"] not in suggested]})
+        # The engine's tables (one per allergic member over every restaurant and menu) are not needed again.
+        self.rounds, self.engine, self.menus = self.engine.round, None, {}
 
-    def decide(self, member: Member, restaurant: str) -> None:
+    def decide(self, member: Member, pick: int) -> None:
+        """Chooses a pick by its position: two branches of one chain share a name."""
         self._require_host(member)
         if self.status != "done":
             raise StaleStep("There is no result to decide on yet.")
-        if restaurant not in [p["restaurant"] for p in self.picks]:
-            raise ValueError("restaurant must be one of the suggested restaurants.")
-        self.decided = restaurant
+        if type(pick) is not int or not 0 <= pick < len(self.picks):
+            raise ValueError("pick must be the position of a suggested restaurant.")
+        self.decided = pick
 
     def leave(self, member: Member) -> None:
         if member.left:
@@ -239,8 +250,8 @@ class Room:
             "host": self.host_id,
             "members": [{"id": m.id, "name": m.name, "allergies": sorted(m.allergies), "left": m.left,
                          "answered": asking and m.id not in pending} for m in self.members],
-            "round": self.engine.round if self.engine else 0,
-            "max_rounds": self.engine.config.max_rounds if self.engine else GroupConfig().max_rounds,
+            "round": self.engine.round if self.engine else self.rounds,
+            "max_rounds": MAX_ROUNDS,
             "question": question,
             "my_answer": self.round_answers.get(member.id) if asking else None,
             "seconds_left": max(0.0, round(ROUND_SECONDS - (clock() - self.round_started), 1)) if asking else None,
@@ -251,7 +262,7 @@ class Room:
 
 
 def _offers(candidates: list) -> set:
-    """Every (food ID, place) a candidate list offers, as the engine's `excluded` names them."""
+    """Every (food ID, place) a catalogue offers, as the engine's `excluded` names them."""
     return {(c["food_id"], place(o)) for c in candidates for o in c["offers"]}
 
 
@@ -263,6 +274,7 @@ def _fit(satisfaction: np.ndarray, r: int) -> str:
 
 _rooms: OrderedDict[str, Room] = OrderedDict()
 _rooms_lock = threading.Lock()
+_failed_joins: dict[str, deque] = {}
 
 
 def _register(room_settings: RoomSettings) -> Room:
@@ -283,10 +295,22 @@ def create(name: str, allergies: frozenset[str], language: str, room_settings: R
         return room, room._add(name, allergies, language)
 
 
-def join(code: str, name: str, allergies: frozenset[str], language: str) -> tuple[Room, Member]:
-    room = get(code)
-    if room is None:
-        raise RoomError("room_not_found", "No room is open with this code.")
+def join(code: str, name: str, allergies: frozenset[str], language: str, client: str) -> tuple[Room, Member]:
+    """`client` names the caller for the limit on unknown codes (JOIN_ATTEMPTS per JOIN_WINDOW)."""
+    with _rooms_lock:
+        now = clock()
+        tries = _failed_joins.setdefault(client, deque(maxlen=JOIN_ATTEMPTS))
+        while tries and now - tries[0] >= JOIN_WINDOW:
+            tries.popleft()
+        if len(tries) == JOIN_ATTEMPTS:
+            raise RoomError("too_many_attempts", "Too many wrong codes. Try again in a minute.")
+        room = _rooms.get(code)
+        if room is None:
+            tries.append(now)
+            if len(_failed_joins) > MAX_ROOMS * 10:  # forget callers whose tries have all expired
+                for key in [k for k, t in _failed_joins.items() if not t or now - t[-1] >= JOIN_WINDOW]:
+                    del _failed_joins[key]
+            raise RoomError("room_not_found", "No room is open with this code.")
     with room.lock:
         return room, room._add(name, allergies, language)
 

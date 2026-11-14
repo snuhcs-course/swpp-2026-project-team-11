@@ -24,6 +24,28 @@ import com.example.metchu.R
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 
+/** Asks before leaving a room whose questions have started: nobody can come back into it. */
+@Composable
+fun LeaveRoomDialog(onLeave: () -> Unit, onStay: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onStay,
+        confirmButton = {
+            TextButton(onLeave, Modifier.testTag("leaveConfirm")) {
+                Text(stringResource(R.string.group_leave_confirm), style = MetchuType.Button, color = MetchuColors.Primary)
+            }
+        },
+        dismissButton = {
+            TextButton(onStay) {
+                Text(stringResource(R.string.group_leave_stay), style = MetchuType.Button, color = MetchuColors.Grey600)
+            }
+        },
+        title = { Text(stringResource(R.string.group_leave_title), style = MetchuType.Item) },
+        text = { Text(stringResource(R.string.group_leave_body), style = MetchuType.Body) },
+        shape = RoundedCornerShape(20.dp),
+        containerColor = Color.White
+    )
+}
+
 /** Asks a guest, before they create a room, for the name the others will see. */
 @Composable
 fun NameDialog(initial: String, onName: (String) -> Unit, onDismiss: () -> Unit) {

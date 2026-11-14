@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -79,16 +80,18 @@ import kotlin.math.ceil
  * then shows where to meet.
  */
 @Composable
-fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (String) -> Unit, onHome: () -> Unit) {
+fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, onHome: () -> Unit) {
     val picks = room.picks.orEmpty()
     if (picks.isEmpty()) return
-    var viewing by rememberSaveable { mutableStateOf(picks.first().restaurant) }
+    // Picks are told apart by position: two branches of one chain share a name.
+    var viewing by rememberSaveable { mutableIntStateOf(0) }
     room.decided?.let { viewing = it }
-    val pick = picks.firstOrNull { it.restaurant == viewing } ?: picks.first()
+    val shownAt = viewing.coerceIn(picks.indices)
+    val pick = picks[shownAt]
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MetchuColors.MapBlank)) {
         val sheetTop = maxHeight * 0.42f
-        if (BuildConfig.HAS_MAPS_KEY) PicksMap(picks, pick.restaurant, sheetHeight = maxHeight - sheetTop) { if (room.decided == null) viewing = it }
+        if (BuildConfig.HAS_MAPS_KEY) PicksMap(picks, shownAt, sheetHeight = maxHeight - sheetTop) { if (room.decided == null) viewing = it }
 
         TopRow(Modifier.statusBarsPadding(), arrangement = Arrangement.End) {
             CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
@@ -97,8 +100,9 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (String) -> Unit
             Modifier.padding(start = 20.dp, top = sheetTop - 56.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            picks.filter { room.decided == null || it.restaurant == room.decided }.forEach { p ->
-                val on = p.restaurant == pick.restaurant
+            picks.forEachIndexed { index, p ->
+                if (room.decided != null && index != room.decided) return@forEachIndexed
+                val on = index == shownAt
                 Text(
                     placeName(p.restaurant),
                     Modifier
@@ -106,9 +110,9 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (String) -> Unit
                         .chipShadow()
                         .clip(CircleShape)
                         .background(if (on) MetchuColors.Grey900 else Color.White)
-                        .clickable(role = Role.Tab) { if (room.decided == null) viewing = p.restaurant }
+                        .clickable(role = Role.Tab) { if (room.decided == null) viewing = index }
                         .padding(horizontal = 16.dp, vertical = 10.dp)
-                        .testTag("pick_${p.restaurant}"),
+                        .testTag("pick_$index"),
                     style = MetchuType.Label,
                     color = if (on) Color.White else MetchuColors.Grey900,
                     maxLines = 1
@@ -127,14 +131,14 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (String) -> Unit
                 .verticalScroll(rememberScrollState())
                 .padding(top = 20.dp, bottom = 140.dp)
         ) {
-            key(pick.restaurant) { PickDetails(room, pick) }
+            key(shownAt) { PickDetails(room, pick) }
         }
 
         val bottom = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp)
         when {
-            room.decided != null -> StatusPill(stringResource(R.string.group_meet, placeName(room.decided)), dark = true, modifier = bottom.testTag("decided"))
+            room.decided != null -> StatusPill(stringResource(R.string.group_meet, placeName(pick.restaurant)), dark = true, modifier = bottom.testTag("decided"))
             room.isHost -> ActionCapsule(
-                stringResource(R.string.group_decide), Icons.Check, { if (!busy) onDecide(pick.restaurant) },
+                stringResource(R.string.group_decide), Icons.Check, { if (!busy) onDecide(shownAt) },
                 filled = true, modifier = bottom.testTag("decide")
             )
             else -> StatusPill(stringResource(R.string.group_host_picking), dark = false, modifier = bottom)
@@ -174,7 +178,7 @@ private fun PickDetails(room: RoomState, pick: RoomPick) {
                     style = MetchuType.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
             }
-            val price = dish.food.offers.firstOrNull { it.restaurant == pick.restaurant }?.price
+            val price = dish.food.offers.firstOrNull { it.restaurant == pick.restaurant && it.lat == pick.lat && it.lng == pick.lng }?.price
             Column(horizontalAlignment = Alignment.End) {
                 Text(priceText(price), style = MetchuType.Label)
                 val great = dish.fit == RoomDish.GREAT
@@ -215,8 +219,8 @@ private fun StatusPill(text: String, dark: Boolean, modifier: Modifier = Modifie
 
 /** The two restaurants with their name pills, framed above the sheet; the one viewed is orange. */
 @Composable
-private fun PicksMap(picks: List<RoomPick>, selected: String, sheetHeight: Dp, onSelect: (String) -> Unit) {
-    val points = picks.mapNotNull { p -> if (p.lat != null && p.lng != null) p.restaurant to LatLng(p.lat, p.lng) else null }
+private fun PicksMap(picks: List<RoomPick>, selected: Int, sheetHeight: Dp, onSelect: (Int) -> Unit) {
+    val points = picks.mapIndexedNotNull { i, p -> if (p.lat != null && p.lng != null) i to LatLng(p.lat, p.lng) else null }
     if (points.isEmpty()) return
     val camera = rememberCameraPositionState { position = CameraPosition.fromLatLngZoom(points.first().second, 16f) }
     var loaded by remember { mutableStateOf(false) }
@@ -234,16 +238,16 @@ private fun PicksMap(picks: List<RoomPick>, selected: String, sheetHeight: Dp, o
         uiSettings = MapUiSettings(mapToolbarEnabled = false, myLocationButtonEnabled = false, zoomControlsEnabled = false),
         onMapLoaded = { loaded = true }
     ) {
-        points.forEach { (restaurant, point) ->
-            val on = restaurant == selected
-            key(restaurant) {
+        points.forEach { (index, point) ->
+            val on = index == selected
+            key(index) {
                 MarkerComposable(
-                    restaurant, on,
+                    index, on,
                     state = remember { MarkerState(point) },
                     anchor = Offset(0.5f, 0.93f),
                     zIndex = if (on) 1f else 0f,
-                    onClick = { onSelect(restaurant); true }
-                ) { MapPin(placeName(restaurant), on) }
+                    onClick = { onSelect(index); true }
+                ) { MapPin(placeName(picks[index].restaurant), on) }
             }
         }
     }

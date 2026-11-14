@@ -222,4 +222,9 @@
     <string name="group_waiting_many">%1$d명을 기다리는 중 · %2$d초</string>
     <string name="group_seconds">%1$d초</string>
     <string name="group_time_left">남은 시간 %1$d초</string>
+    <string name="group_error_attempts">잘못된 코드를 너무 많이 입력했어요. 1분 뒤에 다시 해 주세요.</string>
+    <string name="group_leave_title">방에서 나갈까요?</string>
+    <string name="group_leave_body">질문이 시작된 방에는 다시 들어올 수 없어요.</string>
+    <string name="group_leave_confirm">나가기</string>
+    <string name="group_leave_stay">계속하기</string>
 </resources>

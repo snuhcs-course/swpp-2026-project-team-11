@@ -24,7 +24,8 @@ data class RoomState(
     @SerializedName("round_seconds") val roundSeconds: Int,
     // done
     val picks: List<RoomPick>?,
-    val decided: String?
+    /** The position in [picks] the host chose. */
+    val decided: Int?
 ) {
     val isHost: Boolean get() = me == host
 

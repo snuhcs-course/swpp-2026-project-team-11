@@ -50,6 +50,8 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
     val error: LiveData<UiError?> = _error
 
     private var membership: Membership? = null
+    /** The answer this phone last sent, with its question ID. */
+    private var sent: Pair<String, String>? = null
     private var polling: Job? = null
 
     /** [account] is the signed-in account's token; without one, [name] names the member. */
@@ -63,12 +65,16 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
 
     fun answer(answerId: String) {
         val question = _room.value?.question ?: return
-        act { repository.answer(it, question.questionId, answerId) }
+        act {
+            // Kept for the history: when this answer ends the round, the reply already holds the next question.
+            sent = question.questionId to answerId
+            repository.answer(it, question.questionId, answerId)
+        }
     }
 
     fun recommendNow() = act { repository.recommendNow(it) }
 
-    fun decide(restaurant: String) = act { repository.decide(it, restaurant) }
+    fun decide(pick: Int) = act { repository.decide(it, pick) }
 
     /** Leaves at once on this phone; the server is told on the side. */
     fun leave() {
@@ -159,7 +165,8 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
         val before = _room.value
         val asked = before?.question
         if (asked != null && asked.questionId != state.question?.questionId) {
-            _history.value = _history.value.orEmpty() + AnsweredQuestion(asked.text, before.myAnswer ?: AnswerId.UNKNOWN)
+            val mine = before.myAnswer ?: sent?.takeIf { it.first == asked.questionId }?.second
+            _history.value = _history.value.orEmpty() + AnsweredQuestion(asked.text, mine ?: AnswerId.UNKNOWN)
         }
         _room.value = state
     }
@@ -167,6 +174,7 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
     private fun reset() {
         polling?.cancel()
         membership = null
+        sent = null
         _room.value = null
         _history.value = emptyList()
     }
@@ -178,6 +186,7 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
                 RoomApi.ROOM_NOT_FOUND -> UiError(R.string.group_error_not_found, canRetry = false)
                 RoomApi.ROOM_STARTED -> UiError(R.string.group_error_started, canRetry = false)
                 RoomApi.ROOM_FULL -> UiError(R.string.group_error_full, canRetry = false)
+                RoomApi.TOO_MANY_ATTEMPTS -> UiError(R.string.group_error_attempts, canRetry = false)
                 RoomApi.GROUP_UNAVAILABLE -> UiError(R.string.group_error_unavailable, canRetry = false)
                 else -> UiError(R.string.error_server, canRetry = false)
             }

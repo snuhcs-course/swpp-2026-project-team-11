@@ -254,12 +254,12 @@ def ban(request, session_id: str):
 #   POST /api/rooms/<code>/start/                         (host)        -> state
 #   POST /api/rooms/<code>/answer/  {"question_id", "answer_id"}        -> state
 #   POST /api/rooms/<code>/recommend-now/                 (host)        -> state
-#   POST /api/rooms/<code>/decide/  {"restaurant"}        (host)        -> state
+#   POST /api/rooms/<code>/decide/  {"pick"}              (host)        -> state
 #   POST /api/rooms/<code>/leave/                                       -> 204
 #
 # A signed-in member (`Authorization: Token ...`) is shown by username; anyone else sends
-# a `name`. Errors: 404 room_not_found, 403 not_member or not_host, 409 room_started,
-# room_full, too_few_members, group_unavailable or stale_step (with the state).
+# a `name`. Errors: 404 room_not_found, 429 too_many_attempts (wrong codes), 403 not_member or not_host,
+# 409 room_started, room_full, too_few_members, group_unavailable or stale_step (with the state).
 
 MAX_NAME = 20
 
@@ -323,10 +323,17 @@ def join_room(request):
     except ValueError as error:
         return _error(400, "invalid_request", str(error))
     try:
-        joined = rooms.join(code, name, allergies, language)
+        joined = rooms.join(code, name, allergies, language, _client(request))
     except rooms.RoomError as error:
-        return _error(404 if error.code == "room_not_found" else 409, error.code, str(error))
+        status = {"room_not_found": 404, "too_many_attempts": 429}.get(error.code, 409)
+        return _error(status, error.code, str(error))
     return _joined(*joined)
+
+
+def _client(request) -> str:
+    """Who is calling, for the limit on wrong codes. Behind the Cloudflare tunnel every request comes from
+    the tunnel, so its CF-Connecting-IP header names the caller."""
+    return request.headers.get("CF-Connecting-IP") or request.META.get("REMOTE_ADDR", "")
 
 
 def _room_request(request, code: str, apply=None):
@@ -381,7 +388,7 @@ def recommend_room_now(request, code: str):
 @csrf_exempt
 @require_POST
 def decide_room(request, code: str):
-    return _room_request(request, code, lambda room, member, body: room.decide(member, body["restaurant"]))
+    return _room_request(request, code, lambda room, member, body: room.decide(member, body["pick"]))
 
 
 @csrf_exempt

@@ -62,6 +62,7 @@ import com.example.metchu.ui.group.GroupQuestionScreen
 import com.example.metchu.ui.group.GroupResultScreen
 import com.example.metchu.ui.group.GroupViewModel
 import com.example.metchu.ui.group.JoinScreen
+import com.example.metchu.ui.group.LeaveRoomDialog
 import com.example.metchu.ui.group.LobbyScreen
 import com.example.metchu.ui.group.NameDialog
 import com.example.metchu.ui.question.QuestionScreen
@@ -156,6 +157,9 @@ fun MetchuApp(
     // A guest names themselves before creating a room; the name is offered again next time.
     var askName by rememberSaveable { mutableStateOf(false) }
     var guestName by rememberSaveable { mutableStateOf("") }
+    // Nobody can come back into a room once its questions have started, so leaving one is confirmed.
+    var confirmLeave by rememberSaveable { mutableStateOf(false) }
+    val askToLeave = { if (room?.decided != null) group.leave() else confirmLeave = true }
     val distanceScope = if (place == Place.NEAR) "near" else "any"
     val createRoom = { name: String? ->
         group.create(account?.token, name, allergies, language, meal.code, { location.current() }, distanceScope)
@@ -320,12 +324,12 @@ fun MetchuApp(
                     LobbyScreen(it, roomBusy, onStart = group::start, onLeave = group::leave)
                 }
                 Screen.GROUP_QUESTION -> room?.takeIf { it.question != null }?.let {
-                    BackHandler(onBack = group::leave)
-                    GroupQuestionScreen(it, roomHistory, roomBusy, group::answer, group::recommendNow, group::leave)
+                    BackHandler(onBack = askToLeave)
+                    GroupQuestionScreen(it, roomHistory, roomBusy, group::answer, group::recommendNow, askToLeave)
                 }
                 Screen.GROUP_RESULT -> room?.let {
-                    BackHandler(onBack = group::leave)
-                    GroupResultScreen(it, roomBusy, onDecide = group::decide, onHome = group::leave)
+                    BackHandler(onBack = askToLeave)
+                    GroupResultScreen(it, roomBusy, onDecide = group::decide, onHome = askToLeave)
                 }
                 Screen.UNAVAILABLE -> if (current != null) {
                     BackHandler { viewModel.startOver() }
@@ -335,6 +339,13 @@ fun MetchuApp(
         }
 
         ErrorBanner(roomError ?: error, onRetry = viewModel::retry, Modifier.align(Alignment.TopCenter))
+
+        if (confirmLeave && room != null) {
+            LeaveRoomDialog(
+                onLeave = { confirmLeave = false; group.leave() },
+                onStay = { confirmLeave = false }
+            )
+        }
 
         if (askName) {
             NameDialog(

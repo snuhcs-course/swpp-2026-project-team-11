@@ -32,7 +32,8 @@ data class JoinRoomRequest(
     val language: String
 )
 
-data class DecideRequest(val restaurant: String)
+/** [pick] is a position in the room's picks: two branches of one chain share a name. */
+data class DecideRequest(val pick: Int)
 
 interface RoomApi {
 
@@ -65,6 +66,7 @@ interface RoomApi {
         const val ROOM_NOT_FOUND = "room_not_found"
         const val ROOM_STARTED = "room_started"
         const val ROOM_FULL = "room_full"
+        const val TOO_MANY_ATTEMPTS = "too_many_attempts"
         const val NOT_MEMBER = "not_member"
         const val GROUP_UNAVAILABLE = "group_unavailable"
         const val STALE_STEP = "stale_step"
