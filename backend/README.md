@@ -283,6 +283,9 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
   (`services.get_store_catalog`). Offers keep the cafeteria shape, with the session's meal (the
   current one in Seoul when the session has none). The menus are read from the database at most
   every `RECOMMEND_STORE_MENU_CACHE_S` seconds (5 minutes), so an import shows within that time.
+  The catalogue built from them for each meal and allergy set (about a second for 4,400 menus) is
+  kept for the same time. `POST /api/sessions/prewarm/` builds it before Start, and a created
+  session's `Server-Timing` header gives the milliseconds for `candidates` and `engine`.
   The default general engine is the decision tree. Use `"engine": "rl"` for feature-only
   RL, or set `METCHU_ENGINE=rl` for clients that omit the engine. General sessions reject
   the LLM option. DT setup takes about 0.1 s with 500, 1 s with 2,000 and 5 s with 4,000
