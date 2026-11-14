@@ -10,6 +10,8 @@ from menus.allergens import ALLERGEN_VERSION
 from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
 from menus.models import Food, MenuItem, Restaurant, StoreMenu
 
+from recommend import interaction_log, sessions
+
 from .helpers import check_state, post
 
 SEOUL_NAT_UNIV_STATION = {"lat": 37.481247, "lng": 126.952739}
@@ -82,6 +84,37 @@ class GeneralSourceTests(TestCase):
         services.get_store_catalog("LU")
         with mock.patch.object(StoreMenu.objects, "order_by", side_effect=AssertionError("Source cache miss")):
             self.assertEqual(len(services.get_store_catalog("LU")[0]), 4)
+
+    @override_settings(RECOMMEND_STORE_MENU_CACHE_S=300)
+    def test_the_catalogue_is_built_once_per_meal_and_allergies(self):
+        services._store_menus = None
+        self.addCleanup(setattr, services, "_store_menus", None)
+        build = mock.patch.object(services, "_menu_candidates", wraps=services._menu_candidates)
+        with build as built:
+            self.start(meal="LU", location=SEOUL_NAT_UNIV_STATION)
+            self.start(meal="LU", location=SEOUL_NAT_UNIV_STATION)
+            self.start(meal="LU", allergies=["egg"])
+            self.start(meal="DN")
+        self.assertEqual(built.call_count, 3)
+        candidates, _ = services.get_store_catalog("LU")
+        self.assertTrue(all("distance_m" not in offer for c in candidates for offer in c["offers"]))
+
+    @override_settings(RECOMMEND_STORE_MENU_CACHE_S=300)
+    def test_prewarm_builds_the_catalogue_without_a_session(self):
+        services._store_menus = None
+        self.addCleanup(setattr, services, "_store_menus", None)
+        sessions_before = len(sessions._sessions)
+        with mock.patch.object(interaction_log, "record") as record:
+            response = post(self.client, "/api/sessions/prewarm/", {"meal": "LU", "source": "all", "allergies": ["egg"]})
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(len(sessions._sessions), sessions_before)
+        record.assert_not_called()
+        with mock.patch.object(services, "_menu_candidates", side_effect=AssertionError("Catalogue cache miss")):
+            self.assertEqual(len(services.get_store_catalog("LU", frozenset({"egg"}))[0]), 3)
+
+    def test_prewarm_rejects_invalid_fields(self):
+        for body in ({"meal": "XX"}, {"source": "mars"}, {"allergies": ["gold"]}):
+            self.assertEqual(post(self.client, "/api/sessions/prewarm/", body).status_code, 400)
 
     def test_location_adds_distances(self):
         food = self.proposal(self.start(location=SEOUL_NAT_UNIV_STATION))
