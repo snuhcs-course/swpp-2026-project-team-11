@@ -4,6 +4,7 @@ import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.RestaurantMenu
 import com.example.metchu.data.model.SessionState
 import com.google.gson.annotations.SerializedName
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -31,6 +32,9 @@ data class CreateSessionRequest(
     val source: String? = null,
     @SerializedName("distance_scope") val distanceScope: String? = null
 )
+
+/** What a session with these fields reads, so the server builds it before Start. */
+data class PrewarmRequest(val meal: String?, val allergies: List<String>?, val source: String?)
 
 data class UserLocation(val lat: Double, val lng: Double)
 
@@ -67,6 +71,9 @@ interface ApiService {
 
     @POST("api/sessions/")
     suspend fun createSession(@Body request: CreateSessionRequest): SessionState
+
+    @POST("api/sessions/prewarm/")
+    suspend fun prewarm(@Body request: PrewarmRequest): Response<Unit>
 
     @GET("api/sessions/{id}/")
     suspend fun getState(@Path("id") sessionId: String): SessionState

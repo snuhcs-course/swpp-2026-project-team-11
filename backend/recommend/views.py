@@ -3,6 +3,7 @@
     POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?, "distance_scope"?,
                           "language"?}                                       -> 201 state
     GET  /api/sessions/<id>/                                               -> state
+    POST /api/sessions/prewarm/  {"meal"?, "source"?, "allergies"?}            -> 204
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
     POST /api/sessions/<id>/recommend-now/                                 -> state
@@ -32,6 +33,13 @@ missing `restaurant` is a 400.
 session (`banned` true), or lets it back (false). The step on screen does not change;
 the next action that would show a banned dish skips it, and an undo that would goes
 back further (recommend/sessions.py).
+
+A created session's reply carries a `Server-Timing` header with the milliseconds spent
+reading the candidates and building and starting the engine (`candidates`, `engine`).
+
+`prewarm` prepares what a session with these fields would read, so the phone can ask for
+it when it opens and when the user changes them, and Start does not wait for it. It
+creates no session and records nothing.
 
 `health` touches nothing; it is for checking from a browser that the server can
 be reached, for example through the tunnel of `manage.py serve_public`.
@@ -99,6 +107,20 @@ def _location(value) -> tuple[float, float] | None:
     return float(lat), float(lng)
 
 
+def _catalogue_fields(payload: dict) -> tuple[str | None, str | None, frozenset[str]]:
+    meal = payload.get("meal")
+    if meal is not None and meal not in MEALS:
+        raise ValueError("meal must be one of BR, LU, DN.")
+    source = payload.get("source")
+    if source is not None and source not in sessions.SOURCES:
+        raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
+    allergies = payload.get("allergies")
+    if allergies is not None and (not isinstance(allergies, list)
+                                  or any(key not in ALLERGEN_KEYS for key in allergies)):
+        raise ValueError(f"allergies must be a list of {', '.join(ALLERGEN_KEYS)}.")
+    return meal, source, frozenset(allergies or ())
+
+
 @require_GET
 def health(request):
     return JsonResponse({"status": "ok"})
@@ -114,20 +136,11 @@ def create_session(request):
             if not isinstance(date, str):
                 raise ValueError("date must be an ISO date string such as 2026-11-02.")
             date = datetime.date.fromisoformat(date)
-        meal = payload.get("meal")
-        if meal is not None and meal not in MEALS:
-            raise ValueError("meal must be one of BR, LU, DN.")
+        meal, source, allergies = _catalogue_fields(payload)
         engine = payload.get("engine")
         if engine is not None and engine not in sessions.ENGINES:
             raise ValueError(f"engine must be one of {', '.join(sessions.ENGINES)}.")
         location = _location(payload.get("location"))
-        allergies = payload.get("allergies")
-        if allergies is not None and (not isinstance(allergies, list)
-                                      or any(key not in ALLERGEN_KEYS for key in allergies)):
-            raise ValueError(f"allergies must be a list of {', '.join(ALLERGEN_KEYS)}.")
-        source = payload.get("source")
-        if source is not None and source not in sessions.SOURCES:
-            raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
         if source == "general" and engine == "llm":
             raise ValueError("The general source supports the decision_tree and rl engines.")
         distance_scope = payload.get("distance_scope")
@@ -141,12 +154,25 @@ def create_session(request):
     if source == "all" and engine == "llm":
         return _error(400, "all_source_llm_unsupported", "All restaurants supports the decision tree and RL engines.")
     try:
-        session = sessions.create(date, meal, engine, location, frozenset(allergies or ()), source, language, distance_scope)
+        session = sessions.create(date, meal, engine, location, allergies, source, language, distance_scope)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     state = session.public_state()
     interaction_log.record(session, "start", after=state["step"])
-    return JsonResponse(state, status=201)
+    response = JsonResponse(state, status=201)
+    response["Server-Timing"] = ", ".join(f"{name};dur={seconds * 1000:.1f}" for name, seconds in session.timings.items())
+    return response
+
+
+@csrf_exempt
+@require_POST
+def prewarm(request):
+    try:
+        meal, source, allergies = _catalogue_fields(_body(request))
+    except ValueError as error:
+        return _error(400, "invalid_request", str(error))
+    sessions.prewarm(meal, allergies, source)
+    return HttpResponse(status=204)
 
 
 @require_GET
