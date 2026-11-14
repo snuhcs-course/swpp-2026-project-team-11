@@ -78,6 +78,42 @@ class EngineUnavailable(Exception):
     """The requested engine cannot run on this server as it is configured."""
 
 
+def load_candidates(date: datetime.date, meal: str | None, allergies: frozenset[str], source: str,
+                    location: tuple[float, float] | None, distance_scope: str | None) -> tuple[list, list, int]:
+    """(candidates, schema, count before the distance cut) for a session or a group room."""
+    try:
+        if source == "general":
+            candidates, schema = get_store_catalog(meal, allergies)
+        elif source == "all":
+            campus, schema = get_catalog(date, meal, allergies)
+            stores, _ = get_store_catalog(meal, allergies)
+            candidates = campus + stores
+        else:
+            candidates, schema = get_catalog(date, meal, allergies)
+    except ValueError as error:
+        raise EngineUnavailable("Invalid stored menu features.") from error
+    before = len(candidates)
+    if distance_scope == "near" and location is not None:
+        candidates = with_distances(candidates, location, NEARBY_METERS, exclude_unknown=True)
+    else:
+        cutoff = None if distance_scope in ("near", "any") or source == "all" else settings.RECOMMEND_MAX_DISTANCE_M
+        candidates = with_distances(candidates, location, cutoff)
+    return candidates, schema, before
+
+
+def restaurant_menus(candidates: list) -> dict[str, list[dict]]:
+    """{restaurant: [{"food_id", "display_name", "meal", "price"}]}, breakfast first and by name within a meal."""
+    menus = {}
+    for candidate in candidates:
+        for offer in candidate["offers"]:
+            menus.setdefault(offer["restaurant"], []).append({
+                "food_id": candidate["food_id"], "display_name": candidate["display_name"],
+                "meal": offer["meal"], "price": offer["price"]})
+    for dishes in menus.values():
+        dishes.sort(key=lambda dish: (MEAL_ORDER[dish["meal"]], dish["display_name"]))
+    return menus
+
+
 class RecommendSession:
     def __init__(self, date: datetime.date, meal: str | None, engine: str,
                  location: tuple[float, float] | None, allergies: frozenset[str],
@@ -94,37 +130,15 @@ class RecommendSession:
         self.meal = meal
         self.language = language
         self.lock = threading.Lock()
-        try:
-            if source == "general":
-                candidates, schema = get_store_catalog(meal, allergies)
-            elif source == "all":
-                campus, schema = get_catalog(date, meal, allergies)
-                stores, _ = get_store_catalog(meal, allergies)
-                candidates = campus + stores
-            else:
-                candidates, schema = get_catalog(date, meal, allergies)
-        except ValueError as error:
-            raise EngineUnavailable("Invalid stored menu features.") from error
-        self.candidates_before_distance = len(candidates)
-        if distance_scope == "near" and location is not None:
-            candidates = with_distances(candidates, location, NEARBY_METERS, exclude_unknown=True)
-        else:
-            cutoff = None if distance_scope in ("near", "any") or source == "all" else settings.RECOMMEND_MAX_DISTANCE_M
-            candidates = with_distances(candidates, location, cutoff)
+        candidates, schema, self.candidates_before_distance = load_candidates(
+            date, meal, allergies, source, location, distance_scope)
         self.candidate_count = len(candidates)
         # Reasons need only dish names and feature means after the engine is built.
         self.reason_data = {c["food_id"]: (c["display_name"], c.get("features") or {}) for c in candidates}
         self.reasons = {}
         self.banned_foods, self.banned_groups = set(), set()
         self.food_groups = {c["food_id"]: set(c["food_groups"]) for c in candidates}
-        self.menus = {}
-        for candidate in candidates:
-            for offer in candidate["offers"]:
-                self.menus.setdefault(offer["restaurant"], []).append({
-                    "food_id": candidate["food_id"], "display_name": candidate["display_name"],
-                    "meal": offer["meal"], "price": offer["price"]})
-        for dishes in self.menus.values():
-            dishes.sort(key=lambda dish: (MEAL_ORDER[dish["meal"]], dish["display_name"]))
+        self.menus = restaurant_menus(candidates)
         self.max_questions = settings.RECOMMEND_MAX_QUESTIONS
         config = {"max_questions": self.max_questions, "language": language}
         if engine == "llm":

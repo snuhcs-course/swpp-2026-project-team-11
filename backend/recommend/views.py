@@ -57,14 +57,18 @@ from __future__ import annotations
 import datetime
 import json
 
-from django.http import JsonResponse
+from django.conf import settings
+from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from menus.allergens import ALLERGEN_KEYS
 from question_engines.decision_tree.contracts import LANGUAGES
 
-from . import interaction_log, sessions
+from accounts.tokens import user_for
+
+from . import interaction_log, rooms, sessions
 
 MEALS = ("BR", "LU", "DN")
 
@@ -238,3 +242,155 @@ def undo(request, session_id: str):
 def ban(request, session_id: str):
     return _action(request, session_id, "ban",
                    lambda s, body: s.ban(body.get("food_id"), body.get("food_group"), body["banned"]))
+
+
+# Group rooms (recommend/rooms.py). Every room request but create and join sends the
+# member's token from those replies as `X-Member-Token`.
+#
+#   POST /api/rooms/        {"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?,
+#                            "distance_scope"?, "location"?}            -> 201 {"token", "state"}
+#   POST /api/rooms/join/   {"code", "name"?, "allergies"?, "language"?} -> 201 {"token", "state"}
+#   GET  /api/rooms/<code>/                                             -> state
+#   POST /api/rooms/<code>/start/                         (host)        -> state
+#   POST /api/rooms/<code>/answer/  {"question_id", "answer_id"}        -> state
+#   POST /api/rooms/<code>/recommend-now/                 (host)        -> state
+#   POST /api/rooms/<code>/decide/  {"restaurant"}        (host)        -> state
+#   POST /api/rooms/<code>/leave/                                       -> 204
+#
+# A signed-in member (`Authorization: Token ...`) is shown by username; anyone else sends
+# a `name`. Errors: 404 room_not_found, 403 not_member or not_host, 409 room_started,
+# room_full, too_few_members, group_unavailable or stale_step (with the state).
+
+MAX_NAME = 20
+
+
+def _member_fields(request, payload: dict) -> tuple[str, frozenset[str], str]:
+    user = user_for(request)
+    name = user.username if user else payload.get("name")
+    if not isinstance(name, str) or not name.strip() or len(name.strip()) > MAX_NAME:
+        raise ValueError(f"name must be 1 to {MAX_NAME} characters.")
+    allergies = payload.get("allergies", [])
+    if not isinstance(allergies, list) or any(key not in ALLERGEN_KEYS for key in allergies):
+        raise ValueError(f"allergies must be a list of {', '.join(ALLERGEN_KEYS)}.")
+    language = payload.get("language", "en")
+    if language not in LANGUAGES:
+        raise ValueError(f"language must be one of {', '.join(LANGUAGES)}.")
+    return name.strip(), frozenset(allergies), language
+
+
+def _joined(room, member) -> JsonResponse:
+    with room.lock:
+        return JsonResponse({"token": member.token, "state": room.public_state(member)}, status=201)
+
+
+@csrf_exempt
+@require_POST
+def create_room(request):
+    try:
+        payload = _body(request)
+        name, allergies, language = _member_fields(request, payload)
+        date = payload.get("date")
+        if date is not None:
+            if not isinstance(date, str):
+                raise ValueError("date must be an ISO date string such as 2026-11-02.")
+            date = datetime.date.fromisoformat(date)
+        meal = payload.get("meal")
+        if meal is not None and meal not in MEALS:
+            raise ValueError("meal must be one of BR, LU, DN.")
+        source = payload.get("source", "cafeteria")
+        if source not in sessions.SOURCES:
+            raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
+        distance_scope = payload.get("distance_scope")
+        if distance_scope is not None and distance_scope not in ("near", "any"):
+            raise ValueError("distance_scope must be near or any.")
+        location = _location(payload.get("location"))
+    except ValueError as error:
+        return _error(400, "invalid_request", str(error))
+    room_settings = rooms.RoomSettings(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
+                                       meal, source, distance_scope, location)
+    return _joined(*rooms.create(name, allergies, language, room_settings))
+
+
+@csrf_exempt
+@require_POST
+def join_room(request):
+    try:
+        payload = _body(request)
+        code = payload.get("code")
+        if not isinstance(code, str):
+            raise ValueError("code must be the room's four digits.")
+        name, allergies, language = _member_fields(request, payload)
+    except ValueError as error:
+        return _error(400, "invalid_request", str(error))
+    try:
+        joined = rooms.join(code, name, allergies, language)
+    except rooms.RoomError as error:
+        return _error(404 if error.code == "room_not_found" else 409, error.code, str(error))
+    return _joined(*joined)
+
+
+def _room_request(request, code: str, apply=None):
+    """Finds the room and the caller, runs `apply` under the room lock, returns the caller's state."""
+    room = rooms.get(code)
+    if room is None:
+        return _error(404, "room_not_found", "No room is open with this code.")
+    with room.lock:
+        member = room.member(request.headers.get("X-Member-Token"))
+        if member is None or member.left:
+            return _error(403, "not_member", "You are not in this room.")
+        if apply is not None:
+            try:
+                apply(room, member, _body(request))
+            except rooms.StaleStep as error:
+                return _error(409, "stale_step", str(error), state=room.public_state(member))
+            except rooms.RoomError as error:
+                return _error(403 if error.code == "not_host" else 409, error.code, str(error))
+            except rooms.EngineUnavailable as error:
+                return _error(503, "engine_unavailable", str(error))
+            except KeyError as error:
+                return _error(400, "invalid_request", f"Missing field: {error.args[0]}")
+            except ValueError as error:
+                return _error(400, "invalid_request", str(error))
+        return JsonResponse(room.public_state(member))
+
+
+@require_GET
+def room_state(request, code: str):
+    return _room_request(request, code)
+
+
+@csrf_exempt
+@require_POST
+def start_room(request, code: str):
+    return _room_request(request, code, lambda room, member, body: room.start(member))
+
+
+@csrf_exempt
+@require_POST
+def answer_room(request, code: str):
+    return _room_request(request, code, lambda room, member, body:
+                         room.answer(member, body["question_id"], body["answer_id"]))
+
+
+@csrf_exempt
+@require_POST
+def recommend_room_now(request, code: str):
+    return _room_request(request, code, lambda room, member, body: room.recommend_now(member))
+
+
+@csrf_exempt
+@require_POST
+def decide_room(request, code: str):
+    return _room_request(request, code, lambda room, member, body: room.decide(member, body["restaurant"]))
+
+
+@csrf_exempt
+@require_POST
+def leave_room(request, code: str):
+    room = rooms.get(code)
+    if room is not None:
+        with room.lock:
+            member = room.member(request.headers.get("X-Member-Token"))
+            if member is not None:
+                room.leave(member)
+    return HttpResponse(status=204)
