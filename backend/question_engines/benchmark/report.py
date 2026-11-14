@@ -16,7 +16,8 @@ a substitute), so a mean over them means nothing. plots.py draws them into plots
     6_stability/       each engine over repeats of one scenario
     7_recommend_now/   what "recommend now" would give after k questions
     8_similarity/      similarity of accepted and rejected proposals (not-served threshold)
-    9_user_study/      sessions played by people, satisfaction, the simulated user vs people
+    9_user_study/      sessions played by people on every engine (also the RL policy), by
+                       situation and self-reported certainty, satisfaction, the simulated user vs people
 
 Sessions with an LLM fallback are counted in every section and reported apart in 1.
 """
@@ -31,13 +32,12 @@ from collections import defaultdict
 
 import numpy as np
 
-from . import CERTAINTY, ENGINES, SITUATIONS, cost, metrics, stats
+from . import CERTAINTY, ENGINES, SITUATIONS, STUDY_ENGINES, STUDY_ROUNDS, cost, metrics, stats
 from .simulator import ANSWER_IDS
 
 GOAL_FIRST_PICK = 0.5      # first-pick acceptance the app aims at
 GOAL_OVER_BASELINE = 0.15  # and how far above a baseline (checked as points and as a ratio)
 TOLERANCE = 1e-9  # a result exactly at a goal meets it despite floating-point error
-SESSIONS_PER_ENGINE = 2    # user study: sessions each tester plays on each engine
 TAUS = (0.70, 0.75, 0.80, 0.85, 0.90, 0.95)
 DIRECTION = {"yes": 2, "probably_yes": 2, "any": 1, "unknown": 1, "probably_no": 0, "no": 0}
 
@@ -72,7 +72,7 @@ def _group(rows, *keys):
 
 def _order(key):
     ranks = {**{s: i for i, s in enumerate(SITUATIONS)}, **{c: i for i, c in enumerate(CERTAINTY)},
-             **{e: i for i, e in enumerate(ENGINES)}}
+             **{e: i for i, e in enumerate(STUDY_ENGINES)}}
     return tuple(ranks.get(part, 99) if not isinstance(part, int) else part for part in key)
 
 
@@ -365,6 +365,8 @@ def simulator_agreement(checks):
 def section_user_study(human, checks, index):
     title = "9. User study"
     agreement = simulator_agreement(checks)
+    failed = sum(r["outcome"] == "error" for r in human)
+    human = [r for r in human if r["outcome"] != "error"]  # played again by play_engine_session
     if not human and not agreement:
         return {"title": title, "skipped": "No sessions played by people (play_engine_session)."}
     lines, tables = [], []
@@ -372,27 +374,48 @@ def section_user_study(human, checks, index):
         rows = []
         for record in human:
             row = metrics.session(record, record["scenario_data"], index)
-            row.update(tester=record.get("tester"), satisfaction=record.get("satisfaction"))
+            row.update(tester=record.get("tester"), satisfaction=record.get("satisfaction"),
+                       gave_up=record["outcome"] == "gave_up")
             rows.append(row)
         by_situation = [[situation, engine, len(group), len({r["tester"] for r in group}),
                          _fmt(_mean(group, "questions")), _fmt(_mean(group, "first_guess_accepted"), "rate"),
-                         _fmt(_mean(group, "success"), "rate"),
-                         _fmt(cost.percentile(_values(group, "engine_ms"), 50)), _fmt(_mean(group, "satisfaction"))]
+                         _fmt(_mean(group, "first_guess_exact"), "rate"), _fmt(_mean(group, "no_question_pick"), "rate"),
+                         _fmt(_mean(group, "random_pick"), "rate"), _fmt(_mean(group, "success"), "rate"),
+                         _fmt(_mean(group, "gave_up"), "rate"), _fmt(cost.percentile(_values(group, "engine_ms"), 50)),
+                         _fmt(_mean(group, "cost_usd"), "usd"), _fmt(_mean(group, "satisfaction"))]
                         for (situation, engine), group in _sorted_groups(rows, "situation", "engine")]
+        by_certainty = [[situation, certainty, engine, len(group), _fmt(_mean(group, "first_guess_accepted"), "rate"),
+                         _fmt(_mean(group, "success"), "rate"), _fmt(_mean(group, "satisfaction"))]
+                        for (situation, certainty, engine), group
+                        in _sorted_groups(rows, "situation", "certainty", "engine")]
         testers = sorted({r["tester"] for r in rows})
-        complete = sum(all(sum(r["tester"] == t and r["engine"] == e for r in rows) >= SESSIONS_PER_ENGINE
-                           for e in ENGINES) for t in testers)
-        lines.append(f"{len(testers)} testers, {complete} of them with {SESSIONS_PER_ENGINE} sessions on each engine. "
+        rounds = defaultdict(set)
+        for r in rows:
+            rounds[r["tester"], r["scenario"]].add(r["engine"])
+        complete = sum(engines >= set(STUDY_ENGINES) for engines in rounds.values())
+        lines.append(f"{len(testers)} testers, {complete} complete rounds (a wish played on every engine: "
+                     f"{', '.join(STUDY_ENGINES)}); {STUDY_ROUNDS} rounds per tester, one per situation. "
                      "The engine was hidden; satisfaction is the 1-5 survey answer after each session.")
+        lines.append("Certainty is what the tester said about their wish; their answers are not blurred. Proposals "
+                     "are judged as the simulated user's: the picked menus by the rule, only the picked menu next to "
+                     "a close alternative, the person otherwise. The goal is the simulated benchmark's: first pick "
+                     f">= {GOAL_FIRST_PICK:.0%} and {GOAL_OVER_BASELINE:.0%} above the no-question and random picks.")
+        if failed:
+            lines.append(f"{failed} sessions that ended in an error are left out (they are played again).")
         tables.append(("user_study.csv", "Sessions played by people",
                        ["situation", "engine", "sessions", "testers", "questions / session", "first pick",
-                        "success", "latency p50 (ms)", "satisfaction (1-5)"], by_situation, 10))
+                        "first pick (exact)", "no-question pick", "random pick", "success", "gave up",
+                        "latency p50 (ms)", "cost / session",
+                        "satisfaction (1-5)"], by_situation, 15))
+        tables.append(("user_study_certainty.csv", "Sessions played by people, by self-reported certainty",
+                       ["situation", "certainty", "engine", "sessions", "first pick", "success",
+                        "satisfaction (1-5)"], by_certainty, 40))
     if agreement and agreement["n"]:
         lines.append(f"The simulated user answered the {agreement['n']} questions people answered: same answer "
                      f"{agreement['exact']:.1%}, same direction (yes / neutral / no) {agreement['direction']:.1%}, "
                      f"weighted kappa {agreement['kappa']:.2f}.")
     if agreement and agreement["verdicts"]:
-        lines.append(f"On the {agreement['verdicts']} proposals people judged that the name rule does not accept, "
+        lines.append(f"On the {agreement['verdicts']} proposals people judged themselves, "
                      f"the simulated user gave the same verdict {agreement['same_verdict']:.1%} of the time.")
     return {"title": title, "lines": lines, "tables": tables, "summary": {"simulator_agreement": agreement}}
 
@@ -444,15 +467,20 @@ def write(scenario_data, records, output_dir, human=None, checks=None, plots=Tru
         proposals += metrics.proposals(record, scenario, index)
         points += metrics.anytime(record, scenario, index)
 
-    results = [section_main(sessions), section_baselines(sessions), section_situations(sessions),
-               section_paired(sessions), section_latency_cost(records), section_stability(sessions),
-               section_recommend_now(points), section_similarity(sessions, proposals),
-               section_user_study(human or [], checks or [], index)]
+    study = section_user_study(human or [], checks or [], index)
+    if records:
+        results = [section_main(sessions), section_baselines(sessions), section_situations(sessions),
+                   section_paired(sessions), section_latency_cost(records), section_stability(sessions),
+                   section_recommend_now(points), section_similarity(sessions, proposals), study]
+    else:  # only people's sessions so far
+        results, plots = [study], False
     engines = sorted({r["engine"] for r in records}, key=ENGINES.index)
     per_engine = ", ".join(f"{e} {sum(r['engine'] == e for r in records)}" for e in engines)
     text = ["# Question engine benchmark: decision tree (MVP1) vs LLM engine (MVP2)", "",
             f"{len(scenarios)} scenarios on {len(scenario_data['menus'])} menus, {len(records)} sessions "
-            f"({per_engine}).", ""]
+            f"({per_engine}), {len(human or [])} sessions played by people.", ""] if records else \
+           ["# Question engine user study", "", f"{len(human or [])} sessions played by people on "
+            f"{len(scenario_data['menus'])} menus; no simulated sessions yet.", ""]
     for result in results:
         text += [f"## {result['title']}", ""]
         if "skipped" in result:

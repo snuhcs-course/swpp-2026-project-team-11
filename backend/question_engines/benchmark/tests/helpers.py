@@ -56,9 +56,12 @@ class _EngineRun:
         asked = len(re.findall(r"^Q\d+\.", text, re.M))
         food = self.owner.pick if self.owner.pick in foods else foods[0]
         if asked < self.owner.questions and "Questions left: 0" not in text:
-            reply = {"action": "ask", "question": f"Do you want {TOPICS[asked]}?", "food": food}
+            reply = {"action": "ask", "question": f"Do you want {TOPICS[asked]}?", "food": food,
+                     "question_ko": f"{TOPICS[asked]} 먹고 싶나요?"}
         else:
-            reply = {"action": "recommend", "question": "", "food": food}
+            reply = {"action": "recommend", "question": "", "food": food, "question_ko": ""}
+        if "question_ko" not in self.schema.model_fields:  # an English session
+            del reply["question_ko"]
         parsed = self.schema.model_validate(reply)
         if not self.include_raw:
             return parsed

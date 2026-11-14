@@ -9,7 +9,7 @@ venv/
 .env
 .env.harness
 .harness/
-backend/db.sqlite3
+backend/*.sqlite3
 .local/
 menu_feature_exports/
 /menu_features.*
@@ -23,6 +23,8 @@ feature_benchmark_report/
 ~$*
 # Ad-hoc question engine benchmark output (benchmark_engines); engine_benchmark_results/ is shared
 engine_benchmark_report/
+# play_engine_session's chosen wish while a round is played
+*.round.json
 
 # Editors / OS
 .DS_Store
