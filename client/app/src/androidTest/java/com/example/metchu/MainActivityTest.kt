@@ -340,13 +340,25 @@ class MainActivityTest {
     }
 
     @Test
-    fun aSlowStartShowsASpinnerInTheButton() {
+    fun aSlowStartSearchesUntilTheQuestionComes() {
         val gate = api.hold()
         tap("start")
         compose.waitUntil(3_000) { compose.onAllNodesWithTag("loading").fetchSemanticsNodes().isNotEmpty() }
         gate.complete(question)
         compose.onNodeWithTag("question").assertIsDisplayed()
         compose.onNodeWithTag("loading").assertDoesNotExist()
+    }
+
+    @Test
+    fun aQuickFirstQuestionLetsTheSearchShowFirst() {
+        api.reply(question)
+        compose.mainClock.autoAdvance = false
+        tap("start")
+        compose.mainClock.advanceTimeBy(600)
+        compose.onNodeWithTag("loading").assertExists()
+        compose.onNodeWithTag("question").assertDoesNotExist()
+        compose.mainClock.autoAdvance = true
+        compose.onNodeWithTag("question").assertIsDisplayed()
     }
 
     @Test
