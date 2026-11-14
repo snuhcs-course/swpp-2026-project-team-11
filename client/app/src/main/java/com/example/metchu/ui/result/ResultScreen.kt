@@ -829,7 +829,7 @@ internal fun MapPin(label: String, on: Boolean) {
                 .cssShadow(CircleShape, 2.dp, 6.dp, 0.24f)
                 .clip(CircleShape)
                 .background(Color.White)
-                .padding(3.dp)
+                .padding(1.5.dp)
                 .clip(CircleShape)
                 .background(if (on) MetchuColors.Primary else MetchuColors.Grey600)
         )

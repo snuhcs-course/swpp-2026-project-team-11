@@ -1,6 +1,24 @@
 package com.example.metchu.ui.start
 
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.util.lerp
+import com.google.android.gms.maps.CameraUpdateFactory
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -114,12 +132,19 @@ private enum class Sheet { MEAL, PLACE, WHO }
  * screen points to the globe and the gear, where the language and the allergies change.
  * With [askForLocation] and no permission yet, a notice says why before the system asks,
  * once the tip is closed.
+ *
+ * [whitened] covers the whole screen in white as the search hands over to the question.
+ *
+ * While a session starts ([loading] alone, not with friends) the screen searches: the
+ * sentence gives way to what is happening, the button shrinks into the user's dot with
+ * ripples spreading from it, and the map fills the screen, zoomed out to the campus.
  */
 @Composable
 fun StartScreen(
     meal: Meal,
     place: Place,
     loading: Boolean,
+    whitened: Float,
     tip: Boolean,
     askForLocation: Boolean,
     onMeal: (Meal) -> Unit,
@@ -143,6 +168,22 @@ fun StartScreen(
 
     val permission = rememberLocationPermission()
     val user = rememberUserPoint(permission.granted)
+    val searching = loading && !group
+    val search by animateFloatAsState(
+        if (searching) 1f else 0f,
+        tween(if (searching) 260 else 320, easing = SheetEasing),
+        label = "search"
+    )
+    // Without a position there is nothing to find first.
+    var phase by remember { mutableIntStateOf(0) }
+    LaunchedEffect(searching) {
+        if (!searching) return@LaunchedEffect
+        phase = if (user != null) 0 else 1
+        while (phase < SearchPhases.lastIndex) {
+            delay(SEARCH_PHASE_MILLIS)
+            phase++
+        }
+    }
     // The words fade out, change language and fade back in.
     var switching by remember { mutableStateOf(false) }
     val words by animateFloatAsState(if (switching) 0f else 1f, tween(150), label = "words")
@@ -150,9 +191,14 @@ fun StartScreen(
     LaunchedEffect(language) { switching = false }
 
     Box(Modifier.fillMaxSize().screenBackground()) {
-        if (BuildConfig.HAS_MAPS_KEY) StartMap(user ?: CampusCenter)
+        if (BuildConfig.HAS_MAPS_KEY) StartMap(user ?: CampusCenter, search, zoomedOut = searching)
 
-        Column(Modifier.statusBarsPadding().alpha(words)) {
+        Column(
+            Modifier.statusBarsPadding().graphicsLayer {
+                alpha = words * (1f - search)
+                translationY = -12.dp.toPx() * search
+            }
+        ) {
             // Home tapped by mistake: the session left is one tap away.
             TopRow(arrangement = Arrangement.End) {
                 if (group) TopPill(Icons.Keypad, stringResource(R.string.group_join_open), "joinRoom", onJoin)
@@ -185,9 +231,18 @@ fun StartScreen(
             }
         }
 
+        SearchHeadline(
+            phase.takeIf { searching },
+            Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = TopRowHeight + 10.dp)
+        )
+
         StartButton(
             label = stringResource(if (group) R.string.group_create else R.string.start_button),
             loading = loading,
+            searching = searching,
+            located = user != null,
+            // Nothing else on screen asks for attention.
+            nudging = !group && sheet == null && !tip,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).fade { words }
@@ -195,15 +250,19 @@ fun StartScreen(
         // Things set once sit low on the left, out of the way of the sentence and the button.
         CircleIconButton(
             Icons.Gear, stringResource(R.string.settings), onSettings,
-            Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 74.dp, bottom = CornerButtonBottom).testTag("settings")
+            Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 74.dp, bottom = CornerButtonBottom)
+                .fade { 1f - search }.testTag("settings")
         )
-        LanguageMenu(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = CornerButtonBottom)) { tag ->
+        LanguageMenu(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = CornerButtonBottom).fade { 1f - search }) { tag ->
             scope.launch {
                 switching = true
                 delay(160)
                 setLanguage(tag)
             }
         }
+
+        // The faded choices stay out of reach until the search ends.
+        if (searching) Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures {} })
 
         // Under the choice it changes: the title, two lines and a 4 dp gap below the top row.
         ChoicePopup(
@@ -247,6 +306,9 @@ fun StartScreen(
             },
             onDismiss = { sheet = null }
         )
+
+        // Over everything, the map too: a map does not fade with the screen around it.
+        if (whitened > 0f) Box(Modifier.fillMaxSize().fade { whitened }.background(Color.White))
 
         if (tip) SetupTip(onDone = onTipDone, onSettings = { onTipDone(); onSettings() })
 
@@ -380,25 +442,127 @@ private val StartButtonSize = 140.dp
 private val CornerButtonBottom = 18.dp
 private val TitleLine = 39.dp
 
+/**
+ * The round button. While [nudging] and idle, a soft circle keeps spreading from it.
+ * [searching], it shrinks into the user's dot (ringed in white, with ripples) where it
+ * stands, or away when the user's position is not [located]. Otherwise a slow [loading],
+ * such as creating a room, shows a spinner inside it.
+ */
 @Composable
-private fun StartButton(label: String, loading: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun StartButton(
+    label: String,
+    loading: Boolean,
+    searching: Boolean,
+    located: Boolean,
+    nudging: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val interaction = remember { MutableInteractionSource() }
-    Box(
-        modifier
-            .size(StartButtonSize)
-            .pressScale(interaction)
-            .cssShadow(CircleShape, 6.dp, 20.dp, 0.2f)
-            .clip(CircleShape)
-            .background(MetchuColors.Primary)
-            .clickable(interaction, indication = null, enabled = !loading, role = Role.Button, onClick = onClick)
-            .testTag("start"),
-        contentAlignment = Alignment.Center
-    ) {
-        // Finding the user and starting the session can take seconds.
-        if (rememberSlow(loading)) Spinner(Color.White, 32.dp)
-        else Text(label, style = MetchuType.Button, color = Color.White, textAlign = TextAlign.Center)
+    val motion = tween<Dp>(420, easing = SheetEasing)
+    val size by animateDpAsState(
+        when {
+            !searching -> StartButtonSize
+            located -> DotSize
+            else -> 0.dp
+        },
+        motion,
+        label = "button"
+    )
+    val ring by animateDpAsState(if (searching) 1.5.dp else 0.dp, tween(300), label = "ring")
+    val nudge by animateFloatAsState(if (nudging && !searching) 1f else 0f, tween(200), label = "nudge")
+    val words by animateFloatAsState(if (searching) 0f else 1f, tween(120), label = "label")
+    Box(modifier.size(StartButtonSize).then(if (searching) Modifier.testTag("loading") else Modifier), contentAlignment = Alignment.Center) {
+        if (nudge > 0f) Nudge(Modifier.requiredSize(NudgeSize).fade { nudge })
+        if (searching && located) Ripples(Modifier.requiredSize(RippleSize))
+        Box(
+            Modifier
+                .size(size)
+                .pressScale(interaction)
+                .then(if (searching) Modifier.cssShadow(CircleShape, 2.dp, 8.dp, 0.3f) else Modifier.cssShadow(CircleShape, 6.dp, 20.dp, 0.2f))
+                .clip(CircleShape)
+                .background(MetchuColors.Primary)
+                .border(ring, Color.White, CircleShape)
+                .clickable(interaction, indication = null, enabled = !loading, role = Role.Button, onClick = onClick)
+                .testTag("start"),
+            contentAlignment = Alignment.Center
+        ) {
+            if (!searching && rememberSlow(loading)) Spinner(Color.White, 32.dp)
+            else Text(
+                label,
+                Modifier.requiredWidth(StartButtonSize).fade { words },
+                style = MetchuType.Button,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
+
+/**
+ * One circle that spreads from the button's edge and fades, then rests: it moves for the
+ * first 60 % of each beat.
+ */
+@Composable
+private fun Nudge(modifier: Modifier) {
+    val beat by rememberInfiniteTransition(label = "nudge").animateFloat(
+        0f, 1f, infiniteRepeatable(tween(NUDGE_MILLIS, easing = LinearEasing)), label = "beat"
+    )
+    Canvas(modifier) {
+        val p = (beat / 0.6f).coerceAtMost(1f)
+        val from = StartButtonSize.toPx() / 2
+        val radius = from + (size.minDimension / 2 - from) * (1f - (1f - p) * (1f - p))
+        drawCircle(MetchuColors.Primary.copy(alpha = 0.18f * (1f - p)), radius)
+    }
+}
+
+/**
+ * Three circles that keep spreading from the user's dot and fading, a third of a beat apart.
+ * They come in once the button has mostly shrunk.
+ */
+@Composable
+private fun Ripples(modifier: Modifier) {
+    val beat by rememberInfiniteTransition(label = "ripples").animateFloat(
+        0f, 1f, infiniteRepeatable(tween(RIPPLE_MILLIS, easing = LinearEasing)), label = "beat"
+    )
+    val shown = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { shown.animateTo(1f, tween(400, delayMillis = 250)) }
+    Canvas(modifier.fade { shown.value }) {
+        val from = DotSize.toPx() / 2
+        val to = size.minDimension / 2
+        repeat(3) { i ->
+            val p = (beat + i / 3f) % 1f
+            val radius = from + (to - from) * (1f - (1f - p) * (1f - p))
+            val fade = 1f - p
+            drawCircle(MetchuColors.Primary.copy(alpha = 0.14f * fade), radius)
+        }
+    }
+}
+
+/** Where the title stands, what the search is doing: [phase] indexes [SearchPhases], null shows nothing. */
+@Composable
+private fun SearchHeadline(phase: Int?, modifier: Modifier = Modifier) {
+    AnimatedContent(
+        targetState = phase,
+        transitionSpec = {
+            (fadeIn(tween(220, delayMillis = 120)) + slideInVertically(tween(320, delayMillis = 120, easing = SheetEasing)) { it / 4 }) togetherWith
+                (fadeOut(tween(160)) + slideOutVertically(tween(200)) { -it / 4 })
+        },
+        modifier = modifier,
+        label = "headline"
+    ) { shown ->
+        if (shown != null) Text(stringResource(SearchPhases[shown]), style = MetchuType.Title)
+        else Box(Modifier.fillMaxWidth())
+    }
+}
+
+private val SearchPhases = listOf(R.string.search_locating, R.string.search_menus, R.string.search_question)
+private const val SEARCH_PHASE_MILLIS = 900L
+private const val RIPPLE_MILLIS = 2100
+private const val NUDGE_MILLIS = 2800
+private val NudgeSize = 300.dp
+private val DotSize = 22.dp
+private val RippleSize = 380.dp
 
 /** A white pill in the top row: "Resume" a session left, or "Join with a code". */
 @Composable
@@ -442,14 +606,24 @@ private fun Token(text: String, description: String, tag: String, onClick: () ->
 
 /**
  * A still map around the user behind the whole screen, hidden under the background in the
- * upper half and showing through toward the bottom, so it has no edge.
+ * upper half and showing through toward the bottom, so it has no edge. As [expanded] goes
+ * to 1 the white draws back to the top, and [zoomedOut] shows the whole campus.
  */
 @Composable
-private fun StartMap(center: Point) {
+private fun StartMap(center: Point, expanded: Float, zoomedOut: Boolean) {
     val camera = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f)
+        position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), MapZoom)
     }
-    LaunchedEffect(center) { camera.position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), 16f) }
+    // Only a change zooms: on the first frame the map's own camera is not this one yet.
+    var zoomed by remember { mutableStateOf(false) }
+    LaunchedEffect(center) {
+        camera.position = CameraPosition.fromLatLngZoom(LatLng(center.lat, center.lng), if (zoomed) CampusZoom else MapZoom)
+    }
+    LaunchedEffect(zoomedOut) {
+        if (zoomedOut == zoomed) return@LaunchedEffect
+        zoomed = zoomedOut
+        camera.animate(CameraUpdateFactory.zoomTo(if (zoomedOut) CampusZoom else MapZoom), 700)
+    }
     // Google's logo sits on the 20 dp margin just above the language and settings buttons (the SDK
     // adds ~6 dp itself). The top padding then puts the user's position under the start button's center.
     val navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -466,16 +640,23 @@ private fun StartMap(center: Point) {
                 zoomControlsEnabled = false, zoomGesturesEnabled = false, indoorLevelPickerEnabled = false
             )
         )
-        // White over the top half, then fading out where the button sits.
+        // White behind the sentence, then the map shows soon below it; searching, only behind the headline.
         Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(
-                    0f to Color.White, 0.45f to Color.White, 0.85f to Color.White.copy(alpha = 0f)
+            Modifier.fillMaxSize().drawBehind {
+                drawRect(
+                    Brush.verticalGradient(
+                        0f to Color.White,
+                        lerp(0.36f, 0.2f, expanded) to Color.White,
+                        lerp(0.9f, 0.86f, expanded) to Color.White.copy(alpha = 0f)
+                    )
                 )
-            )
+            }
         )
     }
 }
+
+private const val MapZoom = 16f
+private const val CampusZoom = 14.5f
 
 /**
  * The globe button grows into the language menu where it stands, and shrinks back when a
