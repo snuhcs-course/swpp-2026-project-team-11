@@ -18,11 +18,10 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from menus.menu_profiles import title
+from menus.offers import safe_offers
 from menus.services import get_catalog, get_store_catalog
 from question_engines.benchmark.simulator import PROMPT_ID, Simulator, build_llm, describe
 from question_engines.decision_tree.catalog import CandidateCatalog
-from question_engines.group.engine import place
 from question_engines.group.evaluation import ALLERGIES, build_cases, compare, oracle
 
 
@@ -88,19 +87,10 @@ class Command(BaseCommand):
 
 
 def _safe_offers(rows, safe_rows):
-    """The (food ID, restaurant) offers of `rows` that `safe_rows`, a catalog without an allergen, keeps."""
-    def keys(row):
-        menu = json.dumps([title(row["name"]), row["features"], row["feature_std"]], ensure_ascii=False, sort_keys=True)
-        return [(menu, json.dumps(offer, ensure_ascii=False, sort_keys=True)) for offer in row["offers"]]
-
-    owners = {}
-    for row in rows:
-        for key, offer in zip(keys(row), row["offers"]):
-            owners.setdefault(key, set()).add((row["food_id"], place(offer)))
-    matched = [owners.get(key, set()) for row in safe_rows for key in keys(row)]
-    if any(len(offers) != 1 for offers in matched):
-        raise CommandError("알레르기 제외 메뉴의 판매처를 전체 메뉴에서 하나로 찾을 수 없습니다")
-    return set().union(*matched)
+    try:
+        return safe_offers(rows, safe_rows)
+    except ValueError as error:
+        raise CommandError("알레르기 제외 메뉴의 판매처를 전체 메뉴에서 하나로 찾을 수 없습니다") from error
 
 
 def _write(path, data):
