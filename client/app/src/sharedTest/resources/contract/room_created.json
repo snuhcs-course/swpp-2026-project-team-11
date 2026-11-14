@@ -1,0 +1,30 @@
+{
+  "token": "member-token",
+  "state": {
+    "code": "8068",
+    "status": "lobby",
+    "date": "2026-11-02",
+    "meal": "LU",
+    "me": 0,
+    "host": 0,
+    "members": [
+      {
+        "id": 0,
+        "name": "지민",
+        "allergies": [
+          "egg"
+        ],
+        "left": false,
+        "answered": false
+      }
+    ],
+    "round": 0,
+    "max_rounds": 4,
+    "question": null,
+    "my_answer": null,
+    "seconds_left": null,
+    "round_seconds": 15,
+    "picks": null,
+    "decided": null
+  }
+}

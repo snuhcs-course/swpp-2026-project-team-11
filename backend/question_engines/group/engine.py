@@ -242,6 +242,10 @@ class GroupEngine:
             self.round += 1
             self._pending = self._plan()
 
+    def stop(self):
+        """Ends the questions now; the recommendation uses the answers given so far."""
+        self._pending = {}
+
     def recommendation(self):
         """Up to two restaurants (PICKS), where they are, and each member's closest menu at each."""
         if not self.finished:

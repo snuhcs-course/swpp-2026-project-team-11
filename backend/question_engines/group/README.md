@@ -3,8 +3,8 @@
 A group rarely agrees on one dish, so group mode recommends **restaurants**, two of
 different character, and each member's own menu at each. Every round, all members
 answer the same question. The package is pure Python + NumPy on top of the
-decision tree's intent model; the RL and LLM engines are not used. There is no REST
-endpoint or client screen yet.
+decision tree's intent model; the RL and LLM engines are not used. Group rooms
+(`recommend/rooms.py`, backend/README.md "Group rooms") serve it to the app.
 
 ## Model
 
@@ -70,6 +70,7 @@ engine = GroupEngine(candidates, schema, excluded=[set(), {(food_id, ("식당", 
 while not engine.finished:
     for member, step in engine.questions().items():   # the round's question, per member who has not answered
         engine.answer(member, step["question_id"], answer_id)
+# engine.stop() would end the questions early, keeping the answers so far
 result = engine.recommendation()   # {"picks": [{"kind", "restaurant", "lat", "lng", "menus": [food or None per member]}], "rounds"}
 ```
 

@@ -1,6 +1,8 @@
 package com.example.metchu
 
 import com.example.metchu.data.model.RestaurantMenu
+import com.example.metchu.data.model.RoomReply
+import com.example.metchu.data.model.RoomState
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.RetrofitInstance
@@ -34,6 +36,11 @@ object Fixtures {
     /** A sign-in reply (backend/accounts), captured from a local server on SQLite. */
     fun signedIn(name: String = "auth_signed_in"): SignedIn =
         RetrofitInstance.gson.fromJson(json(name), SignedIn::class.java)
+
+    /** Group room replies (backend/recommend/rooms.py), captured from a local server on the 2026-11-02 snapshot. */
+    fun room(name: String): RoomState = RetrofitInstance.gson.fromJson(json(name), RoomState::class.java)
+
+    fun roomReply(name: String): RoomReply = RetrofitInstance.gson.fromJson(json(name), RoomReply::class.java)
 
     fun error(name: String): ApiErrorResponse =
         RetrofitInstance.gson.fromJson(json(name), ApiErrorResponse::class.java)

@@ -8,6 +8,8 @@ import com.example.metchu.data.location.LocationSource
 object AppContainer {
     var repository: RecommendRepository = RecommendRepository()
 
+    var rooms: RoomRepository = RoomRepository()
+
     /** Null: the device's own location. UI tests set a fixed one. */
     var locationSource: LocationSource? = null
 

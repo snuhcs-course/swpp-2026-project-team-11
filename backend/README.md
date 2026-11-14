@@ -324,7 +324,52 @@ Google sign-in needs `METCHU_GOOGLE_CLIENT_ID`, the client ID of the team's **we
 (the app's `metchu.googleWebClientId`, see client/README.md); without it those two requests answer
 503 and password accounts still work. The server checks each ID token with `google-auth`
 (signature, expiry, issuer and that audience); that fetches Google's public keys, so it needs the
-network. Tests patch the check and need neither. Recommendation sessions do not read the token yet.
+network. Tests patch the check and need neither. Recommendation sessions do not read the token yet;
+group rooms use it to name members.
+
+## Group rooms (i4-P9)
+
+Friends on their own phones answer the same questions and get up to two restaurants, each with
+every member's dish there (`question_engines/group`, i4-P3). `recommend/rooms.py` keeps each room
+in server memory, like sessions; the API is commented at the end of `recommend/views.py`:
+
+| Request | Body | Reply |
+| --- | --- | --- |
+| `POST /api/rooms/` | `{"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?, "distance_scope"?, "location"?}` | 201 `{"token", "state"}` |
+| `POST /api/rooms/join/` | `{"code", "name"?, "allergies"?, "language"?}` | 201 `{"token", "state"}` |
+| `GET /api/rooms/<code>/` | | `state` |
+| `POST /api/rooms/<code>/start/` | host | `state` |
+| `POST /api/rooms/<code>/answer/` | `{"question_id", "answer_id"}` | `state` |
+| `POST /api/rooms/<code>/recommend-now/` | host | `state` |
+| `POST /api/rooms/<code>/decide/` | `{"pick"}` (its position in `picks`), host | `state` |
+| `POST /api/rooms/<code>/leave/` | | 204 |
+
+Every request after create or join sends the returned member token as `X-Member-Token`. A
+signed-in member (`Authorization: Token ...`) is shown by username; anyone else sends a `name`.
+`state` is `{"code", "status": "lobby" | "asking" | "done", "date", "meal", "me", "host",
+"members", "round", "max_rounds", "question", "my_answer", "seconds_left", "round_seconds", "picks",
+"decided"}`;
+`members` are `{"id", "name", "allergies", "left", "answered"}` and each pick is `{"restaurant",
+"kind", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others"}`; `others` are the
+restaurant's other dishes, shaped like a session's `menu` dishes. `fit` is `great` when
+the restaurant is among that member's best tenth of the places they can eat at, otherwise `good`.
+
+- The creator hosts. A room has a four-digit code and 2 to 8 members; nobody joins after the start
+  (409 `room_started`). A caller who tries 10 unknown codes within a minute waits out the minute
+  (429 `too_many_attempts`); behind the tunnel the caller is its `CF-Connecting-IP`. The host's meal, source, distance and location apply to everyone.
+- Each member reads the question in their own language. An answer cannot be changed. A member
+  silent for `ROUND_SECONDS` (15) answers "unknown": unlike "any" ("doesn't matter"), it moves
+  neither the engine's belief about their dish nor how relevant it takes the question's family to
+  be. Deadlines are checked whenever the room is read or acted on, so the phones' polling moves it on.
+- Only the host starts, stops early ("recommend now": the engine's `stop()`) and decides. When the
+  host leaves, a random remaining member hosts; a member who leaves after the start answers "unknown".
+- A member's allergies remove offers only from their own choice. They are matched to the full menu's
+  offers by `menus/offers.py`, since a merged menu can come back without an allergen under another ID.
+  Every member's allergies are shown to the whole room, by design.
+- Picks are told apart by position (`decided` is one): two branches of one chain share a name. Once
+  the result is made, the room lets its engine go. Rooms end with the process and
+  are not in the interaction log. With `source=all` and no distance cut, starting a room and each
+  round take seconds (the engine's tables over thousands of menus).
 
 ## Shared database: Supabase (P8)
 

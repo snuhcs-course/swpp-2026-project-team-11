@@ -13,4 +13,12 @@ urlpatterns = [
     path("sessions/<str:session_id>/ban/", views.ban),
     path("sessions/<str:session_id>/reason/", views.reason),
     path("sessions/<str:session_id>/menu/", views.menu),
+    path("rooms/", views.create_room),
+    path("rooms/join/", views.join_room),
+    path("rooms/<str:code>/", views.room_state),
+    path("rooms/<str:code>/start/", views.start_room),
+    path("rooms/<str:code>/answer/", views.answer_room),
+    path("rooms/<str:code>/recommend-now/", views.recommend_room_now),
+    path("rooms/<str:code>/decide/", views.decide_room),
+    path("rooms/<str:code>/leave/", views.leave_room),
 ]
