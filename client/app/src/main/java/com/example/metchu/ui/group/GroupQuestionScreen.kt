@@ -27,7 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -157,10 +156,7 @@ fun GroupQuestionScreen(
                 }
             }
 
-            // A new question brings back a scale that can be answered.
-            key(question.questionId) {
-                AnswerScale(question.options.map { it.id }.toSet(), loading = busy || answered, onPick = onAnswer, onPress = {}, markUnsure = urgent)
-            }
+            AnswerScale(question.questionId, question.options.map { it.id }.toSet(), loading = busy || answered, onPick = onAnswer, onPress = {}, markUnsure = urgent)
             RoundProgress(room)
         }
 
