@@ -26,7 +26,8 @@ Accuracy is the share of reasonable values on the completed rows, for means and 
 separately, each stratum weighted by its share of the pool, so the oversampling does not
 lower it. The pass bar,
 per source and field, fixed before any review: overall accuracy >= PASS_OVERALL and every
-feature's accuracy >= PASS_FEATURE. A source passes when both fields pass. Each rater
+feature's accuracy >= PASS_FEATURE. A source passes when both fields pass; it cannot pass
+while a stratum of the pool has no completed row (the report says incomplete). Each rater
 reviews different dishes (OVERLAP 0), as many hard ones as the others; with shared dishes
 the report adds the raters' agreement on their values.
 """
@@ -293,10 +294,13 @@ def load(paths) -> list[dict]:
         if pathlib.Path(path).name.startswith("~$"):  # Excel's lock file of an open workbook
             continue
         book = openpyxl.load_workbook(path, read_only=True, data_only=True)
-        sample = list(book[SAMPLE_SHEET].iter_rows(values_only=True))
+        try:  # a read-only book keeps its file open (locked on Windows) until closed
+            sample = list(book[SAMPLE_SHEET].iter_rows(values_only=True))
+            rows = list(book[SHEET].iter_rows(values_only=True))
+        finally:
+            book.close()
         population = {row[0]: row[1] for row in sample[1:1 + len(STRATA)]}
         strata = {_text(row[0]): row[1] for row in sample[2 + len(STRATA):] if row and row[0] is not None}
-        rows = list(book[SHEET].iter_rows(values_only=True))
         rater, source = _text(rows[0][1]), _text(rows[1][1])
         header = next(i for i, row in enumerate(rows) if _text(row[0]) == "id")
         column = {_text(name): index for index, name in enumerate(rows[header])}
@@ -348,12 +352,14 @@ def summarize(reviews) -> dict[str, dict]:
         by_stratum = defaultdict(list)
         for r in done:
             by_stratum[r["stratum"]].append(r)
+        population = rows[0]["population"]
+        complete = all(by_stratum.get(name) for name in STRATA if population.get(name))
         fields = {}
         for field in FIELDS:
             feature = {key: _weighted(by_stratum, field, [key]) for key in LLM_FEATURE_KEYS}
             overall = _weighted(by_stratum, field, LLM_FEATURE_KEYS)
             fields[field] = {"overall": overall, "feature": feature,
-                             "passed": bool(done) and overall >= PASS_OVERALL - 1e-9
+                             "passed": complete and overall >= PASS_OVERALL - 1e-9
                                        and min(feature.values()) >= PASS_FEATURE - 1e-9}
         by_dish = defaultdict(list)
         for r in done:
@@ -366,8 +372,8 @@ def summarize(reviews) -> dict[str, dict]:
             both += len(a & b)
         out[source] = {
             "ratings": len(rows), "dishes": len({r["id"] for r in rows}), "raters": len({r["rater"] for r in rows}),
-            "done": len(done), "unknown": len(rows) - len(done), "fields": fields,
-            "strata": {name: {"done": len(by_stratum[name]), "pool": rows[0]["population"][name],
+            "done": len(done), "unknown": len(rows) - len(done), "fields": fields, "complete": complete,
+            "strata": {name: {"done": len(by_stratum[name]), "pool": population.get(name, 0),
                               **{field: _accuracy(by_stratum[name], field, LLM_FEATURE_KEYS) if by_stratum[name]
                                  else None for field in FIELDS}} for name in STRATA},
             "passed": all(f["passed"] for f in fields.values()),
@@ -383,7 +389,8 @@ def report(summary) -> str:
              f"Accuracy: the share of values judged reasonable on completed rows, the hard and other dishes "
              f"weighted by their share of the pool (hard dishes are half of each sample). Pass, per source and for means and "
              f"stds each: overall >= {PASS_OVERALL:.0%} and every feature >= {PASS_FEATURE:.0%} (fixed before the "
-             f"review). A mean is wrong when it is {WRONG_GAP} or more off the rubric; a std when it plainly "
+             f"review); incomplete while a stratum of the pool has no completed row. A mean is wrong when it is "
+             f"{WRONG_GAP} or more off the rubric; a std when it plainly "
              "contradicts the recipe spread. Agreement: the share of values two raters of a shared dish judged alike; "
              f"{WRONG} agreement: the same among values either of them marked {WRONG}.", "",
              "| source | raters | dishes | completed | unknown | mean | worst mean | std | worst std | pass | "
@@ -395,8 +402,9 @@ def report(summary) -> str:
             worst = min(LLM_FEATURE_KEYS, key=lambda key: f["feature"][key]) if s["done"] else None
             cells += [rate(f["overall"]), f"{worst} {rate(f['feature'][worst])}" if worst else "-"]
         agreement = "-" if s["agreement"] is None else f"{rate(s['agreement'])} ({s['shared_dishes']})"
+        verdict = ("yes" if s["passed"] else "no") if s["complete"] else "incomplete"
         lines.append(f"| {source} | {s['raters']} | {s['dishes']} | {s['done']} | {s['unknown']} | "
-                     + " | ".join(cells) + f" | {'yes' if s['passed'] else 'no'} | {agreement} | "
+                     + " | ".join(cells) + f" | {verdict} | {agreement} | "
                      f"{rate(s['wrong_agreement'])} |")
     lines += ["", f"**By stratum** (hard: {HARD_SIGNALS}+ signals, half of each sample; accuracy unweighted)", "",
               "| source | stratum | pool | completed | mean | std |", "|---|---|---|---|---|---|"]

@@ -46,7 +46,11 @@ def _per_store(text) -> dict[int, str]:
 
 def workbook_dishes(path) -> dict[str, dict]:
     """The export's menus with v2 features, grouped into dishes: one per linked dish and feature values."""
-    rows = openpyxl.load_workbook(path, read_only=True)[STORE_SHEET].iter_rows(values_only=True)
+    book = openpyxl.load_workbook(path, read_only=True)
+    try:  # a read-only book keeps its file open (locked on Windows) until closed
+        rows = iter(list(book[STORE_SHEET].iter_rows(values_only=True)))
+    finally:
+        book.close()
     header = next(row for row in rows if row[0] == "후보 ID")
     column = {name: index for index, name in enumerate(header) if name}
     fields = {"mean": " 평균", "std": " 표준편차"}
