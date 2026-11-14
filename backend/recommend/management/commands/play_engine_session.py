@@ -1,25 +1,27 @@
 # AI-generated: written with Claude (Anthropic) and reviewed by the team.
-"""python manage.py play_engine_session --scenarios scenarios.json --output human.jsonl --tester NAME
+"""python manage.py play_engine_session --scenarios scenarios.json --output human.jsonl --tester NAME --order N
 
 The user study (P21): a person plays the engines in the terminal, on the scenario
 file's menus, under the simulated user's setup. A tester plays STUDY_ROUNDS rounds, one
-per situation (in_menu, multiple, not_in_menu, close_alternative), in turn from a
-start chosen by the tester's name, the menus taken in turn. In each round the tester
-picks what they really want that fits the situation, says how sure they are (the
-certainty level; their answers are not blurred), and plays that same wish on every
-engine of STUDY_ENGINES, in a blind order rotated from round to round. Questions are
-asked in Korean.
+per situation (in_menu, multiple, not_in_menu, close_alternative), in turn from the
+start --order gives (a Latin square: one start per tester), the menus taken in turn.
+In each round the tester picks what they really want that fits the situation, says
+how sure they are (the certainty level; their answers are not blurred), and plays that
+same wish on every engine of STUDY_ENGINES, in a blind order rotated from round to
+round. Questions are asked in Korean.
 
 Proposals are judged as the simulated user's are: a menu the tester picked is
 accepted by the rule, next to a close alternative nothing else is, and otherwise the
 person decides with the simulator's criterion (essentially the same dish; for a dish
 that is not served, the same craving). After each session the tester rates the
-result from 1 to 5.
+result from 1 to 5. "Recommend now" is asked only before the first question (the
+no-question baseline), so an LLM session waits for one such call, not three.
 
 Each run plays the rest of the current round; a stopped round continues with the
-same wish, and a session that ended in an error is played again. Sessions are
-stored like automated ones, so benchmark_engines --human reports them, and
-validate_simulator can ask the simulated user the same questions.
+same wish (kept in <output>.round.json from the moment it is chosen), and a session
+that ended in an error is played again. Sessions are stored like automated ones, so
+benchmark_engines --human reports them, and validate_simulator can ask the simulated
+user the same questions.
 """
 
 from __future__ import annotations
@@ -40,6 +42,7 @@ from question_engines.llm.config import LLMConfigError, LLMSettings, build_llm
 from .benchmark_engines import read_lines
 
 LANGUAGE = "ko"
+ANYTIME = (0,)
 PICK = {
     "in_menu": "오늘 메뉴 중 지금 가장 먹고 싶은 메뉴 하나의 번호를 적으세요.",
     "multiple": "오늘 메뉴 중 똑같이 좋은 서로 다른 메뉴 2~3개의 번호를 쉼표로 적으세요.",
@@ -88,10 +91,9 @@ def _seed(tester) -> int:
     return int(hashlib.sha256(tester.encode()).hexdigest(), 16)
 
 
-def situations(tester) -> list[str]:
-    """The tester's STUDY_ROUNDS situations, each once, from a start chosen by the name."""
-    start = _seed(tester) % len(SITUATIONS)
-    return [SITUATIONS[(start + i) % len(SITUATIONS)] for i in range(STUDY_ROUNDS)]
+def situations(order) -> list[str]:
+    """The STUDY_ROUNDS situations of the tester at `order` in the Latin square, each once."""
+    return [SITUATIONS[(order + i) % len(SITUATIONS)] for i in range(STUDY_ROUNDS)]
 
 
 def engine_order(tester, number) -> list[str]:
@@ -110,9 +112,11 @@ def _label(candidate) -> str:
 
 def _numbers(text, count, low, high) -> list[int] | None:
     parts = [p.strip() for p in text.split(",") if p.strip()]
-    if not all(p.isdigit() for p in parts) or not low <= len(set(parts)) == len(parts) <= high:
+    if not all(p.isdigit() for p in parts):
         return None
     numbers = [int(p) for p in parts]
+    if not low <= len(set(numbers)) == len(numbers) <= high:
+        return None
     return numbers if all(1 <= n <= count for n in numbers) else None
 
 
@@ -142,7 +146,8 @@ def choose_targets(situation, candidates, ask, write) -> list[dict]:
             if served:
                 write(f"오늘 메뉴에 있습니다: {', '.join(served[:5])}. 메뉴에 없는 음식을 적으세요.")
                 continue
-            food = Food.objects.filter(name=text, is_food=True, feature_version=FEATURE_VERSION).first()
+            food = next((f for f in Food.objects.filter(is_food=True, feature_version=FEATURE_VERSION).order_by("id")
+                         if dish_key(f.name) == key), None)
             return [scenarios.target(text, food.features if food else None, food.food_group if food else "",
                                      candidates)]
         low, high = (2, 3) if situation == "multiple" else (1, 1)
@@ -171,12 +176,16 @@ class Command(BaseCommand):
         parser.add_argument("--scenarios", required=True, help="the benchmark's scenario file (its menus)")
         parser.add_argument("--output", required=True, help="human sessions file (JSON lines), appended to")
         parser.add_argument("--tester", required=True)
+        parser.add_argument("--order", type=int, required=True, choices=range(len(SITUATIONS)),
+                            help="the tester's start in the situation order, one per tester")
 
     def handle(self, *args, **options):
         data = scenarios.load(options["scenarios"])
         tester, ask, write = options["tester"], input, self.stdout.write
         output = pathlib.Path(options["output"])
         output.parent.mkdir(parents=True, exist_ok=True)
+        chosen = output.with_suffix(".round.json")
+        waiting = json.loads(chosen.read_text(encoding="utf-8")) if chosen.exists() else {}
         mine = [r for r in (read_lines([output]) if output.exists() else []) if r.get("tester") == tester]
         played = {(r["scenario_data"]["round"], r["engine"]) for r in mine if r["outcome"] != "error"}
         number = next((n for n in range(STUDY_ROUNDS) if any((n, e) not in played for e in STUDY_ENGINES)), None)
@@ -192,8 +201,10 @@ class Command(BaseCommand):
                 raise CommandError(str(error)) from error
 
         scenario = next((r["scenario_data"] for r in reversed(mine) if r["scenario_data"]["round"] == number), None)
+        if scenario is None and waiting.get(tester, {}).get("round") == number:
+            scenario = waiting[tester]
         if scenario is None:
-            situation = situations(tester)[number]
+            situation = situations(options["order"])[number]
             keys = sorted(data["menus"])
             key = keys[number % len(keys)]
             menu = data["menus"][key]
@@ -201,6 +212,7 @@ class Command(BaseCommand):
             targets = choose_targets(situation, menu["candidates"], ask, write)
             scenario = {"id": f"human-{tester}-r{number + 1}", "situation": situation,
                         "certainty": choose_certainty(ask, write), "menu": key, "targets": targets, "round": number}
+            chosen.write_text(json.dumps(waiting | {tester: scenario}, ensure_ascii=False), encoding="utf-8")
         else:
             write(f"라운드 {number + 1}/{STUDY_ROUNDS}를 이어서 합니다.")
         write(f"\n이번 라운드에서 원하는 것: {', '.join(t['name'] for t in scenario['targets'])}. "
@@ -211,7 +223,7 @@ class Command(BaseCommand):
         for position, engine in enumerate(left, start=len(STUDY_ENGINES) - len(left) + 1):
             write(f"\n== 세션 {position}/{len(STUDY_ENGINES)} (질문에 번호로 답하세요)")
             factory = harness.EngineFactory(engine, menu, llm, language=LANGUAGE)
-            record = harness.play(factory, scenario, HumanUser(scenario, ask, write))
+            record = harness.play(factory, scenario, HumanUser(scenario, ask, write), anytime=ANYTIME)
             final = next((c for c in menu["candidates"] if c["food_id"] == record["final_food_id"]), None)
             if record["outcome"] == "error":
                 write(self.style.ERROR("세션이 오류로 끝났습니다. 다시 실행하면 이 세션을 다시 합니다."))

@@ -23,6 +23,8 @@ feature_benchmark_report/
 ~$*
 # Ad-hoc question engine benchmark output (benchmark_engines); engine_benchmark_results/ is shared
 engine_benchmark_report/
+# play_engine_session's chosen wish while a round is played
+*.round.json
 
 # Editors / OS
 .DS_Store
