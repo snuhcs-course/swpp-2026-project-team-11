@@ -40,7 +40,8 @@ class RoomContractJsonTest {
         assertEquals(listOf("yes", "probably_yes", "any", "probably_no", "no", "unknown"), question.options.map { it.id })
         assertEquals("yes", room.myAnswer)
         assertEquals(listOf(true, false), room.members.map { it.answered })
-        assertEquals(7.0, room.secondsLeft!!, 0.01)
+        assertEquals(12.0, room.secondsLeft!!, 0.01)
+        assertEquals(15, room.roundSeconds)
         assertEquals(4, room.maxRounds)
     }
 

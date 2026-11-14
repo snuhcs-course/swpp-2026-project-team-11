@@ -1,5 +1,5 @@
 {
-  "code": "9942",
+  "code": "9169",
   "status": "asking",
   "date": "2026-11-02",
   "meal": "LU",
@@ -58,7 +58,8 @@
     ]
   },
   "my_answer": "yes",
-  "seconds_left": 7.0,
+  "seconds_left": 12.0,
+  "round_seconds": 15,
   "picks": null,
   "decided": null
 }

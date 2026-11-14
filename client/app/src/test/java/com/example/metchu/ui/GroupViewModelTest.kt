@@ -91,7 +91,7 @@ class GroupViewModelTest {
     }
 
     @Test
-    fun aFinishedRoundGoesIntoTheHistoryWithTheAnswerOrDoesntMatter() {
+    fun aFinishedRoundGoesIntoTheHistoryWithTheAnswerOrNotSure() {
         create()
         api.reply(asking)
         scheduler.advanceTimeBy(1001)
@@ -101,9 +101,10 @@ class GroupViewModelTest {
         api.reply(next.copy(round = 2, question = RoomQuestion("q:meat", "고기?", next.question!!.options)))
         scheduler.advanceTimeBy(1000)
         assertEquals(
-            listOf(AnsweredQuestion(asking.question!!.text, AnswerId.YES), AnsweredQuestion("매운 음식이 먹고 싶어요?", AnswerId.ANY)),
+            listOf(AnsweredQuestion(asking.question!!.text, AnswerId.YES), AnsweredQuestion("매운 음식이 먹고 싶어요?", AnswerId.UNKNOWN)),
             viewModel.history.value
         )
+        assertEquals(1, viewModel.timeouts.value)
     }
 
     @Test

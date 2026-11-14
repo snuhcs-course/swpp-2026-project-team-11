@@ -170,22 +170,27 @@ class RoundTests(RoomTestCase):
         self.assertNotEqual(ko["text"], en["text"])
         self.assertNotEqual(ko["options"][0]["label"], en["options"][0]["label"])
 
-    def test_silence_counts_as_doesnt_matter_after_ten_seconds(self):
+    def test_silence_counts_as_not_sure_after_fifteen_seconds(self):
         code, host, (guest,), state = self.started()
-        self.assertEqual(state["seconds_left"], 10)
+        self.assertEqual((state["seconds_left"], state["round_seconds"]), (15, 15))
+        engine = rooms.get(code).engine
+        given = []
+        real = engine.answer
+        engine.answer = lambda member, question_id, answer_id: (given.append((member, answer_id)), real(member, question_id, answer_id))
         self.clock.now += 4
         self.call(code, "answer", host, {"question_id": state["question"]["question_id"], "answer_id": "yes"})
-        self.assertEqual(self.state(code, guest)["seconds_left"], 6)
-        self.clock.now += 6
+        self.assertEqual(self.state(code, guest)["seconds_left"], 11)
+        self.clock.now += 11
         later = self.state(code, guest)
+        self.assertEqual(given[:2], [(0, "yes"), (1, "unknown")])
         self.assertTrue(later["round"] == 1 or later["status"] == "done")
         if later["status"] == "asking":
-            self.assertEqual(later["seconds_left"], 10)
+            self.assertEqual(later["seconds_left"], 15)
             self.assertEqual([m["answered"] for m in later["members"]], [False, False])
 
     def test_an_answer_after_the_deadline_is_stale(self):
         code, host, _, state = self.started()
-        self.clock.now += 10
+        self.clock.now += rooms.ROUND_SECONDS
         reply = self.call(code, "answer", host, {"question_id": state["question"]["question_id"], "answer_id": "yes"},
                           status=409)
         self.assertEqual(reply["error"]["code"], "stale_step")
@@ -200,7 +205,7 @@ class RoundTests(RoomTestCase):
     def test_the_rounds_end_with_a_result_within_the_limit(self):
         code, host, (guest,), state = self.started()
         while state["status"] == "asking":
-            self.clock.now += 10
+            self.clock.now += rooms.ROUND_SECONDS
             state = self.state(code, host)
         self.assertLessEqual(state["round"], state["max_rounds"])
         self.assertEqual(state["status"], "done")

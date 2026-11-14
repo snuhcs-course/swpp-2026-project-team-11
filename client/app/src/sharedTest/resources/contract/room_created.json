@@ -1,7 +1,7 @@
 {
   "token": "member-token",
   "state": {
-    "code": "9942",
+    "code": "9169",
     "status": "lobby",
     "date": "2026-11-02",
     "meal": "LU",
@@ -23,6 +23,7 @@
     "question": null,
     "my_answer": null,
     "seconds_left": null,
+    "round_seconds": 15,
     "picks": null,
     "decided": null
   }
