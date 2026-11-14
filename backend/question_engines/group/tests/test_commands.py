@@ -68,6 +68,6 @@ def test_safe_offers_keep_each_restaurant_apart_and_follow_the_full_catalogs_ids
     safe = [row(5, "국밥", "B")]  # merged again without the allergen, under another ID
     assert _safe_offers(full, safe) == {(1, ("B", 37., 127.))}
     with pytest.raises(CommandError):
-        _safe_offers(full, [row(5, "비빔밥", "B")])
+        _safe_offers(full, [row(5, "비빔밥", "B")])  # the command reports what menus/offers.py raises
     with pytest.raises(CommandError):
         _safe_offers(full + [row(3, "국밥", "B")], safe)  # two menus look alike at B

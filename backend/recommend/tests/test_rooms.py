@@ -9,7 +9,8 @@ from django.test import TestCase
 
 from accounts import tokens
 from menus.allergens import ALLERGEN_VERSION
-from menus.models import Food
+from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
+from menus.models import Food, Restaurant, StoreMenu
 from recommend import rooms
 
 from .helpers import DAY, add_food, post
@@ -41,6 +42,7 @@ class RoomTestCase(TestCase):
         patcher = mock.patch.object(rooms, "clock", self.clock)
         patcher.start()
         self.addCleanup(patcher.stop)
+        rooms._failed_joins.clear()
 
     def create(self, **body):
         response = post(self.client, "/api/rooms/", {"name": "Jimin", "date": DAY, "meal": "LU", **body})
@@ -123,6 +125,25 @@ class LobbyTests(RoomTestCase):
         self.assertEqual(self.call(code, "leave", guest, status=204), None)
         state = self.call(code, "start", host)
         self.assertEqual([m["name"] for m in state["members"]], ["Jimin", "Doyun"])
+
+
+class JoinLimitTests(RoomTestCase):
+    def test_ten_wrong_codes_wait_a_minute_and_only_for_that_phone(self):
+        code, _, _ = self.create()
+        wrong = "0000" if code != "0000" else "0001"
+        for _ in range(rooms.JOIN_ATTEMPTS):
+            self.join(wrong, status=404)
+        self.assertEqual(self.join(code, status=429)["error"]["code"], "too_many_attempts")
+        other_phone = self.client.post("/api/rooms/join/", data=json.dumps({"code": code, "name": "Doyun"}),
+                                       content_type="application/json", HTTP_CF_CONNECTING_IP="203.0.113.7")
+        self.assertEqual(other_phone.status_code, 201)
+        self.clock.now += rooms.JOIN_WINDOW
+        self.join(code)
+
+    def test_right_codes_do_not_count(self):
+        code, _, _ = self.create()
+        for i in range(rooms.JOIN_ATTEMPTS + 1):
+            self.join(code, f"Friend {i}", status=201 if i < 7 else 409)
 
 
 class HostTests(RoomTestCase):
@@ -239,13 +260,13 @@ class ResultTests(RoomTestCase):
                 self.assertEqual(set(menu), {"member_id", "food", "fit"})
                 self.assertIn(menu["fit"], ("great", "good"))
                 self.assertIn(pick["restaurant"], [o["restaurant"] for o in menu["food"]["offers"]])
-        restaurant = picks[0]["restaurant"]
-        self.assertEqual(self.call(code, "decide", guest, {"restaurant": restaurant}, status=403)["error"]["code"],
-                         "not_host")
-        self.assertEqual(self.call(code, "decide", host, {"restaurant": "Nowhere"}, status=400)["error"]["code"],
-                         "invalid_request")
-        self.assertEqual(self.call(code, "decide", host, {"restaurant": restaurant})["decided"], restaurant)
-        self.assertEqual(self.state(code, guest)["decided"], restaurant)
+        last = len(picks) - 1
+        self.assertEqual(self.call(code, "decide", guest, {"pick": last}, status=403)["error"]["code"], "not_host")
+        for wrong in (len(picks), -1, "0", picks[0]["restaurant"]):
+            self.assertEqual(self.call(code, "decide", host, {"pick": wrong}, status=400)["error"]["code"],
+                             "invalid_request", wrong)
+        self.assertEqual(self.call(code, "decide", host, {"pick": last})["decided"], last)
+        self.assertEqual(self.state(code, guest)["decided"], last)
 
     def test_a_members_allergies_only_change_their_own_dish(self):
         code, host, _ = self.create()
@@ -258,7 +279,42 @@ class ResultTests(RoomTestCase):
             self.assertNotIn("pork", names[guest_food].allergens)
         self.assertEqual(self.state(code, guest)["status"], "done")
 
+    def test_a_finished_room_lets_its_engine_go(self):
+        code, host, _, _ = self.started()
+        done = self.call(code, "recommend-now", host)
+        self.assertIsNone(rooms.get(code).engine)
+        self.assertEqual((done["round"], done["max_rounds"]), (0, 4))
+        self.assertEqual(self.state(code, host)["picks"], done["picks"])
+
     def test_the_host_cannot_decide_before_the_result(self):
         code, host, _, _ = self.started()
-        self.assertEqual(self.call(code, "decide", host, {"restaurant": "Red hall"}, status=409)["error"]["code"],
+        self.assertEqual(self.call(code, "decide", host, {"pick": 0}, status=409)["error"]["code"],
                          "stale_step")
+
+
+class MergedOfferTests(TestCase):
+    """Equivalent store lines merge under the lowest line ID; the allergen filter drops lines first."""
+
+    def setUp(self):
+        features = {key: 0.5 for key in FEATURE_KEYS} | {"pork": 0.9}
+        stew = Food.objects.create(name="김치찌개", is_food=True, features=features,
+                                   feature_std={key: 0.1 for key in FEATURE_KEYS},
+                                   feature_version=FEATURE_VERSION, allergen_version=ALLERGEN_VERSION)
+        places = [Restaurant.objects.create(code=f"MA000{i}", name=name, source="naver", lat=37.48 + i / 1000, lng=126.95)
+                  for i, name in enumerate(("가게 A", "가게 B"))]
+        # Different descriptions give the lines different IDs; the same components still merge them.
+        # The line with pork comes first, so the merged menu takes its ID.
+        for place, tags, description in zip(places, (["pork"], []), ("돼지고기 김치찌개", "참치 김치찌개")):
+            StoreMenu.objects.create(restaurant=place, raw_name="김치찌개", description=description, food=stew,
+                                     price=8000, allergens=tags, allergen_version=ALLERGEN_VERSION)
+
+    def test_an_allergic_member_keeps_the_safe_offers_of_a_merged_menu(self):
+        response = post(self.client, "/api/rooms/", {"name": "Jimin", "source": "general"})
+        code, host = response.json()["state"]["code"], response.json()["token"]
+        post(self.client, "/api/rooms/join/", {"code": code, "name": "Seoyeon", "allergies": ["pork"]})
+        started = self.client.post(f"/api/rooms/{code}/start/", content_type="application/json",
+                                   HTTP_X_MEMBER_TOKEN=host)
+        self.assertEqual(started.status_code, 200, started.content)
+        done = started.json()  # one menu: nothing to ask
+        self.assertEqual(done["status"], "done")
+        self.assertEqual([pick["restaurant"] for pick in done["picks"]], ["가게 B"])

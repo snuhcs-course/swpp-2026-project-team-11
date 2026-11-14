@@ -107,6 +107,31 @@ class GroupViewModelTest {
     }
 
     @Test
+    fun anAnswerThatEndsTheRoundStaysInTheHistory() {
+        create()
+        api.reply(asking.copy(myAnswer = null))
+        scheduler.advanceTimeBy(1001)
+        api.reply(asking.copy(round = 1, myAnswer = null, question = RoomQuestion("q:spicy", "매운 음식이 먹고 싶어요?", asking.question!!.options)))
+        viewModel.answer(AnswerId.NO)
+        assertEquals(listOf(AnsweredQuestion(asking.question!!.text, AnswerId.NO)), viewModel.history.value)
+    }
+
+    @Test
+    fun theHostDecidesByPosition() {
+        create()
+        api.reply(Fixtures.room("room_done"))
+        viewModel.decide(1)
+        assertEquals("decide $code member-token 1", api.calls.last())
+    }
+
+    @Test
+    fun tooManyWrongCodesSaySo() {
+        api.fail(Fixtures.httpError(429, """{"error": {"code": "too_many_attempts", "message": "wait"}}"""))
+        viewModel.join(null, "0000", "서연", emptyList(), "ko")
+        assertEquals(R.string.group_error_attempts, viewModel.error.value!!.message)
+    }
+
+    @Test
     fun anUnknownCodeSaysSo() {
         api.fail(Fixtures.httpError(404, Fixtures.json("error_room_not_found")))
         viewModel.join(null, "0000", "서연", emptyList(), "ko")
