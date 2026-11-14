@@ -111,6 +111,8 @@ import com.example.metchu.ui.main.AnsweredQuestion
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.screenBackground
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -223,8 +225,7 @@ fun QuestionScreen(
                 }
             }
 
-            // A new question starts with a fresh slider.
-            key(step.questionId, count) { AnswerScale(offered, loading, pick, press) }
+            AnswerScale(step.questionId to count, offered, loading, pick, press)
             ProgressBlock(session, loading)
         }
         // Answering is the main thing here, so "Recommend now" is the quieter white capsule,
@@ -407,9 +408,13 @@ private fun lerpStyle(from: TextStyle, to: TextStyle, t: Float): TextStyle = fro
     letterSpacing = lerp(from.letterSpacing, to.letterSpacing, t)
 )
 
-/** "I'm not sure", the five circles and their three captions. [markUnsure] shows "I'm not sure" in orange, as the answer about to be given. */
+/**
+ * "I'm not sure", the five circles and their three captions. A new [question] sends the
+ * slider's handle back home. [markUnsure] shows "I'm not sure" in orange, as the answer
+ * about to be given.
+ */
 @Composable
-internal fun AnswerScale(offered: Set<String>, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit, markUnsure: Boolean = false) {
+internal fun AnswerScale(question: Any, offered: Set<String>, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit, markUnsure: Boolean = false) {
     // The prototype's row is 358 wide (353 + 2.5 on each side) on a 393 screen; circles,
     // icons and captions scale with the row so narrower phones keep the same gaps.
     BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 17.5.dp, end = 17.5.dp, bottom = 20.dp)) {
@@ -432,7 +437,7 @@ internal fun AnswerScale(offered: Set<String>, loading: Boolean, onPick: (String
                 }
             }
             Spacer(Modifier.height(4.dp))
-            AnswerSlider(offered, scale, loading, onPick, onPress)
+            AnswerSlider(question, offered, scale, loading, onPick, onPress)
             Spacer(Modifier.height(4.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Caption(R.string.answer_no, MetchuColors.Grey800, scale)
@@ -480,11 +485,12 @@ private val CancelDistance = 60.dp
  * The five answers as one slider. Touching the row brings a colored handle out of the
  * middle circle to the answer under the finger; it follows the finger from answer to answer
  * with a tick, and letting go picks where it is, with a firmer tap. Letting go far off the
- * row picks nothing. The three middle circles shrink to dots meanwhile. Each circle stays a
- * button for TalkBack and keyboards.
+ * row picks nothing. The three middle circles shrink to dots meanwhile. On the next
+ * [question] the handle glides back into the middle circle and fades as the circles grow
+ * back. Each circle stays a button for TalkBack and keyboards.
  */
 @Composable
-private fun AnswerSlider(offered: Set<String>, scale: Float, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit) {
+private fun AnswerSlider(question: Any, offered: Set<String>, scale: Float, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit) {
     val density = LocalDensity.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
@@ -496,6 +502,8 @@ private fun AnswerSlider(offered: Set<String>, scale: Float, loading: Boolean, o
     var picked by remember { mutableStateOf(false) }
     val x = remember { Animatable(0f) }
     val diameter = remember { Animatable(0f) }
+    val opacity = remember { Animatable(1f) }
+    var homing by remember { mutableStateOf<Job?>(null) }
     val allowed = Levels.indices.filter { Levels[it].id in offered }
 
     BoxWithConstraints(Modifier.fillMaxWidth().height(76.dp)) {
@@ -508,8 +516,25 @@ private fun AnswerSlider(offered: Set<String>, scale: Float, loading: Boolean, o
             scope.launch { diameter.animateTo(sizes[index], HandleMotion) }
         }
         val bringOut = { index: Int ->
+            homing?.cancel()
+            homing = null
             handleOn = true
-            scope.launch { x.snapTo(centers[middle]); diameter.snapTo(sizes[middle]); moveTo(index) }
+            scope.launch { opacity.snapTo(1f); x.snapTo(centers[middle]); diameter.snapTo(sizes[middle]); moveTo(index) }
+        }
+        LaunchedEffect(question) {
+            picked = false
+            if (!handleOn) return@LaunchedEffect
+            under = middle
+            shown = middle
+            homing = scope.launch {
+                coroutineScope {
+                    launch { x.animateTo(centers[middle], HandleMotion) }
+                    launch { diameter.animateTo(sizes[middle], HandleMotion) }
+                }
+                opacity.animateTo(0f, tween(160))
+                handleOn = false
+                homing = null
+            }
         }
         val commit = { index: Int ->
             picked = true
@@ -561,12 +586,12 @@ private fun AnswerSlider(offered: Set<String>, scale: Float, loading: Boolean, o
         ) {
             Levels.forEachIndexed { index, level ->
                 val end = index == 0 || index == Levels.lastIndex
-                ScaleCircle(level, scale, enabled = level.id in offered, dot = handleOn && !end) {
+                ScaleCircle(level, scale, enabled = level.id in offered, dot = handleOn && homing == null && !end) {
                     if (!loading && !picked) { bringOut(index); commit(index) }
                 }
             }
         }
-        if (handleOn) Handle(Levels[shown], x.value, diameter.value, faded = under == null, scale)
+        if (handleOn) Handle(Levels[shown], x.value, diameter.value, faded = under == null, scale, opacity.value)
     }
 }
 
@@ -604,7 +629,7 @@ private fun ScaleCircle(level: Level, rowScale: Float, enabled: Boolean, dot: Bo
 
 /** The colored circle that marks the answer: the only thing in the row with a shadow. */
 @Composable
-private fun Handle(level: Level, x: Float, diameter: Float, faded: Boolean, rowScale: Float) {
+private fun Handle(level: Level, x: Float, diameter: Float, faded: Boolean, rowScale: Float, opacity: Float) {
     val color by animateColorAsState(level.color, tween(160), label = "handle")
     val alpha by animateFloatAsState(if (faded) 0.35f else 1f, tween(160), label = "handleAlpha")
     val size = with(LocalDensity.current) { diameter.toDp() }
@@ -612,14 +637,15 @@ private fun Handle(level: Level, x: Float, diameter: Float, faded: Boolean, rowS
         Modifier
             .offset { IntOffset((x - diameter / 2).roundToInt(), 0) }
             .fillMaxHeight()
-            .width(size),
+            .width(size)
+            .testTag("handle"),
         contentAlignment = Alignment.Center
     ) {
         Box(
             Modifier
                 .size(size)
                 // Each part fades on its own: a faded layer would clip the shadow to a square.
-                .graphicsLayer { this.alpha = alpha; compositingStrategy = CompositingStrategy.ModulateAlpha }
+                .graphicsLayer { this.alpha = alpha * opacity; compositingStrategy = CompositingStrategy.ModulateAlpha }
                 .cssShadow(CircleShape, 6.dp, 18.dp, 0.3f)
                 .clip(CircleShape)
                 .background(color),
