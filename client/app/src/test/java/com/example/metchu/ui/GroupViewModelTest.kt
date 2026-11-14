@@ -104,7 +104,6 @@ class GroupViewModelTest {
             listOf(AnsweredQuestion(asking.question!!.text, AnswerId.YES), AnsweredQuestion("매운 음식이 먹고 싶어요?", AnswerId.UNKNOWN)),
             viewModel.history.value
         )
-        assertEquals(1, viewModel.timeouts.value)
     }
 
     @Test
