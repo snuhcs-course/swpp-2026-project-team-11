@@ -153,6 +153,7 @@ class SimulatorTests(SimpleTestCase):
         with ThreadPoolExecutor(8) as pool:
             answers = list(pool.map(lambda _: user.answer("p", "Spicy?"), range(8)))
         self.assertEqual((answers, len(llm.calls)), (["no"] * 8, 1))
+        self.assertEqual(user._asking, {})  # no lock is kept once a question is answered
 
     def test_cache_file_survives_a_restart_and_can_be_read(self):
         with tempfile.TemporaryDirectory() as folder:

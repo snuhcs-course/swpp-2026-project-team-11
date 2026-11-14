@@ -3,12 +3,12 @@
 Every member keeps a decision-tree intent belief b_i(f): the probability that menu f is the
 one they feel like. S_i(r) = sum_f b_i(f) fit_i(r, f) is i's expected satisfaction at
 restaurant r, where fit_i(r, f) is the similarity of f to the closest menu at r that i can
-eat. The group score is the Nash welfare G(r) = sum_i log S_i(r); it chooses the questions
+eat. A restaurant is a place, (name, lat, lng): branches of one chain are different restaurants. The group score is the Nash welfare G(r) = sum_i log S_i(r); it chooses the questions
 and the first pick, and a second pick is scored differently (see PICKS).
 No ORM, HTTP or LLM imports.
 """
 from dataclasses import dataclass
-from functools import lru_cache
+from threading import Lock
 
 import numpy as np
 
@@ -33,15 +33,20 @@ class GroupConfig:
             raise ValueError("max_rounds must be a positive integer")
 
 
+def place(offer):
+    """The restaurant of an offer: (name, lat, lng)."""
+    return offer["restaurant"], offer.get("lat"), offer.get("lng")
+
+
 def restaurants(catalog):
-    """Restaurant names, sorted, and which menus each serves: (names, serves[R, F])."""
-    names = sorted({offer["restaurant"] for c in catalog.candidates for offer in c.offers})
-    index = {name: i for i, name in enumerate(names)}
-    serves = np.zeros((len(names), len(catalog.candidates)), dtype=bool)
+    """Restaurants, sorted by name, and which menus each serves: (places, serves[R, F])."""
+    places = sorted({place(offer) for c in catalog.candidates for offer in c.offers}, key=lambda p: (p[0], str(p[1:])))
+    index = {p: i for i, p in enumerate(places)}
+    serves = np.zeros((len(places), len(catalog.candidates)), dtype=bool)
     for f, c in enumerate(catalog.candidates):
         for offer in c.offers:
-            serves[index[offer["restaurant"]], f] = True
-    return names, serves
+            serves[index[place(offer)], f] = True
+    return places, serves
 
 
 def features(catalog):
@@ -59,17 +64,37 @@ def closest(features, belief, options):
     return int(options[int(np.argmin(distance))])
 
 
-@lru_cache(maxsize=16)
-def fit(catalog, banned):
-    """fit[r, f]: similarity (1 - mean absolute feature difference) of menu f to the closest
-    menu restaurant r serves that is not in `banned`; 0 where there is none, positive elsewhere."""
-    ids = [c.food_id for c in catalog.candidates]
-    x = features(catalog)
-    _, serves = restaurants(catalog)
-    table = np.zeros(serves.shape)
-    for r, row in enumerate(serves & ~np.isin(ids, list(banned))):
+def _closest_similarity(x, eligible):
+    table = np.zeros(eligible.shape)
+    for r, row in enumerate(eligible):
         if row.any():
             table[r] = np.maximum(1 - np.abs(x[:, None] - x[row]).mean(-1).min(1), FLOOR)
+    return table
+
+
+_FITS, _FITS_LOCK = {}, Lock()  # catalog fingerprint -> read-only fit to every served menu
+
+
+def fit(catalog, eligible):
+    """fit[r, f]: similarity (1 - mean absolute feature difference) of menu f to the closest
+    menu at restaurant r with eligible[r] set; 0 where there is none, positive elsewhere.
+
+    The table over every served menu is built once per catalog (the last four are kept);
+    only the rows a member's exclusions change are computed again. Read-only.
+    """
+    _, serves = restaurants(catalog)
+    with _FITS_LOCK:
+        if catalog.fingerprint not in _FITS:
+            _FITS[catalog.fingerprint] = _closest_similarity(features(catalog), serves)
+            _FITS[catalog.fingerprint].setflags(write=False)
+            while len(_FITS) > 4:
+                del _FITS[next(iter(_FITS))]
+        table = _FITS[catalog.fingerprint]
+    changed = np.flatnonzero((serves != eligible).any(1))
+    if changed.size:
+        table = table.copy()
+        table[changed] = _closest_similarity(features(catalog), eligible[changed])
+        table.setflags(write=False)
     return table
 
 
@@ -95,7 +120,7 @@ def picks(satisfaction):
 
 @dataclass
 class _Member:
-    allowed: np.ndarray
+    eligible: np.ndarray  # (R, F): the menus the member can eat at each restaurant
     fit: np.ndarray
     belief: np.ndarray
     salience: np.ndarray
@@ -106,8 +131,10 @@ class GroupEngine:
     """Rounds of one shared question, then up to two restaurants and each member's menu at each.
 
     `candidates` is a list of menu rows or a prebuilt CandidateCatalog. `excluded` holds,
-    per member, the food IDs they cannot eat (allergies, bans). Members answer in any
-    order; a round ends when all of its questions are answered.
+    per member, the (food ID, restaurant) offers they cannot eat, a restaurant as `place`
+    gives it: equivalent menus share a food ID, and one restaurant's may hold an allergen
+    another's does not. Members answer in any order; a round ends when all of its
+    questions are answered.
     """
     def __init__(self, candidates, feature_schema, excluded, *, context=None, config=None):
         self.catalog = (candidates if isinstance(candidates, CandidateCatalog)
@@ -119,21 +146,24 @@ class GroupEngine:
         if not self.model.identity_intents:
             raise ValueError("Group mode needs actual sales menus")
         self.planner = PreferencePlanner(self.model)
-        self.names, self.serves = restaurants(self.catalog)
+        self.places, self.serves = restaurants(self.catalog)
         self.features = features(self.catalog)
-        ids = np.array([c.food_id for c in self.catalog.candidates])
+        row = {p: r for r, p in enumerate(self.places)}
+        column = {c.food_id: f for f, c in enumerate(self.catalog.candidates)}
         self.members = []
-        for banned in excluded:
-            allowed = ~np.isin(ids, list(banned)) & self.serves.any(0)
-            if not allowed.any():
+        for offers in excluded:
+            eligible = self.serves.copy()
+            for food_id, at in offers:
+                eligible[row[at], column[food_id]] = False
+            if not eligible.any():
                 raise ValueError("Every member needs a menu they can eat")
-            belief = self.model.prior * allowed
-            self.members.append(_Member(allowed, fit(self.catalog, frozenset(banned)), belief / belief.sum(),
+            belief = self.model.prior * eligible.any(0)
+            self.members.append(_Member(eligible, fit(self.catalog, eligible), belief / belief.sum(),
                                         self.model.salience_prior.copy(), {}))
         if not (self.satisfaction() > 0).all(0).any():
             raise ValueError("No restaurant has a menu for every member")
         self.round = 0
-        self._pending = self._plan() if len(self.names) > 1 else {}
+        self._pending = self._plan() if len(self.places) > 1 else {}
 
     @property
     def finished(self):
@@ -157,7 +187,7 @@ class GroupEngine:
 
     def _would_ask(self, member):
         """Whether the member's own preference session would ask another question."""
-        rejected = {int(self.model.alias_ids[f]) for f in np.flatnonzero(~member.allowed)}
+        rejected = {int(self.model.alias_ids[f]) for f in np.flatnonzero(~member.eligible.any(0))}
         action, _ = self.planner.plan(member.belief, member.salience, member.answers, rejected)
         return action is not None and action.kind == "question"
 
@@ -167,16 +197,17 @@ class GroupEngine:
         The question whose answers best improve the group decision, summed over members
         with the others fixed: E_a[max_r G] - max_r E_a[G]. When no answer can change the
         leading restaurant, the most informative question about the members' tastes, as
-        long as one member's own session would still ask. {} after `max_rounds` or then.
+        long as one member's own session would still ask. {} after `max_rounds`, after every
+        question, or then.
         """
-        if self.round >= self.config.max_rounds:
+        asked = list(self.members[0].answers)
+        if self.round >= self.config.max_rounds or len(asked) == len(self.model.questions):
             return {}
         tables = [self._logs(m) for m in self.members]
         total = sum(current for current, _, _, _ in tables)
         gain = sum(np.einsum("qa,qa->q", (total - current + logs).max(-1), mass)
                    - np.einsum("qa,qar->qr", mass, total - current + logs).max(-1)
                    for current, logs, mass, _ in tables)
-        asked = list(self.members[0].answers)
         gain[asked] = -np.inf
         if gain.max() > 1e-12:
             qi = int(gain.argmax())
@@ -216,17 +247,17 @@ class GroupEngine:
         self._pending = {}
 
     def recommendation(self):
-        """Up to two restaurants (PICKS) and each member's closest menu at each."""
+        """Up to two restaurants (PICKS), where they are, and each member's closest menu at each."""
         if not self.finished:
             raise ValueError("The group still has questions to answer")
         return {"type": "recommendation", "rounds": self.round,
-                "picks": [{"kind": kind, "restaurant": self.names[r], "menus": self._menus_at(r)}
-                          for kind, r in picks(self.satisfaction())]}
+                "picks": [{"kind": kind, **dict(zip(("restaurant", "lat", "lng"), self.places[r])),
+                           "menus": self._menus_at(r)} for kind, r in picks(self.satisfaction())]}
 
     def _menus_at(self, r):
         menus = []
         for member in self.members:
-            options = np.flatnonzero(self.serves[r] & member.allowed)
+            options = np.flatnonzero(member.eligible[r])
             menus.append(self.catalog.candidates[closest(self.features, member.belief, options)].summary()
                          if options.size else None)
         return menus
