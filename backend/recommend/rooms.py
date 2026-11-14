@@ -37,7 +37,7 @@ import numpy as np
 
 from question_engines.decision_tree.contracts import Answer, answer_options, translate
 from question_engines.group import GroupConfig, GroupEngine
-from question_engines.group.engine import MAX_MEMBERS
+from question_engines.group.engine import MAX_MEMBERS, place
 
 from .sessions import EngineUnavailable, StaleStep, load_candidates, restaurant_menus
 
@@ -87,7 +87,7 @@ class Room:
         self.round_started = 0.0
         self.round_answers: dict[int, str] = {}
         self.picks: list[dict] | None = None
-        self.menus: dict[str, list[dict]] = {}
+        self.menus: dict[tuple, list[dict]] = {}
         self.decided: str | None = None
         self.lock = threading.Lock()
 
@@ -122,13 +122,12 @@ class Room:
         self.host_id = next(m.id for m in self.members if m.token == member.token)
         s = self.settings
         candidates, schema, _ = load_candidates(s.date, s.meal, frozenset(), s.source, s.location, s.distance_scope)
-        everything = {c["food_id"] for c in candidates}
-        self.menus = restaurant_menus(candidates)
+        self.menus = restaurant_menus(candidates, place)
         excluded = []
         for m in self.members:
             if m.allergies:
                 allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.source, s.location, s.distance_scope)
-                excluded.append(everything - {c["food_id"] for c in allowed})
+                excluded.append(_offers(candidates) - _offers(allowed))
             else:
                 excluded.append(set())
         try:
@@ -190,18 +189,18 @@ class Room:
         self.status = "done"
         self.picks = []
         satisfaction = self.engine.satisfaction()
-        index = {name: r for r, name in enumerate(self.engine.names)}
+        index = {p: r for r, p in enumerate(self.engine.places)}
         for pick in self.engine.recommendation()["picks"]:
-            r = index[pick["restaurant"]]
+            at = (pick["restaurant"], pick["lat"], pick["lng"])
+            r = index[at]
             suggested = {food["food_id"] for food in pick["menus"] if food}
-            offer = next(o for food in pick["menus"] if food for o in food["offers"]
-                         if o["restaurant"] == pick["restaurant"])
+            offer = next(o for food in pick["menus"] if food for o in food["offers"] if place(o) == at)
             self.picks.append({
                 "restaurant": pick["restaurant"], "kind": pick["kind"],
-                "lat": offer.get("lat"), "lng": offer.get("lng"), "distance_m": offer.get("distance_m"),
+                "lat": pick["lat"], "lng": pick["lng"], "distance_m": offer.get("distance_m"),
                 "menus": [{"member_id": m.id, "food": food, "fit": _fit(satisfaction[m.id], r)}
                           for m, food in zip(self.members, pick["menus"])],
-                "others": [dish for dish in self.menus.get(pick["restaurant"], []) if dish["food_id"] not in suggested]})
+                "others": [dish for dish in self.menus.get(at, []) if dish["food_id"] not in suggested]})
 
     def decide(self, member: Member, restaurant: str) -> None:
         self._require_host(member)
@@ -247,6 +246,11 @@ class Room:
             "picks": self.picks,
             "decided": self.decided,
         }
+
+
+def _offers(candidates: list) -> set:
+    """Every (food ID, place) a candidate list offers, as the engine's `excluded` names them."""
+    return {(c["food_id"], place(o)) for c in candidates for o in c["offers"]}
 
 
 def _fit(satisfaction: np.ndarray, r: int) -> str:

@@ -101,12 +101,12 @@ def load_candidates(date: datetime.date, meal: str | None, allergies: frozenset[
     return candidates, schema, before
 
 
-def restaurant_menus(candidates: list) -> dict[str, list[dict]]:
-    """{restaurant: [{"food_id", "display_name", "meal", "price"}]}, breakfast first and by name within a meal."""
+def restaurant_menus(candidates: list, key=lambda offer: offer["restaurant"]) -> dict:
+    """{key(offer): [{"food_id", "display_name", "meal", "price"}]}, breakfast first and by name within a meal."""
     menus = {}
     for candidate in candidates:
         for offer in candidate["offers"]:
-            menus.setdefault(offer["restaurant"], []).append({
+            menus.setdefault(key(offer), []).append({
                 "food_id": candidate["food_id"], "display_name": candidate["display_name"],
                 "meal": offer["meal"], "price": offer["price"]})
     for dishes in menus.values():
