@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("health/", views.health),
     path("sessions/", views.create_session),
+    path("sessions/prewarm/", views.prewarm),
     path("sessions/<str:session_id>/", views.session_state),
     path("sessions/<str:session_id>/answer/", views.answer),
     path("sessions/<str:session_id>/feedback/", views.feedback),

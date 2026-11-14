@@ -67,6 +67,15 @@ class RecommendRepositoryTest {
     }
 
     @Test
+    fun prewarmSendsWhatTheSessionWillRead() = runTest {
+        server.enqueue(MockResponse().setResponseCode(204))
+        repository.prewarm("DN", listOf(Allergen.EGG), "all")
+        val request = server.takeRequest()
+        assertEquals("/api/sessions/prewarm/", request.path)
+        assertEquals("""{"meal":"DN","allergies":["egg"],"source":"all"}""", request.json().toString())
+    }
+
+    @Test
     fun createSessionSendsTheChosenEngine() = runTest {
         for ((engine, fixture) in listOf(Engine.LLM to "question_llm", Engine.RL to "question_rl")) {
             reply(fixture, 201)

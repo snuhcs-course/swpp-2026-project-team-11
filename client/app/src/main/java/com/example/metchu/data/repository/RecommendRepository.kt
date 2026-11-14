@@ -11,6 +11,7 @@ import com.example.metchu.data.network.BanRequest
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.ApiService
 import com.example.metchu.data.network.CreateSessionRequest
+import com.example.metchu.data.network.PrewarmRequest
 import com.example.metchu.data.network.FeedbackRequest
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.network.UserLocation
@@ -33,6 +34,10 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
     ): SessionState =
         api.createSession(CreateSessionRequest(meal, engine, location, allergies.map { it.id }.ifEmpty { null }, language, source, distanceScope))
             .checked()
+
+    suspend fun prewarm(meal: String?, allergies: List<Allergen>, source: String?) {
+        api.prewarm(PrewarmRequest(meal, allergies.map { it.id }.ifEmpty { null }, source))
+    }
 
     suspend fun answer(sessionId: String, questionId: String, answerId: String): SessionState =
         api.answer(sessionId, AnswerRequest(questionId, answerId)).checked()

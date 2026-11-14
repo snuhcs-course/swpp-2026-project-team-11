@@ -27,6 +27,10 @@ class SessionApiTests(TestCase):
         self.assertEqual(state["step"]["type"], "question")
         self.assertEqual(len(state["step"]["options"]), 6)
 
+    def test_create_reports_server_timing(self):
+        response = self.post("/api/sessions/", {"date": DAY, "meal": "LU"})
+        self.assertRegex(response["Server-Timing"], r"^candidates;dur=\d+\.\d, engine;dur=\d+\.\d$")
+
     def test_answer_then_undo_restores_the_question(self):
         state = self.start()
         url = f"/api/sessions/{state['session_id']}/"

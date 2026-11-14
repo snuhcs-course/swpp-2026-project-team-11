@@ -8,7 +8,9 @@ import com.example.metchu.data.network.BanRequest
 import com.example.metchu.data.network.ApiService
 import com.example.metchu.data.network.CreateSessionRequest
 import com.example.metchu.data.network.FeedbackRequest
+import com.example.metchu.data.network.PrewarmRequest
 import kotlinx.coroutines.CompletableDeferred
+import retrofit2.Response
 import java.io.IOException
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -16,7 +18,8 @@ import java.util.concurrent.CopyOnWriteArrayList
  * Records each call as text and answers from a queue of replies. Reason requests are
  * recorded apart, in [reasonCalls], and answered with [reason]; without one they fail
  * as an unreachable server would. Menu requests likewise go to [menuCalls], as
- * "<session> <restaurant>", and are answered with [menu].
+ * "<session> <restaurant>", and are answered with [menu]. Prewarm requests only go to
+ * [prewarmCalls] and always succeed.
  */
 class FakeApi : ApiService {
     val calls = CopyOnWriteArrayList<String>()
@@ -25,6 +28,7 @@ class FakeApi : ApiService {
     var heldReason: CompletableDeferred<Reason>? = null
     val menuCalls = CopyOnWriteArrayList<String>()
     var menu: RestaurantMenu? = null
+    val prewarmCalls = CopyOnWriteArrayList<PrewarmRequest>()
     private val replies = ArrayDeque<suspend () -> SessionState>()
 
     fun reply(state: SessionState) { replies.add { state } }
@@ -52,6 +56,10 @@ class FakeApi : ApiService {
                 request.language
             ).joinToString(" ")
         )
+    }
+    override suspend fun prewarm(request: PrewarmRequest): Response<Unit> {
+        prewarmCalls.add(request)
+        return Response.success(Unit)
     }
     override suspend fun getState(sessionId: String) = next("state $sessionId")
     override suspend fun answer(sessionId: String, request: AnswerRequest) =

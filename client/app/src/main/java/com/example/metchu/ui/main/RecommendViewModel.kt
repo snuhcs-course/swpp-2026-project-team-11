@@ -20,6 +20,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+import kotlin.time.measureTimedValue
 
 /** What the error banner shows. [canRetry] offers to repeat the failed request. */
 data class UiError(@StringRes val message: Int, val canRetry: Boolean)
@@ -112,7 +113,27 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         if (_loading.value == true) return
         forgetSession()
         park(null)
-        request { repository.createSession(meal, engine, location?.current(), allergies, language, source, distanceScope) }
+        request {
+            val (found, took) = measureTimedValue { location?.current() }
+            Log.d(TAG, "location took ${took.inWholeMilliseconds} ms")
+            repository.createSession(meal, engine, found, allergies, language, source, distanceScope)
+        }
+    }
+
+    /**
+     * Lets the server build what a session with these fields reads, so [start] does not wait
+     * for it. It runs beside other requests, and a failure only means Start does the work.
+     */
+    fun prewarm(meal: String?, allergies: List<Allergen>, source: String?) {
+        viewModelScope.launch {
+            try {
+                repository.prewarm(meal, allergies, source)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "prewarm failed", e)
+            }
+        }
     }
 
     /**
