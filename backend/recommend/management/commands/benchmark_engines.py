@@ -4,7 +4,8 @@
 Write the question engine benchmark (question_engines/benchmark/report.py):
 report.md, summary.json, sessions.csv and one folder per section. No LLM call.
 --human adds sessions played by people (the user study) and --simulator-check the
-simulated user's agreement with them; with --human alone, only the user study is written.
+simulated user's agreement with them; --human-only in place of --sessions writes only the
+user study, so a forgotten --sessions does not overwrite a full report.
 """
 
 from __future__ import annotations
@@ -31,11 +32,14 @@ class Command(BaseCommand):
         parser.add_argument("--scenarios", required=True)
         parser.add_argument("--sessions", nargs="*", default=[], help="files from collect_engine_sessions")
         parser.add_argument("--human", nargs="*", default=[], help="files from play_engine_session")
+        parser.add_argument("--human-only", action="store_true", help="no --sessions: write only the user study")
         parser.add_argument("--simulator-check", nargs="*", default=[], help="files from validate_simulator")
         parser.add_argument("--output-dir", default="engine_benchmark_report")
         parser.add_argument("--no-plots", action="store_true")
 
     def handle(self, *args, **options):
+        if bool(options["sessions"]) == options["human_only"]:
+            raise CommandError("--sessions와 --human-only 중 하나만 주세요.")
         try:
             data = scenarios.load(options["scenarios"])
             records = read_lines(options["sessions"])
