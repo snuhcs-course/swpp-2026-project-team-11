@@ -437,6 +437,31 @@ class MainActivityTest {
     }
 
     @Test
+    fun anUndoDuringTheReturnKeepsTheHandleUntilItsOwnReturnEnds() {
+        startWith(question)
+        val next = question.copy(
+            canUndo = true,
+            step = question.step.copy(questionId = "q:next", questionCount = 1, text = "Do you feel like noodles?")
+        )
+        api.reply(next)
+        val sent = api.calls.size
+        tap("answer_yes")
+        compose.waitUntil(3_000) { api.calls.size > sent }
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeBy(200)
+        api.reply(question)
+        tap("back")
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithText(question.step.text).assertExists()
+        // The first return would have ended here; the second one is still running.
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithTag("handle").assertExists()
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithTag("handle").assertDoesNotExist()
+        compose.mainClock.autoAdvance = true
+    }
+
+    @Test
     fun anAnsweredQuestionStaysAboveAndCanBeRevisited() {
         startWith(question)
         val next = question.copy(
