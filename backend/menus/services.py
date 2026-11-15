@@ -22,6 +22,7 @@ from __future__ import annotations
 import datetime
 import logging
 import math
+import threading
 from collections import defaultdict
 from typing import NamedTuple
 import time
@@ -217,6 +218,8 @@ def current_meal(now: datetime.datetime | None = None) -> str:
 
 
 _store_menus = None  # (read at, rows, foods, dish groups, catalogues) of _read_store_menus
+_catalogue_lock = threading.Lock()
+CATALOGUES_KEPT = 16  # allergy sets come from any client of /prewarm/; the oldest go first
 
 
 def _read_store_menus() -> tuple[list[tuple], dict, dict, dict]:
@@ -237,12 +240,17 @@ def get_store_catalog(meal: str | None = None,
     """One original restaurant menu with RMS features, never its separate dishes.
 
     Building the catalogue takes about a second for thousands of menus, so it is kept with
-    the cached lines for each meal and allergy set. Each call gets its own offers to change.
+    the cached lines for the last few meal and allergy sets, and built by one request at a
+    time: a Start during a prewarm waits for it. Each call gets its own offers to change.
     """
     rows, foods, groups, catalogues = _read_store_menus()
     meal = meal or current_meal()
-    if (meal, allergies) not in catalogues:
-        records = [SalesLine(*row[:5], meal, *row[5:]) for row in rows]
-        catalogues[meal, allergies] = _menu_candidates(_menu_lines(records, foods, allergies), groups, source="general")
-    candidates = [{**c, "offers": [dict(offer) for offer in c["offers"]]} for c in catalogues[meal, allergies]]
+    with _catalogue_lock:
+        if (meal, allergies) not in catalogues:
+            if len(catalogues) >= CATALOGUES_KEPT:
+                del catalogues[next(iter(catalogues))]
+            records = [SalesLine(*row[:5], meal, *row[5:]) for row in rows]
+            catalogues[meal, allergies] = _menu_candidates(_menu_lines(records, foods, allergies), groups, source="general")
+        catalogue = catalogues[meal, allergies]
+    candidates = [{**c, "offers": [dict(offer) for offer in c["offers"]]} for c in catalogue]
     return candidates, get_feature_schema()
