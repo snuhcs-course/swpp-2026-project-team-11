@@ -225,7 +225,7 @@ fun QuestionScreen(
                 }
             }
 
-            AnswerScale(step.questionId to count, offered, loading, pick, press)
+            AnswerScale("${step.questionId}#$count", offered, loading, pick, press)
             ProgressBlock(session, loading)
         }
         // Answering is the main thing here, so "Recommend now" is the quieter white capsule,
@@ -414,7 +414,7 @@ private fun lerpStyle(from: TextStyle, to: TextStyle, t: Float): TextStyle = fro
  * about to be given.
  */
 @Composable
-internal fun AnswerScale(question: Any, offered: Set<String>, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit, markUnsure: Boolean = false) {
+internal fun AnswerScale(question: String, offered: Set<String>, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit, markUnsure: Boolean = false) {
     // The prototype's row is 358 wide (353 + 2.5 on each side) on a 393 screen; circles,
     // icons and captions scale with the row so narrower phones keep the same gaps.
     BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 17.5.dp, end = 17.5.dp, bottom = 20.dp)) {
@@ -490,7 +490,7 @@ private val CancelDistance = 60.dp
  * back. Each circle stays a button for TalkBack and keyboards.
  */
 @Composable
-private fun AnswerSlider(question: Any, offered: Set<String>, scale: Float, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit) {
+private fun AnswerSlider(question: String, offered: Set<String>, scale: Float, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit) {
     val density = LocalDensity.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
@@ -525,7 +525,7 @@ private fun AnswerSlider(question: Any, offered: Set<String>, scale: Float, load
             picked = false
             if (!handleOn) return@LaunchedEffect
             under = middle
-            shown = middle
+            homing?.cancel()
             homing = scope.launch {
                 coroutineScope {
                     launch { x.animateTo(centers[middle], HandleMotion) }
