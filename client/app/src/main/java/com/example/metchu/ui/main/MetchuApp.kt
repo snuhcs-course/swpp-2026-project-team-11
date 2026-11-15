@@ -1,11 +1,13 @@
 package com.example.metchu.ui.main
 
-import com.example.metchu.ui.common.fade
-import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.core.animateFloat
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,10 +27,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +60,7 @@ import com.example.metchu.ui.account.AccountScreen
 import com.example.metchu.ui.account.AccountViewModel
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
+import com.example.metchu.ui.common.fade
 import com.example.metchu.ui.common.floating
 import com.example.metchu.ui.common.setLanguage
 import com.example.metchu.ui.group.GroupQuestionScreen
@@ -75,6 +80,7 @@ import com.example.metchu.ui.start.Meal
 import com.example.metchu.ui.start.StartScreen
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
+import kotlinx.coroutines.flow.first
 
 /**
  * Which screen is up. Before a session: the first launch's steps, then start, settings, or
@@ -82,6 +88,15 @@ import com.example.metchu.ui.theme.MetchuType
  * room: the room's stage, ahead of everything else.
  */
 private enum class Screen { LANGUAGE, ACCOUNT, ALLERGIES, START, SETTINGS, QUESTION, RESULT, UNAVAILABLE, JOIN, LOBBY, GROUP_QUESTION, GROUP_RESULT }
+
+/** The least time the start screen searches, so a quick first question does not cut it short. */
+private const val SEARCH_MIN_MILLIS = 700
+
+/** How long the start screen takes to whiten once the search is over. */
+private const val SEARCH_WHITEN_MILLIS = 220
+
+/** Where a session goes from the start screen. */
+private val SessionScreens = setOf(Screen.QUESTION, Screen.RESULT, Screen.UNAVAILABLE)
 
 private fun screenOf(session: SessionState?, room: RoomState?, setup: Setup, settingsOpen: Boolean, accountOpen: Boolean, joinOpen: Boolean): Screen = when {
     room != null -> when (room.status) {
@@ -166,7 +181,31 @@ fun MetchuApp(
     }
     LaunchedEffect(room != null) { if (room != null) joinOpen = false }
 
-    val screen = screenOf(session, room, setup, settingsOpen, accountOpen, joinOpen)
+    // The start screen's search shows for a moment even when the first question comes back at
+    // once, then whitens (the map does not fade with the screen) before the question fades in.
+    // Both are timed as animations, so they run on the frame clock that UI tests drive.
+    var searches by remember { mutableIntStateOf(0) }
+    var holding by remember { mutableStateOf(false) }
+    val searchTime = remember { Animatable(0f) }
+    val whiten = remember { Animatable(0f) }
+    LaunchedEffect(searches) {
+        if (searches == 0) return@LaunchedEffect
+        holding = true
+        try {
+            whiten.snapTo(0f)
+            searchTime.snapTo(0f)
+            searchTime.animateTo(1f, tween(SEARCH_MIN_MILLIS, easing = LinearEasing))
+            snapshotFlow { session != null || !loading }.first { it }
+            if (session != null) whiten.animateTo(1f, tween(SEARCH_WHITEN_MILLIS))
+        } finally {
+            holding = false
+        }
+    }
+    val held = holding && session != null
+    // Whitened only on the way out of a search; resuming a session leaves the usual way.
+    val whitened = if (session != null) whiten.value else 0f
+    LaunchedEffect(session == null) { if (session == null && !holding) whiten.snapTo(0f) }
+    val screen = if (held) Screen.START else screenOf(session, room, setup, settingsOpen, accountOpen, joinOpen)
     val closeSettings = {
         allergyStore.allergies = allergies
         settingsOpen = false
@@ -194,6 +233,9 @@ fun MetchuApp(
                     initialState == Screen.RESULT ->
                         (fadeIn(tween(240, delayMillis = 180)) + slideInVertically(tween(300, delayMillis = 180, easing = SheetEasing)) { -it / 60 }) togetherWith
                             (fadeOut(tween(220)) + slideOutVertically(tween(260, easing = SheetEasing)) { it / 12 })
+                    // The search has whitened the start screen: the question fades in over it.
+                    initialState == Screen.START && targetState in SessionScreens && whitened == 1f ->
+                        fadeIn(tween(320, easing = SheetEasing)) togetherWith ExitTransition.None
                     // Otherwise one screen fades out before the next fades in, so two never show through each other.
                     else -> fadeIn(tween(260, delayMillis = 160)) togetherWith fadeOut(tween(180))
                 }
@@ -237,7 +279,9 @@ fun MetchuApp(
                     StartScreen(
                         meal = meal,
                         place = place,
-                        loading = loading || roomBusy,
+                        // Still searching while it whitens for the question.
+                        loading = loading || roomBusy || held || whitened > 0f,
+                        whitened = whitened,
                         tip = setup == Setup.TIP,
                         askForLocation = !locationAsked,
                         onMeal = { meal = it },
@@ -251,7 +295,10 @@ fun MetchuApp(
                         onLocationAsked = { locationAsked = true },
                         onStart = { meal ->
                             when {
-                                !together -> viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope)
+                                !together -> {
+                                    searches++
+                                    viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope)
+                                }
                                 account == null -> askName = true
                                 else -> createRoom(null)
                             }
