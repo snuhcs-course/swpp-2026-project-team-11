@@ -257,12 +257,15 @@ locales). A new session asks the server for the app's language (`en` or `ko`), s
 questions come in that language too. Food and cafeteria names are shown as the
 server sends them, in Korean.
 
-While nothing else is open, a soft circle keeps spreading from the start button
-to invite a tap. While a session starts, the start screen searches: the sentence gives way to what
-is happening (finding the user, loading today's menus, picking the first
-question), the start button shrinks into the user's dot with ripples spreading
-from it, and the map fills the screen, zoomed out to the campus.
-The search shows for at least 1.2 s, so a quick reply does not cut it short.
+While nothing else is open (no sheet, tip, language menu or location notice), a
+soft circle spreads from the start button three times to invite a tap. While a
+session starts, the start screen searches: the sentence gives way to "Finding
+your menu", which TalkBack reads out, the start button shrinks into the user's
+dot with ripples spreading from it, and the map fills the screen, zoomed out to
+the campus; the faded settings and language buttons cannot be reached meanwhile.
+The search shows for at least 0.7 s, so a quick reply does not cut it short.
+The pins on the result map have a thinner white ring (1.5 dp), to match the
+user's dot on the start map.
 
 A tapped answer stays filled while its request runs; other taps are ignored. A
 request that takes more than 0.3 s shows a spinner, in the start button while a
