@@ -116,6 +116,22 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     }
 
     /**
+     * Lets the server build what a session with these fields reads, so [start] does not wait
+     * for it. It runs beside other requests, and a failure only means Start does the work.
+     */
+    fun prewarm(meal: String?, allergies: List<Allergen>, source: String?) {
+        viewModelScope.launch {
+            try {
+                repository.prewarm(meal, allergies, source)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "prewarm failed", e)
+            }
+        }
+    }
+
+    /**
      * Answers the current question if it is still [asked]: the question screen holds a
      * picked answer for a moment, and Back can move the session on meanwhile.
      */

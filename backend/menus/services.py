@@ -22,6 +22,7 @@ from __future__ import annotations
 import datetime
 import logging
 import math
+import threading
 from collections import defaultdict
 from typing import NamedTuple
 import time
@@ -216,11 +217,13 @@ def current_meal(now: datetime.datetime | None = None) -> str:
     return "BR" if hour < 10 else "LU" if hour < 16 else "DN"
 
 
-_store_menus = None  # (read at, rows, foods, dish groups) of _read_store_menus
+_store_menus = None  # (read at, rows, foods, dish groups, catalogues) of _read_store_menus
+_catalogue_lock = threading.Lock()
+CATALOGUES_KEPT = 16  # allergy sets come from any client of /prewarm/; the oldest go first
 
 
-def _read_store_menus() -> tuple[list[tuple], dict, dict]:
-    """Cache complete sales lines, including untagged components."""
+def _read_store_menus() -> tuple[list[tuple], dict, dict, dict]:
+    """Cache complete sales lines, including untagged components, and the catalogues built from them."""
     global _store_menus
     now = time.monotonic()
     if _store_menus is None or now - _store_menus[0] >= settings.RECOMMEND_STORE_MENU_CACHE_S:
@@ -228,16 +231,26 @@ def _read_store_menus() -> tuple[list[tuple], dict, dict]:
             "pk", "restaurant_id", "restaurant__name", "restaurant__lat", "restaurant__lng",
             "raw_name", "description", "price", "food_id", "allergens", "allergen_version", "restaurant__code"))
         foods = Food.objects.filter(pk__in=StoreMenu.objects.values("food_id")).in_bulk()
-        _store_menus = (now, rows, foods, _dish_groups(foods))
+        _store_menus = (now, rows, foods, _dish_groups(foods), {})
     return _store_menus[1:]
 
 
 def get_store_catalog(meal: str | None = None,
                       allergies: frozenset[str] = frozenset()) -> tuple[list, list]:
-    """One original restaurant menu with RMS features, never its separate dishes."""
-    rows, foods, groups = _read_store_menus()
+    """One original restaurant menu with RMS features, never its separate dishes.
+
+    Building the catalogue takes about a second for thousands of menus, so it is kept with
+    the cached lines for the last few meal and allergy sets, and built by one request at a
+    time: a Start during a prewarm waits for it. Each call gets its own offers to change.
+    """
+    rows, foods, groups, catalogues = _read_store_menus()
     meal = meal or current_meal()
-    records = [SalesLine(*row[:5], meal, *row[5:]) for row in rows]
-    menus = _menu_lines(records, foods, allergies)
-    candidates = _menu_candidates(menus, groups, source="general")
+    with _catalogue_lock:
+        if (meal, allergies) not in catalogues:
+            if len(catalogues) >= CATALOGUES_KEPT:
+                del catalogues[next(iter(catalogues))]
+            records = [SalesLine(*row[:5], meal, *row[5:]) for row in rows]
+            catalogues[meal, allergies] = _menu_candidates(_menu_lines(records, foods, allergies), groups, source="general")
+        catalogue = catalogues[meal, allergies]
+    candidates = [{**c, "offers": [dict(offer) for offer in c["offers"]]} for c in catalogue]
     return candidates, get_feature_schema()
