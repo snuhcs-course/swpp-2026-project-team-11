@@ -1,5 +1,7 @@
 """source=general: sessions over the restaurants near the stations (menus.StoreMenu)."""
+import copy
 import datetime
+import threading
 import zoneinfo
 from unittest import mock
 
@@ -115,6 +117,54 @@ class GeneralSourceTests(TestCase):
     def test_prewarm_rejects_invalid_fields(self):
         for body in ({"meal": "XX"}, {"source": "mars"}, {"allergies": ["gold"]}):
             self.assertEqual(post(self.client, "/api/sessions/prewarm/", body).status_code, 400)
+
+    @override_settings(RECOMMEND_STORE_MENU_CACHE_S=300)
+    def test_concurrent_requests_build_the_catalogue_once(self):
+        services._store_menus = None
+        self.addCleanup(setattr, services, "_store_menus", None)
+        services.get_store_catalog("DN")  # reads the lines here; the threads touch no database
+        building, release = threading.Event(), threading.Event()
+
+        def slow_build(*args, **kwargs):
+            building.set()
+            release.wait(5)
+            return []
+
+        with mock.patch.object(services, "_menu_lines", return_value=[]), \
+                mock.patch.object(services, "get_feature_schema", return_value={}), \
+                mock.patch.object(services, "_menu_candidates", side_effect=slow_build) as built:
+            prewarm = threading.Thread(target=services.get_store_catalog, args=("LU",))
+            prewarm.start()
+            building.wait(5)
+            start = threading.Thread(target=services.get_store_catalog, args=("LU",))
+            start.start()
+            release.set()
+            prewarm.join(5)
+            start.join(5)
+        self.assertEqual(built.call_count, 1)
+
+    @override_settings(RECOMMEND_STORE_MENU_CACHE_S=300)
+    def test_only_the_latest_catalogues_are_kept(self):
+        services._store_menus = None
+        self.addCleanup(setattr, services, "_store_menus", None)
+        with mock.patch.object(services, "CATALOGUES_KEPT", 2):
+            for allergies in ({"egg"}, {"wheat"}, {"milk"}):
+                services.get_store_catalog("LU", frozenset(allergies))
+        self.assertEqual(list(services._store_menus[4]), [("LU", frozenset({"wheat"})), ("LU", frozenset({"milk"}))])
+
+    @override_settings(RECOMMEND_STORE_MENU_CACHE_S=300)
+    def test_sessions_leave_the_cached_catalogue_as_built(self):
+        services._store_menus = None
+        self.addCleanup(setattr, services, "_store_menus", None)
+        services.get_store_catalog("LU")
+        built = copy.deepcopy(services._store_menus[4][("LU", frozenset())])
+        for engine in ("decision_tree", "rl"):
+            state = self.start(meal="LU", engine=engine, location=SEOUL_NAT_UNIV_STATION)
+            url = f"/api/sessions/{state['session_id']}/"
+            if state["step"]["type"] == "question":
+                post(self.client, url + "answer/", {"question_id": state["step"]["question_id"], "answer_id": "yes"})
+            self.proposal(state)
+        self.assertEqual(services._store_menus[4][("LU", frozenset())], built)
 
     def test_location_adds_distances(self):
         food = self.proposal(self.start(location=SEOUL_NAT_UNIV_STATION))
