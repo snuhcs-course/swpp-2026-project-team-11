@@ -1,12 +1,13 @@
 package com.example.metchu.ui.main
 
-import com.example.metchu.ui.common.fade
-import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.core.animateFloat
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,8 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.first
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,6 +60,7 @@ import com.example.metchu.ui.account.AccountScreen
 import com.example.metchu.ui.account.AccountViewModel
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
+import com.example.metchu.ui.common.fade
 import com.example.metchu.ui.common.floating
 import com.example.metchu.ui.common.setLanguage
 import com.example.metchu.ui.group.GroupQuestionScreen
@@ -81,6 +80,7 @@ import com.example.metchu.ui.start.Meal
 import com.example.metchu.ui.start.StartScreen
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
+import kotlinx.coroutines.flow.first
 
 /**
  * Which screen is up. Before a session: the first launch's steps, then start, settings, or
@@ -90,7 +90,7 @@ import com.example.metchu.ui.theme.MetchuType
 private enum class Screen { LANGUAGE, ACCOUNT, ALLERGIES, START, SETTINGS, QUESTION, RESULT, UNAVAILABLE, JOIN, LOBBY, GROUP_QUESTION, GROUP_RESULT }
 
 /** The least time the start screen searches, so a quick first question does not cut it short. */
-private const val SEARCH_MIN_MILLIS = 1200
+private const val SEARCH_MIN_MILLIS = 700
 
 /** How long the start screen takes to whiten once the search is over. */
 private const val SEARCH_WHITEN_MILLIS = 220
