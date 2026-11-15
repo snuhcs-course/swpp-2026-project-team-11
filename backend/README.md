@@ -284,7 +284,8 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
   current one in Seoul when the session has none). The menus are read from the database at most
   every `RECOMMEND_STORE_MENU_CACHE_S` seconds (5 minutes), so an import shows within that time.
   The catalogue built from them for each meal and allergy set (about a second for 4,400 menus) is
-  kept for the same time. `POST /api/sessions/prewarm/` builds it before Start, and a created
+  kept for the same time, for at most 16 sets, and built by one request at a time, so a Start
+  during a prewarm waits for it. `POST /api/sessions/prewarm/` builds it before Start, and a created
   session's `Server-Timing` header gives the milliseconds for `candidates` and `engine`.
   The default general engine is the decision tree. Use `"engine": "rl"` for feature-only
   RL, or set `METCHU_ENGINE=rl` for clients that omit the engine. General sessions reject
