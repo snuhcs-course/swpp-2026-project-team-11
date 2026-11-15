@@ -1,67 +1,48 @@
 package com.example.metchu.ui.start
 
-import androidx.compose.foundation.layout.width
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.util.lerp
-import com.google.android.gms.maps.CameraUpdateFactory
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.semantics.paneTitle
-import androidx.compose.ui.semantics.semantics
-import com.example.metchu.ui.common.TopRowHeight
-import com.example.metchu.ui.common.fade
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.unit.Dp
-import com.example.metchu.ui.common.TopRow
-import com.example.metchu.ui.common.floating
-import com.example.metchu.ui.common.SheetEasing
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -72,25 +53,38 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.repository.Place
@@ -98,9 +92,13 @@ import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Languages
 import com.example.metchu.ui.common.PickerOption
+import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.Spinner
+import com.example.metchu.ui.common.TopRow
+import com.example.metchu.ui.common.TopRowHeight
 import com.example.metchu.ui.common.cssShadow
-import com.example.metchu.ui.common.setLanguage
+import com.example.metchu.ui.common.fade
+import com.example.metchu.ui.common.floating
 import com.example.metchu.ui.common.pressScale
 import com.example.metchu.ui.common.rememberLocationPermission
 import com.example.metchu.ui.common.rememberSlow
@@ -110,11 +108,14 @@ import com.example.metchu.ui.result.Point
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 import com.example.metchu.ui.theme.screenBackground
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /** Where the start button's center sits above the bottom, level with the question screen's answer circles. */
 val ActionCenterFromBottom = 202.dp
@@ -174,16 +175,10 @@ fun StartScreen(
         tween(if (searching) 260 else 320, easing = SheetEasing),
         label = "search"
     )
-    // Without a position there is nothing to find first.
-    var phase by remember { mutableIntStateOf(0) }
-    LaunchedEffect(searching) {
-        if (!searching) return@LaunchedEffect
-        phase = if (user != null) 0 else 1
-        while (phase < SearchPhases.lastIndex) {
-            delay(SEARCH_PHASE_MILLIS)
-            phase++
-        }
-    }
+    var languageOpen by remember { mutableStateOf(false) }
+    val locationNotice = askForLocation && !permission.granted && !tip
+    // TalkBack must not reach the faded choices either.
+    val unreachable = if (searching) Modifier.clearAndSetSemantics {} else Modifier
     // The words fade out, change language and fade back in.
     var switching by remember { mutableStateOf(false) }
     val words by animateFloatAsState(if (switching) 0f else 1f, tween(150), label = "words")
@@ -232,7 +227,7 @@ fun StartScreen(
         }
 
         SearchHeadline(
-            phase.takeIf { searching },
+            searching,
             Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = TopRowHeight + 10.dp)
         )
 
@@ -242,7 +237,7 @@ fun StartScreen(
             searching = searching,
             located = user != null,
             // Nothing else on screen asks for attention.
-            nudging = !group && sheet == null && !tip,
+            nudging = !group && sheet == null && !tip && !languageOpen && !locationNotice,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).fade { words }
@@ -251,9 +246,13 @@ fun StartScreen(
         CircleIconButton(
             Icons.Gear, stringResource(R.string.settings), onSettings,
             Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 74.dp, bottom = CornerButtonBottom)
-                .fade { 1f - search }.testTag("settings")
+                .fade { 1f - search }.then(unreachable).testTag("settings")
         )
-        LanguageMenu(Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = CornerButtonBottom).fade { 1f - search }) { tag ->
+        LanguageMenu(
+            languageOpen,
+            { languageOpen = it },
+            Modifier.align(Alignment.BottomStart).navigationBarsPadding().padding(start = 20.dp, bottom = CornerButtonBottom).fade { 1f - search }.then(unreachable)
+        ) { tag ->
             scope.launch {
                 switching = true
                 delay(160)
@@ -312,7 +311,7 @@ fun StartScreen(
 
         if (tip) SetupTip(onDone = onTipDone, onSettings = { onTipDone(); onSettings() })
 
-        if (askForLocation && !permission.granted && !tip) {
+        if (locationNotice) {
             LocationNotice(
                 onContinue = { onLocationAsked(); permission.request() },
                 onLater = onLocationAsked
@@ -501,15 +500,19 @@ private fun StartButton(
 
 /**
  * One circle that spreads from the button's edge and fades, then rests: it moves for the
- * first 60 % of each beat.
+ * first 60 % of each of [NUDGE_BEATS] beats.
  */
 @Composable
 private fun Nudge(modifier: Modifier) {
-    val beat by rememberInfiniteTransition(label = "nudge").animateFloat(
-        0f, 1f, infiniteRepeatable(tween(NUDGE_MILLIS, easing = LinearEasing)), label = "beat"
-    )
+    val beat = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        repeat(NUDGE_BEATS) {
+            beat.snapTo(0f)
+            beat.animateTo(1f, tween(NUDGE_MILLIS, easing = LinearEasing))
+        }
+    }
     Canvas(modifier) {
-        val p = (beat / 0.6f).coerceAtMost(1f)
+        val p = (beat.value / 0.6f).coerceAtMost(1f)
         val from = StartButtonSize.toPx() / 2
         val radius = from + (size.minDimension / 2 - from) * (1f - (1f - p) * (1f - p))
         drawCircle(MetchuColors.Primary.copy(alpha = 0.18f * (1f - p)), radius)
@@ -539,27 +542,26 @@ private fun Ripples(modifier: Modifier) {
     }
 }
 
-/** Where the title stands, what the search is doing: [phase] indexes [SearchPhases], null shows nothing. */
+/** Where the title stands, a line that says the search is on while [searching]; TalkBack reads it out. */
 @Composable
-private fun SearchHeadline(phase: Int?, modifier: Modifier = Modifier) {
+private fun SearchHeadline(searching: Boolean, modifier: Modifier = Modifier) {
     AnimatedContent(
-        targetState = phase,
+        targetState = searching,
         transitionSpec = {
             (fadeIn(tween(220, delayMillis = 120)) + slideInVertically(tween(320, delayMillis = 120, easing = SheetEasing)) { it / 4 }) togetherWith
                 (fadeOut(tween(160)) + slideOutVertically(tween(200)) { -it / 4 })
         },
-        modifier = modifier,
+        modifier = modifier.semantics { liveRegion = LiveRegionMode.Polite },
         label = "headline"
     ) { shown ->
-        if (shown != null) Text(stringResource(SearchPhases[shown]), style = MetchuType.Title)
+        if (shown) Text(stringResource(R.string.search_finding), style = MetchuType.Title)
         else Box(Modifier.fillMaxWidth())
     }
 }
 
-private val SearchPhases = listOf(R.string.search_locating, R.string.search_menus, R.string.search_question)
-private const val SEARCH_PHASE_MILLIS = 900L
 private const val RIPPLE_MILLIS = 2100
 private const val NUDGE_MILLIS = 2800
+private const val NUDGE_BEATS = 3
 private val NudgeSize = 300.dp
 private val DotSize = 22.dp
 private val RippleSize = 380.dp
@@ -663,8 +665,7 @@ private const val CampusZoom = 14.5f
  * language is picked or the user taps elsewhere.
  */
 @Composable
-private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit) {
-    var open by remember { mutableStateOf(false) }
+private fun LanguageMenu(open: Boolean, onOpen: (Boolean) -> Unit, modifier: Modifier = Modifier, onPick: (String) -> Unit) {
     val current = LocalConfiguration.current.locales[0].language
     val motion = tween<Dp>(260, easing = SheetEasing)
     val width by animateDpAsState(if (open) 168.dp else 44.dp, motion, label = "width")
@@ -673,7 +674,7 @@ private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit
     val globe by animateFloatAsState(if (open) 0f else 1f, tween(120), label = "globe")
     val items by animateFloatAsState(if (open) 1f else 0f, tween(160, delayMillis = if (open) 100 else 0), label = "items")
     if (open) {
-        Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null) { open = false })
+        Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null) { onOpen(false) })
     }
     val shape = RoundedCornerShape(corner)
     // Closed, the globe is the gear's twin: its own shadow and press, nothing behind it.
@@ -685,7 +686,7 @@ private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit
     ) {
         if (globe > 0f) {
             CircleIconButton(
-                Icons.Globe, stringResource(R.string.language), { open = true },
+                Icons.Globe, stringResource(R.string.language), { onOpen(true) },
                 Modifier.align(Alignment.BottomStart).fade { globe }.testTag("language")
             )
         }
@@ -700,7 +701,7 @@ private fun LanguageMenu(modifier: Modifier = Modifier, onPick: (String) -> Unit
                             .clip(RoundedCornerShape(10.dp))
                             .background(if (on) MetchuColors.Grey100 else Color.White)
                             .selectable(on, role = Role.RadioButton) {
-                                open = false
+                                onOpen(false)
                                 if (!on) onPick(tag)
                             }
                             .padding(horizontal = 12.dp),

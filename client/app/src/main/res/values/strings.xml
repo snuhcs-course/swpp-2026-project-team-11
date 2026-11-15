@@ -16,9 +16,7 @@
     <string name="start_sub">A few questions, and we’ll pick a dish.</string>
     <string name="start_button">Start</string>
     <!-- What the start screen says while the first question loads. -->
-    <string name="search_locating">Finding where you are</string>
-    <string name="search_menus">Loading today’s menus</string>
-    <string name="search_question">Picking your first question</string>
+    <string name="search_finding">Finding your menu</string>
     <string name="start_meal_sheet">Pick a meal</string>
     <string name="start_place_sheet">Pick how far to go</string>
     <string name="start_meal_change">Change meal</string>
