@@ -2,6 +2,7 @@
 
     create(date, meal, engine, location, allergies, source, language) -> RecommendSession
     get(session_id)            -> RecommendSession | None
+    prewarm(meal, allergies, source) -> builds the restaurant catalogue ahead of create
     session.public_state()     -> what the phone is allowed to see
     session.reason()           -> why the proposed dish suits the user (recommend/reasons.py)
     session.menu(restaurant)   -> the session's dishes that restaurant serves
@@ -38,6 +39,9 @@ proposed again in the session, even after undo: a guess of one is turned down wi
 action reaches it, and an undo that reaches one goes back further. Bans last only as
 long as the session.
 
+`timings` holds how long creation took to read the candidates and to build and start
+the engine, in seconds; the API reports them as a Server-Timing header.
+
 `reason()` calls the LLM outside the session lock, so a tap on the result screen
 never waits for it, and keeps each reason for the answers it was written for.
 
@@ -50,6 +54,7 @@ from __future__ import annotations
 import datetime
 import json
 import threading
+import time
 import uuid
 from collections import OrderedDict
 
@@ -130,8 +135,10 @@ class RecommendSession:
         self.meal = meal
         self.language = language
         self.lock = threading.Lock()
+        started = time.perf_counter()
         candidates, schema, self.candidates_before_distance = load_candidates(
             date, meal, allergies, source, location, distance_scope)
+        loaded = time.perf_counter()
         self.candidate_count = len(candidates)
         # Reasons need only dish names and feature means after the engine is built.
         self.reason_data = {c["food_id"]: (c["display_name"], c.get("features") or {}) for c in candidates}
@@ -159,6 +166,7 @@ class RecommendSession:
                 config=config | {"policy": settings.RECOMMEND_DT_POLICY},
             )
         self.engine.start()
+        self.timings = {"candidates": loaded - started, "engine": time.perf_counter() - loaded}
 
     def answer(self, question_id: str, answer_id: str) -> None:
         step = self.engine.next_step()
@@ -288,6 +296,12 @@ def create(date: datetime.date | None = None, meal: str | None = None,
         while len(_sessions) > MAX_SESSIONS:
             _sessions.popitem(last=False)
     return session
+
+
+def prewarm(meal: str | None, allergies: frozenset[str], source: str | None) -> None:
+    """Builds the restaurant catalogue a session would read, which takes about a second."""
+    if source in ("general", "all"):
+        get_store_catalog(meal, allergies)
 
 
 def get(session_id: str) -> RecommendSession | None:

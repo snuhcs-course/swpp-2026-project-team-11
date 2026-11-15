@@ -274,34 +274,37 @@ fun MetchuApp(
                         onNext = { advance(Setup.TIP) }
                     )
                 }
-                Screen.START -> StartScreen(
-                    meal = meal,
-                    place = place,
-                    // Still searching while it whitens for the question.
-                    loading = loading || roomBusy || held || whitened > 0f,
-                    whitened = whitened,
-                    tip = setup == Setup.TIP,
-                    askForLocation = !locationAsked,
-                    onMeal = { meal = it },
-                    onPlace = { place = it; settings.place = it },
-                    onSettings = { settingsOpen = true },
-                    group = together,
-                    onGroup = { together = it },
-                    onJoin = { group.clearError(); joinOpen = true },
-                    onResume = viewModel::resume.takeIf { canResume },
-                    onTipDone = { advance(Setup.DONE) },
-                    onLocationAsked = { locationAsked = true },
-                    onStart = { meal ->
-                        when {
-                            !together -> {
-                                searches++
-                                viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope)
+                Screen.START -> {
+                    LaunchedEffect(meal, allergies, together) { if (!together) viewModel.prewarm(meal.code, allergies, source = "all") }
+                    StartScreen(
+                        meal = meal,
+                        place = place,
+                        // Still searching while it whitens for the question.
+                        loading = loading || roomBusy || held || whitened > 0f,
+                        whitened = whitened,
+                        tip = setup == Setup.TIP,
+                        askForLocation = !locationAsked,
+                        onMeal = { meal = it },
+                        onPlace = { place = it; settings.place = it },
+                        onSettings = { settingsOpen = true },
+                        group = together,
+                        onGroup = { together = it },
+                        onJoin = { group.clearError(); joinOpen = true },
+                        onResume = viewModel::resume.takeIf { canResume },
+                        onTipDone = { advance(Setup.DONE) },
+                        onLocationAsked = { locationAsked = true },
+                        onStart = { meal ->
+                            when {
+                                !together -> {
+                                    searches++
+                                    viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope)
+                                }
+                                account == null -> askName = true
+                                else -> createRoom(null)
                             }
-                            account == null -> askName = true
-                            else -> createRoom(null)
                         }
-                    }
-                )
+                    )
+                }
                 Screen.SETTINGS -> {
                     BackHandler(onBack = closeSettings)
                     SettingsScreen(

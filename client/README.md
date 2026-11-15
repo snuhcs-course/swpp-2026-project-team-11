@@ -221,7 +221,9 @@ not offer is dimmed. Pressing the slider brings a handle out of the middle that
 follows the finger with a tick of haptic feedback per answer; letting go picks
 it, and letting go well above or below the row cancels. The answer shows under
 the question meanwhile; once picked, both shrink into the question's line in
-the list, and going back plays this in reverse.
+the list, and going back plays this in reverse. When the next question comes,
+in a session or a group round, the handle glides back into the middle circle in the
+picked answer's color and fades out as the circles grow back.
 
 The server keeps no question texts, so `RecommendViewModel` remembers the
 answered questions and trims the list to the step's `question_count` after
@@ -317,6 +319,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | Request | Body | Effect |
 | --- | --- | --- |
 | `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?, "source"?, "distance_scope"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), and the app language (`en` or `ko`). Both distance choices send `source: "all"` to combine cafeteria and restaurant menus for DT or RL. `distance_scope: "near"` filters offers within 800 m straight-line distance before recommendation when location is known; without location it includes all. `distance_scope: "any"` applies no cutoff. General and all sources reject the LLM engine. `location` is the user's `{"lat", "lng"}`. With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
+| `POST /api/sessions/prewarm/` | `{"meal"?, "source"?, "allergies"?}` | 204. The start screen sends it when it opens and when the meal or allergies change, outside group mode, so the server has built the restaurant catalogue before Start. It creates no session |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |
