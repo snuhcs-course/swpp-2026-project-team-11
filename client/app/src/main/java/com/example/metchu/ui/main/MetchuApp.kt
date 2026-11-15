@@ -233,7 +233,7 @@ fun MetchuApp(
                     )
                 }
                 Screen.START -> {
-                    LaunchedEffect(meal, allergies) { viewModel.prewarm(meal.code, allergies, source = "all") }
+                    LaunchedEffect(meal, allergies, together) { if (!together) viewModel.prewarm(meal.code, allergies, source = "all") }
                     StartScreen(
                         meal = meal,
                         place = place,

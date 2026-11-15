@@ -20,7 +20,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
-import kotlin.time.measureTimedValue
 
 /** What the error banner shows. [canRetry] offers to repeat the failed request. */
 data class UiError(@StringRes val message: Int, val canRetry: Boolean)
@@ -113,11 +112,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         if (_loading.value == true) return
         forgetSession()
         park(null)
-        request {
-            val (found, took) = measureTimedValue { location?.current() }
-            Log.d(TAG, "location took ${took.inWholeMilliseconds} ms")
-            repository.createSession(meal, engine, found, allergies, language, source, distanceScope)
-        }
+        request { repository.createSession(meal, engine, location?.current(), allergies, language, source, distanceScope) }
     }
 
     /**
