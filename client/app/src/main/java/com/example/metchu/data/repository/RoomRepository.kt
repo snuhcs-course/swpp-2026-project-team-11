@@ -45,6 +45,8 @@ class RoomRepository(private val api: RoomApi = RetrofitInstance.roomApi) {
 
     suspend fun recommendNow(room: Membership): RoomState = api.recommendNow(room.code, room.token)
 
+    suspend fun another(room: Membership): RoomState = api.another(room.code, room.token)
+
     suspend fun decide(room: Membership, pick: Int): RoomState = api.decide(room.code, room.token, DecideRequest(pick))
 
     suspend fun leave(room: Membership) {

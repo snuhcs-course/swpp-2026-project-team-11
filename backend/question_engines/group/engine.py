@@ -106,10 +106,11 @@ PICKS = (
 )
 
 
-def picks(satisfaction):
-    """[(kind, restaurant index)] for expected satisfactions S shaped (members, R); S is 0
-    exactly where a member has nothing to eat."""
+def picks(satisfaction, shown=()):
+    """[(kind, restaurant index)] for expected satisfactions S shaped (members, R), leaving
+    out the `shown` restaurant indices; S is 0 exactly where a member has nothing to eat."""
     servable = (satisfaction > 0).all(0)
+    servable[list(shown)] = False
     scores = (np.log(np.maximum(satisfaction, FLOOR)).sum(0), satisfaction.min(0))
     chosen = []
     for score in scores:
@@ -246,13 +247,19 @@ class GroupEngine:
         """Ends the questions now; the recommendation uses the answers given so far."""
         self._pending = {}
 
-    def recommendation(self):
-        """Up to two restaurants (PICKS), where they are, and each member's closest menu at each."""
+    def recommendation(self, shown=()):
+        """Up to two restaurants (PICKS) besides the `shown` restaurant indices: each one's
+        index, where it is and each member's closest menu there. `more` tells whether a
+        restaurant where everyone can eat is left once these are shown too."""
         if not self.finished:
             raise ValueError("The group still has questions to answer")
-        return {"type": "recommendation", "rounds": self.round,
-                "picks": [{"kind": kind, **dict(zip(("restaurant", "lat", "lng"), self.places[r])),
-                           "menus": self._menus_at(r)} for kind, r in picks(self.satisfaction())]}
+        satisfaction = self.satisfaction()
+        chosen = picks(satisfaction, shown)
+        left = (satisfaction > 0).all(0)
+        left[[*shown, *(r for _, r in chosen)]] = False
+        return {"type": "recommendation", "rounds": self.round, "more": bool(left.any()),
+                "picks": [{"kind": kind, "index": r, **dict(zip(("restaurant", "lat", "lng"), self.places[r])),
+                           "menus": self._menus_at(r)} for kind, r in chosen]}
 
     def _menus_at(self, r):
         menus = []

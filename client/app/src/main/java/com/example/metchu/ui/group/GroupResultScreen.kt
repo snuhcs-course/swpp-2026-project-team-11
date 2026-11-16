@@ -1,6 +1,7 @@
 package com.example.metchu.ui.group
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +18,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -77,14 +77,15 @@ import kotlin.math.ceil
 /**
  * Up to two restaurants, named on chips over the map, and each member's dish at the one
  * chosen, this phone's member first. The host decides with "Go here"; everyone's screen
- * then shows where to meet.
+ * then shows where to meet. While the room has [RoomState.more], the host's "Find another"
+ * replaces the restaurants on every phone with ones the room has not been shown.
  */
 @Composable
-fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, onHome: () -> Unit) {
+fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, onAnother: () -> Unit, onHome: () -> Unit) {
     val picks = room.picks.orEmpty()
     if (picks.isEmpty()) return
     // Picks are told apart by position: two branches of one chain share a name.
-    var viewing by rememberSaveable { mutableIntStateOf(0) }
+    var viewing by rememberSaveable(picks) { mutableIntStateOf(0) }
     room.decided?.let { viewing = it }
     val shownAt = viewing.coerceIn(picks.indices)
     val pick = picks[shownAt]
@@ -128,7 +129,7 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
                 .cssShadow(shape, (-2).dp, 12.dp, 0.10f)
                 .clip(shape)
                 .background(Color.White)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(remember(picks) { ScrollState(0) })
                 .padding(top = 20.dp, bottom = 140.dp)
         ) {
             key(shownAt) { PickDetails(room, pick) }
@@ -137,10 +138,18 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
         val bottom = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp)
         when {
             room.decided != null -> StatusPill(stringResource(R.string.group_meet, placeName(pick.restaurant)), dark = true, modifier = bottom.testTag("decided"))
-            room.isHost -> ActionCapsule(
-                stringResource(R.string.group_decide), Icons.Check, { if (!busy) onDecide(shownAt) },
-                filled = true, modifier = bottom.testTag("decide")
-            )
+            room.isHost -> Row(bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (room.more) {
+                    ActionCapsule(
+                        stringResource(R.string.result_more), Icons.Plus, { if (!busy) onAnother() },
+                        filled = false, modifier = Modifier.testTag("more")
+                    )
+                }
+                ActionCapsule(
+                    stringResource(R.string.group_decide), Icons.Check, { if (!busy) onDecide(shownAt) },
+                    filled = true, modifier = Modifier.testTag("decide")
+                )
+            }
             else -> StatusPill(stringResource(R.string.group_host_picking), dark = false, modifier = bottom)
         }
     }
@@ -217,7 +226,7 @@ private fun StatusPill(text: String, dark: Boolean, modifier: Modifier = Modifie
     }
 }
 
-/** The two restaurants with their name pills, framed above the sheet; the one viewed is orange. */
+/** The restaurants with their name pills, framed above the sheet again when they change; the one viewed is orange. */
 @Composable
 private fun PicksMap(picks: List<RoomPick>, selected: Int, sheetHeight: Dp, onSelect: (Int) -> Unit) {
     val points = picks.mapIndexedNotNull { i, p -> if (p.lat != null && p.lng != null) i to LatLng(p.lat, p.lng) else null }
@@ -225,7 +234,7 @@ private fun PicksMap(picks: List<RoomPick>, selected: Int, sheetHeight: Dp, onSe
     val camera = rememberCameraPositionState { position = CameraPosition.fromLatLngZoom(points.first().second, 16f) }
     var loaded by remember { mutableStateOf(false) }
     val density = LocalDensity.current
-    LaunchedEffect(loaded) {
+    LaunchedEffect(loaded, points) {
         if (!loaded) return@LaunchedEffect
         val update = if (points.size == 1) CameraUpdateFactory.newLatLngZoom(points.single().second, 16f)
             else CameraUpdateFactory.newLatLngBounds(LatLngBounds.builder().apply { points.forEach { include(it.second) } }.build(), with(density) { 64.dp.roundToPx() })
@@ -240,9 +249,9 @@ private fun PicksMap(picks: List<RoomPick>, selected: Int, sheetHeight: Dp, onSe
     ) {
         points.forEach { (index, point) ->
             val on = index == selected
-            key(index) {
+            key(index, point) {
                 MarkerComposable(
-                    index, on,
+                    index, on, picks[index].restaurant,
                     state = remember { MarkerState(point) },
                     anchor = Offset(0.5f, 0.93f),
                     zIndex = if (on) 1f else 0f,

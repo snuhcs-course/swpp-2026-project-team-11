@@ -55,6 +55,9 @@ interface RoomApi {
     @POST("api/rooms/{code}/recommend-now/")
     suspend fun recommendNow(@Path("code") code: String, @Header(MEMBER) token: String): RoomState
 
+    @POST("api/rooms/{code}/another/")
+    suspend fun another(@Path("code") code: String, @Header(MEMBER) token: String): RoomState
+
     @POST("api/rooms/{code}/decide/")
     suspend fun decide(@Path("code") code: String, @Header(MEMBER) token: String, @Body request: DecideRequest): RoomState
 

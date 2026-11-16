@@ -379,7 +379,7 @@ fun MetchuApp(
                 }
                 Screen.GROUP_RESULT -> room?.let {
                     BackHandler(onBack = askToLeave)
-                    GroupResultScreen(it, roomBusy, onDecide = group::decide, onHome = askToLeave)
+                    GroupResultScreen(it, roomBusy, onDecide = group::decide, onAnother = group::another, onHome = askToLeave)
                 }
                 Screen.UNAVAILABLE -> if (current != null) {
                     BackHandler { viewModel.startOver() }

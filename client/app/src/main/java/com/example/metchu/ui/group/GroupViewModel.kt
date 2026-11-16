@@ -74,6 +74,9 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
 
     fun recommendNow() = act { repository.recommendNow(it) }
 
+    /** Replaces the restaurants with ones the room has not been shown. */
+    fun another() = act { repository.another(it) }
+
     fun decide(pick: Int) = act { repository.decide(it, pick) }
 
     /** Leaves at once on this phone; the server is told on the side. */

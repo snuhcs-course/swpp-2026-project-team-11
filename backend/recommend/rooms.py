@@ -4,12 +4,13 @@
     join(code, name, allergies, language)       -> (Room, Member)
     get(code)                                   -> Room | None
     room.start(member) / answer(member, question_id, answer_id) / recommend_now(member)
-    room.decide(member, pick) / leave(member)
+    room.another(member) / decide(member, pick) / leave(member)
     room.public_state(member)                   -> what that member's phone draws
 
 A room has a four-digit code and 2 to 8 members. Each phone holds its member's secret
 token. The host sets the meal, the restaurants and the location, starts the questions,
-may stop them early ("recommend now") and decides on a restaurant. Nobody joins after
+may stop them early ("recommend now"), may ask for other restaurants ("find another")
+and decides on a restaurant. Nobody joins after
 the start, and a caller who tries JOIN_ATTEMPTS unknown codes waits JOIN_WINDOW seconds.
 When the host leaves, a random remaining member becomes host.
 
@@ -21,8 +22,10 @@ checked whenever the room is read or acted on, so phones polling the room move i
 
 The result is up to two restaurants, each with every member's dish there, the restaurant's
 other dishes (by meal and name, like a session's menu), and how well the place fits them: "great" among their best tenth of the restaurants they can eat at, otherwise
-"good". A member's allergies only remove dishes from their own choice. Rooms live in this process only,
-like sessions (recommend/sessions.py).
+"good". A member's allergies only remove dishes from their own choice. "Find another" replaces
+the result with up to two restaurants the room has not been shown, while one where everyone can
+eat is left (`more`). For that the room keeps its engine until the host decides or everyone has
+left. Rooms live in this process only, like sessions (recommend/sessions.py).
 """
 
 from __future__ import annotations
@@ -95,6 +98,8 @@ class Room:
         self.round_answers: dict[int, str] = {}
         self.rounds = 0  # the engine's count, kept once the engine is let go
         self.picks: list[dict] | None = None
+        self.shown: set[int] = set()  # the engine's indices of every restaurant picked so far
+        self.more = False
         self.menus: dict[tuple, list[dict]] = {}
         self.decided: int | None = None
         self.lock = threading.Lock()
@@ -196,12 +201,15 @@ class Room:
 
     def _finish(self) -> None:
         self.status = "done"
-        self.picks = []
+        self._pick()
+
+    def _pick(self) -> None:
+        """Up to two restaurants the room has not been shown yet."""
+        result = self.engine.recommendation(self.shown)
         satisfaction = self.engine.satisfaction()
-        index = {p: r for r, p in enumerate(self.engine.places)}
-        for pick in self.engine.recommendation()["picks"]:
-            at = (pick["restaurant"], pick["lat"], pick["lng"])
-            r = index[at]
+        self.picks = []
+        for pick in result["picks"]:
+            at, r = (pick["restaurant"], pick["lat"], pick["lng"]), pick["index"]
             suggested = {food["food_id"] for food in pick["menus"] if food}
             offer = next(o for food in pick["menus"] if food for o in food["offers"] if place(o) == at)
             self.picks.append({
@@ -210,8 +218,20 @@ class Room:
                 "menus": [{"member_id": m.id, "food": food, "fit": _fit(satisfaction[m.id], r)}
                           for m, food in zip(self.members, pick["menus"])],
                 "others": [dish for dish in self.menus.get(at, []) if dish["food_id"] not in suggested]})
-        # The engine's tables (one per allergic member over every restaurant and menu) are not needed again.
-        self.rounds, self.engine, self.menus = self.engine.round, None, {}
+            self.shown.add(r)
+        self.more = result["more"]
+
+    def another(self, member: Member) -> None:
+        """Replaces the picks with restaurants the room has not been shown yet."""
+        self._require_host(member)
+        if self.status != "done" or not self.more:
+            raise StaleStep("There is no other restaurant to suggest.")
+        self._pick()
+
+    def _let_go(self) -> None:
+        """Drops the engine's tables (one per allergic member over every restaurant and menu)."""
+        if self.engine is not None:
+            self.rounds, self.engine, self.menus, self.more = self.engine.round, None, {}, False
 
     def decide(self, member: Member, pick: int) -> None:
         """Chooses a pick by its position: two branches of one chain share a name."""
@@ -221,6 +241,7 @@ class Room:
         if type(pick) is not int or not 0 <= pick < len(self.picks):
             raise ValueError("pick must be the position of a suggested restaurant.")
         self.decided = pick
+        self._let_go()
 
     def leave(self, member: Member) -> None:
         if member.left:
@@ -231,6 +252,8 @@ class Room:
             self.host_id = random.choice(present).id
         if self.status == "asking":
             self._answer_for([member.id])
+        if self.status == "done" and not present:
+            self._let_go()
 
     def public_state(self, member: Member) -> dict:
         self.tick()
@@ -257,6 +280,7 @@ class Room:
             "seconds_left": max(0.0, round(ROUND_SECONDS - (clock() - self.round_started), 1)) if asking else None,
             "round_seconds": ROUND_SECONDS,
             "picks": self.picks,
+            "more": self.more,
             "decided": self.decided,
         }
 

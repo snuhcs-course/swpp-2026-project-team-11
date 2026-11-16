@@ -24,6 +24,8 @@ data class RoomState(
     @SerializedName("round_seconds") val roundSeconds: Int,
     // done
     val picks: List<RoomPick>?,
+    /** Whether the host can still replace [picks] with restaurants the room has not been shown. */
+    val more: Boolean,
     /** The position in [picks] the host chose. */
     val decided: Int?
 ) {
