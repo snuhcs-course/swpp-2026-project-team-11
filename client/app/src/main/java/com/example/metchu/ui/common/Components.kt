@@ -214,9 +214,10 @@ fun ActionCapsule(
 /**
  * A 48 dp capsule with a centered label, for a form's actions: [filled] is the orange main
  * one; otherwise white with dark ink. Disabled, it keeps its place and greys its label.
+ * [busy] keeps its colors, shows a spinner beside the label and ignores taps.
  */
 @Composable
-fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true, busy: Boolean = false) {
     val interaction = remember { MutableInteractionSource() }
     Box(
         modifier
@@ -225,7 +226,7 @@ fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: M
             .floating()
             .clip(CircleShape)
             .background(if (filled) MetchuColors.Primary else Color.White)
-            .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+            .clickable(interaction, indication = null, enabled = enabled && !busy, role = Role.Button, onClick = onClick)
             .padding(horizontal = 22.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -234,7 +235,10 @@ fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: M
             filled -> Color.White
             else -> MetchuColors.Grey900
         }
-        Text(text, style = MetchuType.Label, color = ink, maxLines = 1)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (busy) Spinner(ink, 16.dp)
+            Text(text, style = MetchuType.Label, color = ink, maxLines = 1)
+        }
     }
 }
 
