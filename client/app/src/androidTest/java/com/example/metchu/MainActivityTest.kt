@@ -577,23 +577,11 @@ class MainActivityTest {
     }
 
     @Test
-    fun aDishWithoutAGroupCanBeBannedAtOnceUntilStartOver() {
+    fun aDishWithoutAGroupOffersOnlyFindAnother() {
         val alone = guess.copy(step = guess.step.copy(food = guess.step.food!!.copy(foodGroup = "")))
-        val foodId = alone.step.food!!.foodId
         startWith(alone)
-        api.reply(alone)
-        tapText(R.string.result_ban)
-        assertEquals("ban ${alone.sessionId} $foodId true", api.calls.last())
-        api.reply(alone)
-        tapText(R.string.result_unban)
-        assertEquals("ban ${alone.sessionId} $foodId false", api.calls.last())
-        api.reply(alone)
-        tapText(R.string.result_ban)
-
-        // Start over ends the session, and the next one starts with no ban.
-        tapText(R.string.result_home)
-        startWith(alone)
-        compose.onNodeWithText(text(R.string.result_ban)).assertIsDisplayed()
+        compose.onNodeWithTag("ban").assertDoesNotExist()
+        compose.onNodeWithTag("more").assertIsDisplayed()
     }
 
     @Test
