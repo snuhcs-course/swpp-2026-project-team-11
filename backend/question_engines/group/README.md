@@ -71,8 +71,13 @@ while not engine.finished:
     for member, step in engine.questions().items():   # the round's question, per member who has not answered
         engine.answer(member, step["question_id"], answer_id)
 # engine.stop() would end the questions early, keeping the answers so far
-result = engine.recommendation()   # {"picks": [{"kind", "restaurant", "lat", "lng", "menus": [food or None per member]}], "rounds"}
+result = engine.recommendation()   # {"picks": [{"kind", "index", "restaurant", "lat", "lng", "menus": [food or None per member]}], "rounds", "more"}
+later = engine.recommendation({p["index"] for p in result["picks"]})   # the next picks among the other restaurants
 ```
+
+`recommendation(shown)` leaves out the `shown` restaurant indices and makes the picks the
+same way among the rest; `more` tells whether a restaurant where every member can eat is
+left after these. The rooms use it for "find another" (i4-A13).
 
 ## Benchmark
 
