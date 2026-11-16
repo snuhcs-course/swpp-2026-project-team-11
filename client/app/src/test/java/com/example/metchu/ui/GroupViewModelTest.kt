@@ -125,6 +125,17 @@ class GroupViewModelTest {
     }
 
     @Test
+    fun theHostAsksForOtherRestaurants() {
+        create()
+        val done = Fixtures.room("room_done").copy(decided = null, more = true)
+        val other = done.copy(picks = done.picks!!.reversed(), more = false)
+        api.reply(other)
+        viewModel.another()
+        assertEquals("another $code member-token", api.calls.last())
+        assertEquals(other, viewModel.room.value)
+    }
+
+    @Test
     fun tooManyWrongCodesSaySo() {
         api.fail(Fixtures.httpError(429, """{"error": {"code": "too_many_attempts", "message": "wait"}}"""))
         viewModel.join(null, "0000", "서연", emptyList(), "ko")

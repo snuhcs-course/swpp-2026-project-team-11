@@ -52,6 +52,8 @@ class RoomContractJsonTest {
         val picks = room.picks!!
         assertTrue(picks.size in 1..2)
         assertEquals(0, room.decided)
+        // Deciding ends "Find another".
+        assertFalse(room.more)
         assertEquals(listOf("balanced", "no_one_unhappy"), picks.map { it.kind })
         assertTrue(picks.first().others.isNotEmpty())
         for (pick in picks) {

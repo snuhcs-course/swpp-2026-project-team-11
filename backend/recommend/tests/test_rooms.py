@@ -279,12 +279,51 @@ class ResultTests(RoomTestCase):
             self.assertNotIn("pork", names[guest_food].allergens)
         self.assertEqual(self.state(code, guest)["status"], "done")
 
-    def test_a_finished_room_lets_its_engine_go(self):
+    def test_find_another_shows_restaurants_the_room_has_not_seen(self):
+        code, host, (guest,), _ = self.started()
+        done = self.call(code, "recommend-now", host)
+        first = {pick["restaurant"] for pick in done["picks"]}
+        self.assertEqual(len(first), 2)
+        self.assertTrue(done["more"])
+        again = self.call(code, "another", host)
+        self.assertEqual({pick["restaurant"] for pick in again["picks"]}, {"Red hall", "Soup hall", "Noodle hall"} - first)
+        self.assertFalse(again["more"])
+        self.assertEqual(self.state(code, guest)["picks"], again["picks"])
+        self.assertEqual(self.call(code, "another", host, status=409)["error"]["code"], "stale_step")
+
+    def test_find_another_counts_only_places_where_everyone_can_eat(self):
+        code, host, _ = self.create()
+        self.join(code, allergies=["pork"])
+        self.call(code, "start", host)
+        done = self.call(code, "recommend-now", host)
+        self.assertEqual({pick["restaurant"] for pick in done["picks"]}, {"Soup hall", "Noodle hall"})
+        self.assertFalse(done["more"])
+
+    def test_only_the_host_finds_another_and_only_before_deciding(self):
+        code, host, (guest,), _ = self.started()
+        self.assertEqual(self.call(code, "another", host, status=409)["error"]["code"], "stale_step")
+        self.call(code, "recommend-now", host)
+        self.assertEqual(self.call(code, "another", guest, status=403)["error"]["code"], "not_host")
+        self.call(code, "decide", host, {"pick": 0})
+        self.assertEqual(self.call(code, "another", host, status=409)["error"]["code"], "stale_step")
+
+    def test_a_decided_room_lets_its_engine_go(self):
         code, host, _, _ = self.started()
         done = self.call(code, "recommend-now", host)
+        self.assertIsNotNone(rooms.get(code).engine)
+        decided = self.call(code, "decide", host, {"pick": 0})
         self.assertIsNone(rooms.get(code).engine)
-        self.assertEqual((done["round"], done["max_rounds"]), (0, 4))
-        self.assertEqual(self.state(code, host)["picks"], done["picks"])
+        self.assertEqual((decided["round"], decided["max_rounds"]), (0, 4))
+        self.assertEqual(decided["picks"], done["picks"])
+        self.assertFalse(decided["more"])
+
+    def test_a_room_everyone_left_lets_its_engine_go(self):
+        code, host, (guest,), _ = self.started()
+        self.call(code, "recommend-now", host)
+        self.call(code, "leave", guest, status=204)
+        self.assertIsNotNone(rooms.get(code).engine)
+        self.call(code, "leave", host, status=204)
+        self.assertIsNone(rooms.get(code).engine)
 
     def test_the_host_cannot_decide_before_the_result(self):
         code, host, _, _ = self.started()

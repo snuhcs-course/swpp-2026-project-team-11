@@ -38,6 +38,7 @@ class FakeRoomApi : RoomApi {
     override suspend fun answer(code: String, token: String, request: AnswerRequest): RoomState =
         next("answer $code $token ${request.questionId} ${request.answerId}")
     override suspend fun recommendNow(code: String, token: String): RoomState = next("recommend-now $code $token")
+    override suspend fun another(code: String, token: String): RoomState = next("another $code $token")
     override suspend fun decide(code: String, token: String, request: DecideRequest): RoomState =
         next("decide $code $token ${request.pick}")
     override suspend fun leave(code: String, token: String): Response<Unit> {
