@@ -136,8 +136,8 @@ import kotlin.math.abs
  * them and always turns down the server's current guess. "Menu" on a cafeteria lists
  * what else it serves at that meal; [menus] holds those lists, null while one loads.
  * Under the dish, [onBan] keeps its group out of the rest of the session once the group
- * makes up two of the last three proposals; a dish without a group can be banned alone at
- * any time. A ban in [banned] can be lifted the same way.
+ * makes up two of the last three proposals, and a ban in [banned] can be lifted the same
+ * way. A single dish has no ban: "Find another" already leaves it behind.
  */
 @Composable
 fun ResultScreen(
@@ -172,10 +172,10 @@ fun ResultScreen(
 
     // Gson leaves a missing group null.
     val kind = food.foodGroup.orEmpty().ifBlank { null }
-    val ban = if (kind != null) Ban(foodGroup = kind) else Ban(foodId = food.foodId)
-    val isBanned = ban in banned
+    val ban = kind?.let { Ban(foodGroup = it) }
+    val isBanned = ban != null && ban in banned
     val banLabel = when {
-        kind == null -> stringResource(if (isBanned) R.string.result_unban else R.string.result_ban)
+        kind == null -> null
         isBanned -> stringResource(R.string.result_unban_group, kind)
         (maxOf(viewing - 2, 0) until viewing).any { shown[it].food?.foodGroup == kind } ->
             stringResource(R.string.result_ban_group, kind)
@@ -273,7 +273,7 @@ fun ResultScreen(
             writingReason = step.proposalId in reasons && reasons[step.proposalId] == null,
             caption = captionFor(session.meal),
             banLabel = banLabel,
-            onBan = { if (!loading) onBan(ban, !isBanned) },
+            onBan = { if (!loading && ban != null) onBan(ban, !isBanned) },
             cafeterias = cafeterias,
             chosen = chosen,
             selected = selected,
