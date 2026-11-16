@@ -96,8 +96,9 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
         TopRow(Modifier.statusBarsPadding(), arrangement = Arrangement.End) {
             CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
         }
+        // The chips share the width, so a long name ends in "…" instead of pushing the other off.
         Row(
-            Modifier.padding(start = 20.dp, top = sheetTop - 56.dp),
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = sheetTop - 56.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             picks.forEachIndexed { index, p ->
@@ -106,6 +107,7 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
                 Text(
                     placeName(p.restaurant),
                     Modifier
+                        .weight(1f, fill = false)
                         .height(40.dp)
                         .chipShadow()
                         .clip(CircleShape)
@@ -115,7 +117,8 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
                         .testTag("pick_$index"),
                     style = MetchuType.Label,
                     color = if (on) Color.White else MetchuColors.Grey900,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
