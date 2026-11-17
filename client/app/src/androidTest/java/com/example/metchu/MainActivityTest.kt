@@ -159,6 +159,20 @@ class MainActivityTest {
     }
 
     @Test
+    fun thePriceRangeIsPickedAsWonSignsAndExplainedByTheQuestionMark() {
+        tap("priceGuide")
+        compose.onNodeWithText(text(R.string.price_guide_mid)).assertIsDisplayed()
+        // A tap anywhere closes the guide.
+        tap("priceGuide")
+        compose.waitForIdle()
+        tap("priceToken")
+        compose.onNodeWithText("₩₩").performClick()
+        api.reply(question)
+        tap("start")
+        assertEquals(2, api.lastCreateRequest?.priceLevel)
+    }
+
+    @Test
     fun startSendsTheMealPickedInTheSentence() {
         for ((meal, code) in listOf(R.string.meal_breakfast to "BR", R.string.meal_lunch to "LU", R.string.meal_dinner to "DN")) {
             pickMeal(meal)
