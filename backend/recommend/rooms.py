@@ -8,7 +8,7 @@
     room.public_state(member)                   -> what that member's phone draws
 
 A room has a four-digit code and 2 to 8 members. Each phone holds its member's secret
-token. The host sets the meal, the restaurants and the location, starts the questions,
+token. The host sets the meal, the restaurants, the price range and the location, starts the questions,
 may stop them early ("recommend now") and decides on a restaurant. Nobody joins after
 the start, and a caller who tries JOIN_ATTEMPTS unknown codes waits JOIN_WINDOW seconds.
 When the host leaves, a random remaining member becomes host.
@@ -71,6 +71,7 @@ class RoomSettings:
     source: str
     distance_scope: str | None
     location: tuple[float, float] | None
+    price_level: int | None = None
 
 
 @dataclass
@@ -129,14 +130,14 @@ class Room:
         self.members = [Member(i, m.name, m.allergies, m.language, m.token) for i, m in enumerate(present)]
         self.host_id = next(m.id for m in self.members if m.token == member.token)
         s = self.settings
-        candidates, schema, _ = load_candidates(s.date, s.meal, frozenset(), s.source, s.location, s.distance_scope)
+        candidates, schema, _ = load_candidates(s.date, s.meal, frozenset(), s.source, s.location, s.distance_scope, s.price_level)
         self.menus = restaurant_menus(candidates, place)
         offers = _offers(candidates)
         excluded = []
         try:
             for m in self.members:
                 if m.allergies:
-                    allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.source, s.location, s.distance_scope)
+                    allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.source, s.location, s.distance_scope, s.price_level)
                     excluded.append(offers - safe_offers(candidates, allowed))
                 else:
                     excluded.append(set())

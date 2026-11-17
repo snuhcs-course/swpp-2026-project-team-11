@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -77,9 +78,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -88,6 +91,7 @@ import androidx.compose.ui.util.lerp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.repository.Place
+import com.example.metchu.data.repository.Price
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Languages
@@ -123,12 +127,14 @@ val ActionCenterFromBottom = 202.dp
 /** The SNU administration building (Building 60), shown until the user's position is known. */
 val CampusCenter = Point(37.4600, 126.9520)
 
-private enum class Sheet { MEAL, PLACE, WHO }
+/** In the order of the sentence's lines: each picker opens under its own line. */
+private enum class Sheet { MEAL, PLACE, PRICE, WHO }
 
 /**
- * "Today I'll have [lunch] [nearby] [for me]": the meal, the distance and whether friends
- * join ([group]) are picked inside the sentence, and the round button starts a session, or
- * with friends creates a room; "Join with a code" (top right) enters someone else's. The map behind the button fades in
+ * "Today I'll have [lunch] [nearby] [₩₩] [for me]": the meal, the distance, the [price] range
+ * and whether friends join ([group]) are picked inside the sentence, and the round button starts a session, or
+ * with friends creates a room; "Join with a code" (top right) enters someone else's. The price
+ * range is picked as one to three ₩ signs; the small "?" beside it shows what each covers. The map behind the button fades in
  * from the background; the button stands where the user is. With [tip], a tip over the
  * screen points to the globe and the gear, where the language and the allergies change.
  * With [askForLocation] and no permission yet, a notice says why before the system asks,
@@ -150,6 +156,8 @@ fun StartScreen(
     askForLocation: Boolean,
     onMeal: (Meal) -> Unit,
     onPlace: (Place) -> Unit,
+    price: Price,
+    onPrice: (Price) -> Unit,
     onSettings: () -> Unit,
     group: Boolean,
     onGroup: (Boolean) -> Unit,
@@ -176,6 +184,7 @@ fun StartScreen(
         label = "search"
     )
     var languageOpen by remember { mutableStateOf(false) }
+    var priceGuideOpen by rememberSaveable { mutableStateOf(false) }
     val locationNotice = askForLocation && !permission.granted && !tip
     // TalkBack must not reach the faded choices either.
     val unreachable = if (searching) Modifier.clearAndSetSemantics {} else Modifier
@@ -217,6 +226,18 @@ fun StartScreen(
                 }
                 Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
                     Token(
+                        (if (price == Price.ANY) stringResource(R.string.price_any) else priceSigns(price)).let { if (english) it.uppercase() else it },
+                        stringResource(R.string.start_price_change), "priceToken"
+                    ) { sheet = Sheet.PRICE }
+                    if (price != Price.ANY) {
+                        stringResource(R.string.start_price_particle).takeIf { it.isNotEmpty() }?.let {
+                            Text(it, Modifier.padding(start = 8.dp), style = title)
+                        }
+                    }
+                    PriceGuideButton { priceGuideOpen = true }
+                }
+                Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
+                    Token(
                         stringResource(if (group) R.string.start_who_group else R.string.start_who_solo).let { if (english) it.uppercase() else it },
                         stringResource(R.string.start_who_change), "whoToken"
                     ) { sheet = Sheet.WHO }
@@ -237,7 +258,7 @@ fun StartScreen(
             searching = searching,
             located = user != null,
             // Nothing else on screen asks for attention.
-            nudging = !group && sheet == null && !tip && !languageOpen && !locationNotice,
+            nudging = !group && sheet == null && !priceGuideOpen && !tip && !languageOpen && !locationNotice,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).fade { words }
@@ -269,11 +290,13 @@ fun StartScreen(
             title = stringResource(when (shownSheet) {
                 Sheet.MEAL -> R.string.start_meal_sheet
                 Sheet.PLACE -> R.string.start_place_sheet
+                Sheet.PRICE -> R.string.start_price_sheet
                 Sheet.WHO -> R.string.start_who_sheet
             }),
             width = when (shownSheet) {
                 Sheet.MEAL -> 168.dp
                 Sheet.PLACE -> 248.dp
+                Sheet.PRICE -> 220.dp
                 Sheet.WHO -> 272.dp
             },
             modifier = Modifier.statusBarsPadding()
@@ -285,6 +308,14 @@ fun StartScreen(
                         stringResource(if (it) R.string.who_group_note else R.string.who_solo_note),
                         selected = it == group
                     ) { onGroup(it); sheet = null }
+                }
+            } else if (shownSheet == Sheet.PRICE) {
+                Price.entries.map {
+                    PickerOption(
+                        if (it == Price.ANY) stringResource(R.string.price_any_option) else priceSigns(it),
+                        if (it == Price.ANY) stringResource(R.string.price_any_note) else null,
+                        selected = it == price
+                    ) { onPrice(it); sheet = null }
                 }
             } else if (shownSheet == Sheet.PLACE) {
                 Place.entries.map {
@@ -304,6 +335,12 @@ fun StartScreen(
                 }
             },
             onDismiss = { sheet = null }
+        )
+        PriceGuide(
+            visible = priceGuideOpen,
+            modifier = Modifier.statusBarsPadding()
+                .padding(start = 14.dp, top = TopRowHeight + 10.dp + TitleLine * (Sheet.PRICE.ordinal + 2) + 4.dp),
+            onDismiss = { priceGuideOpen = false }
         )
 
         // Over everything, the map too: a map does not fade with the screen around it.
@@ -383,6 +420,66 @@ private fun LocationNotice(onContinue: () -> Unit, onLater: () -> Unit) {
  */
 @Composable
 private fun ChoicePopup(visible: Boolean, title: String, options: List<PickerOption>, width: Dp, modifier: Modifier, onDismiss: () -> Unit) {
+    PopupCard(visible, title, width, modifier, onDismiss) {
+        options.forEach { option ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (option.selected) MetchuColors.Grey100 else Color.White)
+                    .selectable(option.selected, enabled = visible, role = Role.RadioButton, onClick = option.onPick)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                MenuRowContent(option.label, option.note, option.selected)
+            }
+        }
+    }
+}
+
+/** The ₩ signs of a price range: one to three. */
+private fun priceSigns(price: Price): String = "₩".repeat(price.level ?: 0)
+
+/** A small "?" in a ring beside the price range; it opens the [PriceGuide]. */
+@Composable
+private fun PriceGuideButton(onClick: () -> Unit) {
+    val description = stringResource(R.string.price_guide_open)
+    Box(
+        Modifier
+            .padding(start = 4.dp)
+            .size(40.dp)
+            .clickable(role = Role.Button, onClickLabel = description, onClick = onClick)
+            .semantics { contentDescription = description }
+            .testTag("priceGuide"),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(Modifier.size(22.dp).border(1.5.dp, MetchuColors.Grey400, CircleShape), contentAlignment = Alignment.Center) {
+            Text("?", Modifier.clearAndSetSemantics {}, style = MetchuType.Caption.copy(fontWeight = FontWeight.Bold), color = MetchuColors.Grey600)
+        }
+    }
+}
+
+/** What each price range covers, in won, opened by the "?" like a picker but with nothing to pick. */
+@Composable
+private fun PriceGuide(visible: Boolean, modifier: Modifier, onDismiss: () -> Unit) {
+    val title = stringResource(R.string.price_guide_title)
+    PopupCard(visible, title, 248.dp, modifier, onDismiss) {
+        Text(title, Modifier.padding(start = 12.dp, top = 8.dp, bottom = 4.dp), style = MetchuType.Label)
+        listOf(Price.LOW to R.string.price_guide_low, Price.MID to R.string.price_guide_mid, Price.HIGH to R.string.price_guide_high).forEach { (price, range) ->
+            Row(Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(priceSigns(price), Modifier.width(56.dp), style = MetchuType.Button, color = MetchuColors.Primary)
+                Text(stringResource(range), style = MetchuType.Body)
+            }
+        }
+        Text(stringResource(R.string.price_guide_note), Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 8.dp), style = MetchuType.Caption)
+    }
+}
+
+/** The card of a [ChoicePopup] or the [PriceGuide], growing from its top-left corner. */
+@Composable
+private fun PopupCard(visible: Boolean, title: String, width: Dp, modifier: Modifier, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val shown by animateFloatAsState(
         if (visible) 1f else 0f,
         if (visible) tween(220, easing = SheetEasing) else tween(160),
@@ -408,24 +505,9 @@ private fun ChoicePopup(visible: Boolean, title: String, options: List<PickerOpt
             .clip(shape)
             .background(Color.White)
             .padding(6.dp)
-            .semantics { paneTitle = title }
-    ) {
-        options.forEach { option ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (option.selected) MetchuColors.Grey100 else Color.White)
-                    .selectable(option.selected, enabled = visible, role = Role.RadioButton, onClick = option.onPick)
-                    .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                MenuRowContent(option.label, option.note, option.selected)
-            }
-        }
-    }
+            .semantics { paneTitle = title },
+        content = content
+    )
 }
 
 /** A menu line: the label, bold with a check when it is the current one, otherwise its note on the right. */

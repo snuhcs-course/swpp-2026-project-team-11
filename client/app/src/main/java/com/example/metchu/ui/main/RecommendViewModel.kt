@@ -98,7 +98,8 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
      * Engine IDs, or null for the server's default. [location] says where the user is; finding
      * that can take a few seconds, so it is part of the request and shows as [loading]. No dish
      * with one of [allergies] is proposed. [language] ("en" or "ko") is the language of every
-     * text the server sends.
+     * text the server sends. With a [priceLevel] (1 to 3 ₩ signs) only dishes in that price
+     * range are proposed.
      */
     fun start(
         meal: String?,
@@ -107,12 +108,13 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         allergies: List<Allergen> = emptyList(),
         language: String? = null,
         source: String? = null,
-        distanceScope: String? = null
+        distanceScope: String? = null,
+        priceLevel: Int? = null
     ) {
         if (_loading.value == true) return
         forgetSession()
         park(null)
-        request { repository.createSession(meal, engine, location?.current(), allergies, language, source, distanceScope) }
+        request { repository.createSession(meal, engine, location?.current(), allergies, language, source, distanceScope, priceLevel) }
     }
 
     /**

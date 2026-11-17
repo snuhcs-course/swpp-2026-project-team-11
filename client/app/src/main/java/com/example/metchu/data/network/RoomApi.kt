@@ -22,7 +22,8 @@ data class CreateRoomRequest(
     val meal: String?,
     val location: UserLocation?,
     val source: String,
-    @SerializedName("distance_scope") val distanceScope: String
+    @SerializedName("distance_scope") val distanceScope: String,
+    @SerializedName("price_level") val priceLevel: Int? = null
 )
 
 data class JoinRoomRequest(
