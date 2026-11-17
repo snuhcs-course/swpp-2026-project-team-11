@@ -24,7 +24,9 @@
     <string name="place_any_note">모든 식당</string>
     <string name="start_price_sheet">가격대를 골라 주세요</string>
     <string name="start_price_change">가격대 바꾸기</string>
-    <string name="start_price_particle">가격대로</string>
+    <string name="price_low">저렴하게</string>
+    <string name="price_mid">적당한 가격에</string>
+    <string name="price_high">넉넉하게</string>
     <string name="price_any">가격 상관없이</string>
     <string name="price_any_option">가격 상관없이</string>
     <string name="price_any_note">모든 가격</string>

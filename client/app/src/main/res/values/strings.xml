@@ -30,7 +30,9 @@
     <string name="place_any_note">All restaurants</string>
     <string name="start_price_sheet">Pick a price range</string>
     <string name="start_price_change">Change price range</string>
-    <string name="start_price_particle"></string>
+    <string name="price_low">On a budget</string>
+    <string name="price_mid">At a fair price</string>
+    <string name="price_high">For a treat</string>
     <string name="price_any">at any price</string>
     <string name="price_any_option">Any price</string>
     <string name="price_any_note">All prices</string>

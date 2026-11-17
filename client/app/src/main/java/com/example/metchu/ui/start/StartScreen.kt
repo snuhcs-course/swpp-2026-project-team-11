@@ -131,10 +131,10 @@ val CampusCenter = Point(37.4600, 126.9520)
 private enum class Sheet { MEAL, PLACE, PRICE, WHO }
 
 /**
- * "Today I'll have [lunch] [nearby] [₩₩] [for me]": the meal, the distance, the [price] range
+ * "Today I'll have [lunch] [nearby] [at a fair price] [for me]": the meal, the distance, the [price] range
  * and whether friends join ([group]) are picked inside the sentence, and the round button starts a session, or
  * with friends creates a room; "Join with a code" (top right) enters someone else's. The price
- * range is picked as one to three ₩ signs; the small "?" beside it shows what each covers. The map behind the button fades in
+ * range is picked as one to three ₩ signs and read in words; the small "?" beside it shows what each covers. The map behind the button fades in
  * from the background; the button stands where the user is. With [tip], a tip over the
  * screen points to the globe and the gear, where the language and the allergies change.
  * With [askForLocation] and no permission yet, a notice says why before the system asks,
@@ -226,14 +226,9 @@ fun StartScreen(
                 }
                 Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
                     Token(
-                        (if (price == Price.ANY) stringResource(R.string.price_any) else priceSigns(price)).let { if (english) it.uppercase() else it },
+                        stringResource(priceWords(price)).let { if (english) it.uppercase() else it },
                         stringResource(R.string.start_price_change), "priceToken"
                     ) { sheet = Sheet.PRICE }
-                    if (price != Price.ANY) {
-                        stringResource(R.string.start_price_particle).takeIf { it.isNotEmpty() }?.let {
-                            Text(it, Modifier.padding(start = 8.dp), style = title)
-                        }
-                    }
                     PriceGuideButton { priceGuideOpen = true }
                 }
                 Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
@@ -313,7 +308,7 @@ fun StartScreen(
                 Price.entries.map {
                     PickerOption(
                         if (it == Price.ANY) stringResource(R.string.price_any_option) else priceSigns(it),
-                        if (it == Price.ANY) stringResource(R.string.price_any_note) else null,
+                        stringResource(if (it == Price.ANY) R.string.price_any_note else priceWords(it)),
                         selected = it == price
                     ) { onPrice(it); sheet = null }
                 }
@@ -441,6 +436,14 @@ private fun ChoicePopup(visible: Boolean, title: String, options: List<PickerOpt
 
 /** The ₩ signs of a price range: one to three. */
 private fun priceSigns(price: Price): String = "₩".repeat(price.level ?: 0)
+
+/** How the sentence reads a price range; the picker shows it under the ₩ signs. */
+private fun priceWords(price: Price): Int = when (price) {
+    Price.ANY -> R.string.price_any
+    Price.LOW -> R.string.price_low
+    Price.MID -> R.string.price_mid
+    Price.HIGH -> R.string.price_high
+}
 
 /** A small "?" in a ring beside the price range; it opens the [PriceGuide]. */
 @Composable
