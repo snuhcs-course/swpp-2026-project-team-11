@@ -15,7 +15,7 @@ RUN = ["benchmark_group", "--date", "2026-11-02", "--groups", "1"]
 
 
 class GroupBenchmarkCommandTests(TestCase):
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def test_freezes_cases_first_then_plays_them_with_each_simulator(self):
         with tempfile.TemporaryDirectory() as directory:
