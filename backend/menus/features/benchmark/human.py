@@ -298,7 +298,7 @@ def _write_workbook(path, dishes, values, rater, note) -> None:
 def _write_guide(guide) -> None:
     lines = [
         ("Metchu! feature 평가 양식", BOLD),
-        ("음식 이름으로 추출한 32개 feature를 사람의 평가와 비교하기 위한 기준 데이터입니다. "
+        ("음식 이름으로 추출한 53개 feature를 사람의 평가와 비교하기 위한 기준 데이터입니다. "
          "평가자마다 이 파일을 한 부씩 받아 같은 음식을 각자 평가합니다.", FONT),
         ("구분: 고정 메뉴는 학식의 고정 메뉴판 음식, 매일 바뀌는 메뉴는 날마다 바뀌는 식단의 음식, "
          "비교용 예시는 비슷한 음식과 구분되는지 보려고 넣은 음식입니다. 평가 방법은 모두 같습니다.", FONT),
@@ -308,7 +308,7 @@ def _write_guide(guide) -> None:
          "std는 이렇게 본 레시피·구성 차이를 근거로 정합니다.", FONT),
         ("3. 각 feature의 _mean(평균)과 _std(표준편차)를 '루브릭' 시트와 아래 지침에 따라 적습니다. "
          "다른 평가자나 LLM의 값은 보지 않습니다.", FONT),
-        ("4. 빨간 칸이 없는지 확인하고 .xlsx 그대로 저장해 제출합니다. 32개 feature를 모두 채운 음식만 추천 영향 평가에 쓰입니다.", FONT),
+        ("4. 빨간 칸이 없는지 확인하고 .xlsx 그대로 저장해 제출합니다. 53개 feature를 모두 채운 음식만 추천 영향 평가에 쓰입니다.", FONT),
         ("", FONT), ("규칙", BOLD),
         ("mean은 0~1, std는 0~0.5, 소수점 둘째 자리까지. std² ≤ mean×(1−mean)이어야 하고, mean이 0 또는 1이면 std는 0입니다.", FONT),
         ("", FONT), ("범례", BOLD),

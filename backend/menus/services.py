@@ -119,6 +119,8 @@ def rms_components(components):
         if set(food.feature_std) != set(means[0]):
             raise ValueError("Component spread must cover its feature keys")
         for key, value in food.features.items():
+            if value is None and food.feature_std[key] is None:
+                continue
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 <= value <= 1:
                 raise ValueError("Invalid component feature mean")
             std = food.feature_std[key]
@@ -128,7 +130,7 @@ def rms_components(components):
     if len(components) == 1:
         return dict(components[0].features), dict(components[0].feature_std)
     def rms(rows):
-        return {key: math.sqrt(math.fsum(row[key] ** 2 for row in rows) / len(rows)) for key in means[0]}
+        return {key: (math.sqrt(math.fsum(row[key] ** 2 for row in rows) / len(rows)) if all(row[key] is not None for row in rows) else None) for key in means[0]}
     values = rms(means)
     deviations = rms([f.feature_std for f in components])
     return values, deviations
@@ -147,10 +149,13 @@ def _menu_candidates(menus, groups, *, source):
     The durable registry is separate from replaceable source rows. Profile keys
     are restaurant-scoped; equal computed recipes can still share several offers.
     """
+    from .menu_profiles import campus_key
     keys = {offer_key(source, rows[0].restaurant_code, rows[0].raw_name, rows[0].description)
             for rows, _, _ in menus}
     keys.update(recipe_key(source, rows[0].raw_name, rows[0].description, parts)
                 for rows, parts, _ in menus)
+    keys.update(campus_key(rows[0].restaurant_code, rows[0].raw_name, rows[0].meal, parts)
+                for rows, parts, _ in menus if source == "cafeteria")
     codes = {rows[0].restaurant_code for rows, _, _ in menus}
     profiles = {p.key: p for p in SalesMenu.objects.filter(
         Q(key__in=keys) | (Q(source=source, restaurant_code__in=codes) & ~Q(feature_version="")))}
@@ -163,7 +168,8 @@ def _menu_candidates(menus, groups, *, source):
     combined = {}
     for rows, parts, current in menus:
         row = rows[0]
-        profile = profiles.get(offer_key(source, row.restaurant_code, row.raw_name, row.description))
+        profile = (profiles.get(campus_key(row.restaurant_code,row.raw_name,row.meal,parts)) if source == "cafeteria" else None)
+        profile = profile or profiles.get(offer_key(source, row.restaurant_code, row.raw_name, row.description))
         annotated = profile is not None and bool(profile.feature_version)
         try:
             if annotated:
@@ -243,14 +249,14 @@ def get_store_catalog(meal: str | None = None,
     the cached lines for the last few meal and allergy sets, and built by one request at a
     time: a Start during a prewarm waits for it. Each call gets its own offers to change.
     """
-    rows, foods, groups, catalogues = _read_store_menus()
+    from .personal.offers import candidates as mapped_candidates
+    rows, _, _, catalogues = _read_store_menus()
     meal = meal or current_meal()
     with _catalogue_lock:
         if (meal, allergies) not in catalogues:
             if len(catalogues) >= CATALOGUES_KEPT:
                 del catalogues[next(iter(catalogues))]
             records = [SalesLine(*row[:5], meal, *row[5:]) for row in rows]
-            catalogues[meal, allergies] = _menu_candidates(_menu_lines(records, foods, allergies), groups, source="general")
+            catalogues[meal, allergies] = mapped_candidates(records, allergies)
         catalogue = catalogues[meal, allergies]
-    candidates = [{**c, "offers": [dict(offer) for offer in c["offers"]]} for c in catalogue]
-    return candidates, get_feature_schema()
+    return [{**c, "offers": [dict(o) for o in c["offers"]]} for c in catalogue], get_feature_schema()

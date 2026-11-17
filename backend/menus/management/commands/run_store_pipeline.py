@@ -33,9 +33,8 @@ class Command(BaseCommand):
         importing = ["import_stores", "--file", options["file"]]
         if options["review"]:
             importing += ["--review", options["review"]]
-        steps = [("[1/3] 가게 메뉴 가져오기·전처리", importing),
-                 ("[2/3] 새 요리 특징 추출", ["extract_features", "--stores"]),
-                 ("[3/3] 새 요리 알레르기 태깅", ["extract_allergens", "--stores"])]
+        steps = [("[1/2] 가게 메뉴 가져오기·전처리", importing),
+                 ("[2/2] 새 요리 알레르기 태깅", ["extract_allergens", "--stores"])]
         errors = []
         for title, command in steps:
             self.stdout.write(title)

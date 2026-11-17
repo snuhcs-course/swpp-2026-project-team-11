@@ -106,7 +106,10 @@ class CandidateCatalog:
             if not isinstance(features, dict) or set(features) != set(keys):
                 raise ValueError(f"Food {food_id} must have exactly the declared feature keys")
             values = {}
+            unknown = set()
             for key, value in features.items():
+                if value is None and raw.get("feature_std", {}).get(key) is None:
+                    unknown.add(key); values[key] = .5; continue
                 if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or not 0 <= value <= 1:
                     raise ValueError(f"Food {food_id}: {key} must be a finite score in [0,1]")
                 values[key] = float(value)
@@ -119,6 +122,8 @@ class CandidateCatalog:
                     raise ValueError(f"Food {food_id}: std must cover exactly the declared feature keys")
                 stds = {}
                 for key, std in supplied.items():
+                    if key in unknown:
+                        stds[key] = .5; continue
                     if (isinstance(std, bool) or not isinstance(std, Real)
                             or not math.isfinite(std) or not 0 <= std <= .5
                             or std * std > values[key] * (1 - values[key]) + 1e-12):

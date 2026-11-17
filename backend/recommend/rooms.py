@@ -40,7 +40,7 @@ import numpy as np
 from menus.offers import safe_offers
 from question_engines.decision_tree.contracts import Answer, answer_options, translate
 from question_engines.group import GroupConfig, GroupEngine
-from question_engines.group.engine import MAX_MEMBERS, place
+from question_engines.group.engine import MAX_MEMBERS, place, offer_identity
 
 from .sessions import EngineUnavailable, StaleStep, load_candidates, restaurant_menus
 
@@ -133,14 +133,17 @@ class Room:
         self.menus = restaurant_menus(candidates, place)
         offers = _offers(candidates)
         excluded = []
+        offer_filters = []
         try:
             for m in self.members:
                 if m.allergies:
                     allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.source, s.location, s.distance_scope)
                     excluded.append(offers - safe_offers(candidates, allowed))
+                    offer_filters.append({offer_identity(c["food_id"], o) for c in allowed for o in c["offers"]})
                 else:
                     excluded.append(set())
-            self.engine = GroupEngine(candidates, schema, excluded, config=GroupConfig(max_rounds=MAX_ROUNDS, language="en"))
+                    offer_filters.append({offer_identity(c["food_id"], o) for c in candidates for o in c["offers"]})
+            self.engine = GroupEngine(candidates, schema, excluded, config=GroupConfig(max_rounds=MAX_ROUNDS, language="en"), offer_filters=offer_filters)
         except ValueError as error:
             raise RoomError("group_unavailable", str(error)) from error
         self.status = "asking"

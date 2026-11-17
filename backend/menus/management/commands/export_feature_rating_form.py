@@ -22,7 +22,7 @@ the largest two-decimal value that keeps it.
 
 A .xlsx output is an Excel workbook with input checks, the rater's guide and the
 rubric; any other is a CSV. Each rater fills in a copy with the extractor's rubric
-(menus/features/instructions.txt, rubric.json); the copies go to
+(menus/features/instructions.txt, question_engines/feature_schema.json); the copies go to
 benchmark_features --ratings. The format is in menus/features/benchmark/human.py.
 """
 

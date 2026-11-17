@@ -13,9 +13,9 @@ from one day in the database (--date, marked by the fixed-menu catalog), plus th
 dishes of the triplet file. --limit samples the variant dishes and
 --invariant-limit the invariant ones, spread over cafeterias or food groups.
 
---stored copies the v2 features the database already holds for --date as one run,
+--stored copies the current features the database already holds for --date as one run,
 with no LLM call: enough for the integrity and distribution sections. It carries
-meal_variety (33 keys), so it goes in a file of its own.
+the same 53 keys, so it goes in a file of its own.
 """
 
 from __future__ import annotations
@@ -80,7 +80,7 @@ class Command(BaseCommand):
         parser.add_argument("--date", type=datetime.date.fromisoformat, default=None,
                             help="a day in the database (default: today in Asia/Seoul)")
         parser.add_argument("--stored", action="store_true",
-                            help="copy the stored v2 features of --date as one run; no LLM call")
+                            help="copy the stored current features of --date as one run; no LLM call")
         parser.add_argument("--condition", choices=runs.CONDITIONS, default="repeat")
         parser.add_argument("--repeats", type=int, default=3)
         parser.add_argument("--batch-size", type=int, default=25)
@@ -161,7 +161,7 @@ class Command(BaseCommand):
         fixed_dishes = menu_set.catalog_dishes()
         foods = [f for f in stored_foods(options["date"] or timezone.localdate()) if f.feature_version == FEATURE_VERSION]
         if not foods:
-            raise CommandError("그 날짜에 v2 feature가 저장된 음식이 없습니다.")
+            raise CommandError("그 날짜에 current feature가 저장된 음식이 없습니다.")
         runs.append(options["output"], [
             runs.Record(run=run, condition=runs.STORED,
                         source=menu_set.segment(food.name, fixed_dishes),
@@ -169,4 +169,4 @@ class Command(BaseCommand):
                         means=food.features, stds=food.feature_std, group=food.food_group,
                         model=food.extraction_model)
             for food in foods])
-        self.stdout.write(self.style.SUCCESS(f"저장된 v2 feature {len(foods)}개 복사 (LLM 호출 없음) -> {options['output']}"))
+        self.stdout.write(self.style.SUCCESS(f"저장된 current feature {len(foods)}개 복사 (LLM 호출 없음) -> {options['output']}"))

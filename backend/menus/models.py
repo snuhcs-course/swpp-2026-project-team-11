@@ -22,7 +22,8 @@ class Food(models.Model):
     each made of one or more of these.
 
     One row per (cleaned name, set status), shared across days and restaurants.
-    Both variants share name-based measurements; meal variety is deterministic.
+    Component annotations use the current rubric; whole campus menu profiles
+    live on SalesMenu. Sets have no deterministic sensory feature.
     """
 
     name = models.CharField(max_length=300)  # normalize.clean_name()

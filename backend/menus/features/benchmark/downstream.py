@@ -35,7 +35,7 @@ SOURCES = ("human", "ai")
 
 
 def candidates(features: dict[str, tuple[dict, dict]]) -> list[dict]:
-    """Decision-tree candidates for {dish: (means, stds)}; meal_variety is 0 (no set information)."""
+    """Decision-tree candidates for {dish: (means, stds)}; all values follow the active schema."""
     rows = []
     for food_id, (name, (means, stds)) in enumerate(sorted(features.items()), start=1):
         rows.append({"food_id": food_id, "name": name, "display_name": name, "food_group": "",

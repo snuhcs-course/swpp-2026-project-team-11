@@ -112,7 +112,7 @@ def restaurant_menus(candidates: list, key=lambda offer: offer["restaurant"]) ->
     for candidate in candidates:
         for offer in candidate["offers"]:
             menus.setdefault(key(offer), []).append({
-                "food_id": candidate["food_id"], "display_name": candidate["display_name"],
+                "food_id": candidate["food_id"], "display_name": offer.get("menu_name") or candidate["display_name"],
                 "meal": offer["meal"], "price": offer["price"]})
     for dishes in menus.values():
         dishes.sort(key=lambda dish: (MEAL_ORDER[dish["meal"]], dish["display_name"]))

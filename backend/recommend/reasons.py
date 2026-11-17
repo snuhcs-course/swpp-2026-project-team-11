@@ -160,7 +160,7 @@ def template(facts):
               if answer_id in YES and supports(answer_id, value)][-2:]
     if facts.language == "ko":
         dish = facts.dish + ("을" if has_final_consonant(facts.dish) else "를")
-        stems = [match.group(1) for match in (re.fullmatch(r"(.+)(?:이|가) 당기나요\?", translate(question, "ko"))
+        stems = [match.group(1) for match in (re.fullmatch(r"(.+?)(?:이|가) (?:당기나요|당겨요)\?", translate(question, "ko"))
                                               for question in wanted) if match]
         if stems:
             things = ", ".join(stems) + ("을" if has_final_consonant(stems[-1]) else "를")

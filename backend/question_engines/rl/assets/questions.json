@@ -1,0 +1,290 @@
+{
+  "version": "feature-questions.1",
+  "status": "draft_for_review",
+  "catalog_features_version": "feature-design-v1",
+  "questions": [
+    {
+      "feature": "국물",
+      "ko": "국물 있는 음식이 당겨요?",
+      "en": "Do you feel like having something with broth?"
+    },
+    {
+      "feature": "밥 중심",
+      "ko": "밥 요리가 당겨요?",
+      "en": "Do you feel like having a rice-based dish?"
+    },
+    {
+      "feature": "면 중심",
+      "ko": "면 요리가 당겨요?",
+      "en": "Do you feel like having a noodle dish?"
+    },
+    {
+      "feature": "빵 중심",
+      "ko": "빵이 중심인 음식이 당겨요?",
+      "en": "Do you feel like having something bread-based?"
+    },
+    {
+      "feature": "따뜻함",
+      "ko": "따뜻한 음식이 당겨요?",
+      "en": "Do you feel like having something warm?"
+    },
+    {
+      "feature": "차가움",
+      "ko": "차가운 음식이 당겨요?",
+      "en": "Do you feel like having something cold?"
+    },
+    {
+      "feature": "매콤함",
+      "ko": "매콤한 음식이 당겨요?",
+      "en": "Do you feel like having something spicy?"
+    },
+    {
+      "feature": "단맛",
+      "ko": "달콤한 음식이 당겨요?",
+      "en": "Do you feel like having something sweet?"
+    },
+    {
+      "feature": "새콤함",
+      "ko": "새콤한 음식이 당겨요?",
+      "en": "Do you feel like having something tangy?"
+    },
+    {
+      "feature": "짭짤함",
+      "ko": "짭짤한 음식이 당겨요?",
+      "en": "Do you feel like having something salty?"
+    },
+    {
+      "feature": "감칠맛",
+      "ko": "감칠맛이 진한 음식이 당겨요?",
+      "en": "Do you feel like having something rich in umami?"
+    },
+    {
+      "feature": "고소함",
+      "ko": "고소한 음식이 당겨요?",
+      "en": "Do you feel like having something with a nutty, savory flavor?"
+    },
+    {
+      "feature": "향신료 향",
+      "ko": "향신료 향이 뚜렷한 음식이 당겨요?",
+      "en": "Do you feel like having something with a pronounced spice aroma?"
+    },
+    {
+      "feature": "불향",
+      "ko": "불향이 나는 음식이 당겨요?",
+      "en": "Do you feel like having something with a smoky, flame-grilled flavor?"
+    },
+    {
+      "feature": "바삭함",
+      "ko": "바삭한 음식이 당겨요?",
+      "en": "Do you feel like having something crispy?"
+    },
+    {
+      "feature": "쫄깃함",
+      "ko": "쫄깃한 음식이 당겨요?",
+      "en": "Do you feel like having something chewy?"
+    },
+    {
+      "feature": "부드러움",
+      "ko": "부드러운 음식이 당겨요?",
+      "en": "Do you feel like having something soft and tender?"
+    },
+    {
+      "feature": "아삭함",
+      "ko": "아삭한 음식이 당겨요?",
+      "en": "Do you feel like having something crunchy and crisp?"
+    },
+    {
+      "feature": "기름기",
+      "ko": "기름진 음식이 당겨요?",
+      "en": "Do you feel like having something oily?"
+    },
+    {
+      "feature": "크리미함",
+      "ko": "크리미한 음식이 당겨요?",
+      "en": "Do you feel like having something creamy?"
+    },
+    {
+      "feature": "든든함",
+      "ko": "든든한 음식이 당겨요?",
+      "en": "Do you feel like having something filling?"
+    },
+    {
+      "feature": "튀김",
+      "ko": "튀긴 음식이 당겨요?",
+      "en": "Do you feel like having something fried?"
+    },
+    {
+      "feature": "구이",
+      "ko": "구운 음식이 당겨요?",
+      "en": "Do you feel like having something grilled or roasted?"
+    },
+    {
+      "feature": "볶음",
+      "ko": "볶음 요리가 당겨요?",
+      "en": "Do you feel like having a stir-fried dish?"
+    },
+    {
+      "feature": "생식",
+      "ko": "익히지 않은 음식이 당겨요?",
+      "en": "Do you feel like having something raw?"
+    },
+    {
+      "feature": "찜",
+      "ko": "찜 요리가 당겨요?",
+      "en": "Do you feel like having a steamed or braised dish?"
+    },
+    {
+      "feature": "조림",
+      "ko": "양념에 조린 음식이 당겨요?",
+      "en": "Do you feel like having something simmered in a seasoned sauce?"
+    },
+    {
+      "feature": "삶기·데치기",
+      "ko": "삶거나 데친 음식이 당겨요?",
+      "en": "Do you feel like having something boiled or blanched?"
+    },
+    {
+      "feature": "끓임",
+      "ko": "국물과 함께 끓인 음식이 당겨요?",
+      "en": "Do you feel like having something simmered in broth?"
+    },
+    {
+      "feature": "지짐",
+      "ko": "부친 음식이 당겨요?",
+      "en": "Do you feel like having something pan-fried, like a savory pancake?"
+    },
+    {
+      "feature": "무침·비빔",
+      "ko": "양념에 무치거나 비빈 음식이 당겨요?",
+      "en": "Do you feel like having something tossed or mixed with seasonings?"
+    },
+    {
+      "feature": "소고기",
+      "ko": "소고기 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on beef?"
+    },
+    {
+      "feature": "돼지고기",
+      "ko": "돼지고기 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on pork?"
+    },
+    {
+      "feature": "닭고기",
+      "ko": "닭고기 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on chicken?"
+    },
+    {
+      "feature": "생선",
+      "ko": "생선 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on fish?"
+    },
+    {
+      "feature": "새우",
+      "ko": "새우 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on shrimp?"
+    },
+    {
+      "feature": "게",
+      "ko": "게 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on crab?"
+    },
+    {
+      "feature": "조개",
+      "ko": "조개 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on clams or shellfish?"
+    },
+    {
+      "feature": "오징어",
+      "ko": "오징어 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on squid?"
+    },
+    {
+      "feature": "문어",
+      "ko": "문어 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on octopus?"
+    },
+    {
+      "feature": "채소 중심",
+      "ko": "채소가 중심인 음식이 당겨요?",
+      "en": "Do you feel like having a vegetable-centered dish?"
+    },
+    {
+      "feature": "오리고기",
+      "ko": "오리고기 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on duck?"
+    },
+    {
+      "feature": "양고기",
+      "ko": "양고기 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on lamb?"
+    },
+    {
+      "feature": "내장류",
+      "ko": "곱창 같은 내장 요리가 당겨요?",
+      "en": "Do you feel like having organ meats, such as beef or pork intestines?"
+    },
+    {
+      "feature": "달걀",
+      "ko": "달걀 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on eggs?"
+    },
+    {
+      "feature": "두부",
+      "ko": "두부 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on tofu?"
+    },
+    {
+      "feature": "치즈",
+      "ko": "치즈 요리가 당겨요?",
+      "en": "Do you feel like having a dish centered on cheese?"
+    },
+    {
+      "feature": "한식",
+      "ko": "한식이 당겨요?",
+      "en": "Do you feel like having Korean food?"
+    },
+    {
+      "feature": "중식",
+      "ko": "중식이 당겨요?",
+      "en": "Do you feel like having Chinese food?"
+    },
+    {
+      "feature": "일식",
+      "ko": "일식이 당겨요?",
+      "en": "Do you feel like having Japanese food?"
+    },
+    {
+      "feature": "양식",
+      "ko": "양식이 당겨요?",
+      "en": "Do you feel like having Western food?"
+    },
+    {
+      "feature": "동남아",
+      "ko": "동남아 음식이 당겨요?",
+      "en": "Do you feel like having Southeast Asian food?"
+    },
+    {
+      "feature": "인도",
+      "ko": "인도 음식이 당겨요?",
+      "en": "Do you feel like having Indian food?"
+    }
+  ],
+  "answers": {
+    "ko": [
+      "당겨요",
+      "조금 당겨요",
+      "상관없어요",
+      "별로 당기지 않아요",
+      "아니요",
+      "모르겠어"
+    ],
+    "en": [
+      "Yes, I do",
+      "A little",
+      "It doesn’t matter",
+      "Not really",
+      "No, I don’t",
+      "I’m not sure"
+    ]
+  }
+}
