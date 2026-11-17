@@ -22,6 +22,20 @@
     <string name="place_any_option">어느 식당이든</string>
     <string name="place_near_note">걸어서 10분 안쪽</string>
     <string name="place_any_note">모든 식당</string>
+    <string name="start_price_sheet">가격대를 골라 주세요</string>
+    <string name="start_price_change">가격대 바꾸기</string>
+    <string name="price_low">저렴하게</string>
+    <string name="price_mid">적당한 가격에</string>
+    <string name="price_high">넉넉하게</string>
+    <string name="price_any">가격 상관없이</string>
+    <string name="price_any_option">가격 상관없이</string>
+    <string name="price_any_note">모든 가격</string>
+    <string name="price_guide_open">가격대 안내</string>
+    <string name="price_guide_title">가격대 안내</string>
+    <string name="price_guide_low">8,000원 미만</string>
+    <string name="price_guide_mid">8,000원 ~ 15,000원</string>
+    <string name="price_guide_high">15,000원 이상</string>
+    <string name="price_guide_note">가격이 없는 메뉴는 빼고 추천해요.</string>
     <string name="location_ask_title">위치 권한을 요청할게요</string>
     <string name="location_ask_body">가까운 식당과 식당까지의 거리를 보여드리려면 위치가 필요해요. 허용하지 않으면 모든 식당을 보여드려요.</string>
     <string name="location_ask_continue">계속</string>
@@ -154,6 +168,8 @@
     <string name="unavailable_no_menu_hint">다른 식사로 추천받을 수 있어요.</string>
     <string name="unavailable_no_safe_menu">오늘 %1$s 메뉴 중 고른 알러지 재료가 없다고 확인된 메뉴가 없어요</string>
     <string name="unavailable_no_safe_menu_hint">설정에서 알러지를 확인하거나 다른 식사를 골라 보세요.</string>
+    <string name="unavailable_no_priced_menu">오늘 %1$s 메뉴 중 고른 가격대의 메뉴가 없어요</string>
+    <string name="unavailable_no_priced_menu_hint">다른 가격대나 식사를 골라 보세요.</string>
     <string name="unavailable_exhausted">오늘 메뉴를 모두 살펴봤어요</string>
     <string name="unavailable_exhausted_hint">처음부터 다시 볼 수 있어요.</string>
 
@@ -211,7 +227,7 @@
     <string name="group_error_not_found">이 코드로 열린 방이 없어요.</string>
     <string name="group_error_started">이미 시작한 방이에요.</string>
     <string name="group_error_full">방이 꽉 찼어요(8명).</string>
-    <string name="group_error_unavailable">모두가 먹을 수 있는 식당이 없어요. 식사나 거리를 바꿔 보세요.</string>
+    <string name="group_error_unavailable">모두가 먹을 수 있는 식당이 없어요. 식사나 거리, 가격대를 바꿔 보세요.</string>
     <string name="group_error_gone">방이 닫혔어요.</string>
     <string name="group_fit_great">잘 맞아요</string>
     <string name="group_fit_good">무난해요</string>

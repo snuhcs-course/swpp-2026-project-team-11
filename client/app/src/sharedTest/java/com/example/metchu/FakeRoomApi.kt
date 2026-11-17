@@ -29,8 +29,11 @@ class FakeRoomApi : RoomApi {
         return reply() as T
     }
 
-    override suspend fun create(authorization: String?, request: CreateRoomRequest): RoomReply =
-        next("create $authorization ${request.name}")
+    var lastCreateRequest: CreateRoomRequest? = null
+    override suspend fun create(authorization: String?, request: CreateRoomRequest): RoomReply {
+        lastCreateRequest = request
+        return next("create $authorization ${request.name}")
+    }
     override suspend fun join(authorization: String?, request: JoinRoomRequest): RoomReply =
         next("join $authorization ${request.code} ${request.name}")
     override suspend fun state(code: String, token: String): RoomState = next("state $code $token")

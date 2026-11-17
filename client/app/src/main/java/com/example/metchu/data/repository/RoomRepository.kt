@@ -27,10 +27,11 @@ class RoomRepository(private val api: RoomApi = RetrofitInstance.roomApi) {
         language: String,
         meal: String?,
         location: UserLocation?,
-        distanceScope: String
+        distanceScope: String,
+        priceLevel: Int? = null
     ): Pair<Membership, RoomState> = joined(api.create(
         account?.let { "Token $it" },
-        CreateRoomRequest(name.takeIf { account == null }, allergies.map { it.id }, language, meal, location, SOURCE, distanceScope)
+        CreateRoomRequest(name.takeIf { account == null }, allergies.map { it.id }, language, meal, location, SOURCE, distanceScope, priceLevel)
     ))
 
     suspend fun join(account: String?, code: String, name: String?, allergies: List<Allergen>, language: String): Pair<Membership, RoomState> =

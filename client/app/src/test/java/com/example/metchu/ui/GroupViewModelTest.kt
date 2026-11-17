@@ -62,6 +62,15 @@ class GroupViewModelTest {
     }
 
     @Test
+    fun theRoomCarriesThePriceRange() {
+        api.reply(created)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", { null }, "near", priceLevel = 2)
+        assertEquals(2, api.lastCreateRequest?.priceLevel)
+        create()
+        assertNull(api.lastCreateRequest?.priceLevel)
+    }
+
+    @Test
     fun aSignedInMemberSendsTheAccountInsteadOfAName() {
         api.reply(created)
         viewModel.join("device-token", code, "ignored", emptyList(), "ko")
