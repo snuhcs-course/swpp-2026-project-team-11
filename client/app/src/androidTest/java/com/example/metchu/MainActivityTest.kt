@@ -577,30 +577,16 @@ class MainActivityTest {
     }
 
     @Test
-    fun aDishWithoutAGroupOffersOnlyFindAnother() {
-        val alone = guess.copy(step = guess.step.copy(food = guess.step.food!!.copy(foodGroup = "")))
-        startWith(alone)
+    fun aGroupProposedAgainOffersOnlyFindAnother() {
+        // The group used to get a ban link once it made up two of the last three proposals.
+        assertEquals(guess.step.food!!.foodGroup, groupGuess.step.food!!.foodGroup)
+        startWith(guess)
+        api.reply(groupGuess)
+        tapText(R.string.result_more)
+        compose.onNodeWithTag("dish").assertTextEquals(groupGuess.step.group!!.displayName)
         compose.onNodeWithTag("ban").assertDoesNotExist()
         compose.onNodeWithTag("more").assertIsDisplayed()
-    }
-
-    @Test
-    fun aGroupBanIsOfferedOnceTheGroupMakesUpTwoOfTheLastThreeProposals() {
-        val group = guess.step.food!!.foodGroup
-        assertEquals(group, groupGuess.step.food!!.foodGroup)
-        val other = guess.copy(step = guess.step.copy(guessId = "food:999", food = guess.step.food!!.copy(foodId = 999, foodGroup = "덮밥")))
-        startWith(guess)
-        compose.onNodeWithTag("ban").assertDoesNotExist()
-
-        api.reply(other)
-        tapText(R.string.result_more)
-        compose.onNodeWithTag("ban").assertDoesNotExist()
-        api.reply(groupGuess)
-        tapText(R.string.result_more)
-        api.reply(groupGuess)
-        compose.onNodeWithText(context.getString(R.string.result_ban_group, group)).performClick()
-        assertEquals("ban ${groupGuess.sessionId} $group true", api.calls.last())
-        compose.onNodeWithText(context.getString(R.string.result_unban_group, group)).assertIsDisplayed()
+        assertEquals("feedback ${guess.sessionId} ${guess.step.guessId} false", api.calls.last())
     }
 
     @Test
