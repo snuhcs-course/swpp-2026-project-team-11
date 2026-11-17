@@ -14,7 +14,7 @@ class RLSessions(TestCase):
         from menus.personal import offers
         from menus import services
         services._store_menus=None
-        patcher=patch.object(offers,'resolve',side_effect=lambda restaurant,title:{'Test 0':'food_001','Test 1':'food_002','Test 2':'food_003'}.get(title))
+        patcher=patch.object(offers,'resolve',side_effect=lambda row,index:{'Test 0':'food_001','Test 1':'food_002','Test 2':'food_003'}.get(row.raw_name))
         patcher.start();self.addCleanup(patcher.stop)
         self.addCleanup(setattr,services,'_store_menus',None)
 

@@ -8,7 +8,8 @@ from menus.features.schema import FEATURE_KEYS, MODEL_LABELS, FEATURE_VERSION
 from menus.features import extractor
 from menus.models import Food, MenuItem, Restaurant, SalesMenu
 from menus.features.daily import annotate, PROMPT_SHA256
-from menus.personal.catalog import canonical_foods, resolve, mappings
+from menus.personal.catalog import canonical_foods
+from menus.personal import mapping_import
 from menus.personal.offers import candidates
 from menus.services import SalesLine, get_catalog
 from menus.allergens import ALLERGEN_VERSION
@@ -22,36 +23,43 @@ def line(name,menu,pk=1,allergens=(),version=ALLERGEN_VERSION):
     return SalesLine(pk,pk,name,37.48,126.95,'LU',menu,'',7000,pk,list(allergens),version,'place-'+str(pk))
 
 class MappingTests(SimpleTestCase):
-    def test_exact_fixed_catalogue_and_dropped_categories(self):
+    def index(self, rows, key='food_003'):
+        return {offer_key('general',r.restaurant_code,r.raw_name,r.description):key for r in rows}
+
+    def test_fixed_catalogue_and_dropped_categories(self):
         self.assertEqual(len(canonical_foods()),267)
         self.assertEqual(len(FEATURE_KEYS),53)
         self.assertEqual(len(set(MODEL_LABELS)),53)
-        exact,_=mappings();values=list(exact.values())
-        self.assertEqual(sum(v is None for v in values),223)
-        self.assertEqual(len(set(values)-{None}),267)
+        self.assertTrue({'덮밥','두부요리','콘치즈','국'}.isdisjoint({r['name'] for r in canonical_foods().values()}))
 
     def test_different_variants_share_one_candidate_with_actual_names_and_prices(self):
-        exact,_=mappings();matches=[(place,title) for (place,title),key in exact.items() if key=='food_003'][:2]
-        rows=[line(place,title,i+1) for i,(place,title) in enumerate(matches)]
-        result=candidates(rows,frozenset())
-        self.assertEqual(len(result),1)
-        self.assertEqual(result[0]['name'],'피자')
+        rows=[line('One','Cheese pizza',1),line('Two','Pineapple pizza',2)]
+        result=candidates(rows,frozenset(),self.index(rows))
+        self.assertEqual(len(result),1);self.assertEqual(result[0]['name'],'피자')
         self.assertEqual({o['menu_name'] for o in result[0]['offers']},{r.raw_name for r in rows})
         self.assertEqual({o['restaurant_code'] for o in result[0]['offers']},{'place-1','place-2'})
 
-    def test_aliases_resolve_exact_first_and_unknowns_never_fuzzy_match(self):
-        exact,_=mappings()
-        for (place,title),key in list(exact.items())[:50]:self.assertEqual(resolve(place,title),key)
-        self.assertIsNone(resolve('unknown','짜장면'))
-        self.assertIsNone(resolve('unknown','anything'))
+    def test_source_import_exact_match_precedes_format_fallback(self):
+        import tempfile,csv
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'source.csv'
+            with path.open('w') as f:
+                writer=csv.writer(f);writer.writerow(['식당명','기존 음식명','정규화 음식명'])
+                writer.writerows([['Shop','[점심]Pizza','피자'],['Shop','Pizza','NULL'],['Shop','덮밥','덮밥']])
+            index=mapping_import.load(path)
+            self.assertEqual(mapping_import.resolve(index,'Shop','[점심]Pizza'),'food_003')
+            self.assertIsNone(mapping_import.resolve(index,'Shop','Pizza'))
+            self.assertIsNone(mapping_import.resolve(index,'Shop','[저녁]Pizza'))
+            self.assertIsNone(mapping_import.resolve(index,'Shop','덮밥'))
+            self.assertIsNone(mapping_import.resolve(index,'Other','[점심]Pizza'))
 
     def test_allergies_are_per_sales_offer_not_canonical_category(self):
-        exact,_=mappings();place,title=next(k for k,v in exact.items() if v=='food_003')
-        rows=[line(place,title,1,['milk']),line(place,title,2,[])]
-        result=candidates(rows,frozenset({'milk'}))
+        rows=[line('One','Pizza',1,['milk']),line('Two','Pizza',2,[])]
+        result=candidates(rows,frozenset({'milk'}),self.index(rows))
         self.assertEqual([o['restaurant_code'] for o in result[0]['offers']],['place-2'])
-        rows[1]=line(place,title,2,[],version='')
-        self.assertEqual(candidates(rows,frozenset({'milk'})),[])
+        rows[1]=line('Two','Pizza',2,[],version='')
+        self.assertEqual(candidates(rows,frozenset({'milk'}),self.index(rows)),[])
 
     def test_new_schema_runs_in_DT_group_without_RL(self):
         rows=[]

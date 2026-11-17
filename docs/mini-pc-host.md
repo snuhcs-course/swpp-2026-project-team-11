@@ -31,7 +31,13 @@ The PR does not install itself or restart the live service.
    compatibility launcher to `tools/hosting/Run.ps1 -Mode daily`. Both use the same
    checkout, authoritative DB and uv lock. Do not start a second supervisor or
    bypass the existing writer/singleton locks. Test the actual task account too.
-6. On a staged copy of the private DB, preview `reset_features`; with the verified
+6. Copy the operator-supplied mapping file into private deployment storage; do
+   not commit it. On a staged copy of the DB, preview and apply
+   `import_canonical_mapping --file <private-file> --apply`. This replaces the
+   old general profiles and requires no model calls. Keep the original source
+   file for later crawl updates.
+
+   On a staged copy of the private DB, preview `reset_features`; with the verified
    backup retained, run `reset_features --apply` against that staged DB. It removes
    obsolete feature values/versions while preserving Food, SalesMenu identities
    and allergen tags. There is no parallel 33-feature serving path.

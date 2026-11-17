@@ -12,6 +12,5 @@ class Command(LoadData):
         with transaction.atomic(using=using):
             result = super().handle(*fixture_labels, **options)
             if SalesMenu._meta.db_table in connections[using].introspection.table_names():
-                for source in ("cafeteria", "general"):
-                    register_menu_ids(source, using=using)
+                register_menu_ids("cafeteria", using=using)
         return result

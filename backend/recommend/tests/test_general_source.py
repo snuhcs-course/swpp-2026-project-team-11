@@ -17,7 +17,7 @@ class GeneralSourceTests(TestCase):
         services._store_menus=None
         self.addCleanup(setattr,services,'_store_menus',None)
         self.lookup={'Pizza A':'food_003','Pizza B':'food_003','Kimchi':'food_009','Unknown':None}
-        patch=mock.patch.object(offers,'resolve',side_effect=lambda restaurant,title:self.lookup.get(title))
+        patch=mock.patch.object(offers,'resolve',side_effect=lambda row,index:self.lookup.get(row.raw_name))
         patch.start();self.addCleanup(patch.stop)
         self.near=Restaurant.objects.create(code='near',name='Near',lat=37.48,lng=126.95,source='naver')
         self.far=Restaurant.objects.create(code='far',name='Far',lat=37.6,lng=127.1,source='naver')

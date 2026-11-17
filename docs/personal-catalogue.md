@@ -14,17 +14,27 @@ benchmark reports remain historic evidence; they are not v3 training or evaluati
 
 ## Candidate pool
 
-General restaurant sales menus resolve through the checked-in mapping CSV to the
+General restaurant sales menus resolve through imported DB mappings to the
 267 reviewed canonical dishes. The input has 7,698 sales rows: 7,475 map to active
 dishes, and 223 resolve to null (200 original nulls plus 23 rows targeting dropped
 덮밥, 두부요리, 콘치즈 or 국). Unknown or ambiguous new menu names are excluded until
 the mapping is reviewed; the model never guesses their category.
 
-Matching is exact restaurant-name/raw-menu-name first. A unique formatting-only
+The operational CSV is not tracked or opened by the service. Import it once with
+`import_canonical_mapping --file <operator-file>` (preview), then the same command
+with `--apply` against the staged deployment DB. This transaction replaces the
+old general SalesMenu recipe/profile records with current mapping records in the
+same table; it does not touch source menus, prices or allergens. The source hash
+is retained on the records. No additional mapping table or runtime CSV fallback
+is introduced. Re-import after a changed restaurant crawl; unmatched recipes
+remain excluded. The existing campus preprocessing cache is still needed to
+understand complete menus and allergens.
+
+Import matching is exact restaurant-name/raw-menu-name first. A unique formatting-only
 fallback removes square-bracket annotations, spaces and underscores. This resolves
 37 spelling differences in the operational import. Exact lookup is essential:
-stripping first can collapse conflicting source entries. Branch identity remains
-in `restaurant_code` and coordinates on every actual offer.
+stripping first can collapse conflicting source entries. At serving time lookup uses the stable restaurant-code/menu/description key.
+Branch identity remains in `restaurant_code` and coordinates on every actual offer.
 
 A canonical type enters once when at least one offer survives meal, allergy and
 location filtering. More restaurants/variants do not multiply its neural prior.

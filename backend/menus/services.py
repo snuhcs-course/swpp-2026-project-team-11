@@ -228,16 +228,16 @@ _catalogue_lock = threading.Lock()
 CATALOGUES_KEPT = 16  # allergy sets come from any client of /prewarm/; the oldest go first
 
 
-def _read_store_menus() -> tuple[list[tuple], dict, dict, dict]:
-    """Cache complete sales lines, including untagged components, and the catalogues built from them."""
+def _read_store_menus():
+    """Cache sales offers, their DB mapping and built catalogues together."""
+    from .personal.offers import mapping_index
     global _store_menus
     now = time.monotonic()
     if _store_menus is None or now - _store_menus[0] >= settings.RECOMMEND_STORE_MENU_CACHE_S:
-        rows = list(StoreMenu.objects.order_by("pk").values_list(
+        rows = list(StoreMenu.objects.order_by("restaurant__name", "id").values_list(
             "pk", "restaurant_id", "restaurant__name", "restaurant__lat", "restaurant__lng",
             "raw_name", "description", "price", "food_id", "allergens", "allergen_version", "restaurant__code"))
-        foods = Food.objects.filter(pk__in=StoreMenu.objects.values("food_id")).in_bulk()
-        _store_menus = (now, rows, foods, _dish_groups(foods), {})
+        _store_menus = (now, rows, mapping_index(), {})
     return _store_menus[1:]
 
 
@@ -250,13 +250,13 @@ def get_store_catalog(meal: str | None = None,
     time: a Start during a prewarm waits for it. Each call gets its own offers to change.
     """
     from .personal.offers import candidates as mapped_candidates
-    rows, _, _, catalogues = _read_store_menus()
+    rows, mappings, catalogues = _read_store_menus()
     meal = meal or current_meal()
     with _catalogue_lock:
         if (meal, allergies) not in catalogues:
             if len(catalogues) >= CATALOGUES_KEPT:
                 del catalogues[next(iter(catalogues))]
             records = [SalesLine(*row[:5], meal, *row[5:]) for row in rows]
-            catalogues[meal, allergies] = mapped_candidates(records, allergies)
+            catalogues[meal, allergies] = mapped_candidates(records, allergies, mappings)
         catalogue = catalogues[meal, allergies]
     return [{**c, "offers": [dict(o) for o in c["offers"]]} for c in catalogue], get_feature_schema()

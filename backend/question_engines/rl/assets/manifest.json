@@ -333,7 +333,6 @@
   "score_formula": "100*accepted - 5*questions - 20*offers - 100*cap_failure",
   "score_scope": "training-session monitoring window; synthetic users, not human UX",
   "catalogue_sha256": "9470fb6b95517040a6e2e8ee3b287f27e3dd58be409cd3442c88b5d19159cd1f",
-  "mapping_sha256": "5ab72e4c49b93e5db8c2bc33734d24393625651024ad7cf4a1bfef3ade198875",
   "prompt_semantics_sha256": "65e11510a44479dfda92ae2a258c9e7d0abed736394097b01578b872f51bf07e",
   "feature_version": "v3"
 }
