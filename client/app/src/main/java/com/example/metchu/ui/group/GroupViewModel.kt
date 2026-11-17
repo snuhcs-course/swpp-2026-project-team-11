@@ -74,6 +74,8 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
 
     fun recommendNow() = act { repository.recommendNow(it) }
 
+    fun vote(pick: Int, agree: Boolean) = act { repository.vote(it, pick, agree) }
+
     fun decide(pick: Int) = act { repository.decide(it, pick) }
 
     /** Leaves at once on this phone; the server is told on the side. */

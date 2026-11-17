@@ -338,6 +338,8 @@ object Icons {
         fill = SolidColor(Color.Black),
         pathFillType = PathFillType.EvenOdd
     ).build()
+    /** Agree: a thumb up. */
+    val ThumbUp = line("thumbUp", "M7 10v11M14.5 5.5 13.6 10h5.6a2 2 0 0 1 1.9 2.6l-2.2 7A2 2 0 0 1 17 21H4.5a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 4.5 10h2.7a2 2 0 0 0 1.8-1.1L11.8 3a2.6 2.6 0 0 1 2.7 2.5z", 2f)
     val ChevronDown = line("down", "M7 10l5 5 5-5", 2.4f)
     val Check = check(2.4f)
     val Cross = cross(2.4f)
