@@ -5,7 +5,7 @@ questions and proposes a dish from that day's menu. This branch is the working
 prototype at the end of Iteration 1.
 
 For the current app, see the [Android setup](client/README.md). Settings also offers a
-[feature-only RL engine](backend/README.md#feature-only-rl).
+[personal RL and mapped catalogue](docs/personal-catalogue.md).
 
 ## Demo video
 

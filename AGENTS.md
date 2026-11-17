@@ -31,7 +31,7 @@ file so the ordinary Claude CLI and editor integrations use the same rules.
 Metchu! picks a meal by asking about the user's preferences. The decision tree,
 feature-only RL policy and LLM engine in `backend/question_engines/` share the
 session API in `backend/recommend`. The Android client in `client/` selects the
-engine in Settings. RL uses v2 food features; the decision tree and RL run without an API key.
+engine in Settings. All engines use the single 53-feature v3 schema; the decision tree and RL run without an API key.
 
 ## Commands
 

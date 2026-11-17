@@ -442,3 +442,7 @@ The server tests include seeded random sessions on the fixture. A failure prints
 its seed; rerun that seed to reproduce it. `test_public_access.py` runs
 `serve_public` against scripted stand-ins for the server and cloudflared, so it
 needs neither cloudflared nor the network.
+
+## Canonical personal menus (i4-P19)
+
+The personal result can name a canonical type while each offer carries its actual `menu_name` and `restaurant_code`. The result sheet shows that sales name under its restaurant; price and location remain those of the offer. Both solo and group questions now use the server's shared 53-feature English/Korean wording. Group inference remains DT-only. Optional offer fields preserve older response decoding.

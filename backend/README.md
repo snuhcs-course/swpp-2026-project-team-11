@@ -1,5 +1,9 @@
 # Metchu! backend
 
+Current catalogue and model: [53-feature canonical mapping and daily extraction](../docs/personal-catalogue.md). General sales menus resolve to the reviewed 267 types; whole campus menus are tagged directly. All DT, group and personal RL questions use the same Korean/English definitions. The former v2 extraction/evaluation sections below describe historical work; operational setup follows the linked v3 guide.
+
+Use `uv run --isolated --locked python -m pytest backend` from the repository root.
+
 The live team deployment now uses the Windows mini PC and its local SQLite database.
 See [host updates and rollback](../docs/mini-pc-host.md); the Supabase instructions
 below describe the earlier deployment and recovery reference.
