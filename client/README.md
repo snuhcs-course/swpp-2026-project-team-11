@@ -203,7 +203,7 @@ emulator, set a position under Extended controls > Location (for example
 | When | Screen | Actions |
 | --- | --- | --- |
 | first launch | Language (asked in both), then Account (log in or sign up, optional), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear (bottom-left), with a tip that both change there anytime | a language goes on at once; on Account, "Not now" goes on as a guest and signing in goes on by itself; ‹ on Allergies returns to Account (to Language once signed in); on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
-| no session | Start: "Today I'll have [lunch] [nearby] [for me]", a round start button, a faded map around the user, or around the SNU administration building until location is allowed | the meal and the distance open a small menu under them, without dimming the screen; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home; "for me" / "with friends" switches to group mode, where the button creates a room (a guest names themselves first) and "Join with a code" (top-right) opens Join |
+| no session | Start: "Today I'll have [lunch] [nearby] [₩₩] [for me]", a round start button, a faded map around the user, or around the SNU administration building until location is allowed | the meal, the distance and the price range open a small menu under them, without dimming the screen; the price range is picked as "any price" or one to three ₩ signs, and the small "?" beside it shows the won each covers; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home; "for me" / "with friends" switches to group mode, where the button creates a room (a guest names themselves first) and "Join with a code" (top-right) opens Join |
 | gear | Settings: the account (signed out: "Log in or sign up"; signed in: the username, whether Google is linked, "Link Google" and "Log out"), one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button; "Log in or sign up" opens the Account screen, which returns here once signed in |
 | Account | Log in or Create an account: username, password (twice to create one), the rules, "Continue with Google" in a build with a Google client ID | the line under the button switches between the two; errors show under the fields; the token is kept in its own preferences file, which backup leaves out |
 | `question` | The current question under the past ones, one grey line each with the answer on the right; a five-step slider with "I'm not sure"; a progress bar | dragging along the slider or tapping a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); home in the top-right corner; "Recommend now" floats bottom-right once there is an answer |
@@ -252,7 +252,7 @@ all are listed under a note that the location is unknown. The selected cafeteria
 is kept by name, so it stays put when the list re-sorts as the user moves.
 
 The meal starts at the next one the cafeterias serve (breakfast before 10,
-lunch before 15, dinner after); one the user picks is kept until the app closes. The distance, engine and allergies are kept on
+lunch before 15, dinner after); one the user picks is kept until the app closes. The distance, price range, engine and allergies are kept on
 the phone (`SettingsStore`, `AllergyStore`, SharedPreferences). The language
 follows the phone until the globe picks one (`AppCompatDelegate` per-app
 locales). A new session asks the server for the app's language (`en` or `ko`), so
@@ -296,7 +296,7 @@ data/network/RoomApi.kt             Retrofit endpoints of the group rooms
 data/repository/RecommendRepository.kt   the session requests; with RoomRepository the only classes that call Retrofit
 data/repository/RoomRepository.kt   the room requests, with the member token
 data/repository/AllergyStore.kt     the user's allergies, on this device
-data/repository/SettingsStore.kt    the engine and the distance choice, on this device
+data/repository/SettingsStore.kt    the engine, distance and price range choices, on this device
 ui/main/MainActivity.kt             hosts the Compose app
 ui/main/MetchuApp.kt                picks the screen for the session's step; the error banner
 ui/main/RecommendViewModel.kt       session state, question history, loading and error LiveData
@@ -318,7 +318,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 
 | Request | Body | Effect |
 | --- | --- | --- |
-| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?, "source"?, "distance_scope"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), and the app language (`en` or `ko`). Both distance choices send `source: "all"` to combine cafeteria and restaurant menus for DT or RL. `distance_scope: "near"` filters offers within 800 m straight-line distance before recommendation when location is known; without location it includes all. `distance_scope: "any"` applies no cutoff. General and all sources reject the LLM engine. `location` is the user's `{"lat", "lng"}`. With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
+| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?, "source"?, "distance_scope"?, "price_level"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), and the app language (`en` or `ko`). Both distance choices send `source: "all"` to combine cafeteria and restaurant menus for DT or RL. `distance_scope: "near"` filters offers within 800 m straight-line distance before recommendation when location is known; without location it includes all. `distance_scope: "any"` applies no cutoff. `price_level` (1 to 3, sent only when a price range is picked) keeps only dishes in that band (backend/README.md, "Price range"). General and all sources reject the LLM engine. `location` is the user's `{"lat", "lng"}`. With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
 | `POST /api/sessions/prewarm/` | `{"meal"?, "source"?, "allergies"?}` | 204. The start screen sends it when it opens and when the meal or allergies change, outside group mode, so the server has built the restaurant catalogue before Start. It creates no session |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
@@ -327,7 +327,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | `POST /api/sessions/<id>/undo/` | | Go back one step |
 | `POST /api/sessions/<id>/ban/` | `{"food_id" or "food_group", "banned"}` | Keep one dish, or every dish of a `food_group`, out of the rest of the session (`banned: false` lets it back). The step on screen stays; the next action that would show the dish turns it down, and an undo that would goes back further. Bans end with the session |
 | `GET /api/sessions/<id>/reason/` | | `{"food_id", "reason", "source"}`: why the dish on screen suits the user, in the session's language. `source` is `llm`, or `template` when the server has no key or the LLM failed. With no dish on screen, a 409 `stale_step` |
-| `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy or by distance are not listed. An unknown restaurant has no dishes |
+| `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy, by distance or by price are not listed. An unknown restaurant has no dishes |
 
 The group room requests (backend/README.md "Group rooms") go through `RoomApi` and
 `RoomRepository`, on a client that hides `Authorization` and `X-Member-Token` in the debug log.

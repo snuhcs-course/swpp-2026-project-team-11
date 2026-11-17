@@ -165,7 +165,7 @@ Set `METCHU_INTERACTION_LOG_DIR` to a private directory to collect server-side
 interaction events. It is disabled when unset. The server appends one JSON line
 for each session start, answer, recommendation request, feedback, undo or ban.
 Events include a random session-specific logging ID, UTC time, engine, meal,
-menu date, source and distance scope, candidate counts before and after the distance filter,
+menu date, source, distance scope and price level, candidate counts before the distance filter and after every filter,
 and the server-generated question or recommendation step. Recommendations include
 the dish ID, display name and up to ten restaurant names. Validated user location
 and allergy choices are recorded once at session start. No IP, device identifier,
@@ -295,6 +295,12 @@ python manage.py run_store_pipeline --file $S --review review.csv      # import 
   distance before recommendation when location is known; without it, all remain.
   `distance_scope=any` has no distance cutoff. Like `general`, this supports DT and RL;
   an explicit LLM request is rejected.
+- **Price range.** `"price_level"` 1, 2 or 3 (the number of ₩ signs on the start screen) keeps
+  only offers under 8,000원, from 8,000원 to under 15,000원, or 15,000원 and up
+  (`recommend/prices.py`); an offer without a price is left out. It applies to every source and
+  engine and to rooms, after the distance filter, so every proposal, "find another" and a
+  restaurant's menu stay in the band. Omitted or null is any price. The phone's price guide
+  repeats the bands, so a change goes in both.
 - **Pipeline.** If `import_stores` fails (a quota error), `run_store_pipeline` stops before tagging:
   the lines it stored as they read are replaced by the next run.
 
@@ -339,7 +345,7 @@ in server memory, like sessions; the API is commented at the end of `recommend/v
 
 | Request | Body | Reply |
 | --- | --- | --- |
-| `POST /api/rooms/` | `{"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?, "distance_scope"?, "location"?}` | 201 `{"token", "state"}` |
+| `POST /api/rooms/` | `{"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?, "distance_scope"?, "price_level"?, "location"?}` | 201 `{"token", "state"}` |
 | `POST /api/rooms/join/` | `{"code", "name"?, "allergies"?, "language"?}` | 201 `{"token", "state"}` |
 | `GET /api/rooms/<code>/` | | `state` |
 | `POST /api/rooms/<code>/start/` | host | `state` |
@@ -360,7 +366,7 @@ the restaurant is among that member's best tenth of the places they can eat at, 
 
 - The creator hosts. A room has a four-digit code and 2 to 8 members; nobody joins after the start
   (409 `room_started`). A caller who tries 10 unknown codes within a minute waits out the minute
-  (429 `too_many_attempts`); behind the tunnel the caller is its `CF-Connecting-IP`. The host's meal, source, distance and location apply to everyone.
+  (429 `too_many_attempts`); behind the tunnel the caller is its `CF-Connecting-IP`. The host's meal, source, distance, price range and location apply to everyone.
 - Each member reads the question in their own language. An answer cannot be changed. A member
   silent for `ROUND_SECONDS` (15) answers "unknown": unlike "any" ("doesn't matter"), it moves
   neither the engine's belief about their dish nor how relevant it takes the question's family to
