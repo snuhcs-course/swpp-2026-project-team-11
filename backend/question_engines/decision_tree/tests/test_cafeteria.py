@@ -7,7 +7,7 @@ from .. import DecisionTreeEngine
 
 
 class CafeteriaIntegrationTests(TestCase):
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def test_real_lunch_candidates_can_be_used_without_api_key(self):
         rows = get_catalog(datetime.date(2026, 11, 2), "LU")[0]

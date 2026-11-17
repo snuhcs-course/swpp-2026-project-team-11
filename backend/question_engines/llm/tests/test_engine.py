@@ -166,7 +166,7 @@ class CheckTurnTests(SimpleTestCase):
 
 
 class CafeteriaFixtureTests(TestCase):
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def test_runs_on_the_shared_snapshot(self):
         rows = get_catalog(datetime.date(2026, 11, 2), "LU")[0]

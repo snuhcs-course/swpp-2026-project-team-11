@@ -45,7 +45,7 @@ class LabelRulesTests(SimpleTestCase):
 class LabelTests(TestCase):
     def setUp(self):
         place = Restaurant.objects.create(code='hall', name='Hall')
-        self.food = Food.objects.create(name='치킨', is_food=True, feature_version='v2',
+        self.food = Food.objects.create(name='치킨', is_food=True, feature_version='v3',
             features=dict.fromkeys(FEATURE_KEYS, 0.5), feature_std=dict.fromkeys(FEATURE_KEYS, 0.1),
             allergens=[], allergen_version=ALLERGEN_VERSION)
         self.place = place
@@ -101,5 +101,5 @@ class LabelTests(TestCase):
         self.assertEqual(rows[BUFFET]['display_name'], '핫커리 & 치킨까스+소세지볶음+그린샐러드')
         self.assertEqual(rows['덮밥 = 5,000원']['display_name'], '덮밥')
         stores = {x['name']: x for x in services.get_store_catalog('LU')[0]}
-        self.assertEqual(stores[LONG]['display_name'], '한입치킨 세트')
-        self.assertEqual(stores[PROMO]['display_name'], PROMO)
+        self.assertNotIn(LONG, stores)  # No canonical mapping: never guessed from a display label.
+        self.assertNotIn(PROMO, stores)

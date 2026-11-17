@@ -9,7 +9,7 @@ DAY = "2026-11-02"
 
 
 class SessionApiTests(TestCase):
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def post(self, path, body=None):
         return self.client.post(path, data=json.dumps(body or {}), content_type="application/json")

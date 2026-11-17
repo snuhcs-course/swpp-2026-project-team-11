@@ -34,8 +34,8 @@ def tag(*names):
     for food in Food.objects.filter(name__in=names):
         food.is_food = True
         food.feature_version = FEATURE_VERSION
-        food.features = {k: .5 for k in FEATURE_KEYS} | {"meal_variety": float(food.is_set)}
-        food.feature_std = {k: .1 for k in FEATURE_KEYS} | {"meal_variety": 0.}
+        food.features = {k: .5 for k in FEATURE_KEYS} | {"mixed": float(food.is_set)}
+        food.feature_std = {k: .1 for k in FEATURE_KEYS} | {"mixed": 0.}
         food.save()
 
 

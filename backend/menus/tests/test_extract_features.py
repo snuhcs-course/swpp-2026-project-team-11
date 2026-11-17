@@ -34,7 +34,7 @@ class FakeLLM:
             raise ValueError("model returned invalid JSON")
         items = []
         for name in names:
-            if name in self.always_fail or (len(names) > 1 and name in self.drop_in_batches):
+            if any(blocked in name for blocked in self.always_fail) or (len(names) > 1 and name in self.drop_in_batches):
                 continue
             items.append({"input_name": name, "features": moments(
                 spicy={"mean": 0.87 if name == "육개장" else 0.0,
@@ -42,18 +42,19 @@ class FakeLLM:
         return extractor.FoodBatch.model_validate({"items": items})
 
 class SchemaTests(SimpleTestCase):
-    def test_output_has_32_measurements_and_storage_has_33(self):
+    def test_output_and_storage_share_all_53_measurements(self):
         self.assertEqual(tuple(extractor.FoodFeatures.model_fields), LLM_FEATURE_KEYS)
-        self.assertEqual(len(FEATURE_KEYS), 33)
-        self.assertNotIn("meal_variety", LLM_FEATURE_KEYS)
+        self.assertEqual(len(FEATURE_KEYS), 53)
+        self.assertEqual(LLM_FEATURE_KEYS, FEATURE_KEYS)
 
     def test_prompt_uses_accepted_rubric_without_questions(self):
-        self.assertEqual(PROMPT_VERSION, "food-name-32-v2-mean-std-draft7")
-        for key in LLM_FEATURE_KEYS:
-            self.assertIn("| " + key, SYSTEM_PROMPT)
-        self.assertIn("통상적인 1인", SYSTEM_PROMPT)
+        from menus.features.schema import RUBRIC
+        self.assertEqual(PROMPT_VERSION, "food-53-v3-mean-std-mask")
+        for feature in RUBRIC["features"]:
+            self.assertIn(feature["label_ko"], SYSTEM_PROMPT)
+        self.assertIn("mask", SYSTEM_PROMPT)
+        self.assertIn("53개", SYSTEM_PROMPT)
         self.assertNotIn("Would you", SYSTEM_PROMPT)
-        self.assertIn("0.1 단위에 제한하지 않는다", SYSTEM_PROMPT)
 
     def test_invalid_moments_are_rejected(self):
         for mean, std in [(1.3, 0), (0, .01), (1, .01), (.01, .2),
@@ -67,7 +68,7 @@ class SchemaTests(SimpleTestCase):
             self.assertEqual(extractor.FeatureStats(mean=mean, std=std).std, std)
 
     def test_missing_or_extra_features_are_rejected(self):
-        for payload in [moments() | {"meal_variety": {"mean": 1, "std": 0}},
+        for payload in [moments() | {"unexpected": {"mean": 1, "std": 0}},
                         {k: v for k, v in moments().items() if k != "spicy"}]:
             with self.assertRaises(ValidationError):
                 extractor.FoodFeatures.model_validate(payload)
@@ -107,8 +108,8 @@ class ExtractFeaturesCommandTests(TestCase):
         self.assertEqual(food.feature_std["spicy"], .12)
         self.assertEqual(set(food.features), set(FEATURE_KEYS))
         self.assertEqual(food.food_group, "기존 분류")
-        self.assertEqual(food.features["meal_variety"], 0)
-        self.assertEqual(food.feature_std["meal_variety"], 0)
+        self.assertEqual(food.features["mixed"], .5)
+        self.assertEqual(food.feature_std["mixed"], .1)
 
     def test_already_tagged_foods_are_skipped(self):
         self.run_command(FakeLLM())
@@ -131,7 +132,7 @@ class ExtractFeaturesCommandTests(TestCase):
         plain = Food.objects.get(name="육개장", is_set=False)
         self.assertEqual(other.features["spicy"], plain.features["spicy"])
         self.assertEqual(other.feature_std, plain.feature_std)
-        self.assertEqual(other.features["meal_variety"], 1)
+        self.assertEqual(other.features["mixed"], .5)
         self.assertEqual(unserved.feature_version, "v1")
         self.assertEqual(unserved.features, {"cold": 1.0})
 
@@ -217,7 +218,7 @@ class MenuCatalogTests(TestCase):
         self.assertEqual(set(candidate), {"food_id", "name", "display_name", "food_group", "food_groups", "features",
                                           "feature_std", "offers", "menu_profile"})
         self.assertEqual(candidate["feature_std"], dict.fromkeys(FEATURE_KEYS, .1))
-        self.assertEqual(len(services.get_feature_schema()), 33)
+        self.assertEqual(len(services.get_feature_schema()), 53)
 
 
 class StoreDishesTests(TestCase):

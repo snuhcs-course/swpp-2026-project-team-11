@@ -12,7 +12,7 @@ from .helpers import ANSWER_IDS, DAY, check_state, post
 
 
 class RealMenuTestCase(TestCase):
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def start(self, meal="LU"):
         response = post(self.client, "/api/sessions/", {"date": DAY, "meal": meal})
