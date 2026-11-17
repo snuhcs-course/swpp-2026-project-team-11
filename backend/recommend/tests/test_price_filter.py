@@ -3,6 +3,9 @@ import json
 
 from django.test import TestCase
 
+from menus.allergens import ALLERGEN_VERSION
+from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
+from menus.models import Food, Restaurant, StoreMenu
 from recommend import sessions
 from recommend.prices import PRICE_BANDS, within_price
 
@@ -93,3 +96,33 @@ class PriceFilterApiTests(TestCase):
         self.assertTrue({dish["display_name"] for dish in dishes} <= {"Kimbap", "Rice bowl"}, dishes)
         rejected = post(self.client, "/api/rooms/", {"name": "Jimin", "price_level": 0})
         self.assertEqual(rejected.status_code, 400)
+
+
+class MergedOfferPriceTests(TestCase):
+    """One merged store menu sold at several prices: only its offers in the band remain,
+    for a session and for every member's allergy-filtered load in a room."""
+
+    def setUp(self):
+        stew = Food.objects.create(name="김치찌개", is_food=True, features={key: 0.5 for key in FEATURE_KEYS},
+                                   feature_std={key: 0.1 for key in FEATURE_KEYS},
+                                   feature_version=FEATURE_VERSION, allergen_version=ALLERGEN_VERSION)
+        lines = [("가게 A", 6000, []), ("가게 B", 9000, ["pork"]), ("가게 C", 12000, []), ("가게 D", 16000, [])]
+        for i, (name, price, tags) in enumerate(lines):
+            place = Restaurant.objects.create(code=f"MA000{i}", name=name, source="naver", lat=37.48 + i / 1000, lng=126.95)
+            StoreMenu.objects.create(restaurant=place, raw_name="김치찌개", description=f"{name} 김치찌개", food=stew,
+                                     price=price, allergens=tags, allergen_version=ALLERGEN_VERSION)
+
+    def test_a_session_keeps_only_the_offers_in_the_band(self):
+        state = post(self.client, "/api/sessions/", {"source": "general", "price_level": 2}).json()
+        self.assertEqual(state["candidate_count"], 1)
+        guess = post(self.client, f"/api/sessions/{state['session_id']}/recommend-now/").json()["step"]
+        self.assertCountEqual([(o["restaurant"], o["price"]) for o in guess["food"]["offers"]],
+                              [("가게 B", 9000), ("가게 C", 12000)])
+
+    def test_an_allergic_member_in_a_room_sees_only_safe_offers_in_the_band(self):
+        response = post(self.client, "/api/rooms/", {"name": "Jimin", "source": "general", "price_level": 2})
+        code, host = response.json()["state"]["code"], response.json()["token"]
+        post(self.client, "/api/rooms/join/", {"code": code, "name": "Seoyeon", "allergies": ["pork"]})
+        done = self.client.post(f"/api/rooms/{code}/start/", content_type="application/json",
+                                HTTP_X_MEMBER_TOKEN=host).json()  # one menu: nothing to ask
+        self.assertEqual([pick["restaurant"] for pick in done["picks"]], ["가게 C"])
