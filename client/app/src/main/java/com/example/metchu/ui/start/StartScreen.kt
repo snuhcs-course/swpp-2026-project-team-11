@@ -451,15 +451,14 @@ private fun PriceGuideButton(onClick: () -> Unit) {
     val description = stringResource(R.string.price_guide_open)
     Box(
         Modifier
-            .padding(start = 4.dp)
             .size(40.dp)
             .clickable(role = Role.Button, onClickLabel = description, onClick = onClick)
             .semantics { contentDescription = description }
             .testTag("priceGuide"),
         contentAlignment = Alignment.Center
     ) {
-        Box(Modifier.size(22.dp).border(1.5.dp, MetchuColors.Grey400, CircleShape), contentAlignment = Alignment.Center) {
-            Text("?", Modifier.clearAndSetSemantics {}, style = MetchuType.Caption.copy(fontWeight = FontWeight.Bold), color = MetchuColors.Grey600)
+        Box(Modifier.size(16.dp).border(1.2.dp, MetchuColors.Grey400, CircleShape), contentAlignment = Alignment.Center) {
+            Text("?", Modifier.clearAndSetSemantics {}, style = MetchuType.Caption.copy(fontSize = 10.sp, lineHeight = 10.sp, fontWeight = FontWeight.Bold), color = MetchuColors.Grey600)
         }
     }
 }
