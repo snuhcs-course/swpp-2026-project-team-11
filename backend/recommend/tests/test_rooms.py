@@ -249,7 +249,8 @@ class ResultTests(RoomTestCase):
         picks = done["picks"]
         self.assertTrue(1 <= len(picks) <= 2)
         for pick in picks:
-            self.assertEqual(set(pick), {"restaurant", "kind", "lat", "lng", "distance_m", "menus", "others"})
+            self.assertEqual(set(pick), {"restaurant", "kind", "lat", "lng", "distance_m", "menus", "others", "votes", "voted"})
+            self.assertEqual((pick["votes"], pick["voted"]), (0, False))
             suggested = {menu["food"]["food_id"] for menu in pick["menus"]}
             served = {name for name, restaurant, _, _ in MENUS if restaurant == pick["restaurant"]}
             self.assertEqual({dish["display_name"] for dish in pick["others"]} | {menu["food"]["name"] for menu in pick["menus"]},
@@ -290,6 +291,62 @@ class ResultTests(RoomTestCase):
         code, host, _, _ = self.started()
         self.assertEqual(self.call(code, "decide", host, {"pick": 0}, status=409)["error"]["code"],
                          "stale_step")
+
+
+
+class VoteTests(RoomTestCase):
+    def finished(self, people=3):
+        code, host, guests, _ = self.started(people)
+        self.call(code, "recommend-now", host)
+        return code, host, guests
+
+    def test_everyone_sees_how_many_agree_and_only_their_own_vote(self):
+        code, host, (first, second) = self.finished()
+        self.call(code, "vote", first, {"pick": 0, "agree": True})
+        mine = self.call(code, "vote", host, {"pick": 0, "agree": True})["picks"][0]
+        self.assertEqual((mine["votes"], mine["voted"]), (2, True))
+        theirs = self.state(code, second)["picks"][0]
+        self.assertEqual((theirs["votes"], theirs["voted"]), (2, False))
+
+    def test_agreeing_twice_counts_once_and_a_vote_can_be_taken_back(self):
+        code, host, _ = self.finished(2)
+        self.call(code, "vote", host, {"pick": 0, "agree": True})
+        self.assertEqual(self.call(code, "vote", host, {"pick": 0, "agree": True})["picks"][0]["votes"], 1)
+        pick = self.call(code, "vote", host, {"pick": 0, "agree": False})["picks"][0]
+        self.assertEqual((pick["votes"], pick["voted"]), (0, False))
+
+    def test_each_restaurant_counts_its_own_votes(self):
+        code, host, (guest, _) = self.finished()
+        picks = self.state(code, host)["picks"]
+        if len(picks) < 2:
+            self.skipTest("the fixture gave one restaurant")
+        self.call(code, "vote", host, {"pick": 1, "agree": True})
+        picks = self.call(code, "vote", guest, {"pick": 1, "agree": True})["picks"]
+        self.assertEqual([p["votes"] for p in picks], [0, 2])
+
+    def test_a_vote_needs_a_suggested_restaurant_and_a_yes_or_no(self):
+        code, host, _ = self.finished(2)
+        count = len(self.state(code, host)["picks"])
+        for body in ({"pick": count, "agree": True}, {"pick": "0", "agree": True}, {"pick": 0, "agree": "yes"}):
+            self.assertEqual(self.call(code, "vote", host, body, status=400)["error"]["code"], "invalid_request", body)
+        self.assertEqual(self.call(code, "vote", host, {"pick": 0}, status=400)["error"]["code"], "invalid_request")
+
+    def test_votes_wait_for_the_result_and_stop_once_the_host_decides(self):
+        code, host, (guest,), _ = self.started()
+        self.assertEqual(self.call(code, "vote", guest, {"pick": 0, "agree": True}, status=409)["error"]["code"],
+                         "stale_step")
+        self.call(code, "recommend-now", host)
+        self.call(code, "vote", guest, {"pick": 0, "agree": True})
+        self.call(code, "decide", host, {"pick": 0})
+        refused = self.call(code, "vote", guest, {"pick": 0, "agree": False}, status=409)
+        self.assertEqual(refused["error"]["code"], "stale_step")
+        self.assertEqual(refused["state"]["picks"][0]["votes"], 1)
+
+    def test_a_member_who_leaves_takes_their_votes_along(self):
+        code, host, (guest,) = self.finished(2)
+        self.call(code, "vote", guest, {"pick": 0, "agree": True})
+        self.call(code, "leave", guest, status=204)
+        self.assertEqual(self.state(code, host)["picks"][0]["votes"], 0)
 
 
 class MergedOfferTests(TestCase):
