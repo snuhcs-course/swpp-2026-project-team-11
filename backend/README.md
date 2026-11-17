@@ -345,6 +345,7 @@ in server memory, like sessions; the API is commented at the end of `recommend/v
 | `POST /api/rooms/<code>/start/` | host | `state` |
 | `POST /api/rooms/<code>/answer/` | `{"question_id", "answer_id"}` | `state` |
 | `POST /api/rooms/<code>/recommend-now/` | host | `state` |
+| `POST /api/rooms/<code>/vote/` | `{"pick", "agree"}` (`agree: false` takes the vote back) | `state` |
 | `POST /api/rooms/<code>/decide/` | `{"pick"}` (its position in `picks`), host | `state` |
 | `POST /api/rooms/<code>/leave/` | | 204 |
 
@@ -354,9 +355,10 @@ signed-in member (`Authorization: Token ...`) is shown by username; anyone else 
 "members", "round", "max_rounds", "question", "my_answer", "seconds_left", "round_seconds", "picks",
 "decided"}`;
 `members` are `{"id", "name", "allergies", "left", "answered"}` and each pick is `{"restaurant",
-"kind", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others"}`; `others` are the
+"kind", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others", "votes", "voted"}`; `others` are the
 restaurant's other dishes, shaped like a session's `menu` dishes. `fit` is `great` when
 the restaurant is among that member's best tenth of the places they can eat at, otherwise `good`.
+`votes` counts the members who agree with the pick and `voted` says whether the caller does.
 
 - The creator hosts. A room has a four-digit code and 2 to 8 members; nobody joins after the start
   (409 `room_started`). A caller who tries 10 unknown codes within a minute waits out the minute
@@ -365,6 +367,9 @@ the restaurant is among that member's best tenth of the places they can eat at, 
   silent for `ROUND_SECONDS` (15) answers "unknown": unlike "any" ("doesn't matter"), it moves
   neither the engine's belief about their dish nor how relevant it takes the question's family to
   be. Deadlines are checked whenever the room is read or acted on, so the phones' polling moves it on.
+- Once the result is shown, any member may agree with any of the picks, to help the host choose.
+  Votes change nothing in the engine, end with the host's decision (later ones get 409 `stale_step`)
+  and leave with the member who cast them.
 - Only the host starts, stops early ("recommend now": the engine's `stop()`) and decides. When the
   host leaves, a random remaining member hosts; a member who leaves after the start answers "unknown".
 - A member's allergies remove offers only from their own choice. They are matched to the full menu's
