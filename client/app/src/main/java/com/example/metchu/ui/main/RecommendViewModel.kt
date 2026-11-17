@@ -10,7 +10,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.metchu.R
 import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
-import com.example.metchu.data.model.Ban
 import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
@@ -46,8 +45,6 @@ data class AnsweredQuestion(val text: String, val answerId: String)
  * [resume]; starting a new session forgets it.
  * [menus] holds the dishes of each restaurant asked for in this session, null while
  * they load; a failed request leaves no entry, so asking again retries it.
- * [banned] lists the dishes and groups the user banned in this session; the server
- * keeps them out of its later proposals until the session ends.
  */
 class RecommendViewModel(private val repository: RecommendRepository) : ViewModel() {
 
@@ -77,15 +74,11 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         val history: List<AnsweredQuestion>,
         val shown: List<Step>,
         val reasons: Map<String, String?>,
-        val contexts: Map<String, ReasonContext>,
-        val banned: Set<Ban>
+        val contexts: Map<String, ReasonContext>
     )
     private var parked: Parked? = null
     private val _canResume = MutableLiveData(false)
     val canResume: LiveData<Boolean> = _canResume
-
-    private val _banned = MutableLiveData<Set<Ban>>(emptySet())
-    val banned: LiveData<Set<Ban>> = _banned
 
     private val _menus = MutableLiveData<Map<String, List<MenuDish>?>>(emptyMap())
     val menus: LiveData<Map<String, List<MenuDish>?>> = _menus
@@ -155,16 +148,6 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         request { repository.recommendNow(current.sessionId) }
     }
 
-    /** Keeps what [ban] covers out of the rest of the session, or with [banned] false lets it back. */
-    fun ban(ban: Ban, banned: Boolean) {
-        val current = _session.value ?: return
-        request {
-            repository.ban(current.sessionId, ban, banned).also {
-                _banned.value = if (banned) _banned.value.orEmpty() + ban else _banned.value.orEmpty() - ban
-            }
-        }
-    }
-
     /**
      * The server cannot tell a repeated undo from a second one: sent twice, it goes
      * back two steps. If the reply to an undo is lost the server may already have
@@ -203,7 +186,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         if (_loading.value == true) return
         val left = _session.value
         park(left?.takeIf { it.step.type == Step.GUESS || it.step.type == Step.RECOMMENDATION || it.step.type == Step.QUESTION && it.step.questionCount > 0 }?.let {
-            Parked(it, _history.value.orEmpty(), _shown.value.orEmpty(), _reasons.value.orEmpty(), reasonContexts.toMap(), _banned.value.orEmpty())
+            Parked(it, _history.value.orEmpty(), _shown.value.orEmpty(), _reasons.value.orEmpty(), reasonContexts.toMap())
         })
         _session.value = null
         _error.value = null
@@ -220,7 +203,6 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         _shown.value = left.shown
         _reasons.value = left.reasons
         reasonContexts.putAll(left.contexts)
-        _banned.value = left.banned
         _session.value = left.session
     }
 
@@ -364,7 +346,6 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         _reasons.value = emptyMap()
         reasonContexts.clear()
         _menus.value = emptyMap()
-        _banned.value = emptySet()
     }
 
     private companion object {
