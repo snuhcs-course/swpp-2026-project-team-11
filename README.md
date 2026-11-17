@@ -41,15 +41,12 @@ You need:
 From the repository root:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
-python -m pip install -r backend/requirements.txt
-python backend/manage.py migrate
-python backend/manage.py loaddata menus_2026-11-02
-METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
+uv run --isolated --locked python backend/manage.py migrate
+uv run --isolated --locked python backend/manage.py loaddata menus_v3_contract
+METCHU_MENU_DATE=2026-11-02 uv run --isolated --locked python backend/manage.py runserver 0.0.0.0:8000
 ```
 
-`loaddata` fills the local database with the shared menu snapshot, so no API key
+`loaddata` fills the local database with a synthetic, partial 53-feature contract fixture, so no API key
 is needed for the menu. The snapshot only has November 2, 2026, which is why
 the server is started with `METCHU_MENU_DATE`.
 
@@ -164,7 +161,7 @@ cd client && ./gradlew connectedDebugAndroidTest                    # 14 UI test
 | | |
 | --- | --- |
 | OS | macOS 26.6 (Apple Silicon) |
-| Server | Python 3.14, Django 5.2, SQLite (or the shared Supabase Postgres via `DATABASE_URL`, see `backend/README.md`) |
+| Server | Python 3.12 (uv), Django 5.2, SQLite (or the shared Supabase Postgres via `DATABASE_URL`, see `backend/README.md`) |
 | LLM | Gemini (`gemini-3.5-flash-lite` for questions) through `langchain-google-genai` 4.4 |
 | Android build | Android Studio 2026.1, Gradle 8.13, Android Gradle Plugin 8.12, Kotlin 2.0.21, JDK 21 |
 | Android target | `compileSdk` 36, `minSdk` 26 |

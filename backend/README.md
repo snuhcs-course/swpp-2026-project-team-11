@@ -482,7 +482,7 @@ from menus import services
 
 services.get_feature_schema()
 # [{"key": "spicy", "question": "Do you feel like something spicy?",
-#   "question_en": "...", "family": "taste"}, ...]  (33 features)
+#   "question_en": "...", "family": "taste"}, ...]  (53 features)
 
 candidates, schema = services.get_catalog(datetime.date(2026, 11, 2), meal="LU")   # meal=None: whole day, date=None: today
 # One candidate per sales menu, named as the restaurant lists it:
@@ -517,21 +517,18 @@ menus, generated features and checkpoints belong outside Git, for example in
 `.local/menus/`. Importing profiles makes no model calls. New catalogue features
 alone do not retrain the frozen RL policy or establish human recommendation accuracy.
 
-### Feature-only RL
+### Personal RL
 
 Select **Reinforcement learning (RL)** in Android Settings or send `"engine": "rl"`
-to `POST /api/sessions/`. Both cafeteria and general sessions use v2 dish features
-after allergy and distance filtering. An empty catalogue returns an unavailable step.
+to `POST /api/sessions/`. The model compares 267 mapped canonical types with
+whole-campus menus using the single v3 53-feature schema. English and Korean
+questions are shared with DT/group mode. Group inference remains DT-only.
 
-The frozen v20 policy ranks dishes from their features and the user's answers.
-After a refusal it excludes that dish and updates the scores of similar dishes
-before choosing whether to ask or propose again. Matching catalogues share
-numeric arrays; answers, refusals, offers and undo history belong to the session.
-Inference uses NumPy on CPU. The source checkpoint hash is in
-[`weights.json`](question_engines/rl/weights.json).
-
-From `backend/`, run `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m question_engines.rl.benchmark`
-to measure preparation and the first decision on synthetic menus of 500–12,000 dishes.
+The frozen 562,123-parameter predictor and policy run on CPU through the locked uv
+environment. Food choice is acceptance argmax, questions are sampled by value, and
+after 20 interactions the service proposes remaining candidates without asking
+again. See [the model/candidate contract](../docs/personal-catalogue.md) and the
+[checkpoint manifest](question_engines/rl/assets/manifest.json).
 
 ### Allergens (i3-A1)
 
