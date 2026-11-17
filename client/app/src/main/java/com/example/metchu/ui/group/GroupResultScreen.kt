@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -57,9 +58,12 @@ import com.example.metchu.ui.common.TopRow
 import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.common.cssShadow
 import com.example.metchu.ui.result.MapPin
+import com.example.metchu.ui.result.Point
+import com.example.metchu.ui.result.RowIconButton
 import com.example.metchu.ui.result.WALK_METERS_PER_MINUTE
 import com.example.metchu.ui.result.captionFor
 import com.example.metchu.ui.result.distanceText
+import com.example.metchu.ui.result.openDirections
 import com.example.metchu.ui.result.priceText
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
@@ -150,13 +154,24 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
 private fun PickDetails(room: RoomState, pick: RoomPick) {
     Column(Modifier.padding(horizontal = 20.dp)) {
         Text(stringResource(captionFor(room.meal)), style = MetchuType.Caption)
-        Text(placeName(pick.restaurant), Modifier.padding(top = 2.dp).testTag("restaurant"), style = MetchuType.Title)
-        pick.distanceM?.let { meters ->
-            val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
-            Text(
-                "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}",
-                Modifier.padding(top = 2.dp), style = MetchuType.Body
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(placeName(pick.restaurant), Modifier.padding(top = 2.dp).testTag("restaurant"), style = MetchuType.Title)
+                pick.distanceM?.let { meters ->
+                    val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
+                    Text(
+                        "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}",
+                        Modifier.padding(top = 2.dp), style = MetchuType.Body
+                    )
+                }
+            }
+            if (pick.lat != null && pick.lng != null) {
+                val context = LocalContext.current
+                val name = placeName(pick.restaurant)
+                RowIconButton(Icons.Directions, stringResource(R.string.result_directions), "directionsButton") {
+                    context.openDirections(name, Point(pick.lat, pick.lng), null)
+                }
+            }
         }
         Text(stringResource(R.string.group_each_dish), Modifier.padding(top = 20.dp, bottom = 4.dp), style = MetchuType.Caption)
     }
