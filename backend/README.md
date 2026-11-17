@@ -546,13 +546,12 @@ the session (i3-A14): `POST /api/sessions/<id>/ban/` takes a `food_group` or the
 candidate's `food_id`. Rather than changing the engines, the session turns down any
 guess of a banned menu with `feedback` as soon as an action reaches it, and an undo
 that reaches one goes back further, so it does not return after Back either. A new
-session starts with no bans. The phone offers a group ban once the group makes up two
-of the last three proposals, and no ban of a single menu, which "Find another" already
-turns down (i4-A10); the endpoint still takes a `food_id`. A menu is left out when any of its dishes is in a banned
+session starts with no bans. The phone no longer offers bans (i4-A10, i4-A22): "Find
+another" turns the menu down, and the engines do not propose it again in the session.
+The endpoint stays for now. A menu is left out when any of its dishes is in a banned
 group: each candidate's `food_groups` lists them, a set dish taking the group of its
 single variant, so banning 버거 also leaves out the 버거운버거 sets. New dishes get no
-`food_group` (only rows that already had one keep it), so the phone offers no ban for a
-menu without one.
+`food_group` (only rows that already had one keep it).
 
 `extract_allergens` asks the menu model which allergens each dish name may contain, sauces,
 broths and batters included; the prompt tells it to leave a key out only when it is sure.
