@@ -3,6 +3,7 @@ package com.example.metchu
 import android.Manifest
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
@@ -167,6 +168,8 @@ class MainActivityTest {
         compose.waitForIdle()
         tap("priceToken")
         compose.onNodeWithText("₩₩").performClick()
+        // The sentence reads the range in words, not signs.
+        compose.onNodeWithTag("priceToken").assert(hasText(text(R.string.price_mid), ignoreCase = true))
         api.reply(question)
         tap("start")
         assertEquals(2, api.lastCreateRequest?.priceLevel)
