@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 
 class Restaurant(models.Model):
@@ -163,7 +163,6 @@ class StoreMenu(models.Model):
     price = models.IntegerField(null=True, blank=True)
     allergens = models.JSONField(default=list, blank=True)
     allergen_version = models.CharField(max_length=10, blank=True)
-
 
     class Meta:
         constraints = [
