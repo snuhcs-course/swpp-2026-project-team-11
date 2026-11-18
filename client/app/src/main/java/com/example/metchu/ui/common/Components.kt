@@ -63,11 +63,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.metchu.R
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 import kotlinx.coroutines.delay
@@ -219,6 +222,7 @@ fun ActionCapsule(
 @Composable
 fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true, busy: Boolean = false) {
     val interaction = remember { MutableInteractionSource() }
+    val loading = stringResource(R.string.loading)
     Box(
         modifier
             .height(48.dp)
@@ -227,6 +231,7 @@ fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: M
             .clip(CircleShape)
             .background(if (filled) MetchuColors.Primary else Color.White)
             .clickable(interaction, indication = null, enabled = enabled && !busy, role = Role.Button, onClick = onClick)
+            .semantics { if (busy) stateDescription = loading }
             .padding(horizontal = 22.dp),
         contentAlignment = Alignment.Center
     ) {
