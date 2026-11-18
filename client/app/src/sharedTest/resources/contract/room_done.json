@@ -1,5 +1,5 @@
 {
-  "code": "8068",
+  "code": "9055",
   "status": "done",
   "date": "2026-11-02",
   "meal": "LU",
@@ -37,7 +37,7 @@
       "kind": "balanced",
       "lat": 37.46328,
       "lng": 126.95015,
-      "distance_m": 400,
+      "distance_m": 418,
       "menus": [
         {
           "member_id": 0,
@@ -53,7 +53,7 @@
                 "price": 6900,
                 "lat": 37.46328,
                 "lng": 126.95015,
-                "distance_m": 400
+                "distance_m": 418
               }
             ]
           },
@@ -73,7 +73,7 @@
                 "price": 5500,
                 "lat": 37.46328,
                 "lng": 126.95015,
-                "distance_m": 400
+                "distance_m": 418
               }
             ]
           },
@@ -411,14 +411,16 @@
           "meal": "LU",
           "price": 6000
         }
-      ]
+      ],
+      "votes": 1,
+      "voted": true
     },
     {
       "restaurant": "자하연식당>3층",
       "kind": "no_one_unhappy",
       "lat": 37.46098,
       "lng": 126.95252,
-      "distance_m": 118,
+      "distance_m": 198,
       "menus": [
         {
           "member_id": 0,
@@ -434,11 +436,11 @@
                 "price": 13000,
                 "lat": 37.46098,
                 "lng": 126.95252,
-                "distance_m": 118
+                "distance_m": 198
               }
             ]
           },
-          "fit": "great"
+          "fit": "good"
         },
         {
           "member_id": 1,
@@ -454,7 +456,7 @@
                 "price": null,
                 "lat": 37.46098,
                 "lng": 126.95252,
-                "distance_m": 118
+                "distance_m": 198
               }
             ]
           },
@@ -468,7 +470,9 @@
           "meal": "LU",
           "price": 12000
         }
-      ]
+      ],
+      "votes": 2,
+      "voted": true
     }
   ],
   "decided": 0

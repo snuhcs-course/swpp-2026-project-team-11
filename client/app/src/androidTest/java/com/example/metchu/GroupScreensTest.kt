@@ -35,7 +35,7 @@ class GroupScreensTest {
         val done = Fixtures.room("room_done").copy(decided = null)
         val picks = done.picks!!
         val long = done.copy(picks = listOf(picks[0].copy(restaurant = "샤로수길 아주 긴 이름의 이탈리안 레스토랑 서울대입구역 본점"), picks[1]))
-        compose.setContent { GroupResultScreen(long, busy = false, onDecide = {}, onHome = {}) }
+        compose.setContent { GroupResultScreen(long, busy = false, onVote = { _, _ -> }, onDecide = {}, onHome = {}) }
 
         val screen = compose.onRoot().getBoundsInRoot()
         val first = compose.onNodeWithTag("pick_0").assertIsDisplayed().getBoundsInRoot()

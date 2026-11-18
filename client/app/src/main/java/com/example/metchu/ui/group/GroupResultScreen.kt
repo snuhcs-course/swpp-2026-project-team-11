@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -41,9 +43,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.model.RoomDish
@@ -76,11 +82,12 @@ import kotlin.math.ceil
 
 /**
  * Up to two restaurants, named on chips over the map, and each member's dish at the one
- * chosen, this phone's member first. The host decides with "Go here"; everyone's screen
- * then shows where to meet.
+ * chosen, this phone's member first. Until the host decides, everyone may agree with each
+ * restaurant; with two or more, every one with the most votes is marked popular. The host
+ * decides with "Go here"; everyone's screen then shows where to meet.
  */
 @Composable
-fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, onHome: () -> Unit) {
+fun GroupResultScreen(room: RoomState, busy: Boolean, onVote: (Int, Boolean) -> Unit, onDecide: (Int) -> Unit, onHome: () -> Unit) {
     val picks = room.picks.orEmpty()
     if (picks.isEmpty()) return
     // Picks are told apart by position: two branches of one chain share a name.
@@ -88,6 +95,7 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
     room.decided?.let { viewing = it }
     val shownAt = viewing.coerceIn(picks.indices)
     val pick = picks[shownAt]
+    val popular = popularPicks(room)
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MetchuColors.MapBlank)) {
         val sheetTop = maxHeight * 0.42f
@@ -104,22 +112,24 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
             picks.forEachIndexed { index, p ->
                 if (room.decided != null && index != room.decided) return@forEachIndexed
                 val on = index == shownAt
-                Text(
-                    placeName(p.restaurant),
-                    Modifier
-                        .weight(1f, fill = false)
-                        .height(40.dp)
-                        .chipShadow()
-                        .clip(CircleShape)
-                        .background(if (on) MetchuColors.Grey900 else Color.White)
-                        .clickable(role = Role.Tab) { if (room.decided == null) viewing = index }
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                        .testTag("pick_$index"),
-                    style = MetchuType.Label,
-                    color = if (on) Color.White else MetchuColors.Grey900,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Box(Modifier.weight(1f, fill = false)) {
+                    Text(
+                        placeName(p.restaurant),
+                        Modifier
+                            .height(40.dp)
+                            .chipShadow()
+                            .clip(CircleShape)
+                            .background(if (on) MetchuColors.Grey900 else Color.White)
+                            .clickable(role = Role.Tab) { if (room.decided == null) viewing = index }
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                            .testTag("pick_$index"),
+                        style = MetchuType.Label,
+                        color = if (on) Color.White else MetchuColors.Grey900,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (index in popular) PopularBadge(Modifier.offset(x = (-6).dp, y = (-9).dp).testTag("popular_$index"))
+                }
             }
         }
 
@@ -134,7 +144,11 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
                 .verticalScroll(rememberScrollState())
                 .padding(top = 20.dp, bottom = 140.dp)
         ) {
-            key(shownAt) { PickDetails(room, pick) }
+            key(shownAt) {
+                PickDetails(room, pick) {
+                    AgreeButton(pick, enabled = room.decided == null && !busy, onToggle = { onVote(shownAt, !pick.voted) })
+                }
+            }
         }
 
         val bottom = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp)
@@ -149,17 +163,23 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onDecide: (Int) -> Unit, o
     }
 }
 
+/** [vote] sits at the right of the restaurant's name. */
 @Composable
-private fun PickDetails(room: RoomState, pick: RoomPick) {
+private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () -> Unit) {
     Column(Modifier.padding(horizontal = 20.dp)) {
-        Text(stringResource(captionFor(room.meal)), style = MetchuType.Caption)
-        Text(placeName(pick.restaurant), Modifier.padding(top = 2.dp).testTag("restaurant"), style = MetchuType.Title)
-        pick.distanceM?.let { meters ->
-            val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
-            Text(
-                "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}",
-                Modifier.padding(top = 2.dp), style = MetchuType.Body
-            )
+        Box {
+            Column {
+                Text(stringResource(captionFor(room.meal)), style = MetchuType.Caption)
+                Text(placeName(pick.restaurant), Modifier.padding(top = 2.dp, end = 56.dp).testTag("restaurant"), style = MetchuType.Title)
+                pick.distanceM?.let { meters ->
+                    val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
+                    Text(
+                        "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}",
+                        Modifier.padding(top = 2.dp), style = MetchuType.Body
+                    )
+                }
+            }
+            Box(Modifier.align(Alignment.TopEnd).padding(top = 14.dp)) { vote() }
         }
         Text(stringResource(R.string.group_each_dish), Modifier.padding(top = 20.dp, bottom = 4.dp), style = MetchuType.Caption)
     }
@@ -205,6 +225,44 @@ private fun PickDetails(room: RoomState, pick: RoomPick) {
             }
         }
     }
+}
+
+/** A round thumb that is orange while this member agrees, over "Agree n". */
+@Composable
+private fun AgreeButton(pick: RoomPick, enabled: Boolean, onToggle: () -> Unit) {
+    val action = stringResource(R.string.group_agree_action)
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(
+            Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(if (pick.voted) MetchuColors.Primary else MetchuColors.Grey100)
+                .toggleable(pick.voted, enabled = enabled, role = Role.Checkbox) { onToggle() }
+                .semantics { contentDescription = action }
+                .testTag("agree"),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(Icons.ThumbUp, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(if (pick.voted) Color.White else MetchuColors.Grey900))
+        }
+        Text(
+            stringResource(R.string.group_agree, pick.votes),
+            Modifier.testTag("agree_count"),
+            style = MetchuType.Caption.copy(fontWeight = FontWeight.SemiBold),
+            color = if (pick.voted) MetchuColors.Primary else MetchuColors.Grey700,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun PopularBadge(modifier: Modifier = Modifier) {
+    Text(
+        stringResource(R.string.group_popular),
+        modifier.height(18.dp).clip(CircleShape).background(MetchuColors.Primary).padding(horizontal = 6.dp),
+        style = MetchuType.Caption.copy(fontSize = 11.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold),
+        color = Color.White,
+        maxLines = 1
+    )
 }
 
 @Composable
@@ -254,6 +312,15 @@ private fun PicksMap(picks: List<RoomPick>, selected: Int, sheetHeight: Dp, onSe
             }
         }
     }
+}
+
+/** The positions of the picks with the most votes, all of them on a tie; none while fewer than two
+ *  picks are open or nobody has voted. */
+internal fun popularPicks(room: RoomState): Set<Int> {
+    val picks = room.picks.orEmpty()
+    val top = picks.maxOfOrNull { it.votes } ?: 0
+    if (room.decided != null || picks.size < 2 || top == 0) return emptySet()
+    return picks.indices.filter { picks[it].votes == top }.toSet()
 }
 
 /** "자하연식당>2층" reads "자하연식당 2층"; two floors of one building stay apart. */

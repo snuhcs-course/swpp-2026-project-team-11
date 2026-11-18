@@ -1,6 +1,7 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal, engine, location, allergies, source, language) -> RecommendSession
+    create(date, meal, engine, location, allergies, source, language, distance_scope, price_level)
+                               -> RecommendSession
     get(session_id)            -> RecommendSession | None
     prewarm(meal, allergies, source) -> builds the restaurant catalogue ahead of create
     session.public_state()     -> what the phone is allowed to see
@@ -32,7 +33,11 @@ carries its `distance_m`, and with RECOMMEND_MAX_DISTANCE_M set, cafeterias
 farther than that are left out before the engine sees the candidates.
 
 `menu(restaurant)` lists the candidates a restaurant serves, so dishes withheld for
-an allergy or left out by distance are not listed either.
+an allergy, left out by distance or by price are not listed either.
+
+`price_level` is the user's price range, 1 to 3 (recommend/prices.py), or None for any
+price. Only offers priced inside that band reach the engine, so every later proposal and
+"find another" stays in it.
 
 A banned menu, or one holding a dish of a banned group (its `food_groups`), is never
 proposed again in the session, even after undo: a guess of one is turned down with `feedback` as soon as an
@@ -65,6 +70,7 @@ from menus.features.schema import FEATURE_VERSION
 from menus.services import MEAL_ORDER, get_catalog, get_store_catalog
 from recommend import reasons
 from recommend.distance import with_distances
+from recommend.prices import within_price
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.llm import LLMConfigError, LLMEngine
 from question_engines.rl import RLEngine
@@ -84,7 +90,8 @@ class EngineUnavailable(Exception):
 
 
 def load_candidates(date: datetime.date, meal: str | None, allergies: frozenset[str], source: str,
-                    location: tuple[float, float] | None, distance_scope: str | None) -> tuple[list, list, int]:
+                    location: tuple[float, float] | None, distance_scope: str | None,
+                    price_level: int | None = None) -> tuple[list, list, int]:
     """(candidates, schema, count before the distance cut) for a session or a group room."""
     try:
         if source == "general":
@@ -103,6 +110,8 @@ def load_candidates(date: datetime.date, meal: str | None, allergies: frozenset[
     else:
         cutoff = None if distance_scope in ("near", "any") or source == "all" else settings.RECOMMEND_MAX_DISTANCE_M
         candidates = with_distances(candidates, location, cutoff)
+    if price_level is not None:
+        candidates = within_price(candidates, price_level)
     return candidates, schema, before
 
 
@@ -122,11 +131,13 @@ def restaurant_menus(candidates: list, key=lambda offer: offer["restaurant"]) ->
 class RecommendSession:
     def __init__(self, date: datetime.date, meal: str | None, engine: str,
                  location: tuple[float, float] | None, allergies: frozenset[str],
-                 source: str = "cafeteria", language: str = "en", distance_scope: str | None = None):
+                 source: str = "cafeteria", language: str = "en", distance_scope: str | None = None,
+                 price_level: int | None = None):
         self.session_id = uuid.uuid4().hex
         self.interaction_id = uuid.uuid4().hex
         self.source = source
         self.distance_scope = distance_scope
+        self.price_level = price_level
         self.location_available = location is not None
         self.logged_allergies = sorted(allergies)
         self.logged_location = {"lat": location[0], "lng": location[1]} if location is not None else None
@@ -137,7 +148,7 @@ class RecommendSession:
         self.lock = threading.Lock()
         started = time.perf_counter()
         candidates, schema, self.candidates_before_distance = load_candidates(
-            date, meal, allergies, source, location, distance_scope)
+            date, meal, allergies, source, location, distance_scope, price_level)
         loaded = time.perf_counter()
         self.candidate_count = len(candidates)
         # Reasons need only dish names and feature means after the engine is built.
@@ -282,7 +293,8 @@ _sessions_lock = threading.Lock()
 def create(date: datetime.date | None = None, meal: str | None = None,
            engine: str | None = None, location: tuple[float, float] | None = None,
            allergies: frozenset[str] = frozenset(), source: str | None = None,
-           language: str = "en", distance_scope: str | None = None) -> RecommendSession:
+           language: str = "en", distance_scope: str | None = None,
+           price_level: int | None = None) -> RecommendSession:
     """General sessions fall back to DT if the configured default is LLM."""
     source = source or "cafeteria"
     if engine is None:
@@ -290,7 +302,7 @@ def create(date: datetime.date | None = None, meal: str | None = None,
         if source in ("general", "all") and engine == "llm":
             engine = "decision_tree"
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine, location, allergies, source, language, distance_scope)
+                               meal, engine, location, allergies, source, language, distance_scope, price_level)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:

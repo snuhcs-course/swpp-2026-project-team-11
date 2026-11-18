@@ -67,6 +67,13 @@ class RecommendRepositoryTest {
     }
 
     @Test
+    fun thePriceRangeIsSentOnlyWhenPicked() = runTest {
+        reply("question", 201)
+        repository.createSession("LU", source = "all", priceLevel = 1)
+        assertEquals("""{"meal":"LU","source":"all","price_level":1}""", server.takeRequest().json().toString())
+    }
+
+    @Test
     fun prewarmSendsWhatTheSessionWillRead() = runTest {
         server.enqueue(MockResponse().setResponseCode(204))
         repository.prewarm("DN", listOf(Allergen.EGG), "all")
