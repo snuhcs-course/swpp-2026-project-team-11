@@ -248,23 +248,35 @@ class GroupEngine:
         self._pending = {}
 
     def recommendation(self, shown=()):
+        """GroupResult.recommendation for the answers given so far."""
+        return GroupResult(self).recommendation(shown)
+
+
+class GroupResult:
+    """What a finished group needs to suggest restaurants: each member's satisfaction at each
+    restaurant, belief, and the menus they can eat at each. It keeps none of the engine's
+    fit tables (one per allergic member over every restaurant and menu)."""
+
+    def __init__(self, engine):
+        if not engine.finished:
+            raise ValueError("The group still has questions to answer")
+        self.round, self.places, self.features = engine.round, engine.places, engine.features
+        self.candidates = engine.catalog.candidates
+        self.satisfaction = engine.satisfaction()
+        self.beliefs = [m.belief for m in engine.members]
+        self.options = [[np.flatnonzero(row) for row in m.eligible] for m in engine.members]
+
+    def recommendation(self, shown=()):
         """Up to two restaurants (PICKS) besides the `shown` restaurant indices: each one's
         index, where it is and each member's closest menu there. `more` tells whether a
         restaurant where everyone can eat is left once these are shown too."""
-        if not self.finished:
-            raise ValueError("The group still has questions to answer")
-        satisfaction = self.satisfaction()
-        chosen = picks(satisfaction, shown)
-        left = (satisfaction > 0).all(0)
+        chosen = picks(self.satisfaction, shown)
+        left = (self.satisfaction > 0).all(0)
         left[[*shown, *(r for _, r in chosen)]] = False
         return {"type": "recommendation", "rounds": self.round, "more": bool(left.any()),
                 "picks": [{"kind": kind, "index": r, **dict(zip(("restaurant", "lat", "lng"), self.places[r])),
                            "menus": self._menus_at(r)} for kind, r in chosen]}
 
     def _menus_at(self, r):
-        menus = []
-        for member in self.members:
-            options = np.flatnonzero(member.eligible[r])
-            menus.append(self.catalog.candidates[closest(self.features, member.belief, options)].summary()
-                         if options.size else None)
-        return menus
+        return [self.candidates[closest(self.features, belief, options[r])].summary() if options[r].size else None
+                for belief, options in zip(self.beliefs, self.options)]

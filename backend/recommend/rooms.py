@@ -25,8 +25,8 @@ other dishes (by meal and name, like a session's menu), and how well the place f
 "good". Until the host decides, every member may agree with any of the restaurants; each
 shows how many agree and whether this member does. A member who leaves takes their votes along. A member's allergies only remove dishes from their own choice. "Find another" replaces
 the result with up to two restaurants the room has not been shown, with no votes yet, while one where everyone can
-eat is left (`more`). For that the room keeps its engine until the host decides or everyone has
-left. Rooms live in this process only, like sessions (recommend/sessions.py).
+eat is left (`more`). For that the room keeps the group's result (each member's satisfaction and
+menus at each restaurant, not the engine's tables) until the host decides or everyone has left. Rooms live in this process only, like sessions (recommend/sessions.py).
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ import numpy as np
 
 from menus.offers import safe_offers
 from question_engines.decision_tree.contracts import Answer, answer_options, translate
-from question_engines.group import GroupConfig, GroupEngine
+from question_engines.group import GroupConfig, GroupEngine, GroupResult
 from question_engines.group.engine import MAX_MEMBERS, place
 
 from .sessions import EngineUnavailable, StaleStep, load_candidates, restaurant_menus
@@ -96,6 +96,7 @@ class Room:
         self.host_id = 0
         self.status = "lobby"
         self.engine: GroupEngine | None = None
+        self.result: GroupResult | None = None  # kept for "find another" until the host decides
         self.round_started = 0.0
         self.round_answers: dict[int, str] = {}
         self.rounds = 0  # the engine's count, kept once the engine is let go
@@ -204,12 +205,13 @@ class Room:
 
     def _finish(self) -> None:
         self.status = "done"
+        self.result, self.rounds, self.engine = GroupResult(self.engine), self.engine.round, None
         self._choose()
 
     def _choose(self) -> None:
         """Up to two restaurants the room has not been shown yet, with no votes."""
-        result = self.engine.recommendation(self.shown)
-        satisfaction = self.engine.satisfaction()
+        result = self.result.recommendation(self.shown)
+        satisfaction = self.result.satisfaction
         self.picks = []
         for pick in result["picks"]:
             at, r = (pick["restaurant"], pick["lat"], pick["lng"]), pick["index"]
@@ -233,9 +235,8 @@ class Room:
         self._choose()
 
     def _let_go(self) -> None:
-        """Drops the engine's tables (one per allergic member over every restaurant and menu)."""
-        if self.engine is not None:
-            self.rounds, self.engine, self.menus, self.more = self.engine.round, None, {}, False
+        """Drops what later picks would need, once there will be none."""
+        self.result, self.menus, self.more = None, {}, False
 
     def _pick(self, pick: int) -> int:
         """Checks a pick's position: two branches of one chain share a name."""
