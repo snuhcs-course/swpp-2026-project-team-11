@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -47,6 +48,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -104,15 +106,11 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onVote: (Int, Boolean) -> 
         TopRow(Modifier.statusBarsPadding(), arrangement = Arrangement.End) {
             CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
         }
-        // The chips share the width, so a long name ends in "…" instead of pushing the other off.
-        Row(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = sheetTop - 56.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        ChipRow(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = sheetTop - 56.dp), spacing = 8.dp) {
             picks.forEachIndexed { index, p ->
                 if (room.decided != null && index != room.decided) return@forEachIndexed
                 val on = index == shownAt
-                Box(Modifier.weight(1f, fill = false)) {
+                Box {
                     Text(
                         placeName(p.restaurant),
                         Modifier
@@ -312,6 +310,35 @@ private fun PicksMap(picks: List<RoomPick>, selected: Int, sheetHeight: Dp, onSe
             }
         }
     }
+}
+
+/**
+ * Lays the chips in a row, each as wide as its name needs. When they do not all fit, the
+ * narrower ones keep their width and the rest share what is left, ending in "…".
+ */
+@Composable
+private fun ChipRow(modifier: Modifier, spacing: Dp, content: @Composable () -> Unit) {
+    Layout(content, modifier) { measurables, constraints ->
+        val gap = spacing.roundToPx()
+        val free = constraints.maxWidth - gap * (measurables.size - 1).coerceAtLeast(0)
+        val widths = chipWidths(measurables.map { it.maxIntrinsicWidth(constraints.maxHeight) }, free)
+        val placeables = measurables.mapIndexed { i, it -> it.measure(Constraints(maxWidth = widths[i])) }
+        layout(constraints.maxWidth, placeables.maxOfOrNull { it.height } ?: 0) {
+            var x = 0
+            placeables.forEach { it.placeRelative(x, 0); x += it.width + gap }
+        }
+    }
+}
+
+/** Widths for chips that want [wanted] within [free]: the narrowest first, each at most an even share of what is left. */
+internal fun chipWidths(wanted: List<Int>, free: Int): List<Int> {
+    val widths = MutableList(wanted.size) { 0 }
+    var left = free.coerceAtLeast(0)
+    wanted.indices.sortedBy { wanted[it] }.forEachIndexed { placed, i ->
+        widths[i] = minOf(wanted[i], left / (wanted.size - placed))
+        left -= widths[i]
+    }
+    return widths
 }
 
 /** The positions of the picks with the most votes, all of them on a tie; none while fewer than two
