@@ -1,9 +1,9 @@
-"""python manage.py run_store_pipeline --file stores.json [--review PATH]
+"""python manage.py run_store_pipeline --file stores.json --mapping mapping.csv [--review PATH]
 
 The restaurants near the stations, start to finish, whenever they are crawled again:
-  1. import_stores               - read the crawl, drop notices and drinks, resolve and store
-  2. extract_features --stores   - tag the new dishes with feature values
-  3. extract_allergens --stores  - tag the new dishes with allergens
+  1. import_stores                    - read the crawl, drop notices and drinks, resolve and store
+  2. import_canonical_mapping --apply - map the sales menus to canonical dishes
+  3. extract_allergens --stores       - tag the new dishes with allergens
 
 It needs the key of METCHU_MENU_MODEL (menus/llm.py). Dishes and lines resolved
 before, by this or by the cafeteria pipeline, are reused, so only new ones cost LLM
@@ -25,6 +25,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--file", required=True, help="the crawl JSON")
+        parser.add_argument("--mapping", required=True, help="the operator's sales-menu mapping CSV")
         parser.add_argument("--review", default=None, help="also write the review CSV here")
 
     def handle(self, *args, **options):
@@ -33,8 +34,9 @@ class Command(BaseCommand):
         importing = ["import_stores", "--file", options["file"]]
         if options["review"]:
             importing += ["--review", options["review"]]
-        steps = [("[1/2] 가게 메뉴 가져오기·전처리", importing),
-                 ("[2/2] 새 요리 알레르기 태깅", ["extract_allergens", "--stores"])]
+        steps = [("[1/3] 가게 메뉴 가져오기·전처리", importing),
+                 ("[2/3] 판매 메뉴 매핑", ["import_canonical_mapping", "--file", options["mapping"], "--apply"]),
+                 ("[3/3] 새 요리 알레르기 태깅", ["extract_allergens", "--stores"])]
         errors = []
         for title, command in steps:
             self.stdout.write(title)
