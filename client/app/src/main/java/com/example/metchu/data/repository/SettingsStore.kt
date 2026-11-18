@@ -31,7 +31,7 @@ class SettingsStore(context: Context) {
         set(value) = prefs.edit().putString(ENGINE, value).apply()
 
     var place: Place
-        get() = runCatching { Place.valueOf(prefs.getString(PLACE, null).orEmpty()) }.getOrDefault(Place.NEAR)
+        get() = runCatching { Place.valueOf(prefs.getString(PLACE, null).orEmpty()) }.getOrDefault(Place.ANY)
         set(value) = prefs.edit().putString(PLACE, value.name).apply()
 
     var price: Price
