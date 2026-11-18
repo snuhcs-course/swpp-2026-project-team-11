@@ -142,21 +142,21 @@ class MainActivityTest {
     // --- start ---
 
     @Test
-    fun nearbyRequestsBothSourcesWithDistanceLimit() {
-        api.reply(question)
-        tap("start")
-        assertEquals("all", api.lastCreateRequest?.source)
-        assertEquals("near", api.lastCreateRequest?.distanceScope)
-    }
-
-    @Test
-    fun allRestaurantsRequestsBothSources() {
-        tap("placeToken")
-        tapText(R.string.place_any_option)
+    fun anywhereIsTheDefaultAndRequestsBothSources() {
         api.reply(question)
         tap("start")
         assertEquals("all", api.lastCreateRequest?.source)
         assertEquals("any", api.lastCreateRequest?.distanceScope)
+    }
+
+    @Test
+    fun nearbyRequestsBothSourcesWithDistanceLimit() {
+        tap("placeToken")
+        tapText(R.string.place_near_option)
+        api.reply(question)
+        tap("start")
+        assertEquals("all", api.lastCreateRequest?.source)
+        assertEquals("near", api.lastCreateRequest?.distanceScope)
     }
 
     @Test
