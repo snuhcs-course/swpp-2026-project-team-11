@@ -224,6 +224,9 @@
     <string name="group_decide">여기로 정하기</string>
     <string name="group_host_picking">방장이 고르는 중</string>
     <string name="group_meet">%1$s에서 만나요</string>
+    <string name="group_agree">찬성 %1$d</string>
+    <string name="group_agree_action">이 식당에 찬성하기</string>
+    <string name="group_popular">인기</string>
     <string name="group_error_not_found">이 코드로 열린 방이 없어요.</string>
     <string name="group_error_started">이미 시작한 방이에요.</string>
     <string name="group_error_full">방이 꽉 찼어요(8명).</string>

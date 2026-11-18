@@ -291,6 +291,7 @@ def ban(request, session_id: str):
 #   POST /api/rooms/<code>/start/                         (host)        -> state
 #   POST /api/rooms/<code>/answer/  {"question_id", "answer_id"}        -> state
 #   POST /api/rooms/<code>/recommend-now/                 (host)        -> state
+#   POST /api/rooms/<code>/vote/    {"pick", "agree"}                   -> state
 #   POST /api/rooms/<code>/decide/  {"pick"}              (host)        -> state
 #   POST /api/rooms/<code>/leave/                                       -> 204
 #
@@ -421,6 +422,12 @@ def answer_room(request, code: str):
 @require_POST
 def recommend_room_now(request, code: str):
     return _room_request(request, code, lambda room, member, body: room.recommend_now(member))
+
+
+@csrf_exempt
+@require_POST
+def vote_room(request, code: str):
+    return _room_request(request, code, lambda room, member, body: room.vote(member, body["pick"], body["agree"]))
 
 
 @csrf_exempt

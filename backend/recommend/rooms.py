@@ -4,7 +4,7 @@
     join(code, name, allergies, language)       -> (Room, Member)
     get(code)                                   -> Room | None
     room.start(member) / answer(member, question_id, answer_id) / recommend_now(member)
-    room.decide(member, pick) / leave(member)
+    room.vote(member, pick, agree) / decide(member, pick) / leave(member)
     room.public_state(member)                   -> what that member's phone draws
 
 A room has a four-digit code and 2 to 8 members. Each phone holds its member's secret
@@ -21,7 +21,8 @@ checked whenever the room is read or acted on, so phones polling the room move i
 
 The result is up to two restaurants, each with every member's dish there, the restaurant's
 other dishes (by meal and name, like a session's menu), and how well the place fits them: "great" among their best tenth of the restaurants they can eat at, otherwise
-"good". A member's allergies only remove dishes from their own choice. Rooms live in this process only,
+"good". Until the host decides, every member may agree with any of the restaurants; each
+shows how many agree and whether this member does. A member who leaves takes their votes along. A member's allergies only remove dishes from their own choice. Rooms live in this process only,
 like sessions (recommend/sessions.py).
 """
 
@@ -98,6 +99,7 @@ class Room:
         self.picks: list[dict] | None = None
         self.menus: dict[tuple, list[dict]] = {}
         self.decided: int | None = None
+        self.votes: list[set[int]] = []  # per pick, the members who agree with it
         self.lock = threading.Lock()
 
     def member(self, token: str | None) -> Member | None:
@@ -211,22 +213,36 @@ class Room:
                 "menus": [{"member_id": m.id, "food": food, "fit": _fit(satisfaction[m.id], r)}
                           for m, food in zip(self.members, pick["menus"])],
                 "others": [dish for dish in self.menus.get(at, []) if dish["food_id"] not in suggested]})
+        self.votes = [set() for _ in self.picks]
         # The engine's tables (one per allergic member over every restaurant and menu) are not needed again.
         self.rounds, self.engine, self.menus = self.engine.round, None, {}
 
-    def decide(self, member: Member, pick: int) -> None:
-        """Chooses a pick by its position: two branches of one chain share a name."""
-        self._require_host(member)
+    def _pick(self, pick: int) -> int:
+        """Checks a pick's position: two branches of one chain share a name."""
         if self.status != "done":
-            raise StaleStep("There is no result to decide on yet.")
+            raise StaleStep("There is no result yet.")
         if type(pick) is not int or not 0 <= pick < len(self.picks):
             raise ValueError("pick must be the position of a suggested restaurant.")
-        self.decided = pick
+        return pick
+
+    def vote(self, member: Member, pick: int, agree: bool) -> None:
+        self._pick(pick)
+        if type(agree) is not bool:
+            raise ValueError("agree must be true or false.")
+        if self.decided is not None:
+            raise StaleStep("The host has already decided.")
+        (self.votes[pick].add if agree else self.votes[pick].discard)(member.id)
+
+    def decide(self, member: Member, pick: int) -> None:
+        self._require_host(member)
+        self.decided = self._pick(pick)
 
     def leave(self, member: Member) -> None:
         if member.left:
             return
         member.left = True
+        for voters in self.votes:
+            voters.discard(member.id)
         present = self._present()
         if member.id == self.host_id and present:
             self.host_id = random.choice(present).id
@@ -257,7 +273,9 @@ class Room:
             "my_answer": self.round_answers.get(member.id) if asking else None,
             "seconds_left": max(0.0, round(ROUND_SECONDS - (clock() - self.round_started), 1)) if asking else None,
             "round_seconds": ROUND_SECONDS,
-            "picks": self.picks,
+            "picks": None if self.picks is None else [
+                {**pick, "votes": len(voters), "voted": member.id in voters}
+                for pick, voters in zip(self.picks, self.votes)],
             "decided": self.decided,
         }
 

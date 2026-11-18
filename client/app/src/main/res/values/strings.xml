@@ -242,6 +242,9 @@
     <string name="group_decide">Go here</string>
     <string name="group_host_picking">The host is choosing</string>
     <string name="group_meet">Meet at %1$s</string>
+    <string name="group_agree">Agree %1$d</string>
+    <string name="group_agree_action">Agree with this place</string>
+    <string name="group_popular">Popular</string>
     <string name="group_error_not_found">No room is open with this code.</string>
     <string name="group_error_started">That room has already started.</string>
     <string name="group_error_full">That room is full (8 people).</string>

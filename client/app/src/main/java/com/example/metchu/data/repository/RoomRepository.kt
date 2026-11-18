@@ -10,6 +10,7 @@ import com.example.metchu.data.network.JoinRoomRequest
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.network.RoomApi
 import com.example.metchu.data.network.UserLocation
+import com.example.metchu.data.network.VoteRequest
 
 /** Which room this phone is in, and the secret that proves it is this member. */
 data class Membership(val code: String, val token: String)
@@ -45,6 +46,8 @@ class RoomRepository(private val api: RoomApi = RetrofitInstance.roomApi) {
         api.answer(room.code, room.token, AnswerRequest(questionId, answerId))
 
     suspend fun recommendNow(room: Membership): RoomState = api.recommendNow(room.code, room.token)
+
+    suspend fun vote(room: Membership, pick: Int, agree: Boolean): RoomState = api.vote(room.code, room.token, VoteRequest(pick, agree))
 
     suspend fun decide(room: Membership, pick: Int): RoomState = api.decide(room.code, room.token, DecideRequest(pick))
 
