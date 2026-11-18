@@ -116,7 +116,9 @@ data class Offer(
     val price: Int?,
     val lat: Double?,
     val lng: Double?,
-    @SerializedName("distance_m") val distanceM: Int?
+    @SerializedName("distance_m") val distanceM: Int?,
+    @SerializedName("menu_name") val menuName: String? = null,
+    @SerializedName("restaurant_code") val restaurantCode: String? = null
 )
 
 /** Present when a guess names a whole group; [Step.food] is then one example from it. */

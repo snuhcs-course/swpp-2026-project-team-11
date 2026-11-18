@@ -100,8 +100,8 @@ class ReviewTests(SimpleTestCase):
         sheet = book[review.SHEET]
         header = [c.value for c in sheet[4]]
         self.assertEqual(header, list(review.COLUMNS) + review.value_columns())
-        self.assertEqual(header[7:11], ["spicy_mean", "spicy_mean_wrong", "spicy_std", "spicy_std_wrong"])
-        self.assertEqual((sheet["A5"].value, sheet["B5"].value, sheet["H5"].value, sheet["E6"].value),
+        self.assertEqual(header[7:11], ["soupy_mean", "soupy_mean_wrong", "soupy_std", "soupy_std_wrong"])
+        self.assertEqual((sheet["A5"].value, sheet["B5"].value, sheet.cell(5, header.index("spicy_mean")+1).value, sheet["E6"].value),
                          (1, "김치찌개", 0.6, "세트"))
         self.assertIn('"완료",\'검토\'!$I$5:$I$7,"X"', book["요약"]["C7"].value)  # spicy mean marks
 
@@ -136,13 +136,13 @@ class ReviewTests(SimpleTestCase):
         book = openpyxl.load_workbook(path)
         book[review.SHEET]["I5"] = "O"
         book.save(path)
-        with self.assertRaisesMessage(ValueError, "row 5: spicy_mean_wrong is 'O'"):
+        with self.assertRaisesMessage(ValueError, "row 5: soupy_mean_wrong is 'O'"):
             review.load([path])
 
     def test_the_pass_bar_per_field_and_feature(self):
         keys = LLM_FEATURE_KEYS
         # 20 dishes x 32 means, 32 wrong: overall 95%; at most 3 wrong per feature: 85%.
-        wrong = [(keys[k], "mean") for k in range(10) for _ in range(3)] + [(keys[10], "mean")] * 2
+        wrong = [(keys[k], "mean") for k in range(17) for _ in range(3)] + [(keys[17], "mean")] * 2
         reviews = [rated("kim", i, [w for j, w in enumerate(wrong) if j % 20 == i]) for i in range(20)]
         summary = review.summarize(reviews)["general"]
         self.assertEqual((summary["done"], summary["fields"]["mean"]["overall"]), (20, 0.95))
@@ -167,10 +167,10 @@ class ReviewTests(SimpleTestCase):
         other = [rated("kim", 10 + i, population=population) for i in range(10)]
         summary = review.summarize(hard + other)["general"]
         self.assertAlmostEqual(summary["fields"]["mean"]["feature"]["spicy"], 0.25 * 0.5 + 0.75 * 1.0)  # not 0.75
-        self.assertAlmostEqual(summary["fields"]["mean"]["overall"], 1 - 0.25 * 5 / 320)
+        self.assertAlmostEqual(summary["fields"]["mean"]["overall"], 1 - 0.25 * 5 / (10 * len(LLM_FEATURE_KEYS)))
         self.assertEqual((summary["strata"]["hard"]["done"], summary["strata"]["hard"]["pool"]), (10, 25))
-        self.assertAlmostEqual(summary["strata"]["hard"]["mean"], 1 - 5 / 320)
-        self.assertIn("| general | hard | 25 | 10 | 98.4% | 100.0% |", review.report({"general": summary}))
+        self.assertAlmostEqual(summary["strata"]["hard"]["mean"], 1 - 5 / (10 * len(LLM_FEATURE_KEYS)))
+        self.assertIn("| general | hard | 25 | 10 | 99.1% | 100.0% |", review.report({"general": summary}))
 
     def test_a_stratum_without_completed_rows_cannot_pass(self):
         population = {"hard": 20, "other": 60}
@@ -188,8 +188,8 @@ class ReviewTests(SimpleTestCase):
                    rated("kim", 2), rated("lee", 3, status=review.UNKNOWN)]
         summary = review.summarize(reviews)["general"]
         self.assertEqual((summary["dishes"], summary["done"], summary["unknown"], summary["shared_dishes"]), (3, 3, 1, 1))
-        self.assertEqual((summary["agreement"], summary["wrong_agreement"]), (63 / 64, 0.5))
-        self.assertIn("| general | 2 | 3 | 3 | 1 | 97.9% | spicy 33.3% | 99.0% | sweet 66.7% | no | 98.4% (1) | 50.0% |",
+        self.assertEqual((summary["agreement"], summary["wrong_agreement"]), (105 / 106, 0.5))
+        self.assertIn("| general | 2 | 3 | 3 | 1 | 98.7% | spicy 33.3% | 99.4% | sweet 66.7% | no | 99.1% (1) | 50.0% |",
                       review.report({"general": summary}))
 
 
@@ -251,7 +251,7 @@ class CommandTests(TestCase):
         call_command("report_feature_review", "--reviews", *map(str, self.folder.glob("*.xlsx")),
                      "--output", str(report), stdout=out)
         text = report.read_text(encoding="utf-8")
-        self.assertIn("| cafeteria 2026-11-02 | 2 | 3 | 6 | 0 | 97.9% | spicy 33.3% | 100.0% |", text)
+        self.assertIn("| cafeteria 2026-11-02 | 2 | 3 | 6 | 0 | 98.7% | spicy 33.3% | 100.0% |", text)
         self.assertIn("| no | 100.0% (3) | 100.0% |", text)
 
     def test_a_day_can_be_sampled(self):
@@ -276,7 +276,7 @@ class CommandTests(TestCase):
               "식당별 유형": "1, 2: 육류,고기요리", "특성 추출 모델": "1, 2: gpt-test",
               "구성 음식(원본 연결)": "LA갈비", "feature 버전": FEATURE_VERSION}, {"beef": 0.9}),
             ({"후보 ID": 13, "원본 메뉴명": "LA갈비 세트", "식당 목록": "1. 풍년옥", "식당별 유형": "1: 한식",
-              "구성 음식(원본 연결)": "LA갈비", "feature 버전": FEATURE_VERSION}, {"beef": 0.9, "meal_variety": 1}),
+              "구성 음식(원본 연결)": "LA갈비", "feature 버전": FEATURE_VERSION}, {"beef": 0.9, "mixed": 1}),
             ({"후보 ID": 14, "원본 메뉴명": "옛 메뉴", "식당 목록": "1. 풍년옥", "구성 음식(원본 연결)": "옛 메뉴",
               "feature 버전": "v1"}, {}),
             ({"원본 메뉴명": "보류 메뉴", "구성 음식(원본 연결)": "보류", "feature 버전": FEATURE_VERSION}, {}),
@@ -286,9 +286,9 @@ class CommandTests(TestCase):
         self.assertEqual(close.call_count, 1)  # a read-only book left open is locked on Windows
         self.assertIn("general: 음식 2개 중 2개", self.export("--workbook", str(path), "--overlap", "2"))
         self.assertEqual([row[:4] + row[6:] for row in self.assignment("general")],
-                         [["11", "LA갈비", "", "육류,고기요리", "kim, lee"], ["13", "LA갈비", "세트", "한식", "kim, lee"]])
+                         [["11", "LA갈비", "", "육류,고기요리", "kim, lee"], ["13", "LA갈비", "", "한식", "kim, lee"]])
         self.assertEqual([row[4:6] for row in self.assignment("general")],
-                         [["hard", "cuisine, spread"], ["hard", "set, cuisine, spread"]])
+                         [["hard", "cuisine, spread"], ["hard", "cuisine, spread"]])
         sheet = openpyxl.load_workbook(self.folder / "general_kim.xlsx")[review.SHEET]
         served = {sheet.cell(row, 1).value: sheet.cell(row, 6).value for row in (5, 6)}
         self.assertEqual(served[11], "목구멍: 대패 LA갈비\n목구멍 2호점: 대패 LA갈비\n풍년옥: LA갈비 (250g) (숯불)")

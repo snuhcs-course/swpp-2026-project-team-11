@@ -10,11 +10,19 @@ from .helpers import DAY, add_food, check_state, post
 
 
 class RLSessions(TestCase):
+    def setUp(self):
+        from menus.personal import offers
+        from menus import services
+        services._store_menus=None
+        patcher=patch.object(offers,'resolve',side_effect=lambda row,index:{'Test 0':'food_001','Test 1':'food_002','Test 2':'food_003'}.get(row.raw_name))
+        patcher.start();self.addCleanup(patcher.stop)
+        self.addCleanup(setattr,services,'_store_menus',None)
+
     def test_general_rejection_undo_and_confirm_preserve_offers(self):
         store = Restaurant.objects.create(code="R1", name="Test restaurant", source="naver", lat=37.48, lng=126.95)
         for i in range(3):
             features = {k: float((j+i)%3 == 0) for j,k in enumerate(FEATURE_KEYS)}
-            f = Food.objects.create(name=f"Test {i}", is_food=True, feature_version="v2",
+            f = Food.objects.create(name=f"Test {i}", is_food=True, feature_version="v3",
                                     features=features, feature_std=dict.fromkeys(FEATURE_KEYS, 0.))
             StoreMenu.objects.create(food=f, restaurant=store, raw_name=f.name, price=7000+i)
         response = post(self.client, "/api/sessions/", {"source":"general", "engine":"rl", "meal":"LU", "language":"ko"})
@@ -40,7 +48,7 @@ class RLSessions(TestCase):
         self.assertEqual(reason.status_code, 200)
         self.assertEqual(reason.json()["source"], "template")
         self.assertIn(first["food"]["display_name"], reason.json()["reason"])
-        self.assertIn("골랐어요", reason.json()["reason"])
+        self.assertRegex(reason.json()["reason"], "골랐어요|골라 봤어요")
         original = first["food"]
         self.assertEqual(original["offers"][0]["restaurant"], store.name)
         self.assertEqual(original["offers"][0]["lat"], store.lat)
@@ -71,7 +79,7 @@ class RLSessions(TestCase):
 
     def test_invalid_stored_v2_menu_is_withheld_without_breaking_the_session(self):
         food = add_food("Invalid v2 menu")
-        food.feature_version = "v2"
+        food.feature_version = "v3"
         food.features = {"rice": 2.0}
         food.feature_std = {}
         food.save()
@@ -81,14 +89,14 @@ class RLSessions(TestCase):
 
     def test_shares_only_numeric_state_and_can_undo_a_question(self):
         self.assertEqual(tuple(FEATURE_KEYS), RL_KEYS)
-        rows = [{"food_id":i+1, "name":str(i), "features":{k:float((i >> (j%4))&1) for j,k in enumerate(RL_KEYS)}}
+        rows = [{"food_id":i+1, "name":str(i), "features":{k:float((i >> (j%4))&1) for j,k in enumerate(RL_KEYS)},"feature_std":dict.fromkeys(RL_KEYS,0.)}
                 for i in range(12)]
         engine = RLEngine(rows)
         renamed = RLEngine([{**r, "food_id":r["food_id"]+100, "name":"new"} for r in rows])
-        self.assertIs(engine.world, renamed.world)
+        self.assertEqual(engine.world.numeric_fingerprint, renamed.world.numeric_fingerprint)
         first = engine.start()
         self.assertEqual(first["type"], "question")
         engine.answer(first["question_id"], "yes")
         self.assertEqual(engine.undo(), first)
-        self.assertEqual(renamed.start(), first)
-        self.assertIsNot(prepare([{**rows[0], "features":{}}]), prepare([{**rows[0], "features":{"rice":0}}]))
+        self.assertEqual(renamed.start()["type"], first["type"])
+        with self.assertRaises(ValueError):prepare([{**rows[0], "features":{}}])

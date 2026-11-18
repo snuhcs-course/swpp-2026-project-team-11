@@ -10,7 +10,7 @@ extracted mean/std values are, as far as that can be measured.
     benchmark_features          -> report.md, CSVs and histograms (no LLM call)
 
 The report's sections:
-  integrity    - 33 keys (32 measured + meal_variety for stored foods), bounds, std² <= mean(1-mean)
+  integrity    - 53 current measurement keys, bounds, std² <= mean(1-mean)
   distribution - each feature's histogram of means, and dishes the features cannot tell apart
   stability    - repeated extraction, with the food order or the rubric's feature order shuffled
   human        - LLM means and stds against human ratings, next to how well the raters agree

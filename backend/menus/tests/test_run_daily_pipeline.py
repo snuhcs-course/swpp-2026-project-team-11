@@ -12,7 +12,7 @@ from menus.tests.test_menu_labels import FakeLabels
 from menus.allergens import ALLERGEN_VERSION
 from menus.features import extractor
 from menus.features.schema import FEATURE_VERSION
-from menus.models import Food
+from menus.models import Food, SalesMenu
 from menus.preprocess import mapper
 from menus.tests.test_extract_allergens import FakeLLM as FakeAllergenTagger
 from menus.tests.test_extract_features import FakeLLM as FakeTagger
@@ -44,7 +44,7 @@ class RunDailyPipelineTests(TestCase):
             self.assertTrue(review.exists())
         self.assertEqual(sorted(Food.objects.values_list("name", flat=True)),
                          ["돈까스", "마라탕", "즉석마라탕", "카레우동"])
-        self.assertFalse(Food.objects.exclude(feature_version=FEATURE_VERSION).exists())
+        self.assertEqual(SalesMenu.objects.filter(feature_version=FEATURE_VERSION).count(),3)
         self.assertFalse(Food.objects.exclude(allergen_version=ALLERGEN_VERSION).exists())
         self.assertIn("점심 3", output)  # the combo is one sales menu
         self.assertIn("[4/5]", output)
@@ -53,11 +53,12 @@ class RunDailyPipelineTests(TestCase):
     def test_a_failing_step_fails_the_run_after_every_step_ran(self):
         with tempfile.TemporaryDirectory() as tmp:
             review = pathlib.Path(tmp) / "review.csv"
-            with self.assertRaisesMessage(CommandError, "extract_features: 특징을 뽑지 못한 음식 1개"):
+            with self.assertRaisesMessage(CommandError, "extract_menu_features: 1 campus menus"):
                 self.run_pipeline("--review", str(review), tagger=FakeTagger(always_fail=["카레우동"]))
             self.assertTrue(review.exists())
         self.assertEqual(Food.objects.get(name="카레우동").feature_version, "")
-        self.assertEqual(Food.objects.get(name="돈까스").feature_version, FEATURE_VERSION)
+        self.assertEqual(SalesMenu.objects.filter(feature_version=FEATURE_VERSION).count(),2)
+        self.assertFalse(SalesMenu.objects.filter(name="돈가스 카레우동",feature_version=FEATURE_VERSION).exists())
 
     def test_requires_an_api_key(self):
         with self.assertRaisesMessage(CommandError, "GOOGLE_API_KEY"):

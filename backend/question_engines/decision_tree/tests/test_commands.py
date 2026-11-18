@@ -8,7 +8,7 @@ from django.test import TestCase
 
 
 class CommandIntegrationTests(TestCase):
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def test_smoke_exports_replayable_snapshot_and_real_offers(self):
         with tempfile.TemporaryDirectory() as directory:

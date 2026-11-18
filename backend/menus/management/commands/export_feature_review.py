@@ -45,7 +45,7 @@ def _per_store(text) -> dict[int, str]:
 
 
 def workbook_dishes(path) -> dict[str, dict]:
-    """The export's menus with v2 features, grouped into dishes: one per linked dish and feature values."""
+    """The export's menus with current features, grouped into dishes: one per linked dish and feature values."""
     book = openpyxl.load_workbook(path, read_only=True)
     try:  # a read-only book keeps its file open (locked on Windows) until closed
         rows = iter(list(book[STORE_SHEET].iter_rows(values_only=True)))
@@ -79,7 +79,7 @@ def workbook_dishes(path) -> dict[str, dict]:
             models.update(_per_store(menu[column["특성 추출 모델"]]).values())
         dishes[str(row[0])] = {
             "id": row[0], "name": name, "food_group": row[column["음식 분류"]] or "",
-            "is_set": (features["mean"].get("meal_variety") or 0) >= 0.5,
+            "is_set": False,  # Measurements alone do not establish whether a menu is a set.
             "served": list(dict.fromkeys(served))[:SERVED_SHOWN],
             "features": features["mean"], "feature_std": features["std"],
             "model": models.most_common(1)[0][0] if models else "",

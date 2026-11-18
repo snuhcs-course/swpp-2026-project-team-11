@@ -31,7 +31,7 @@ file so the ordinary Claude CLI and editor integrations use the same rules.
 Metchu! picks a meal by asking about the user's preferences. The decision tree,
 feature-only RL policy and LLM engine in `backend/question_engines/` share the
 session API in `backend/recommend`. The Android client in `client/` selects the
-engine in Settings. RL uses v2 food features; the decision tree and RL run without an API key.
+engine in Settings. All engines use the single 53-feature v3 schema; the decision tree and RL run without an API key.
 
 ## Commands
 
@@ -39,7 +39,7 @@ engine in Settings. RL uses v2 food features; the decision tree and RL run witho
 pytest backend                                   # all backend tests; no key, no network
 python -m pytest tools/tests                     # harness tests; synthetic data only
 METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
-                                                 # after migrate + loaddata menus_2026-11-02
+                                                 # after migrate + loaddata menus_v3_contract
 cd client && ./gradlew testDebugUnitTest         # JDK 21; the build fails on JDK 25
 ```
 

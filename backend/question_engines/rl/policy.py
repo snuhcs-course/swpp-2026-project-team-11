@@ -1,177 +1,123 @@
-"""Frozen v20 inference over any v2 candidate set. Only numeric features reach the policy."""
+"""Frozen 53-feature personal policy. CPU inference; no training runtime imports."""
+import csv
+from functools import lru_cache
 import hashlib
 import json
-import threading
-import weakref
-from numbers import Real
-from operator import itemgetter
 from pathlib import Path
+import threading
 
 import numpy as np
 
+from menus.features.schema import FEATURE_KEYS, MODEL_LABELS
 
-_export = json.loads(Path(__file__).with_name("weights.json").read_text())
-MODEL_VERSION = _export["version"]
-CHECKPOINT_SHA256 = _export["source_sha256"]
-FEATURE_KEYS = tuple(_export["keys"])
-_keys = frozenset(FEATURE_KEYS)
-_ordered_values = itemgetter(*FEATURE_KEYS)
-_parameters = {key: np.array(value, dtype=np.float32) for key, value in _export["parameters"].items()}
-_catalogs = weakref.WeakValueDictionary()
+ASSETS = Path(__file__).with_name('assets')
+MANIFEST = json.loads((ASSETS/'manifest.json').read_text())
+MODEL_VERSION = MANIFEST['version']
+CHECKPOINT_SHA256 = MANIFEST['checkpoint_sha256']
 _lock = threading.Lock()
 
-
-def _weighted_sum(weights, matrix):
-    # Small reductions on a web request do not need a multithreaded BLAS pool.
-    return np.einsum("i,ij->j", weights, matrix)
-
-
-def _feature_row(mapping, default):
-    if not isinstance(mapping, dict) or mapping.keys() - _keys:
-        raise ValueError("Expected keyed v2 feature values")
-    types = set(map(type, mapping.values()))
-    if not types <= {float, int, type(None)} and any(
-        v is not None and (isinstance(v, bool) or not isinstance(v, Real)) for v in mapping.values()
-    ):
-        raise ValueError("Feature values must be numeric")
-    if len(mapping) == len(FEATURE_KEYS) and type(None) not in types:
-        return _ordered_values(mapping), None
-    values = tuple(mapping.get(key) for key in FEATURE_KEYS)
-    return tuple(default if v is None else v for v in values), tuple(v is not None for v in values)
-
-
-def _matrix(rows, maximum, label):
-    # Validate in double precision before converting to the checkpoint dtype.
-    values = np.asarray(rows, dtype=np.float64)
-    if not np.isfinite(values).all() or values.min() < 0 or values.max() > maximum:
-        raise ValueError(f"Invalid {label}; expected finite values in [0, {maximum}]")
-    return values.astype(np.float32)
+@lru_cache(maxsize=1)
+def model():
+    import torch
+    from .neural import PosteriorDialogueModel
+    with _lock:
+        if list(MODEL_LABELS) != MANIFEST["feature_keys"]:
+            raise ValueError("The feature order differs from the frozen model")
+        if hashlib.sha256((ASSETS/'weights.npz').read_bytes()).hexdigest() != MANIFEST['weights_sha256']:
+            raise ValueError('Personal model checksum mismatch')
+        torch.set_num_threads(1)
+        network = PosteriorDialogueModel().cpu().eval()
+        with np.load(ASSETS/'weights.npz') as data:
+            state = {k:torch.from_numpy(data[k].copy()) for k in data.files if k!='food_prior'}
+            prior = data['food_prior'].copy()
+        network.load_state_dict(state, strict=True)
+        for parameter in network.parameters():parameter.requires_grad_(False)
+        return network, prior
 
 
 def prepare(rows):
-    """Share prepared numeric data across concurrent sessions, regardless of display metadata."""
-    if not rows:
-        raise ValueError("An empty catalog has no policy action")
-    shape = (len(rows), len(FEATURE_KEYS))
-    mean_rows, std_rows = [], []
-    default_std = (.14,) * len(FEATURE_KEYS)
-    known = np.zeros(shape, dtype=bool)
-    for i, row in enumerate(rows):
-        values, mask = _feature_row(row.get("features"), .5)
-        mean_rows.append(values)
-        if mask is not None:
-            known[i] = mask
-        else:
-            known[i] = True
-        std = row.get("feature_std")
-        if std is None:
-            std_rows.append(default_std)
-        else:
-            std_rows.append(_feature_row(std, .14)[0])
-    means = _matrix(mean_rows, 1, "mean")
-    deviations = _matrix(std_rows, .5, "deviation")
-    digest = hashlib.sha256()
-    for array in (means, deviations, known):
-        digest.update(memoryview(array).cast("B"))
-    key = digest.digest()
-    with _lock:
-        catalog = _catalogs.get(key)
-        if catalog is None:
-            catalog = PreparedCatalog(means, deviations, known)
-            catalog.numeric_fingerprint = key.hex()
-            _catalogs[key] = catalog
-        return catalog
-
-
-def _channel(values):
-    a, b, c, d, e, f = (_parameters["channel.common"] + _parameters["channel.adjust"]).T
-    mild = np.logaddexp(0, b) + .15
-    strong = mild + np.logaddexp(0, a)
-    z = 2 * values - 1
-    logits = np.stack((c + strong*z, d + mild*z, e - mild*z, f - strong*z), axis=-1)
-    direction = np.exp(logits - logits.max(axis=-1, keepdims=True))
-    direction /= direction.sum(axis=-1, keepdims=True)
-    neutral = _parameters["channel.neutral"]
-    direction *= 1 - neutral.sum(axis=-1, keepdims=True)
-    response = np.empty((*values.shape, 6), dtype=np.float32)
-    response[..., [0, 1, 3, 4]] = direction
-    response[..., [2, 5]] = neutral
-    return response
+    return PreparedCatalog(rows)
 
 
 class PreparedCatalog:
-    """Linear catalogue storage. Session-specific answer and refusal state lives in the caller."""
-    def __init__(self, means, deviations, known):
-        size, features = means.shape
-        average = _parameters["average"]
-        strength = known * np.maximum(1 - 4 * deviations**2, 0)
-        filled = np.where(known, means, average)
-        observed = strength * (filled - average)
-        self.prior = np.clip(np.einsum("ij,j->i", observed, _parameters["prior_coef"]), -1.2, 1.2)
-        self.signature = observed / np.maximum(np.linalg.norm(observed, axis=1, keepdims=True), 1e-12)
-        self.prob = np.empty((size, features, 6), dtype=np.float32)
-        self.logratio = np.empty((features, 6, size), dtype=np.float32)
-        self.entropy = np.empty((size, features), dtype=np.float32)
-        sums = np.zeros((features, 6), dtype=np.float64)
-        # Limit scratch space when binding a large, previously unseen menu.
-        for i in range(0, size, 256):
-            block = slice(i, i+256)
-            raw = _channel(filled[block])
-            self.prob[block] = raw
-            sums += (raw * known[block, :, None]).sum(axis=0, dtype=np.float64)
-        counts = known.sum(axis=0)[:, None]
-        marginal = np.where(counts > 0, sums / np.maximum(counts, 1), _channel(average)).astype(np.float32)
-        for i in range(0, size, 256):
-            block = slice(i, i+256)
-            prob = self.prob[block]
-            prob[:] = np.maximum(marginal + strength[block, :, None] * (prob - marginal), 1e-7)
-            prob /= prob.sum(axis=2, keepdims=True)
-            self.logratio[:, :, block] = np.clip(np.log(prob / np.maximum(marginal, 1e-7)), -4, 4).transpose(1, 2, 0)
-            self.entropy[block] = -(prob * np.log(prob)).sum(axis=2)
-        self.logratio[:, [2, 5], :] = 0
-        self.squares = np.square(self.prob).reshape(size, -1)
-        self.prob = self.prob.reshape(size, -1)
-        for array in vars(self).values():
-            array.flags.writeable = False
+    def __init__(self, rows):
+        import torch
+        self.network, priors = model()
+        n, f = len(rows), len(FEATURE_KEYS)
+        means, deviations, masks = [], [], []
+        for row in rows:
+            values, std = row.get('features'), row.get('feature_std')
+            if not isinstance(values,dict) or not isinstance(std,dict):raise ValueError('Mean and std dictionaries are required')
+            if set(values)!=set(FEATURE_KEYS) or set(std)!=set(FEATURE_KEYS):
+                raise ValueError('The personal model requires the complete v3 schema')
+            if any((values[k] is None)!=(std[k] is None) for k in FEATURE_KEYS):raise ValueError("Unknown mean/std must both be null")
+            known=np.array([values[k] is not None and std[k] is not None for k in FEATURE_KEYS])
+            m=np.array([values[k] if known[i] else 0. for i,k in enumerate(FEATURE_KEYS)],dtype=np.float32)
+            s=np.array([std[k] if known[i] else 0. for i,k in enumerate(FEATURE_KEYS)],dtype=np.float32)
+            if not np.isfinite(m).all() or not np.isfinite(s).all() or (m<0).any() or (m>1).any() or (s<0).any() or (s>.5).any() or (s*s>m*(1-m)+1e-6).any():
+                raise ValueError('Invalid personal feature moments')
+            means.append(m);deviations.append(s);masks.append(known)
+        mean=np.asarray(means);std=np.asarray(deviations);mask=np.asarray(masks)
+        # New campus menus retain their own features and identity. Their prior is
+        # smoothly transferred from eight nearest known sensory profiles; no new
+        # menu is classified into a canonical category to enter the candidate pool.
+        with (ASSETS/'foods.csv').open(encoding='utf-8-sig') as file:reference=list(csv.DictReader(file))
+        labels=MANIFEST['feature_keys']
+        rm=np.array([[float(row[k+'_mean']) if row[k+'_mean'] else .5 for k in labels] for row in reference])
+        rk=np.array([[row[k+'_mask']=='1' for k in labels] for row in reference])
+        lookup={key:i for i,key in enumerate(MANIFEST['food_ids'])}
+        assigned=[]
+        for i,row in enumerate(rows):
+            if row.get('canonical_id') in lookup:assigned.append(priors[lookup[row['canonical_id']]])
+            else:
+                common=rk & mask[i];count=common.sum(1)
+                distance=(abs(rm-mean[i])*common).sum(1)/np.maximum(count,1)
+                distance[count==0]=np.inf
+                indices=np.argsort(distance,kind='stable')[:8]
+                weights=np.exp(-8*distance[indices]);den=weights.sum()
+                assigned.append(float(weights@priors[indices]/den) if den else float(np.median(priors)))
+        self.mean=torch.from_numpy(mean);self.std=torch.from_numpy(std);self.mask=torch.from_numpy(mask)
+        self.prior=torch.tensor(assigned,dtype=torch.float32)
+        self.numeric_fingerprint=hashlib.sha256(mean.tobytes()+std.tobytes()+mask.tobytes()+self.prior.numpy().tobytes()).hexdigest()
+        value=.5+(mean-.5)*(1-4*std**2).clip(0)*mask
+        direction=np.stack([value*.68+(1-value)*.02,value*.24+(1-value)*.06,value*.06+(1-value)*.24,value*.02+(1-value)*.68],-1)
+        channel=np.empty((n,f,6),dtype=np.float32);channel[:,:,[0,1,3,4]]=direction*.72;channel[:,:,2]=.18;channel[:,:,5]=.10
+        self.channel=torch.from_numpy(channel.transpose(1,2,0).copy())
+        self.entropy=-(self.channel*self.channel.log()).sum(1).T.contiguous()
 
-    def refusal_row(self, index):
-        """The exact v20 cosine-to-the-fourth contribution for one refused item."""
-        similarity = np.einsum("ij,j->i", self.signature, self.signature[index])
-        np.clip(similarity, 0, 1, out=similarity)
-        np.square(similarity, out=similarity)
-        return np.square(similarity, out=similarity)
+    def probabilities(self, answers, rejected):
+        import torch
+        with torch.inference_mode():
+            a=torch.from_numpy(np.asarray(answers,dtype=np.int64)+1)[None]
+            feedback=torch.from_numpy(np.asarray(rejected,dtype=np.int64))[None]
+            return self.network.predictor(self.mean,self.std,self.mask,self.prior,a,feedback),a
 
-    def decide(self, answers, rejected, *, available=None, refusal_sum=None):
-        """Return (question index or -1, food index, normalized model scores)."""
-        answers = np.asarray(answers)
-        rejected = np.asarray(rejected, dtype=bool)
-        if rejected.all():
-            raise ValueError("All candidates have been rejected")
-        temp, focus, log_cost, power, refusal = _parameters["actor"]
-        logits = self.prior.copy()
-        evidence = np.zeros_like(logits)
-        for q in np.flatnonzero((answers >= 0) & (answers != 2) & (answers != 5)):
-            evidence += self.logratio[q, answers[q]]
-        logits += temp * evidence
-        if rejected.any():
-            if refusal_sum is None:
-                refusal_sum = np.zeros_like(logits)
-                for m in np.flatnonzero(rejected):
-                    refusal_sum += self.refusal_row(m)
-            logits -= refusal * np.minimum(refusal_sum, 3)
-        logits[rejected] = -np.inf
-        weights = np.exp(logits - logits.max())
-        weights /= weights.sum()
-        menu = int(weights.argmax())
-        best = weights[menu]
-        resp = _weighted_sum(weights, self.prob).reshape(-1, 6)
-        information = np.maximum(-(resp * np.log(resp)).sum(axis=1) - _weighted_sum(weights, self.entropy), 0)
-        squared = np.square(weights)
-        concentration = (_weighted_sum(squared, self.squares).reshape(-1, 6) / np.maximum(resp, 1e-9)).sum(axis=1)
-        gain = information + focus * (np.log(np.maximum(concentration / squared.sum(), 1)) - information)
-        gain[answers >= 0] = -np.inf
-        if available is not None:
-            gain[~np.asarray(available, dtype=bool)] = -np.inf
-        question = int(gain.argmax())
-        threshold = np.exp(log_cost) * (best / max(1 - best, 1e-7))**power
-        return (question if gain[question] > threshold else -1), menu, weights
+    def decide(self, answers, rejected, *, requests=0, offers=0, force=False, rng=None, **unused):
+        import torch
+        rng = rng if rng is not None else np.random.default_rng()
+        with torch.inference_mode():
+            pred,a=self.probabilities(answers,rejected)
+            p=pred['acceptance_probability'];best=int(p[0].argmax())
+            scores=p[0].numpy().copy()
+            if force or requests>=20 or (a!=0).all():return -1,best,scores
+            normalized=p/p.sum(-1,keepdim=True).clamp_min(1e-9)
+            resp=torch.einsum('bn,fan->bfa',normalized,self.channel)
+            entropy=-(resp*resp.clamp_min(1e-8).log()).sum(-1)
+            mi=(entropy-normalized@self.entropy).clamp_min(0)
+            numerator=torch.einsum('bn,fan->bfa',normalized.square(),self.channel.square())
+            branch=numerator/resp.square().clamp_min(1e-10)
+            expected=(branch*pred['response_probability']).sum(-1)
+            concentration=(expected/normalized.square().sum(-1,keepdim=True).clamp_min(1e-12)).clamp_min(1).log()
+            gain=(.7123647*mi+.2876353*concentration).clamp_min(0)*(a==0)
+            top=normalized.max(-1).values
+            threshold=.26617*(top/(1-top).clamp_min(1e-7)).pow(.7156705)
+            dt=gain.max(-1).values<=threshold
+            out=self.network.policy(pred,gain,a==0,torch.tensor([float(requests)]),torch.tensor([float(offers)]),dt)
+            modes=out['action_probabilities'][0].numpy().astype(float);modes/=modes.sum()
+            mode=int(rng.choice(2,p=modes))
+            if mode:return -1,best,scores
+            prob=out['question_probabilities'][0].numpy().astype(float);prob/=prob.sum()
+            return int(rng.choice(len(FEATURE_KEYS),p=prob)),best,scores
+
+    def refusal_row(self,index):
+        return np.zeros(len(self.mean))

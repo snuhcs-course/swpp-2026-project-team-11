@@ -7,6 +7,7 @@ eat. A restaurant is a place, (name, lat, lng): branches of one chain are differ
 and the first pick, and a second pick is scored differently (see PICKS).
 No ORM, HTTP or LLM imports.
 """
+import json
 from dataclasses import dataclass
 from threading import Lock
 
@@ -31,6 +32,10 @@ class GroupConfig:
             raise ValueError(f"language must be one of {', '.join(LANGUAGES)}")
         if type(self.max_rounds) is not int or self.max_rounds < 1:
             raise ValueError("max_rounds must be a positive integer")
+
+
+def offer_identity(food_id, offer):
+    return (food_id, json.dumps(offer, sort_keys=True, ensure_ascii=False))
 
 
 def place(offer):
@@ -137,7 +142,7 @@ class GroupEngine:
     another's does not. Members answer in any order; a round ends when all of its
     questions are answered.
     """
-    def __init__(self, candidates, feature_schema, excluded, *, context=None, config=None):
+    def __init__(self, candidates, feature_schema, excluded, *, context=None, config=None, offer_filters=None):
         self.catalog = (candidates if isinstance(candidates, CandidateCatalog)
                         else CandidateCatalog(candidates, feature_schema, context=context))
         self.config = config if isinstance(config, GroupConfig) else GroupConfig(**(config or {}))
@@ -151,6 +156,9 @@ class GroupEngine:
         self.features = features(self.catalog)
         row = {p: r for r, p in enumerate(self.places)}
         column = {c.food_id: f for f, c in enumerate(self.catalog.candidates)}
+        self.offer_filters = offer_filters
+        if offer_filters is not None and len(offer_filters) != len(excluded):
+            raise ValueError("Each member needs an offer filter")
         self.members = []
         for offers in excluded:
             eligible = self.serves.copy()
@@ -261,7 +269,7 @@ class GroupResult:
         if not engine.finished:
             raise ValueError("The group still has questions to answer")
         self.round, self.places, self.features = engine.round, engine.places, engine.features
-        self.candidates = engine.catalog.candidates
+        self.candidates, self.offer_filters = engine.catalog.candidates, engine.offer_filters
         self.satisfaction = engine.satisfaction()
         self.beliefs = [m.belief for m in engine.members]
         self.options = [[np.flatnonzero(row) for row in m.eligible] for m in engine.members]
@@ -278,5 +286,16 @@ class GroupResult:
                            "menus": self._menus_at(r)} for kind, r in chosen]}
 
     def _menus_at(self, r):
-        return [self.candidates[closest(self.features, belief, options[r])].summary() if options[r].size else None
-                for belief, options in zip(self.beliefs, self.options)]
+        menus = []
+        for index, (belief, options) in enumerate(zip(self.beliefs, self.options)):
+            if not options[r].size:
+                menus.append(None); continue
+            food = self.candidates[closest(self.features, belief, options[r])].summary()
+            food["offers"] = [offer for offer in food["offers"]
+                              if place(offer) == self.places[r]
+                              and (self.offer_filters is None or offer_identity(food["food_id"], offer) in self.offer_filters[index])]
+            if not food["offers"]:
+                raise ValueError("Eligible menu has no allowed sales offer")
+            food["display_name"] = food["offers"][0].get("menu_name") or food["display_name"]
+            menus.append(food)
+        return menus

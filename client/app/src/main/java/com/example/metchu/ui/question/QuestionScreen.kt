@@ -410,8 +410,9 @@ private fun lerpStyle(from: TextStyle, to: TextStyle, t: Float): TextStyle = fro
 
 /**
  * "I'm not sure", the five circles and their three captions. A new [question] sends the
- * slider's handle back home. [markUnsure] shows "I'm not sure" in orange, as the answer
- * about to be given.
+ * slider's handle back home and drops a press still held, so letting go answers nothing (a
+ * group round can end under the finger). [markUnsure] shows "I'm not sure" in orange, as the
+ * answer about to be given.
  */
 @Composable
 internal fun AnswerScale(question: String, offered: Set<String>, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit, markUnsure: Boolean = false) {
@@ -427,7 +428,7 @@ internal fun AnswerScale(question: String, offered: Set<String>, loading: Boolea
                         unsure,
                         Modifier
                             .heightIn(min = 32.dp)
-                            .pressPreview(AnswerId.UNKNOWN, loading, onPick, onPress)
+                            .pressPreview(AnswerId.UNKNOWN, question, loading, onPick, onPress)
                             .semantics { role = Role.Button; contentDescription = unsure; onClick { onPick(AnswerId.UNKNOWN); true } }
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                             .testTag("answer_${AnswerId.UNKNOWN}"),
@@ -455,14 +456,14 @@ private fun Caption(@StringRes text: Int, color: Color, scale: Float, width: Dp 
 }
 
 /**
- * Shows the answer while held, picks it on release. The gesture outlives a question when
- * `loading` never shows as true (a reply within a frame), so it reads the current callbacks.
+ * Shows the answer while held, picks it on release. A new [question] ends the press without
+ * picking; the callbacks are read when used, since they change on every recomposition.
  */
 @Composable
-private fun Modifier.pressPreview(id: String, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit): Modifier {
+private fun Modifier.pressPreview(id: String, question: String, loading: Boolean, onPick: (String) -> Unit, onPress: (String?) -> Unit): Modifier {
     val pick by rememberUpdatedState(onPick)
     val press by rememberUpdatedState(onPress)
-    return pointerInput(id, loading) {
+    return pointerInput(id, question, loading) {
         if (loading) return@pointerInput
         detectTapGestures(
             onPress = {
@@ -552,7 +553,7 @@ private fun AnswerSlider(question: String, offered: Set<String>, scale: Float, l
         Row(
             Modifier
                 .fillMaxSize()
-                .pointerInput(loading, picked, centers, allowed) {
+                .pointerInput(question, loading, picked, centers, allowed) {
                     if (loading || picked) return@pointerInput
                     awaitEachGesture {
                         val down = awaitFirstDown()

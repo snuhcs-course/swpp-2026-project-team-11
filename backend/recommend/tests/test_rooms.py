@@ -422,6 +422,11 @@ class MergedOfferTests(TestCase):
     """Equivalent store lines merge under the lowest line ID; the allergen filter drops lines first."""
 
     def setUp(self):
+        from menus.personal import offers
+        from unittest.mock import patch
+        patcher=patch.object(offers,'resolve',return_value='food_009')
+        patcher.start();self.addCleanup(patcher.stop)
+
         features = {key: 0.5 for key in FEATURE_KEYS} | {"pork": 0.9}
         stew = Food.objects.create(name="김치찌개", is_food=True, features=features,
                                    feature_std={key: 0.1 for key in FEATURE_KEYS},

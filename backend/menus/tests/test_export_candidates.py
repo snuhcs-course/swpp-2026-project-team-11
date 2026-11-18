@@ -46,7 +46,7 @@ class ExportCandidatesTests(TestCase):
 class SeedFixtureTests(TestCase):
     """The committed snapshot teammates load instead of calling the LLM."""
 
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def test_snapshot_gives_a_full_candidate_set(self):
         from menus import services

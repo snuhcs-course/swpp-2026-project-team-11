@@ -15,7 +15,7 @@ DAY = "2026-11-02"
 
 
 class InteractionLogTests(TestCase):
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

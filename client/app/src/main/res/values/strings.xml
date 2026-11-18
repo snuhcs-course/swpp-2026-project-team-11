@@ -193,6 +193,7 @@
     <!-- errors -->
     <string name="retry">Try again</string>
     <string name="error_no_server">You can try again once the server is reachable.</string>
+    <string name="loading">Loading</string>
     <string name="error_server">The server couldn’t handle that. You can try again.</string>
     <string name="error_engine_unavailable">The selected question engine is unavailable. Choose another in Settings.</string>
     <string name="error_all_source_llm">All restaurants is available with Decision tree or RL. Change the engine in Settings.</string>

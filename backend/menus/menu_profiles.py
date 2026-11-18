@@ -45,9 +45,17 @@ def validate_features(features, deviations):
         raise ValueError("A menu profile must cover every current feature and std key")
     for key, mean in features.items():
         std = deviations[key]
+        if mean is None and std is None:
+            continue
         if (isinstance(mean, bool) or isinstance(std, bool)
                 or not isinstance(mean, (int, float)) or not isinstance(std, (int, float))
                 or not math.isfinite(mean) or not math.isfinite(std)
                 or not 0 <= mean <= 1 or not 0 <= std <= .5
                 or std * std > mean * (1 - mean) + 1e-12):
             raise ValueError(f"Invalid bounded feature moments for {key}")
+
+
+def campus_key(restaurant_code, raw_name, meal, components):
+    """A whole cafeteria recipe, scoped to its counter and meal, across dates/prices."""
+    return digest(["campus-v3", restaurant_code, title(raw_name), meal,
+                   sorted((food.name, food.is_set) for food in components)])

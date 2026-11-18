@@ -585,6 +585,7 @@ private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit,
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(offer.restaurant, style = MenuNameStyle)
+            offer.menuName?.let { Text(it, style = MetchuType.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             Text(stringResource(R.string.offer_meta, mealName(offer.meal), priceText(offer.price)), style = MetchuType.Caption)
         }
         val meters = cafeteria.meters

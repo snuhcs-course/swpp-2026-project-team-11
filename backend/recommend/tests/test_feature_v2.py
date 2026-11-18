@@ -23,7 +23,7 @@ from .helpers import check_state, post
 DAY = datetime.date(2026, 10, 13)
 
 
-class V2SessionTests(TestCase):
+class V3SessionTests(TestCase):
     def setUp(self):
         self.hall = Restaurant.objects.create(code="test", name="Test hall")
         self.foods = []
@@ -42,8 +42,8 @@ class V2SessionTests(TestCase):
         self.assertTrue(all(row["question_en"].endswith("?") for row in schema))
         questions = {r["key"]: r["question_en"] for r in schema}
         self.assertNotIn("stir", questions["grilled"])
-        self.assertNotEqual(questions["large_portion"], questions["filling"])
-        self.assertNotEqual(questions["oily"], questions["greasy"])
+        self.assertNotEqual(questions["soft"], questions["filling"])
+        self.assertNotEqual(questions["oily"], questions["creamy"])
 
     def test_dt_cannot_silently_run_without_std(self):
         rows = [{key: value for key, value in row.items() if key != "feature_std"}
@@ -51,24 +51,11 @@ class V2SessionTests(TestCase):
         with self.assertRaisesMessage(ValueError, "the feature schema requires std"):
             DecisionTreeEngine(rows, services.get_feature_schema())
 
-    def test_set_variants_stay_distinct_and_variety_is_asked(self):
-        response = post(self.client, "/api/sessions/", {"date": str(DAY), "meal": "LU"})
-        self.assertEqual(response.status_code, 201)
-        state = response.json()
-        check_state(self, state)
-        self.assertEqual(state["candidate_count"], 2)
-        self.assertEqual(state["step"]["question_id"], "q:meal_variety")
-        session = sessions.get(state["session_id"])
-        before = session.engine.probabilities[self.foods[1].pk]
-        url = f"/api/sessions/{state['session_id']}/"
-        after = post(self.client, url + "answer/", {
-            "question_id": "q:meal_variety", "answer_id": "yes"}).json()
-        check_state(self, after)
-        self.assertGreater(session.engine.probabilities[self.foods[1].pk], before)
-        guess = post(self.client, url + "recommend-now/").json()
-        check_state(self, guess)
-        self.assertEqual(guess["step"]["food"]["food_id"], self.foods[1].pk)
-        self.assertEqual(guess["step"]["food"]["display_name"], "돈까스와 우동")
+    def test_sets_keep_identity_without_an_invented_variety_feature(self):
+        rows, schema = services.get_catalog(DAY)
+        self.assertEqual(len(rows), 2)
+        self.assertNotIn("meal_variety", {r["key"] for r in schema})
+        self.assertEqual({r["display_name"] for r in rows}, {"돈까스", "돈까스와 우동"})
 
     def test_dishes_without_current_features_are_left_out_with_a_warning(self):
         untagged = Food.objects.create(name="Untagged", is_food=True, feature_version="v1",
@@ -76,7 +63,7 @@ class V2SessionTests(TestCase):
         MenuItem.objects.create(date=DAY, meal="LU", restaurant=self.hall, raw_name="Untagged", food=untagged)
         with self.assertLogs("menus.services", level="WARNING") as cm:
             rows, schema = services.get_catalog(DAY, "LU")
-        self.assertEqual(len(schema), 33)
+        self.assertEqual(len(schema), 53)
         self.assertEqual([r["food_id"] for r in rows], [f.pk for f in self.foods])
         self.assertTrue(all(set(row["feature_std"]) == set(FEATURE_KEYS) for row in rows))
         self.assertIn("Withholding untagged/partial menu", "\n".join(cm.output))
@@ -106,7 +93,7 @@ class V2SessionTests(TestCase):
         session = sessions.create(DAY, "LU", "decision_tree")
         diag = session.engine.diagnostics()
         self.assertEqual(diag["policy"], "preference")
-        self.assertEqual(diag["feature_version"], "v2")
+        self.assertEqual(diag["feature_version"], "v3")
         self.assertEqual(diag["candidate_count"], 2)
         with self.settings(RECOMMEND_DT_POLICY="greedy"):
             greedy_session = sessions.create(DAY, "LU", "decision_tree")

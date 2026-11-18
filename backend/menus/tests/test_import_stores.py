@@ -11,12 +11,10 @@ from django.test import SimpleTestCase, TestCase
 
 from menus import allergens, llm
 from menus.allergens import ALLERGEN_VERSION
-from menus.features import extractor
 from menus.models import Food, MenuItem, MenuLine, Restaurant, StoreMenu
 from menus.preprocess import mapper
 from menus.sources import naver_stores
 from menus.tests.test_extract_allergens import FakeLLM as FakeAllergenLLM
-from menus.tests.test_extract_features import FakeLLM as FakeFeatureLLM
 from menus.tests.utils import FakeStoreLLM, without_committed_rules
 
 FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "stores_sample.json"
@@ -228,22 +226,25 @@ class ImportStoresTests(TestCase):
 
 @without_committed_rules
 class RunStorePipelineTests(TestCase):
-    def test_imports_tags_and_counts_the_candidates(self):
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.mapping = pathlib.Path(folder.name) / "mapping.csv"
+        self.mapping.write_text("식당명,기존 음식명,정규화 음식명\n홍콩반점 낙성대점,짜장면,짜장면\n", encoding="utf-8")
+
+    def test_imports_maps_tags_and_counts_the_candidates(self):
         out = io.StringIO()
         with mock.patch.object(llm, "api_key_available", return_value=True), \
-                mock.patch.object(extractor, "api_key_available", return_value=True), \
                 mock.patch.object(mapper, "build_llm", return_value=FakeStoreLLM(ANSWERS)), \
-                mock.patch.object(extractor, "build_llm", return_value=FakeFeatureLLM()), \
                 mock.patch.object(allergens, "build_llm", return_value=FakeAllergenLLM()):
-            call_command("run_store_pipeline", "--file", str(FIXTURE), stdout=out)
-        # 짜장면 and 탕수육 alone and in a set, 차돌짬뽕, 짬뽕 (set), 닭볶음탕, 모둠회
-        self.assertIn("일반 식당 추천 후보: 7", out.getvalue())
+            call_command("run_store_pipeline", "--file", str(FIXTURE), "--mapping", str(self.mapping), stdout=out)
+        self.assertIn("일반 식당 추천 후보: 1", out.getvalue())
         self.assertFalse(StoreMenu.objects.filter(allergen_version="").exists())
 
     def test_a_failed_import_stops_before_tagging(self):
         with mock.patch.object(llm, "api_key_available", return_value=True), \
                 mock.patch.object(mapper, "build_llm", return_value=FakeStoreLLM(ANSWERS, fail=True)), \
-                mock.patch.object(extractor, "build_llm", side_effect=AssertionError("no tagging")), \
                 mock.patch.object(allergens, "build_llm", side_effect=AssertionError("no tagging")):
             with self.assertRaisesMessage(CommandError, "태깅은 건너뜁니다"):
-                call_command("run_store_pipeline", "--file", str(FIXTURE), stdout=io.StringIO())
+                call_command("run_store_pipeline", "--file", str(FIXTURE), "--mapping", str(self.mapping),
+                             stdout=io.StringIO())

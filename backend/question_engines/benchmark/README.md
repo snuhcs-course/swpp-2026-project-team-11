@@ -10,6 +10,10 @@ acceptance rate, latency per session and cost per session. The goal is a first p
 of at least 50%, and 15% above the baselines. Every figure is per situation: the
 situations measure different things, so a mean over them means nothing.
 
+The frozen sets (`2026-10-20`, `2026-11-02`) carry v2 features, which the v3 RL engine
+refuses. Comparing RL needs a new set under a new name, with its cases and thresholds
+committed before the run (AGENTS.md, Evaluation).
+
 ## Running it
 
 One command runs everything and keeps it in `engine_benchmark_results/NAME/`
