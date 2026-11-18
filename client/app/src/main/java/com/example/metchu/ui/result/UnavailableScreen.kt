@@ -21,11 +21,13 @@ import com.example.metchu.ui.theme.screenBackground
 
 /** Why nothing can be recommended in the question screen's large type, what to do in a caption, and the way back. */
 @Composable
-fun UnavailableScreen(session: SessionState, hasAllergies: Boolean, onBack: () -> Unit) {
+fun UnavailableScreen(session: SessionState, hasAllergies: Boolean, priced: Boolean, onBack: () -> Unit) {
     val meal = Meal.of(session.meal)?.let { stringResource(it.label) } ?: stringResource(R.string.meal_any)
     val (message, hint) = when {
         session.step.reason != "empty_candidates" ->
             stringResource(R.string.unavailable_exhausted) to stringResource(R.string.unavailable_exhausted_hint)
+        priced ->
+            stringResource(R.string.unavailable_no_priced_menu, meal) to stringResource(R.string.unavailable_no_priced_menu_hint)
         hasAllergies ->
             stringResource(R.string.unavailable_no_safe_menu, meal) to stringResource(R.string.unavailable_no_safe_menu_hint)
         else -> stringResource(R.string.unavailable_no_menu, meal) to stringResource(R.string.unavailable_no_menu_hint)

@@ -7,6 +7,7 @@ import com.example.metchu.data.network.CreateRoomRequest
 import com.example.metchu.data.network.DecideRequest
 import com.example.metchu.data.network.JoinRoomRequest
 import com.example.metchu.data.network.RoomApi
+import com.example.metchu.data.network.VoteRequest
 import retrofit2.Response
 import java.io.IOException
 import java.util.concurrent.CopyOnWriteArrayList
@@ -29,8 +30,11 @@ class FakeRoomApi : RoomApi {
         return reply() as T
     }
 
-    override suspend fun create(authorization: String?, request: CreateRoomRequest): RoomReply =
-        next("create $authorization ${request.name}")
+    var lastCreateRequest: CreateRoomRequest? = null
+    override suspend fun create(authorization: String?, request: CreateRoomRequest): RoomReply {
+        lastCreateRequest = request
+        return next("create $authorization ${request.name}")
+    }
     override suspend fun join(authorization: String?, request: JoinRoomRequest): RoomReply =
         next("join $authorization ${request.code} ${request.name}")
     override suspend fun state(code: String, token: String): RoomState = next("state $code $token")
@@ -38,6 +42,8 @@ class FakeRoomApi : RoomApi {
     override suspend fun answer(code: String, token: String, request: AnswerRequest): RoomState =
         next("answer $code $token ${request.questionId} ${request.answerId}")
     override suspend fun recommendNow(code: String, token: String): RoomState = next("recommend-now $code $token")
+    override suspend fun vote(code: String, token: String, request: VoteRequest): RoomState =
+        next("vote $code $token ${request.pick} ${request.agree}")
     override suspend fun decide(code: String, token: String, request: DecideRequest): RoomState =
         next("decide $code $token ${request.pick}")
     override suspend fun leave(code: String, token: String): Response<Unit> {

@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -59,6 +60,15 @@ class GroupViewModelTest {
         create()
         assertEquals("create null 지민", api.calls.single())
         assertEquals(code, viewModel.room.value!!.code)
+    }
+
+    @Test
+    fun theRoomCarriesThePriceRange() {
+        api.reply(created)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", { null }, "near", priceLevel = 2)
+        assertEquals(2, api.lastCreateRequest?.priceLevel)
+        create()
+        assertNull(api.lastCreateRequest?.priceLevel)
     }
 
     @Test
@@ -114,6 +124,18 @@ class GroupViewModelTest {
         api.reply(asking.copy(round = 1, myAnswer = null, question = RoomQuestion("q:spicy", "매운 음식이 먹고 싶어요?", asking.question!!.options)))
         viewModel.answer(AnswerId.NO)
         assertEquals(listOf(AnsweredQuestion(asking.question!!.text, AnswerId.NO)), viewModel.history.value)
+    }
+
+    @Test
+    fun aMemberVotesByPositionAndSeesTheCount() {
+        create()
+        val done = Fixtures.room("room_done")
+        val voted = done.copy(picks = done.picks!!.mapIndexed { i, p -> if (i == 1) p.copy(votes = 1, voted = true) else p })
+        api.reply(voted)
+        viewModel.vote(1, true)
+        assertEquals("vote $code member-token 1 true", api.calls.last())
+        assertEquals(1, viewModel.room.value!!.picks!![1].votes)
+        assertTrue(viewModel.room.value!!.picks!![1].voted)
     }
 
     @Test

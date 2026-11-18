@@ -54,6 +54,7 @@ import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.Place
+import com.example.metchu.data.repository.Price
 import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.data.repository.Setup
 import com.example.metchu.ui.account.AccountScreen
@@ -162,6 +163,7 @@ fun MetchuApp(
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
     var engine by remember { mutableStateOf(settings.engine) }
     var place by remember { mutableStateOf(settings.place) }
+    var price by remember { mutableStateOf(settings.price) }
     // Kept while the app runs, so coming back from a session keeps the meal the user picked.
     var meal by rememberSaveable { mutableStateOf(Meal.now()) }
     // The server writes its questions in the language the app is showing.
@@ -177,7 +179,7 @@ fun MetchuApp(
     val askToLeave = { if (room?.decided != null) group.leave() else confirmLeave = true }
     val distanceScope = if (place == Place.NEAR) "near" else "any"
     val createRoom = { name: String? ->
-        group.create(account?.token, name, allergies, language, meal.code, { location.current() }, distanceScope)
+        group.create(account?.token, name, allergies, language, meal.code, { location.current() }, distanceScope, price.level)
     }
     LaunchedEffect(room != null) { if (room != null) joinOpen = false }
 
@@ -286,6 +288,8 @@ fun MetchuApp(
                         askForLocation = !locationAsked,
                         onMeal = { meal = it },
                         onPlace = { place = it; settings.place = it },
+                        price = price,
+                        onPrice = { price = it; settings.price = it },
                         onSettings = { settingsOpen = true },
                         group = together,
                         onGroup = { together = it },
@@ -297,7 +301,7 @@ fun MetchuApp(
                             when {
                                 !together -> {
                                     searches++
-                                    viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope)
+                                    viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope, priceLevel = price.level)
                                 }
                                 account == null -> askName = true
                                 else -> createRoom(null)
@@ -379,11 +383,11 @@ fun MetchuApp(
                 }
                 Screen.GROUP_RESULT -> room?.let {
                     BackHandler(onBack = askToLeave)
-                    GroupResultScreen(it, roomBusy, onDecide = group::decide, onHome = askToLeave)
+                    GroupResultScreen(it, roomBusy, onVote = group::vote, onDecide = group::decide, onHome = askToLeave)
                 }
                 Screen.UNAVAILABLE -> if (current != null) {
                     BackHandler { viewModel.startOver() }
-                    UnavailableScreen(current, hasAllergies = allergies.isNotEmpty(), onBack = viewModel::startOver)
+                    UnavailableScreen(current, hasAllergies = allergies.isNotEmpty(), priced = price != Price.ANY, onBack = viewModel::startOver)
                 }
             }
         }

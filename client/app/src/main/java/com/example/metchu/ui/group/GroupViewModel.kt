@@ -55,8 +55,8 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
     private var polling: Job? = null
 
     /** [account] is the signed-in account's token; without one, [name] names the member. */
-    fun create(account: String?, name: String?, allergies: List<Allergen>, language: String, meal: String?, location: suspend () -> UserLocation?, distanceScope: String) =
-        enter { repository.create(account, name, allergies, language, meal, location(), distanceScope) }
+    fun create(account: String?, name: String?, allergies: List<Allergen>, language: String, meal: String?, location: suspend () -> UserLocation?, distanceScope: String, priceLevel: Int? = null) =
+        enter { repository.create(account, name, allergies, language, meal, location(), distanceScope, priceLevel) }
 
     fun join(account: String?, code: String, name: String?, allergies: List<Allergen>, language: String) =
         enter { repository.join(account, code, name, allergies, language) }
@@ -73,6 +73,8 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
     }
 
     fun recommendNow() = act { repository.recommendNow(it) }
+
+    fun vote(pick: Int, agree: Boolean) = act { repository.vote(it, pick, agree) }
 
     fun decide(pick: Int) = act { repository.decide(it, pick) }
 

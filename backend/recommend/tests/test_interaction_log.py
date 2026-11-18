@@ -63,7 +63,7 @@ class InteractionLogTests(TestCase):
         location = {"lat": 37.481247, "lng": 126.952739}
         response = self.client.post("/api/sessions/", data=json.dumps({
             "date": DAY, "meal": "LU", "engine": "rl", "source": "all", "distance_scope": "near",
-            "location": location, "allergies": ["egg"]}), content_type="application/json",
+            "price_level": 2, "location": location, "allergies": ["egg"]}), content_type="application/json",
             HTTP_X_FORWARDED_FOR="203.0.113.88", HTTP_USER_AGENT="device-secret-marker")
         self.assertEqual(response.status_code, 201)
         state = response.json()
@@ -77,6 +77,7 @@ class InteractionLogTests(TestCase):
         self.assertIs(event["location_available"], True)
         self.assertEqual(event["source"], "all")
         self.assertEqual(event["distance_scope"], "near")
+        self.assertEqual(event["price_level"], 2)
         self.assertGreaterEqual(event["candidates_before_distance"], event["candidate_count"])
 
     def test_invalid_and_stale_events_never_store_untrusted_body(self):
@@ -112,7 +113,7 @@ class InteractionLogTests(TestCase):
 
     def test_concurrent_requests_do_not_interleave_json(self):
         session = SimpleNamespace(interaction_id="independent-id", engine_name="rl", meal="LU", date=datetime.date(2026, 11, 2), source="all",
-                                  distance_scope="near", location_available=True,
+                                  distance_scope="near", price_level=None, location_available=True,
                                   candidates_before_distance=12, candidate_count=3)
         with ThreadPoolExecutor(max_workers=8) as pool:
             list(pool.map(lambda _: interaction_log.record(session, "answer", answer_id="yes"), range(50)))
