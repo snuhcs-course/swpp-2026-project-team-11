@@ -644,7 +644,7 @@ class RecommendViewModelTest {
         startWith(questionAt(0))
         answerTo(questionAt(1))
         answerTo(questionAt(2))
-        answerTo(guess.copy(step = guess.step.copy(questionCount = 3)))
+        answerTo(guess.copy(sessionId = question.sessionId, step = guess.step.copy(questionCount = 3)))
         api.calls.clear()
         api.reply(questionAt(2))
         api.reply(questionAt(1))

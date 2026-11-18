@@ -69,7 +69,8 @@ class ScenarioTests(SimpleTestCase):
         for item in data["scenarios"]:
             wanted = item["targets"][0]
             self.assertIn(wanted["name"], ("소고기볶음밥", "닭고기볶음밥"))  # 볶음밥 is only a step away
-            self.assertEqual(wanted["close"], ["볶음밥"])
+            self.assertIn("볶음밥", wanted["close"])
+            self.assertNotIn(wanted["name"], wanted["close"])
             self.assertLessEqual(scenarios.gap(wanted["features"], by_name["볶음밥"]["features"]), scenarios.CLOSE_GAP)
             self.assertFalse(harness.accepted_by_rule(item, {"food": {"food_id": 1, "display_name": "볶음밥"}}))
 
@@ -833,9 +834,9 @@ class CommandTests(TestCase):
         self.assertIsNone(targets[0]["features"])  # never tagged: no similarity
         targets, out = pick("close_alternative", "1")
         self.assertEqual([line for line in out if "~" in line],
-                         ["  1) 소고기볶음밥 (학생회관식당 5000원)  ~ 비슷한 메뉴: 볶음밥",
-                          "  2) 닭고기볶음밥 (학생회관식당 5000원)  ~ 비슷한 메뉴: 볶음밥"])
-        self.assertEqual((targets[0]["name"], targets[0]["close"]), ("소고기볶음밥", ["볶음밥"]))
+                         ["  1) 소고기볶음밥 (학생회관식당 5000원)  ~ 비슷한 메뉴: 닭고기볶음밥, 볶음밥",
+                          "  2) 닭고기볶음밥 (학생회관식당 5000원)  ~ 비슷한 메뉴: 볶음밥, 소고기볶음밥"])
+        self.assertEqual((targets[0]["name"], targets[0]["close"]), ("소고기볶음밥", ["닭고기볶음밥", "볶음밥"]))
 
     def test_a_person_judges_only_what_the_rule_leaves_to_the_simulator(self):
         def judge(item, food_id):

@@ -39,15 +39,9 @@ one they feel like eating most, with as few yes/no questions as possible.
 
 # Asked in order when the LLM fails, so a session can go on without it. They split a
 # cafeteria menu roughly in half, never name a dish, and read like the P10 questions.
-FALLBACK_QUESTIONS = (
-    "Do you feel like something with broth?",
-    "Do you feel like a rice dish?",
-    "Do you feel like noodles?",
-    "Do you feel like something spicy?",
-    "Do you feel like something fried?",
-    "Do you feel like a filling meal?",
-    "Do you feel like Korean food?",
-)
+from question_engines.decision_tree.contracts import FEATURE_PRESENTATION
+FALLBACK_QUESTIONS = tuple(FEATURE_PRESENTATION[k][0] for k in
+                           ("soupy","rice","noodle","spicy","fried","filling","korean"))
 
 
 def build_user_message(food_names, history, rejected, questions_left, refused=None):

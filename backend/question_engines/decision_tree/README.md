@@ -16,17 +16,14 @@ and proposes a concrete food when further questions do not justify their cost.
 From the repository root:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r backend/requirements.txt
-python backend/manage.py migrate
-python backend/manage.py loaddata menus_2026-11-02
-python backend/manage.py demo_decision_tree --date 2026-11-02 --meal LU
+uv run --isolated --locked python backend/manage.py migrate
+uv run --isolated --locked python backend/manage.py loaddata menus_v3_contract
+uv run --isolated --locked python backend/manage.py demo_decision_tree --date 2026-11-02 --meal LU
 ```
 
-On Windows, activate with `.venv\Scripts\Activate.ps1` instead. The shared fixture
+The synthetic contract fixture
 contains November 2 only: always pass the fixture date during development.
-This dataset provides 107 lunch candidates with 33 features. A day without data
+The fixture uses 53 features, with unknown new axes explicitly masked. A day without data
 returns an explicit `unavailable` step. No API key or additional feature-extraction
 call is needed.
 

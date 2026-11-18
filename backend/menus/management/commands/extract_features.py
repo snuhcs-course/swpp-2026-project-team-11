@@ -18,11 +18,9 @@ def cached_features(food):
         return None
     if set(food.features) != set(FEATURE_KEYS) or set(food.feature_std) != set(FEATURE_KEYS):
         return None
-    if food.features["meal_variety"] != float(food.is_set) or food.feature_std["meal_variety"] != 0:
-        return None
     try:
         return extractor.FoodFeatures.model_validate({
-            key: {"mean": food.features[key], "std": food.feature_std[key]}
+            key: {"mean": food.features[key], "std": food.feature_std[key], "mask": food.features[key] is not None}
             for key in LLM_FEATURE_KEYS
         })
     except (ValidationError, TypeError):
@@ -98,8 +96,8 @@ class Command(BaseCommand):
             else:
                 with transaction.atomic():
                     for food in targets[name]:
-                        food.features = means | {"meal_variety": float(food.is_set)}
-                        food.feature_std = stds | {"meal_variety": 0.0}
+                        food.features = means
+                        food.feature_std = stds
                         food.feature_version = FEATURE_VERSION
                         food.extraction_model = model
                         food.extracted_at = extracted_at

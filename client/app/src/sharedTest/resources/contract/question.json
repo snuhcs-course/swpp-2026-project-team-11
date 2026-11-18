@@ -1,17 +1,17 @@
 {
-  "session_id": "5a3a26224708416b98533f9df8ca82c8",
+  "session_id": "208b8e1a285c4a779ff7b1e06a7ec78b",
   "engine": "decision_tree",
-  "date": "2026-09-29",
+  "date": "2026-11-02",
   "meal": "LU",
   "language": "en",
-  "candidate_count": 193,
+  "candidate_count": 103,
   "max_questions": 10,
   "can_undo": false,
   "step": {
     "type": "question",
     "question_count": 0,
-    "question_id": "q:chicken",
-    "text": "Do you feel like chicken?",
+    "question_id": "q:korean",
+    "text": "Do you feel like having Korean food?",
     "options": [
       {
         "id": "yes",

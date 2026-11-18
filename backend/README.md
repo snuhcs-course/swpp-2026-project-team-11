@@ -1,5 +1,9 @@
 # Metchu! backend
 
+Current catalogue and model: [53-feature canonical mapping and daily extraction](../docs/personal-catalogue.md). General sales menus resolve to the reviewed 267 types; whole campus menus are tagged directly. All DT, group and personal RL questions use the same Korean/English definitions. The former v2 extraction/evaluation sections below describe historical work; operational setup follows the linked v3 guide.
+
+Use `uv run --isolated --locked python -m pytest backend` from the repository root.
+
 The live team deployment now uses the Windows mini PC and its local SQLite database.
 See [host updates and rollback](../docs/mini-pc-host.md); the Supabase instructions
 below describe the earlier deployment and recovery reference.
@@ -43,12 +47,11 @@ pytest                           # every backend test; no API key needed
 ## A. Load the shared snapshot (no API key)
 
 ```bash
-python manage.py loaddata menus_2026-11-02
+python manage.py loaddata menus_v3_contract
 ```
 
-This loads `menus/fixtures/menus_2026-11-02.json`:
-- 15 cafeterias and 127 dishes, all meal candidates
-- v2 features (means and std) and allergen tags already filled in
+This loads `menus/fixtures/menus_v3_contract.json`: 15 cafeterias and 127 dishes with
+allergen tags and synthetic, partial v3 features ([details](../docs/personal-catalogue.md#verification-and-fixtures)).
 
 > **주의:** 스냅샷에는 2026-11-02 데이터만 있습니다. 날짜를 생략하면 "오늘" 기준이라 빈 목록이 나오니, 반드시 날짜를 넘기세요.
 > 예: `--date 2026-11-02`, `services.get_catalog(datetime.date(2026, 11, 2))[0]`
@@ -256,7 +259,7 @@ imports it and keeps the earlier menus of those stores. The snapshot is added by
 S=menus/data/naver_menus_2026-11-02.json
 python manage.py import_stores --file $S --dry-run                     # no LLM call, no write
 python manage.py import_stores --file $S --limit 30 --review review.csv  # try on a local DB
-python manage.py run_store_pipeline --file $S --review review.csv      # import + features + allergens
+python manage.py run_store_pipeline --file $S --mapping mapping.csv --review review.csv  # import + mapping + allergens
 ```
 
 - **Restaurants.** Matched stores with a menu are kept. Cafes, bakeries and dessert shops are left
@@ -414,7 +417,6 @@ DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-<n>-ap-northeast
 
 ```bash
 python manage.py migrate                       # creates the tables in Supabase
-python manage.py loaddata menus_2026-11-02     # the shared demo snapshot
 python manage.py run_daily_pipeline            # today's menu
 ```
 
@@ -489,7 +491,7 @@ from menus import services
 
 services.get_feature_schema()
 # [{"key": "spicy", "question": "Do you feel like something spicy?",
-#   "question_en": "...", "family": "taste"}, ...]  (33 features)
+#   "question_en": "...", "family": "taste"}, ...]  (53 features)
 
 candidates, schema = services.get_catalog(datetime.date(2026, 11, 2), meal="LU")   # meal=None: whole day, date=None: today
 # One candidate per sales menu, named as the restaurant lists it:
@@ -524,21 +526,18 @@ menus, generated features and checkpoints belong outside Git, for example in
 `.local/menus/`. Importing profiles makes no model calls. New catalogue features
 alone do not retrain the frozen RL policy or establish human recommendation accuracy.
 
-### Feature-only RL
+### Personal RL
 
 Select **Reinforcement learning (RL)** in Android Settings or send `"engine": "rl"`
-to `POST /api/sessions/`. Both cafeteria and general sessions use v2 dish features
-after allergy and distance filtering. An empty catalogue returns an unavailable step.
+to `POST /api/sessions/`. The model compares 267 mapped canonical types with
+whole-campus menus using the single v3 53-feature schema. English and Korean
+questions are shared with DT/group mode. Group inference remains DT-only.
 
-The frozen v20 policy ranks dishes from their features and the user's answers.
-After a refusal it excludes that dish and updates the scores of similar dishes
-before choosing whether to ask or propose again. Matching catalogues share
-numeric arrays; answers, refusals, offers and undo history belong to the session.
-Inference uses NumPy on CPU. The source checkpoint hash is in
-[`weights.json`](question_engines/rl/weights.json).
-
-From `backend/`, run `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m question_engines.rl.benchmark`
-to measure preparation and the first decision on synthetic menus of 500–12,000 dishes.
+The frozen 562,123-parameter predictor and policy run on CPU through the locked uv
+environment. Food choice is acceptance argmax, questions are sampled by value, and
+after 20 interactions the service proposes remaining candidates without asking
+again. See [the model/candidate contract](../docs/personal-catalogue.md) and the
+[checkpoint manifest](question_engines/rl/assets/manifest.json).
 
 ### Allergens (i3-A1)
 
@@ -791,7 +790,7 @@ and commit. Teammates then run `python manage.py loaddata menus_<date>`.
 | `extract_allergens [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes (with `--stores`, restaurant menu lines) with the allergens they may contain | **yes** |
 | `fetch_naver_menus --stores CSV --output PATH` | save the Naver Place menus of the food shops near 서울대입구역 and 낙성대역 to JSON | no |
 | `import_stores --file [--dry-run] [--limit N] [--allow-partial] [--no-llm] [--review PATH]` | import the restaurants near the stations from a crawl file | for new lines |
-| `run_store_pipeline --file [--review PATH]` | import + tag the restaurants near the stations | **yes** |
+| `run_store_pipeline --file --mapping [--review PATH]` | import, map and tag the restaurants near the stations | **yes** |
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
 | `export_preprocess_review [--date] --output PATH` | the day's results as a review CSV | no |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |

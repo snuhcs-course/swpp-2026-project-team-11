@@ -15,7 +15,7 @@ remembers the choice for the next session.
 
    ```bash
    python backend/manage.py migrate
-   python backend/manage.py loaddata menus_2026-11-02
+   python backend/manage.py loaddata menus_v3_contract
    METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
    ```
 
@@ -427,7 +427,8 @@ and `resources/contract/*.json`, replies captured from the real server on the
 2026-09-29 snapshot, since replaced by 2026-11-02 (the reply shape has not changed),
 with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
 scripted LLM in place of Gemini). `menu.json` was captured on 2026-11-02 (301동식당, lunch), so
-it includes a set listed once at its whole price. The RL question fixture was captured from Django with three v2 cafeteria dishes.
+it includes a set listed once at its whole price. `question.json` and `question_rl.json` were recaptured on 2026-11-18 from the `menus_v3_contract`
+fixture; `recommendation.json` from a general session with two mapped sales menus of one restaurant.
 The `auth_*.json` and account `error_*.json` replies were captured on 2026-11-10 from a local
 server on its own SQLite database (the token is that throwaway database's); `FakeAuthApi` stands
 in for the account server.
@@ -444,3 +445,7 @@ The server tests include seeded random sessions on the fixture. A failure prints
 its seed; rerun that seed to reproduce it. `test_public_access.py` runs
 `serve_public` against scripted stand-ins for the server and cloudflared, so it
 needs neither cloudflared nor the network.
+
+## Canonical personal menus (i4-P19)
+
+The personal result can name a canonical type while each offer carries its actual `menu_name` and `restaurant_code`. The result sheet shows that sales name under its restaurant; price and location remain those of the offer. Both solo and group questions now use the server's shared 53-feature English/Korean wording. Group inference remains DT-only. Optional offer fields preserve older response decoding.

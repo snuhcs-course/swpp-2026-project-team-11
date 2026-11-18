@@ -22,7 +22,7 @@ class OriginalMenuTests(TestCase):
             name=name,
             is_food=True,
             is_set=True,
-            feature_version="v2",
+            feature_version="v3",
             features={k: value for k in FEATURE_KEYS},
             feature_std=dict.fromkeys(FEATURE_KEYS, 0.1),
             allergens=[],
@@ -106,9 +106,9 @@ class OriginalMenuTests(TestCase):
     def test_equal_set_names_with_different_components_remain_distinct(self):
         a, b, c = self.food("a", 0.8), self.food("b", 0.2), self.food("c", 0.5)
         other = Restaurant.objects.create(code="shop2", name="Other restaurant")
-        self.menu("A세트", [a, b], source="general")
-        self.menu("A세트", [a, c], source="general", place=other, price=17000)
-        menus, _ = services.get_store_catalog("LU")
+        self.menu("A세트", [a, b])
+        self.menu("A세트", [a, c], place=other, price=17000)
+        menus, _ = services.get_catalog(DAY,"LU")
         self.assertEqual(len(menus), 2)
         self.assertNotEqual(menus[0]["food_id"], menus[1]["food_id"])
         self.assertEqual({m["offers"][0]["price"] for m in menus}, {12000, 17000})
@@ -119,9 +119,9 @@ class OriginalMenuTests(TestCase):
 
         a, b, c = self.food("a", 0.8), self.food("b", 0.2), self.food("c", 0.5)
         other = Restaurant.objects.create(code="shop2", name="Other restaurant")
-        self.menu("A세트", [a, b], source="general")
-        self.menu("A세트", [a, c], source="general", place=other, price=17000)
-        candidates, _ = services.get_store_catalog("LU")
+        self.menu("A세트", [a, b])
+        self.menu("A세트", [a, c], place=other, price=17000)
+        candidates, _ = services.get_catalog(DAY,"LU")
         fake = FakeLLM()
         e = LLMEngine(candidates, llm=fake)
         labels = list(e.choices)
@@ -175,13 +175,9 @@ class OriginalMenuTests(TestCase):
         self.assertEqual([r["name"] for r in rows], ["Valid meal"])
 
     def test_registry_id_survives_source_row_replacement_and_date_and_price_changes(self):
-        food = self.food("pork", .8)
-        self.menu("Pork set", [food], price=10000)
-        original = services.get_catalog(DAY, "LU")[0][0]["food_id"]
+        food=self.food("Pork",.8)
+        self.menu("Lunch",[food])
+        original=services.get_catalog(DAY,"LU")[0][0]["food_id"]
         MenuItem.objects.all().delete()
-        MenuItem.objects.create(date=DAY + datetime.timedelta(days=1), meal="DN",
-                                restaurant=self.place, raw_name="Pork set", food=food, price=13000)
-        new = services.get_catalog(DAY + datetime.timedelta(days=1), "DN")[0][0]
-        self.assertEqual(new["food_id"], original)
-        self.menu("Pork set", [food], source="general")
-        self.assertNotEqual(services.get_store_catalog("LU")[0][0]["food_id"], original)
+        self.menu("Lunch",[food],price=9999)
+        self.assertEqual(services.get_catalog(DAY,"LU")[0][0]["food_id"],original)

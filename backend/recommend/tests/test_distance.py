@@ -44,7 +44,7 @@ class DistanceTests(SimpleTestCase):
 
 
 class SessionDistanceTests(TestCase):
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def start(self, **body):
         return self.client.post("/api/sessions/", content_type="application/json",

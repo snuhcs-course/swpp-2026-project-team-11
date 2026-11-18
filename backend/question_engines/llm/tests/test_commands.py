@@ -15,7 +15,7 @@ from .helpers import FakeLLM, ask, recommend
 
 
 class DemoCommandTests(TestCase):
-    fixtures = ["menus_2026-11-02"]
+    fixtures = ["menus_v3_contract"]
 
     def setUp(self):
         rows = get_catalog(datetime.date(2026, 11, 2), "LU")[0]

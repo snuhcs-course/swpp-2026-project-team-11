@@ -30,13 +30,13 @@ enum class AllListed { NONE_NEAR, NO_LOCATION }
 data class CafeteriaList(val cafeterias: List<Cafeteria>, val allListed: AllListed?)
 
 /**
- * The cafeterias serving [food], one line per cafeteria and meal (times and prices can
- * differ), nearest first when the distance is known. The server cuts no distance by
+ * The cafeterias serving [food], one line per cafeteria, meal and sales menu (times and
+ * prices can differ), nearest first when the distance is known. The server cuts no distance by
  * default, so [Place.NEAR] keeps those within a 10-minute walk here, or all of them when
  * none is that close or no distance is known.
  */
 fun cafeteriaList(food: Food, user: Point?, place: Place): CafeteriaList {
-    val all = food.offers.distinctBy { it.restaurant to it.meal }.map { offer ->
+    val all = food.offers.distinctBy { Triple(it.restaurant, it.meal, it.menuName) }.map { offer ->
         val meters = if (user != null && offer.lat != null && offer.lng != null) {
             distanceMeters(user, Point(offer.lat, offer.lng))
         } else offer.distanceM

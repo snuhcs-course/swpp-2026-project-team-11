@@ -256,7 +256,7 @@ def _write_summary(summary, last, start) -> None:
 def _write_guide(guide) -> None:
     lines = [
         ("Metchu! feature 검토", BOLD),
-        ("LLM이 음식 이름으로 추출한 32개 feature의 mean과 std가 합리적인지, 값 하나하나 사람이 판단합니다. "
+        ("LLM이 음식 이름으로 추출한 53개 feature의 mean과 std가 합리적인지, 값 하나하나 사람이 판단합니다. "
          "값을 새로 매기지 않고, 주어진 값이 그 음식에 맞는지만 봅니다.", FONT),
         ("", FONT), ("작성 순서", BOLD),
         ("1. '검토' 시트 B1의 이름을 확인합니다.", FONT),

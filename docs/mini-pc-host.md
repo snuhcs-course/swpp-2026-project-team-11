@@ -1,86 +1,80 @@
-# Updating the mini PC from Codex on iPhone
+# Mini-PC deployment and rollback
 
-The live Metchu API runs on the Windows mini PC, not the development Mac.
-Open the paired mini-PC host in ChatGPT/Codex on iPhone and use
-`%LOCALAPPDATA%\MetchuHost` as the project folder.
+The active checkout is the mini PC's server clone.
+Runtime scripts, logs, private data and SQLite are in `.local/hosting` below it.
+The old `%LOCALAPPDATA%\MetchuHost` entry points forward to this checkout; its
+release pointer and recovery DB are not current. Secrets remain in the checkout's
+ignored `.env`. Do not print them or copy them into a PR.
 
-The installation has:
+## After this PR merges
 
-- `release.txt`: the source commit loaded by the host and the daily-menu job;
-- `releases/<commit>/backend`: an immutable copy of that commit's backend;
-- `venv/Scripts/python.exe`: the installed backend environment;
-- `private/menu.sqlite3`: the authoritative application database;
-- `Task.ps1`: start, stop, restart and inspect the host;
-- the Windows tasks `Metchu-Host` (at boot) and `Metchu-DailyMenus` (KST daily refresh).
+The PR does not install itself or restart the live service.
 
-The ngrok address is fixed in private host configuration. Read it with
-`./Task.ps1 -Action status`; credentials stay in `private/`.
-The old Supabase daily GitHub Actions workflow was disabled at cutover.
+1. Inspect the actual checkout, process commands, daily-task state and DB before
+   changing anything. Pause new daily starts and wait for any current writer.
+   Keep a private, integrity-checked SQLite backup and source/runtime archives.
+   A pre-P19 rollback bundle already exists in
+   `.local/hosting/private/backups/pre-p19-53-20261117-222126`.
+2. Fetch and fast-forward to the merged main. Inspect the merged diff, including
+   any intervening group PRs; do not replace unrelated local runtime configuration.
+3. Verify the uv executable and the physical versioned Python executable. The
+   current `.venv` launcher has reproduced an SSH junction error. Use uv's locked,
+   isolated environment and the physical Python path, as `tools/hosting/Run.ps1`
+   does, instead of reusing that launcher. Prewarm this environment before stopping
+   the API; no application or model API call is needed to import the modules.
+4. Run the backend suite through `uv run --isolated --locked python -m pytest backend`.
+   Stop the host using `.local/hosting/Host.ps1 -Action stop`. This drops in-memory
+   solo/group conversations; account and auth tables remain in SQLite.
+5. Keep local `api.py` and the existing public URL/private settings. Change the host
+   compatibility launcher to `tools/hosting/Run.ps1 -Mode host`; the existing
+   supervisor then starts its API child with the same uv-managed interpreter. Change the daily-task
+   compatibility launcher to `tools/hosting/Run.ps1 -Mode daily`. Both use the same
+   checkout, authoritative DB and uv lock. Do not start a second supervisor or
+   bypass the existing writer/singleton locks. Test the actual task account too.
+6. Copy the operator-supplied mapping file into private deployment storage; do
+   not commit it. On a staged copy of the DB, preview and apply
+   `import_canonical_mapping --file <private-file> --apply`. This replaces the
+   old general profiles and requires no model calls. Keep the original source
+   file for later crawl updates.
 
-## Apply a merged backend change
+   On a staged copy of the private DB, preview `reset_features`; with the verified
+   backup retained, run `reset_features --apply` against that staged DB. It removes
+   obsolete feature values/versions while preserving Food, SalesMenu identities
+   and allergen tags. There is no parallel 33-feature serving path.
+7. Run the new daily writer on the staged DB through the preserved host root and
+   budget configuration. It fetches today's menus and extracts whole-menu v3
+   profiles, allergens and labels. The first feature refresh needs paid calls:
+   approximately one batch per eight uncached menu descriptions, plus retries;
+   determine the actual pending count and current authorization before sending.
+   Source/extraction failures must not erase the live catalogue.
+8. The daily writer stages and publishes via `tools/hosting/menu_publish.py`,
+   updating only `menus_*` tables transactionally. Preserve account/token tables,
+   including writes that occurred while tagging ran. Run integrity and foreign-key
+   checks before publication. Never replace an open live SQLite file.
+9. Start the existing host supervisor, check local/public health and personal DT/RL
+   sessions against today's campus plus mapped restaurants. Verify both languages,
+   actual sales names/prices, allergy/distance filters, category rejection/undo,
+   20-plus proposal-only continuation, group DT and new bilingual questions.
+   Then re-enable the existing 07:00/09:00/12:00/16:00 daily schedule.
 
-Ask the phone's Codex to perform this checklist on the mini PC:
+The checked-in daily runner accepts `--root` for an isolated copied host root; its
+`.env` settings are loaded from the checkout, but it always uses the private SQLite
+inside that root. Do not point it at a teammate's or shared Supabase DB.
 
-1. Fetch the merged `main` revision from the team repository and stage its
-   `backend/` under a new `releases/<full commit>/backend` directory. Keep the
-   previous revision in `release.txt` for rollback. Public source can be downloaded
-   from `https://github.com/snuhcs-course/swpp-2026-project-team-11/archive/<commit>.zip`.
-2. Compare `backend/requirements.txt` with the active release and run the backend
-   suite with the installed interpreter, from the staged release:
-   `& "$env:LOCALAPPDATA\MetchuHost\venv\Scripts\python.exe" -m pytest backend`.
-   Tests use their own SQLite database and fake model providers.
-3. Disable new `Metchu-DailyMenus` starts and wait for an active update to finish.
-   Stop `Metchu-Host` with `./Task.ps1 -Action stop`, then use SQLite's backup API
-   to create a dated backup of `private/menu.sqlite3`.
-4. Update the installed `daily_menus.py`, which lives outside the release, before
-   anything writes to the database again. Since migration `menus 0006`, `Food` has
-   no `display_name`: remove every read or assignment of it and drop it from any
-   save-field list, so dishes are created with their name only. Verify it with
-   `venv/Scripts/python.exe -m py_compile daily_menus.py`.
-5. Apply the migrations from the staged release, with the environment the host
-   runs with, so they reach `private/menu.sqlite3`:
-   `& "$env:LOCALAPPDATA\MetchuHost\venv\Scripts\python.exe" backend/manage.py migrate`.
-   `0006` drops the `Food.display_name` column: users see each menu line's
-   original name. No retagging, model training or data backfill is needed.
-   Then switch `release.txt` to the verified full commit and start the host with
-   `./Task.ps1 -Action start`.
-6. Check `/api/health/` locally and through the fixed ngrok address. Create
-   separate DT and RL sessions for a known menu date, request a proposal, reject
-   it and undo. Confirm a set is named with its exact sales-menu text and that
-   rejection does not offer another component of that same set.
-7. Re-enable the daily-menu task. On a failed check, stop the host, restore the
-   database backup from step 3 (the previous release needs the dropped column),
-   the previous release pointer and the previous `daily_menus.py`, and restart it
-   before re-enabling updates.
+## Rollback
 
-Accounts (i4-P6): the release that adds `backend/accounts` needs step 5's `migrate`
-(`accounts 0001` creates the token and Google-link tables). For Google sign-in, add
-`METCHU_GOOGLE_CLIENT_ID` (the web OAuth client ID, backend/README.md "Accounts") to the
-host's private environment and restart; without it, password accounts work and Google
-sign-in answers 503. `private/menu.sqlite3` then holds password hashes and token hashes,
-so its backups stay as private as the database.
+Stop only the owned host and writers. Restore the backed-up code/runtime together
+with a compatible DB; never feed v3 state to v20 or restore the whole DB over new
+account writes without reconciling them. Keep the new failure evidence. Rollback
+is an operator action, not an automatic concurrent DB copy.
 
-Stop/start drops active in-memory dialogues. New sessions use the new source;
-a cached APK can display the original names with the existing JSON shape.
-The numerical `food_id` field is now an opaque sales-menu candidate ID, so
-consumers must not use it to query the internal `menus_food` table.
-Use `get_catalog` or `export_candidates` to inspect current recommendation inputs.
+## Known host concern
 
-No deployment from the Mac was performed for this change: the mini PC's LAN
-SSH address was unreachable after the network changed. The operator must verify
-the final merged revision on the host as above.
+The current DB retains operating-hours fields, but main's catalogue loader does
+not apply them. This PR preserves the current location/meal/allergy filtering;
+restoring the old host-only operating-hours behavior is separate work. Do not
+claim that every listed restaurant is open now solely from these fields.
 
-## Interaction logs
-
-The installed `api.py` loads `METCHU_INTERACTION_LOG_DIR` from
-`private/config.json`, defaulting to `private/interaction-logs` relative to the
-host root. An empty value disables logging. The wrapper passes the resolved path
-as an environment variable before Django starts; an existing installation needs
-that wrapper update as well as the backend release. Restart the host after
-changing the setting.
-
-The directory is private and is not served by the API. Its JSONL records contain
-selected allergies and the location sent at session start as well as questions,
-answers and recommendations; keep it outside the repository. The backend deletes
-files older than 30 UTC calendar days on startup and hourly. See the backend guide
-for the event fields and the limits of what the logs can establish.
+Interaction logs are private (`.local/hosting/private/interaction-logs`), contain
+user-provided allergies/location, and expire after 30 days. Do not publish logs,
+DB backups, `.env`, tokens or model-provider credentials.
