@@ -434,7 +434,7 @@ def another_room(request, code: str):
 @csrf_exempt
 @require_POST
 def vote_room(request, code: str):
-    return _room_request(request, code, lambda room, member, body: room.vote(member, body["pick"], body["agree"]))
+    return _room_request(request, code, lambda room, member, body: room.vote(member, body.get("pick"), body.get("agree")))
 
 
 @csrf_exempt

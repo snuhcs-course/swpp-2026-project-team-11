@@ -212,20 +212,20 @@ class Room:
         """Up to two restaurants the room has not been shown yet, with no votes."""
         result = self.result.recommendation(self.shown)
         satisfaction = self.result.satisfaction
-        self.picks = []
+        picks = []
         for pick in result["picks"]:
             at, r = (pick["restaurant"], pick["lat"], pick["lng"]), pick["index"]
             suggested = {food["food_id"] for food in pick["menus"] if food}
             offer = next(o for food in pick["menus"] if food for o in food["offers"] if place(o) == at)
-            self.picks.append({
+            picks.append({
                 "restaurant": pick["restaurant"], "kind": pick["kind"],
                 "lat": pick["lat"], "lng": pick["lng"], "distance_m": offer.get("distance_m"),
                 "menus": [{"member_id": m.id, "food": food, "fit": _fit(satisfaction[m.id], r)}
                           for m, food in zip(self.members, pick["menus"])],
                 "others": [dish for dish in self.menus.get(at, []) if dish["food_id"] not in suggested]})
-            self.shown.add(r)
-        self.votes = [set() for _ in self.picks]
-        self.more = result["more"]
+        # All at once, so a failure above leaves the picks and their votes as they were.
+        self.picks, self.votes, self.more = picks, [set() for _ in picks], result["more"]
+        self.shown.update(pick["index"] for pick in result["picks"])
 
     def another(self, member: Member) -> None:
         """Replaces the picks with restaurants the room has not been shown yet."""
@@ -247,11 +247,11 @@ class Room:
         return pick
 
     def vote(self, member: Member, pick: int, agree: bool) -> None:
+        if self.decided is not None:
+            raise StaleStep("The host has already decided.")
         self._pick(pick)
         if type(agree) is not bool:
             raise ValueError("agree must be true or false.")
-        if self.decided is not None:
-            raise StaleStep("The host has already decided.")
         (self.votes[pick].add if agree else self.votes[pick].discard)(member.id)
 
     def decide(self, member: Member, pick: int) -> None:
@@ -263,8 +263,9 @@ class Room:
         if member.left:
             return
         member.left = True
-        for voters in self.votes:
-            voters.discard(member.id)
+        if self.decided is None:  # the decided restaurant keeps the votes it was chosen with
+            for voters in self.votes:
+                voters.discard(member.id)
         present = self._present()
         if member.id == self.host_id and present:
             self.host_id = random.choice(present).id
