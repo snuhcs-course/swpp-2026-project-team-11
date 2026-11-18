@@ -22,9 +22,9 @@ class ContractJsonTest {
     fun question() {
         val state = Fixtures.state("question").checked()
         assertEquals(Engine.DECISION_TREE, state.engine)
-        assertEquals("2026-09-29", state.date)
+        assertEquals("2026-11-02", state.date)
         assertEquals("LU", state.meal)
-        assertEquals(193, state.candidateCount)
+        assertEquals(103, state.candidateCount)
         assertEquals(10, state.maxQuestions)
         assertFalse(state.canUndo)
         assertTrue(state.sessionId.isNotEmpty())
@@ -106,7 +106,9 @@ class ContractJsonTest {
         val step = Fixtures.state("recommendation").checked().step
         assertEquals(Step.RECOMMENDATION, step.type)
         assertNull(step.guessId)
-        assertTrue(step.food!!.offers.isNotEmpty())
+        val offers = step.food!!.offers
+        assertEquals(listOf("짜장면", "간짜장"), offers.map { it.menuName })
+        assertTrue(offers.all { it.restaurantCode == "1001" })
     }
 
     @Test

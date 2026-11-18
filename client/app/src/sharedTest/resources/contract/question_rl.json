@@ -1,17 +1,17 @@
 {
-  "session_id": "c15ed230e093402688017d4e47e0c46a",
+  "session_id": "78426d29cd104eda81587fc370c3fdd6",
   "engine": "rl",
-  "date": "2026-09-29",
+  "date": "2026-11-02",
   "meal": "LU",
   "language": "en",
-  "candidate_count": 3,
-  "max_questions": null,
+  "candidate_count": 103,
+  "max_questions": 10,
   "can_undo": false,
   "step": {
     "type": "question",
     "question_count": 0,
     "question_id": "q:noodle",
-    "text": "Do you feel like noodles?",
+    "text": "Do you feel like having a noodle dish?",
     "options": [
       {
         "id": "yes",

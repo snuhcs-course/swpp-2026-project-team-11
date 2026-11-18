@@ -1,27 +1,39 @@
 {
-  "session_id": "5a3a26224708416b98533f9df8ca82c8",
+  "session_id": "8e4924f5ee0347d5aa4f5d297909c5f6",
   "engine": "decision_tree",
-  "date": "2026-09-29",
+  "date": "2026-11-02",
   "meal": "LU",
   "language": "en",
-  "candidate_count": 193,
+  "candidate_count": 1,
   "max_questions": 10,
   "can_undo": true,
   "step": {
     "type": "recommendation",
     "question_count": 0,
     "food": {
-      "food_id": 1,
-      "name": "냉모밀",
-      "display_name": "냉모밀",
-      "food_group": "국수",
+      "food_id": 1000000053,
+      "name": "짜장면",
+      "display_name": "짜장면",
+      "food_group": "짜장면",
       "offers": [
         {
-          "restaurant": "220동식당",
+          "restaurant": "홍콩반점 낙성대점",
           "meal": "LU",
-          "price": 5900,
-          "lat": 37.46451,
-          "lng": 126.95424,
+          "price": 7000,
+          "lat": 37.47692,
+          "lng": 126.96361,
+          "menu_name": "짜장면",
+          "restaurant_code": "1001",
+          "distance_m": null
+        },
+        {
+          "restaurant": "홍콩반점 낙성대점",
+          "meal": "LU",
+          "price": 8000,
+          "lat": 37.47692,
+          "lng": 126.96361,
+          "menu_name": "간짜장",
+          "restaurant_code": "1001",
           "distance_m": null
         }
       ]
