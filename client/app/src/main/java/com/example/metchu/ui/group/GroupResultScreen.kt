@@ -165,7 +165,7 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onVote: (Int, Boolean) -> 
 @Composable
 private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () -> Unit) {
     Column(Modifier.padding(horizontal = 20.dp)) {
-        Box {
+        Box(Modifier.fillMaxWidth()) {
             Column {
                 Text(stringResource(captionFor(room.meal)), style = MetchuType.Caption)
                 Text(placeName(pick.restaurant), Modifier.padding(top = 2.dp, end = 56.dp).testTag("restaurant"), style = MetchuType.Title)
@@ -173,11 +173,11 @@ private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () ->
                     val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
                     Text(
                         "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}",
-                        Modifier.padding(top = 2.dp), style = MetchuType.Body
+                        Modifier.padding(top = 2.dp, end = 56.dp).testTag("distance"), style = MetchuType.Body
                     )
                 }
             }
-            Box(Modifier.align(Alignment.TopEnd).padding(top = 14.dp)) { vote() }
+            Box(Modifier.align(Alignment.TopEnd).padding(top = 12.dp)) { vote() }
         }
         Text(stringResource(R.string.group_each_dish), Modifier.padding(top = 20.dp, bottom = 4.dp), style = MetchuType.Caption)
     }
@@ -225,22 +225,26 @@ private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () ->
     }
 }
 
-/** A round thumb that is orange while this member agrees, over "Agree n". */
+/** A round thumb that is orange while this member agrees, over "Agree n". It takes taps 48 dp wide. */
 @Composable
 private fun AgreeButton(pick: RoomPick, enabled: Boolean, onToggle: () -> Unit) {
     val action = stringResource(R.string.group_agree_action)
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(
             Modifier
-                .size(44.dp)
+                .size(48.dp)
                 .clip(CircleShape)
-                .background(if (pick.voted) MetchuColors.Primary else MetchuColors.Grey100)
                 .toggleable(pick.voted, enabled = enabled, role = Role.Checkbox) { onToggle() }
                 .semantics { contentDescription = action }
                 .testTag("agree"),
             contentAlignment = Alignment.Center
         ) {
-            Image(Icons.ThumbUp, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(if (pick.voted) Color.White else MetchuColors.Grey900))
+            Box(
+                Modifier.size(44.dp).clip(CircleShape).background(if (pick.voted) MetchuColors.Primary else MetchuColors.Grey100),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(Icons.ThumbUp, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(if (pick.voted) Color.White else MetchuColors.Grey900))
+            }
         }
         Text(
             stringResource(R.string.group_agree, pick.votes),
@@ -256,7 +260,7 @@ private fun AgreeButton(pick: RoomPick, enabled: Boolean, onToggle: () -> Unit) 
 private fun PopularBadge(modifier: Modifier = Modifier) {
     Text(
         stringResource(R.string.group_popular),
-        modifier.height(18.dp).clip(CircleShape).background(MetchuColors.Primary).padding(horizontal = 6.dp),
+        modifier.heightIn(min = 18.dp).clip(CircleShape).background(MetchuColors.Primary).padding(horizontal = 6.dp),
         style = MetchuType.Caption.copy(fontSize = 11.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold),
         color = Color.White,
         maxLines = 1
