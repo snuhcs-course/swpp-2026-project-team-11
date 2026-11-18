@@ -99,10 +99,11 @@ fun LobbyScreen(room: RoomState, busy: Boolean, onStart: () -> Unit, onLeave: ()
 
         val bottom = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp)
         if (room.isHost) {
-            val ready = present.size >= 2 && !busy
+            // Starting builds the group's menus and can take seconds: the button stays orange and spins.
+            val ready = present.size >= 2
             LabelCapsule(
-                if (present.size >= 2) stringResource(R.string.group_start, present.size) else stringResource(R.string.group_need_more),
-                onStart, filled = ready, enabled = ready, modifier = bottom.testTag("startRoom")
+                if (ready) stringResource(R.string.group_start, present.size) else stringResource(R.string.group_need_more),
+                onStart, filled = ready, enabled = ready, busy = ready && busy, modifier = bottom.testTag("startRoom")
             )
         } else {
             Row(

@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -47,6 +48,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -104,10 +106,7 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onVote: (Int, Boolean) -> 
         TopRow(Modifier.statusBarsPadding(), arrangement = Arrangement.End) {
             CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
         }
-        Row(
-            Modifier.padding(start = 20.dp, top = sheetTop - 56.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        ChipRow(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = sheetTop - 56.dp), spacing = 8.dp) {
             picks.forEachIndexed { index, p ->
                 if (room.decided != null && index != room.decided) return@forEachIndexed
                 val on = index == shownAt
@@ -124,7 +123,8 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onVote: (Int, Boolean) -> 
                             .testTag("pick_$index"),
                         style = MetchuType.Label,
                         color = if (on) Color.White else MetchuColors.Grey900,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     if (index in popular) PopularBadge(Modifier.offset(x = (-6).dp, y = (-9).dp).testTag("popular_$index"))
                 }
@@ -165,7 +165,7 @@ fun GroupResultScreen(room: RoomState, busy: Boolean, onVote: (Int, Boolean) -> 
 @Composable
 private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () -> Unit) {
     Column(Modifier.padding(horizontal = 20.dp)) {
-        Box {
+        Box(Modifier.fillMaxWidth()) {
             Column {
                 Text(stringResource(captionFor(room.meal)), style = MetchuType.Caption)
                 Text(placeName(pick.restaurant), Modifier.padding(top = 2.dp, end = 56.dp).testTag("restaurant"), style = MetchuType.Title)
@@ -173,11 +173,11 @@ private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () ->
                     val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
                     Text(
                         "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}",
-                        Modifier.padding(top = 2.dp), style = MetchuType.Body
+                        Modifier.padding(top = 2.dp, end = 56.dp).testTag("distance"), style = MetchuType.Body
                     )
                 }
             }
-            Box(Modifier.align(Alignment.TopEnd).padding(top = 14.dp)) { vote() }
+            Box(Modifier.align(Alignment.TopEnd).padding(top = 12.dp)) { vote() }
         }
         Text(stringResource(R.string.group_each_dish), Modifier.padding(top = 20.dp, bottom = 4.dp), style = MetchuType.Caption)
     }
@@ -225,22 +225,26 @@ private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () ->
     }
 }
 
-/** A round thumb that is orange while this member agrees, over "Agree n". */
+/** A round thumb that is orange while this member agrees, over "Agree n". It takes taps 48 dp wide. */
 @Composable
 private fun AgreeButton(pick: RoomPick, enabled: Boolean, onToggle: () -> Unit) {
     val action = stringResource(R.string.group_agree_action)
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(
             Modifier
-                .size(44.dp)
+                .size(48.dp)
                 .clip(CircleShape)
-                .background(if (pick.voted) MetchuColors.Primary else MetchuColors.Grey100)
                 .toggleable(pick.voted, enabled = enabled, role = Role.Checkbox) { onToggle() }
                 .semantics { contentDescription = action }
                 .testTag("agree"),
             contentAlignment = Alignment.Center
         ) {
-            Image(Icons.ThumbUp, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(if (pick.voted) Color.White else MetchuColors.Grey900))
+            Box(
+                Modifier.size(44.dp).clip(CircleShape).background(if (pick.voted) MetchuColors.Primary else MetchuColors.Grey100),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(Icons.ThumbUp, null, Modifier.size(20.dp), colorFilter = ColorFilter.tint(if (pick.voted) Color.White else MetchuColors.Grey900))
+            }
         }
         Text(
             stringResource(R.string.group_agree, pick.votes),
@@ -256,7 +260,7 @@ private fun AgreeButton(pick: RoomPick, enabled: Boolean, onToggle: () -> Unit) 
 private fun PopularBadge(modifier: Modifier = Modifier) {
     Text(
         stringResource(R.string.group_popular),
-        modifier.height(18.dp).clip(CircleShape).background(MetchuColors.Primary).padding(horizontal = 6.dp),
+        modifier.heightIn(min = 18.dp).clip(CircleShape).background(MetchuColors.Primary).padding(horizontal = 6.dp),
         style = MetchuType.Caption.copy(fontSize = 11.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold),
         color = Color.White,
         maxLines = 1
@@ -310,6 +314,35 @@ private fun PicksMap(picks: List<RoomPick>, selected: Int, sheetHeight: Dp, onSe
             }
         }
     }
+}
+
+/**
+ * Lays the chips in a row, each as wide as its name needs. When they do not all fit, the
+ * narrower ones keep their width and the rest share what is left, ending in "…".
+ */
+@Composable
+private fun ChipRow(modifier: Modifier, spacing: Dp, content: @Composable () -> Unit) {
+    Layout(content, modifier) { measurables, constraints ->
+        val gap = spacing.roundToPx()
+        val free = constraints.maxWidth - gap * (measurables.size - 1).coerceAtLeast(0)
+        val widths = chipWidths(measurables.map { it.maxIntrinsicWidth(constraints.maxHeight) }, free)
+        val placeables = measurables.mapIndexed { i, it -> it.measure(Constraints(maxWidth = widths[i])) }
+        layout(constraints.maxWidth, placeables.maxOfOrNull { it.height } ?: 0) {
+            var x = 0
+            placeables.forEach { it.placeRelative(x, 0); x += it.width + gap }
+        }
+    }
+}
+
+/** Widths for chips that want [wanted] within [free]: the narrowest first, each at most an even share of what is left. */
+internal fun chipWidths(wanted: List<Int>, free: Int): List<Int> {
+    val widths = MutableList(wanted.size) { 0 }
+    var left = free.coerceAtLeast(0)
+    wanted.indices.sortedBy { wanted[it] }.forEachIndexed { placed, i ->
+        widths[i] = minOf(wanted[i], left / (wanted.size - placed))
+        left -= widths[i]
+    }
+    return widths
 }
 
 /** The positions of the picks with the most votes, all of them on a tie; none while fewer than two
