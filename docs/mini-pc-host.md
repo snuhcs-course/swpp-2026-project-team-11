@@ -1,6 +1,6 @@
 # Mini-PC deployment and rollback
 
-The active checkout is `C:\Users\minky\Documents\Codex\2026-11-03\pc-metchu\server`.
+The active checkout is the mini PC's server clone.
 Runtime scripts, logs, private data and SQLite are in `.local/hosting` below it.
 The old `%LOCALAPPDATA%\MetchuHost` entry points forward to this checkout; its
 release pointer and recovery DB are not current. Secrets remain in the checkout's

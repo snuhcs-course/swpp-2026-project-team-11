@@ -47,12 +47,11 @@ pytest                           # every backend test; no API key needed
 ## A. Load the shared snapshot (no API key)
 
 ```bash
-python manage.py loaddata menus_2026-11-02
+python manage.py loaddata menus_v3_contract
 ```
 
-This loads `menus/fixtures/menus_2026-11-02.json`:
-- 15 cafeterias and 127 dishes, all meal candidates
-- v2 features (means and std) and allergen tags already filled in
+This loads `menus/fixtures/menus_v3_contract.json`: 15 cafeterias and 127 dishes with
+allergen tags and synthetic, partial v3 features ([details](../docs/personal-catalogue.md#verification-and-fixtures)).
 
 > **주의:** 스냅샷에는 2026-11-02 데이터만 있습니다. 날짜를 생략하면 "오늘" 기준이라 빈 목록이 나오니, 반드시 날짜를 넘기세요.
 > 예: `--date 2026-11-02`, `services.get_catalog(datetime.date(2026, 11, 2))[0]`
@@ -260,7 +259,7 @@ imports it and keeps the earlier menus of those stores. The snapshot is added by
 S=menus/data/naver_menus_2026-11-02.json
 python manage.py import_stores --file $S --dry-run                     # no LLM call, no write
 python manage.py import_stores --file $S --limit 30 --review review.csv  # try on a local DB
-python manage.py run_store_pipeline --file $S --review review.csv      # import + features + allergens
+python manage.py run_store_pipeline --file $S --mapping mapping.csv --review review.csv  # import + mapping + allergens
 ```
 
 - **Restaurants.** Matched stores with a menu are kept. Cafes, bakeries and dessert shops are left
@@ -407,7 +406,6 @@ DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-<n>-ap-northeast
 
 ```bash
 python manage.py migrate                       # creates the tables in Supabase
-python manage.py loaddata menus_2026-11-02     # the shared demo snapshot
 python manage.py run_daily_pipeline            # today's menu
 ```
 
@@ -781,7 +779,7 @@ and commit. Teammates then run `python manage.py loaddata menus_<date>`.
 | `extract_allergens [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes (with `--stores`, restaurant menu lines) with the allergens they may contain | **yes** |
 | `fetch_naver_menus --stores CSV --output PATH` | save the Naver Place menus of the food shops near 서울대입구역 and 낙성대역 to JSON | no |
 | `import_stores --file [--dry-run] [--limit N] [--allow-partial] [--no-llm] [--review PATH]` | import the restaurants near the stations from a crawl file | for new lines |
-| `run_store_pipeline --file [--review PATH]` | import + tag the restaurants near the stations | **yes** |
+| `run_store_pipeline --file --mapping [--review PATH]` | import, map and tag the restaurants near the stations | **yes** |
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
 | `export_preprocess_review [--date] --output PATH` | the day's results as a review CSV | no |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |

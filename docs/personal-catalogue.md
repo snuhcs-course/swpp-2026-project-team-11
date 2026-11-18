@@ -26,8 +26,8 @@ with `--apply` against the staged deployment DB. This transaction replaces the
 old general SalesMenu recipe/profile records with current mapping records in the
 same table; it does not touch source menus, prices or allergens. The source hash
 is retained on the records. No additional mapping table or runtime CSV fallback
-is introduced. Re-import after a changed restaurant crawl; unmatched recipes
-remain excluded. The existing campus preprocessing cache is still needed to
+is introduced. `run_store_pipeline --mapping <operator-file>` re-imports it after
+each crawl; unmatched recipes remain excluded. The existing campus preprocessing cache is still needed to
 understand complete menus and allergens.
 
 Import matching is exact restaurant-name/raw-menu-name first. A unique formatting-only

@@ -56,7 +56,7 @@ Leave this terminal open. To check the server from a second terminal:
 curl -X POST http://127.0.0.1:8000/api/sessions/ -H 'Content-Type: application/json' -d '{"meal": "LU"}'
 ```
 
-It answers with a JSON session whose `candidate_count` is 193 and whose first
+It answers with a JSON session whose `candidate_count` is 103 and whose first
 `step` is a question.
 
 ### 2. (Optional) Enable the LLM engine

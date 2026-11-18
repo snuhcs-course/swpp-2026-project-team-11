@@ -13,7 +13,7 @@ and the P19 client can run either one.
 
 ```bash
 python backend/manage.py migrate
-python backend/manage.py loaddata menus_2026-11-02
+python backend/manage.py loaddata menus_v3_contract
 python backend/manage.py demo_llm_engine --date 2026-11-02 --meal LU          # interactive
 python backend/manage.py demo_llm_engine --date 2026-11-02 --smoke --output /tmp/llm_session.json
 python -m pytest backend/question_engines/llm                                # no API key needed

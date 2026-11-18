@@ -39,7 +39,7 @@ engine in Settings. All engines use the single 53-feature v3 schema; the decisio
 pytest backend                                   # all backend tests; no key, no network
 python -m pytest tools/tests                     # harness tests; synthetic data only
 METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
-                                                 # after migrate + loaddata menus_2026-11-02
+                                                 # after migrate + loaddata menus_v3_contract
 cd client && ./gradlew testDebugUnitTest         # JDK 21; the build fails on JDK 25
 ```
 
