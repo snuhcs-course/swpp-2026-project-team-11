@@ -30,7 +30,7 @@ UNAVAILABLE_TEXT = "No available meal matches this session. Try starting again."
 # Questions use the same versioned definitions as all catalogue producers.
 import json
 from pathlib import Path
-RUBRIC = json.loads(Path(__file__).parents[1].joinpath("feature_schema.json").read_text())
+RUBRIC = json.loads(Path(__file__).parents[1].joinpath("feature_schema.json").read_text(encoding="utf-8"))
 FEATURE_PRESENTATION = {f["key"]: (f["question"], f["family"]) for f in RUBRIC["features"]}
 
 # The Korean of every fixed English text above, keyed by the English.
