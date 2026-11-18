@@ -77,7 +77,9 @@ later = engine.recommendation({p["index"] for p in result["picks"]})   # the nex
 
 `recommendation(shown)` leaves out the `shown` restaurant indices and makes the picks the
 same way among the rest; `more` tells whether a restaurant where every member can eat is
-left after these. The rooms use it for "find another" (i4-A13).
+left after these. It comes from a `GroupResult`, which a finished engine hands over: each
+member's satisfaction, belief and menus at each restaurant, without the fit tables. The
+rooms keep one for "find another" (i4-A13) and let the engine go.
 
 ## Benchmark
 

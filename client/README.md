@@ -335,7 +335,10 @@ Creating or joining sends the account token when signed in and a name otherwise;
 request sends the member token the reply returned. `GroupViewModel` polls `GET /api/rooms/<code>/`
 every second until the host has decided, and counts the seconds left down between replies. A
 409 `stale_step` (the round moved on) waits for the next poll; `room_not_found` or `not_member`
-on a poll takes the phone back to the start screen.
+on a poll takes the phone back to the start screen. No poll is sent while this phone's own
+request is out, and a poll reply is dropped once a newer request has gone out, since it may
+hold the room from before; of the requests, only the latest one's reply is shown (i4-A13).
+A vote does not block the other taps, so "Go here" right after one still goes out.
 
 The account requests (`backend/accounts`, see backend/README.md "Accounts") go through
 `AuthApi` and `AuthRepository`, on a separate HTTP client that logs headers only, with the
@@ -435,8 +438,10 @@ The `room_*.json` replies and `error_room_not_found.json` were captured on 2026-
 room views on a local SQLite with the 2026-11-02 snapshot (two members, cafeteria lunch, the
 host answering three seconds in; the member token replaced by `member-token`). `room_done.json` was
 recaptured on 2026-11-17 the same way with votes (the guest agreeing with the second restaurant, the
-host with both) and a location on campus; `FakeRoomApi`
-stands in for the room server.
+host with both) and a location on campus. `more` (i4-A13) is false in every capture: the lobby
+and the questions have no result yet, and `room_done.json` is after the host's decision.
+`FakeRoomApi` stands in for the room server; `hold()` keeps a reply back to deliver replies out
+of order.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 

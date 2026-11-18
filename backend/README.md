@@ -387,9 +387,13 @@ the restaurant is among that member's best tenth of the places they can eat at, 
 - A member's allergies remove offers only from their own choice. They are matched to the full menu's
   offers by `menus/offers.py`, since a merged menu can come back without an allergen under another ID.
   Every member's allergies are shown to the whole room, by design.
-- Picks are told apart by position (`decided` is one): two branches of one chain share a name. For
-  "find another" the room keeps its engine after the result, and lets it go once the host decides
-  or everyone has left. Rooms end with the process and
+- Picks are told apart by position (`decided` is one): two branches of one chain share a name. The
+  room lets its engine go with the result. For "find another" it keeps only a `GroupResult` (each
+  member's satisfaction and menus at each restaurant, without the engine's fit tables of about
+  29 MB per allergic member at 586 restaurants × 6,227 menus) until the host decides or everyone
+  has left. A pick that fails to build leaves the picks and their votes as they were; after the
+  decision every vote is a 409 `stale_step`, and a member who leaves no longer takes votes along.
+  Rooms end with the process and
   are not in the interaction log. With `source=all` and no distance cut, starting a room and each
   round take seconds (the engine's tables over thousands of menus).
 
