@@ -43,7 +43,7 @@ class GroupScreensTest {
         val done = Fixtures.room("room_done").copy(decided = null)
         val picks = done.picks!!
         val long = done.copy(picks = listOf(picks[0].copy(restaurant = "샤로수길 아주 긴 이름의 이탈리안 레스토랑 서울대입구역 본점"), picks[1]))
-        compose.setContent { GroupResultScreen(long, busy = false, onVote = { _, _ -> }, onDecide = {}, onHome = {}) }
+        compose.setContent { GroupResultScreen(long, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
 
         val screen = compose.onRoot().getBoundsInRoot()
         val first = compose.onNodeWithTag("pick_0").assertIsDisplayed().getBoundsInRoot()
@@ -58,7 +58,7 @@ class GroupScreensTest {
         // A one-letter name leaves the distance as the widest line under it.
         val done = Fixtures.room("room_done").copy(decided = null)
         val short = done.copy(picks = listOf(done.picks!![0].copy(restaurant = "곰"), done.picks!![1]))
-        compose.setContent { GroupResultScreen(short, busy = false, onVote = { _, _ -> }, onDecide = {}, onHome = {}) }
+        compose.setContent { GroupResultScreen(short, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
 
         val distance = compose.onNodeWithTag("distance").assertIsDisplayed().getBoundsInRoot()
         for (tag in listOf("agree", "agree_count")) {
@@ -74,7 +74,7 @@ class GroupScreensTest {
         val done = Fixtures.room("room_done").copy(decided = null)
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 1.3f)) {
-                GroupResultScreen(done, busy = false, onVote = { _, _ -> }, onDecide = {}, onHome = {})
+                GroupResultScreen(done, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {})
             }
         }
         // 18 sp of line height at 1.3x is about 23 dp; a fixed 18 dp would cut it.

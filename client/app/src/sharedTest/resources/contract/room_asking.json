@@ -61,5 +61,6 @@
   "seconds_left": 12.0,
   "round_seconds": 15,
   "picks": null,
+  "more": false,
   "decided": null
 }

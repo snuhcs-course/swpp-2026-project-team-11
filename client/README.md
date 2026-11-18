@@ -211,7 +211,7 @@ emulator, set a position under Extended controls > Location (for example
 | Join | Four code boxes filled from an in-app number pad, and a name field for a guest | "Join" turns orange once the code (and a guest's name) is there; ‹ returns to the start screen |
 | room `lobby` | The code in large digits, "Send invite" (Android's share sheet), who is here with "Me" / "Host" and their allergies | the host's "Start · N" needs two people and spins, still orange, while the room starts (TalkBack reads it as loading); others see "The host will start"; ‹ or Back leaves the room |
 | room `asking` | Members' circles across the top (orange ring and check once answered, never what), a bar running down the round's 15 seconds, "Question n · answer within 15 s" with the seconds left on the right, the past rounds with this phone's answer, the shared question, the five-step scale, the rounds | an answer is final; a press still held when the round moves on answers nothing; then the bar turns grey and "Waiting for … · 9 s"; in the last 5 s without an answer the bar and count turn orange, the count pulses each second, the phone ticks once and "I'm not sure" is marked; at 0 the server answers "not sure" for the silent; the host's "Recommend now" appears after the first round; home or Back asks before leaving, since nobody can come back |
-| room `done` | Map pins and chips for the one or two restaurants (by name, each as wide as its name; when both do not fit, the shorter keeps its width and the longer ends in "…"), under "Today's lunch" (the meal picked at the start), each member's dish there with its price and "Great fit" / "Good fit", this phone's first, then the restaurant's other dishes; a round thumb (48 dp to tap) at the right of the restaurant's name and its distance, over "Agree n"; with two restaurants, an orange "Popular" tag on the chip of each one with the most votes (none before the first vote) | chips or pins switch restaurant; the thumb agrees with the restaurant shown, turning orange, and a second tap takes it back, until the host decides; the host's "Go here" decides, and every phone then shows "Meet at …"; home or Back asks before leaving until the host has decided |
+| room `done` | Map pins and chips for the one or two restaurants (by name, each as wide as its name; when both do not fit, the shorter keeps its width and the longer ends in "…"), under "Today's lunch" (the meal picked at the start), each member's dish there with its price and "Great fit" / "Good fit", this phone's first, then the restaurant's other dishes; a round thumb (48 dp to tap) at the right of the restaurant's name and its distance, over "Agree n"; with two restaurants, an orange "Popular" tag on the chip of each one with the most votes (none before the first vote) | chips or pins switch restaurant; the thumb agrees with the restaurant shown, turning orange, and a second tap takes it back, until the host decides; the host's "Find another" (left of "Go here", while the server says `more`) replaces both with restaurants the room has not been shown, with no votes yet, on every phone; the host's "Go here" decides, and every phone then shows "Meet at …"; home or Back asks before leaving until the host has decided |
 | `unavailable` | Why nothing can be recommended today; with allergies saved, that no dish is known to be free of them and that Settings can change them | ‹ returns to the start screen |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
@@ -335,7 +335,10 @@ Creating or joining sends the account token when signed in and a name otherwise;
 request sends the member token the reply returned. `GroupViewModel` polls `GET /api/rooms/<code>/`
 every second until the host has decided, and counts the seconds left down between replies. A
 409 `stale_step` (the round moved on) waits for the next poll; `room_not_found` or `not_member`
-on a poll takes the phone back to the start screen.
+on a poll takes the phone back to the start screen. No poll is sent while this phone's own
+request is out, and a poll reply is dropped once a newer request has gone out, since it may
+hold the room from before; of the requests, only the latest one's reply is shown (i4-A13).
+A vote does not block the other taps, so "Go here" right after one still goes out.
 
 The account requests (`backend/accounts`, see backend/README.md "Accounts") go through
 `AuthApi` and `AuthRepository`, on a separate HTTP client that logs headers only, with the
@@ -436,8 +439,10 @@ The `room_*.json` replies and `error_room_not_found.json` were captured on 2026-
 room views on a local SQLite with the 2026-11-02 snapshot (two members, cafeteria lunch, the
 host answering three seconds in; the member token replaced by `member-token`). `room_done.json` was
 recaptured on 2026-11-17 the same way with votes (the guest agreeing with the second restaurant, the
-host with both) and a location on campus; `FakeRoomApi`
-stands in for the room server.
+host with both) and a location on campus. `more` (i4-A13) is false in every capture: the lobby
+and the questions have no result yet, and `room_done.json` is after the host's decision.
+`FakeRoomApi` stands in for the room server; `hold()` keeps a reply back to deliver replies out
+of order.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 

@@ -354,6 +354,7 @@ in server memory, like sessions; the API is commented at the end of `recommend/v
 | `POST /api/rooms/<code>/start/` | host | `state` |
 | `POST /api/rooms/<code>/answer/` | `{"question_id", "answer_id"}` | `state` |
 | `POST /api/rooms/<code>/recommend-now/` | host | `state` |
+| `POST /api/rooms/<code>/another/` | host | `state` |
 | `POST /api/rooms/<code>/vote/` | `{"pick", "agree"}` (`agree: false` takes the vote back) | `state` |
 | `POST /api/rooms/<code>/decide/` | `{"pick"}` (its position in `picks`), host | `state` |
 | `POST /api/rooms/<code>/leave/` | | 204 |
@@ -362,7 +363,7 @@ Every request after create or join sends the returned member token as `X-Member-
 signed-in member (`Authorization: Token ...`) is shown by username; anyone else sends a `name`.
 `state` is `{"code", "status": "lobby" | "asking" | "done", "date", "meal", "me", "host",
 "members", "round", "max_rounds", "question", "my_answer", "seconds_left", "round_seconds", "picks",
-"decided"}`;
+"more", "decided"}`;
 `members` are `{"id", "name", "allergies", "left", "answered"}` and each pick is `{"restaurant",
 "kind", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others", "votes", "voted"}`; `others` are the
 restaurant's other dishes, shaped like a session's `menu` dishes. `fit` is `great` when
@@ -379,13 +380,23 @@ the restaurant is among that member's best tenth of the places they can eat at, 
 - Once the result is shown, any member may agree with any of the picks, to help the host choose.
   Votes change nothing in the engine, end with the host's decision (later ones get 409 `stale_step`)
   and leave with the member who cast them.
-- Only the host starts, stops early ("recommend now": the engine's `stop()`) and decides. When the
-  host leaves, a random remaining member hosts; a member who leaves after the start answers "unknown".
+- Only the host starts, stops early ("recommend now": the engine's `stop()`), asks for other
+  restaurants ("find another") and decides. When the host leaves, a random remaining member hosts;
+  a member who leaves after the start answers "unknown".
+- "Find another" (`another`, i4-A13) replaces `picks` with up to two restaurants the room has not
+  been shown, chosen the same way among the rest (`recommendation(shown)`), with no votes yet. `more`
+  is true while a restaurant where every member can eat is left; without one, or once the host has
+  decided, it is a 409 `stale_step`.
 - A member's allergies remove offers only from their own choice. They are matched to the full menu's
   offers by `menus/offers.py`, since a merged menu can come back without an allergen under another ID.
   Every member's allergies are shown to the whole room, by design.
-- Picks are told apart by position (`decided` is one): two branches of one chain share a name. Once
-  the result is made, the room lets its engine go. Rooms end with the process and
+- Picks are told apart by position (`decided` is one): two branches of one chain share a name. The
+  room lets its engine go with the result. For "find another" it keeps only a `GroupResult` (each
+  member's satisfaction and menus at each restaurant, without the engine's fit tables of about
+  29 MB per allergic member at 586 restaurants × 6,227 menus) until the host decides or everyone
+  has left. A pick that fails to build leaves the picks and their votes as they were; after the
+  decision every vote is a 409 `stale_step`, and a member who leaves no longer takes votes along.
+  Rooms end with the process and
   are not in the interaction log. With `source=all` and no distance cut, starting a room and each
   round take seconds (the engine's tables over thousands of menus).
 

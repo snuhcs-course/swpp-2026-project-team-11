@@ -1,4 +1,4 @@
 """Group mode: one restaurant for a group, from per-member preference questions."""
-from .engine import GroupConfig, GroupEngine
+from .engine import GroupConfig, GroupEngine, GroupResult
 
-__all__ = ["GroupConfig", "GroupEngine"]
+__all__ = ["GroupConfig", "GroupEngine", "GroupResult"]

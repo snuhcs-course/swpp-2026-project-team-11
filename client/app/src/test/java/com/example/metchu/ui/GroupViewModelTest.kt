@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -129,7 +130,11 @@ class GroupViewModelTest {
     @Test
     fun aMemberVotesByPositionAndSeesTheCount() {
         create()
-        val done = Fixtures.room("room_done")
+        val done = Fixtures.room("room_done").let { it.copy(decided = null, picks = it.picks!!.map { p -> p.copy(votes = 0, voted = false) }) }
+        api.reply(done)
+        scheduler.advanceTimeBy(1001)
+        assertFalse(viewModel.room.value!!.picks!![1].voted)
+
         val voted = done.copy(picks = done.picks!!.mapIndexed { i, p -> if (i == 1) p.copy(votes = 1, voted = true) else p })
         api.reply(voted)
         viewModel.vote(1, true)
@@ -139,11 +144,49 @@ class GroupViewModelTest {
     }
 
     @Test
+    fun goHereRightAfterAVoteGoesOutAndTheVotesLateReplyIsDropped() {
+        create()
+        val done = Fixtures.room("room_done").copy(decided = null)
+        val vote = api.hold()
+        viewModel.vote(1, true)
+        api.reply(done.copy(decided = 1))
+        viewModel.decide(1)
+        assertEquals("decide $code member-token 1", api.calls.last())
+        vote.complete(done)
+        assertEquals(1, viewModel.room.value!!.decided)
+    }
+
+    @Test
     fun theHostDecidesByPosition() {
         create()
         api.reply(Fixtures.room("room_done"))
         viewModel.decide(1)
         assertEquals("decide $code member-token 1", api.calls.last())
+    }
+
+    @Test
+    fun theHostAsksForOtherRestaurants() {
+        create()
+        val done = Fixtures.room("room_done").copy(decided = null, more = true)
+        val other = done.copy(picks = done.picks!!.reversed(), more = false)
+        api.reply(other)
+        viewModel.another()
+        assertEquals("another $code member-token", api.calls.last())
+        assertEquals(other, viewModel.room.value)
+    }
+
+    @Test
+    fun aPollSentBeforeFindAnotherCannotBringTheOldRestaurantsBack() {
+        create()
+        val done = Fixtures.room("room_done").copy(decided = null, more = true)
+        val other = done.copy(picks = done.picks!!.reversed(), more = false)
+        val late = api.hold()
+        scheduler.advanceTimeBy(1001)
+        assertEquals("state $code member-token", api.calls.last())
+        api.reply(other)
+        viewModel.another()
+        late.complete(done)
+        assertEquals(other, viewModel.room.value)
     }
 
     @Test
