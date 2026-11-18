@@ -308,23 +308,35 @@ class ResultTests(RoomTestCase):
         self.call(code, "decide", host, {"pick": 0})
         self.assertEqual(self.call(code, "another", host, status=409)["error"]["code"], "stale_step")
 
-    def test_a_decided_room_lets_its_engine_go(self):
+    def test_a_finished_room_keeps_only_its_result_until_the_host_decides(self):
         code, host, _, _ = self.started()
         done = self.call(code, "recommend-now", host)
-        self.assertIsNotNone(rooms.get(code).engine)
-        decided = self.call(code, "decide", host, {"pick": 0})
+        # The engine's per-member tables go with the questions; find another needs only the result.
         self.assertIsNone(rooms.get(code).engine)
+        self.assertIsNotNone(rooms.get(code).result)
+        decided = self.call(code, "decide", host, {"pick": 0})
+        self.assertIsNone(rooms.get(code).result)
         self.assertEqual((decided["round"], decided["max_rounds"]), (0, 4))
         self.assertEqual(decided["picks"], done["picks"])
         self.assertFalse(decided["more"])
 
-    def test_a_room_everyone_left_lets_its_engine_go(self):
+    def test_a_room_everyone_left_lets_its_result_go(self):
         code, host, (guest,), _ = self.started()
         self.call(code, "recommend-now", host)
         self.call(code, "leave", guest, status=204)
-        self.assertIsNotNone(rooms.get(code).engine)
+        self.assertIsNotNone(rooms.get(code).result)
         self.call(code, "leave", host, status=204)
-        self.assertIsNone(rooms.get(code).engine)
+        self.assertIsNone(rooms.get(code).result)
+
+    def test_a_failed_pick_leaves_the_picks_and_their_votes_as_they_were(self):
+        code, host, (guest,), _ = self.started()
+        self.call(code, "recommend-now", host)
+        self.call(code, "vote", guest, {"pick": 1, "agree": True})
+        before = self.state(code, host)["picks"]
+        room = rooms.get(code)
+        with mock.patch("recommend.rooms._fit", side_effect=RuntimeError("broken")):
+            self.assertRaises(RuntimeError, room.another, room.member(host))
+        self.assertEqual(self.state(code, host)["picks"], before)
 
     def test_the_host_cannot_decide_before_the_result(self):
         code, host, _, _ = self.started()
@@ -356,9 +368,7 @@ class VoteTests(RoomTestCase):
 
     def test_each_restaurant_counts_its_own_votes(self):
         code, host, (guest, _) = self.finished()
-        picks = self.state(code, host)["picks"]
-        if len(picks) < 2:
-            self.skipTest("the fixture gave one restaurant")
+        self.assertEqual(len(self.state(code, host)["picks"]), 2)
         self.call(code, "vote", host, {"pick": 1, "agree": True})
         picks = self.call(code, "vote", guest, {"pick": 1, "agree": True})["picks"]
         self.assertEqual([p["votes"] for p in picks], [0, 2])
@@ -386,6 +396,26 @@ class VoteTests(RoomTestCase):
         self.call(code, "vote", guest, {"pick": 0, "agree": True})
         self.call(code, "leave", guest, status=204)
         self.assertEqual(self.state(code, host)["picks"][0]["votes"], 0)
+
+    def test_the_decided_restaurant_keeps_its_votes_when_someone_leaves(self):
+        code, host, (guest,) = self.finished(2)
+        self.call(code, "vote", guest, {"pick": 0, "agree": True})
+        self.call(code, "decide", host, {"pick": 0})
+        self.call(code, "leave", guest, status=204)
+        self.assertEqual(self.state(code, host)["picks"][0]["votes"], 1)
+
+    def test_after_the_decision_every_vote_is_stale(self):
+        code, host, _ = self.finished(2)
+        self.call(code, "decide", host, {"pick": 0})
+        for body in ({"pick": 99, "agree": True}, {"pick": 0, "agree": "yes"}, {"pick": 0}):
+            self.assertEqual(self.call(code, "vote", host, body, status=409)["error"]["code"], "stale_step", body)
+
+    def test_find_another_starts_without_votes(self):
+        code, host, (guest,) = self.finished(2)
+        self.call(code, "vote", host, {"pick": 0, "agree": True})
+        self.call(code, "vote", guest, {"pick": 1, "agree": True})
+        again = self.call(code, "another", host)
+        self.assertEqual([(p["votes"], p["voted"]) for p in again["picks"]], [(0, False)] * len(again["picks"]))
 
 
 class MergedOfferTests(TestCase):
