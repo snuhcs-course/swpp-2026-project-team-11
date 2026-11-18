@@ -2,7 +2,9 @@ package com.example.metchu.data
 
 import com.example.metchu.Fixtures
 import com.example.metchu.data.model.RoomState
+import com.example.metchu.data.network.CreateRoomRequest
 import com.example.metchu.data.network.RoomApi
+import com.google.gson.Gson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -11,6 +13,12 @@ import org.junit.Test
 
 /** The server's real room JSON decodes into the fields the group screens read. */
 class RoomContractJsonTest {
+
+    @Test
+    fun createSendsThePriceRangeUnderTheServerName() {
+        val body = Gson().toJsonTree(CreateRoomRequest(null, emptyList(), "ko", "LU", null, "all", "any", 3)).asJsonObject
+        assertEquals(3, body["price_level"].asInt)
+    }
 
     @Test
     fun created() {
@@ -55,6 +63,8 @@ class RoomContractJsonTest {
         // Deciding ends "Find another".
         assertFalse(room.more)
         assertEquals(listOf("balanced", "no_one_unhappy"), picks.map { it.kind })
+        assertEquals(listOf(1, 2), picks.map { it.votes })
+        assertEquals(listOf(true, true), picks.map { it.voted })
         assertTrue(picks.first().others.isNotEmpty())
         for (pick in picks) {
             assertEquals(listOf(0, 1), pick.menus.map { it.memberId })

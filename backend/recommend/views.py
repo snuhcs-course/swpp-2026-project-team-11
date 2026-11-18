@@ -1,7 +1,7 @@
 """HTTP glue between the Android client and the question engine.
 
     POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?, "distance_scope"?,
-                          "language"?}                                       -> 201 state
+                          "price_level"?, "language"?}                       -> 201 state
     GET  /api/sessions/<id>/                                               -> state
     POST /api/sessions/prewarm/  {"meal"?, "source"?, "allergies"?}            -> 204
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
@@ -49,6 +49,9 @@ catalogue. Missing RL features or unavailable LLM configuration return 503
 `engine_unavailable`. `location` is the user's `{"lat", "lng"}`; it
 adds each cafeteria's `distance_m` to the offers (see recommend/distance.py).
 
+`price_level` is 1, 2 or 3, the number of ₩ signs the user picked (recommend/prices.py
+PRICE_BANDS); only dishes priced in that band are proposed. Null or missing is any price.
+
 `allergies` lists keys of menus/allergens.py ALLERGEN_KEYS, as the phone stores
 them; no dish that may contain one is proposed. `language` is "en" (default) or "ko":
 every text the session sends is in it, except dish and cafeteria names, which stay Korean.
@@ -77,6 +80,7 @@ from question_engines.decision_tree.contracts import LANGUAGES
 from accounts.tokens import user_for
 
 from . import interaction_log, rooms, sessions
+from .prices import PRICE_BANDS
 
 MEALS = ("BR", "LU", "DN")
 
@@ -105,6 +109,12 @@ def _location(value) -> tuple[float, float] | None:
             or not (-90 <= lat <= 90 and -180 <= lng <= 180):
         raise ValueError("location lat and lng must be numbers within -90..90 and -180..180.")
     return float(lat), float(lng)
+
+
+def _price_level(value) -> int | None:
+    if value is not None and (type(value) is not int or value not in PRICE_BANDS):
+        raise ValueError(f"price_level must be one of {', '.join(map(str, PRICE_BANDS))}.")
+    return value
 
 
 def _catalogue_fields(payload: dict) -> tuple[str | None, str | None, frozenset[str]]:
@@ -146,6 +156,7 @@ def create_session(request):
         distance_scope = payload.get("distance_scope")
         if distance_scope is not None and distance_scope not in ("near", "any"):
             raise ValueError("distance_scope must be near or any.")
+        price_level = _price_level(payload.get("price_level"))
         language = payload.get("language", "en")
         if language not in LANGUAGES:
             raise ValueError(f"language must be one of {', '.join(LANGUAGES)}.")
@@ -154,7 +165,7 @@ def create_session(request):
     if source == "all" and engine == "llm":
         return _error(400, "all_source_llm_unsupported", "All restaurants supports the decision tree and RL engines.")
     try:
-        session = sessions.create(date, meal, engine, location, allergies, source, language, distance_scope)
+        session = sessions.create(date, meal, engine, location, allergies, source, language, distance_scope, price_level)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     state = session.public_state()
@@ -274,13 +285,14 @@ def ban(request, session_id: str):
 # member's token from those replies as `X-Member-Token`.
 #
 #   POST /api/rooms/        {"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?,
-#                            "distance_scope"?, "location"?}            -> 201 {"token", "state"}
+#                            "distance_scope"?, "price_level"?, "location"?} -> 201 {"token", "state"}
 #   POST /api/rooms/join/   {"code", "name"?, "allergies"?, "language"?} -> 201 {"token", "state"}
 #   GET  /api/rooms/<code>/                                             -> state
 #   POST /api/rooms/<code>/start/                         (host)        -> state
 #   POST /api/rooms/<code>/answer/  {"question_id", "answer_id"}        -> state
 #   POST /api/rooms/<code>/recommend-now/                 (host)        -> state
 #   POST /api/rooms/<code>/another/                       (host)        -> state
+#   POST /api/rooms/<code>/vote/    {"pick", "agree"}                   -> state
 #   POST /api/rooms/<code>/decide/  {"pick"}              (host)        -> state
 #   POST /api/rooms/<code>/leave/                                       -> 204
 #
@@ -331,10 +343,11 @@ def create_room(request):
         if distance_scope is not None and distance_scope not in ("near", "any"):
             raise ValueError("distance_scope must be near or any.")
         location = _location(payload.get("location"))
+        price_level = _price_level(payload.get("price_level"))
     except ValueError as error:
         return _error(400, "invalid_request", str(error))
     room_settings = rooms.RoomSettings(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                                       meal, source, distance_scope, location)
+                                       meal, source, distance_scope, location, price_level)
     return _joined(*rooms.create(name, allergies, language, room_settings))
 
 
@@ -416,6 +429,12 @@ def recommend_room_now(request, code: str):
 @require_POST
 def another_room(request, code: str):
     return _room_request(request, code, lambda room, member, body: room.another(member))
+
+
+@csrf_exempt
+@require_POST
+def vote_room(request, code: str):
+    return _room_request(request, code, lambda room, member, body: room.vote(member, body["pick"], body["agree"]))
 
 
 @csrf_exempt

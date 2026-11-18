@@ -28,6 +28,21 @@
     <string name="place_any_option">Anywhere</string>
     <string name="place_near_note">Within a 10-minute walk</string>
     <string name="place_any_note">All restaurants</string>
+    <string name="start_price_sheet">Pick a price range</string>
+    <string name="start_price_change">Change price range</string>
+    <string name="price_low">On a budget</string>
+    <string name="price_mid">At a fair price</string>
+    <string name="price_high">For a treat</string>
+    <string name="price_any">at any price</string>
+    <string name="price_any_option">Any price</string>
+    <string name="price_any_note">All prices</string>
+    <!-- The bands of backend/recommend/prices.py PRICE_BANDS. -->
+    <string name="price_guide_open">What the price ranges mean</string>
+    <string name="price_guide_title">Price ranges</string>
+    <string name="price_guide_low">Under ₩8,000</string>
+    <string name="price_guide_mid">₩8,000 to ₩15,000</string>
+    <string name="price_guide_high">₩15,000 and up</string>
+    <string name="price_guide_note">Dishes without a listed price are left out.</string>
     <string name="location_ask_title">Allow location?</string>
     <string name="location_ask_body">We use your location to show nearby restaurants and how far each one is. Without it, every restaurant is listed.</string>
     <string name="location_ask_continue">Continue</string>
@@ -170,6 +185,8 @@
     <string name="unavailable_no_menu_hint">Try another meal.</string>
     <string name="unavailable_no_safe_menu">No %1$s dish today is confirmed to be free of the allergies you chose</string>
     <string name="unavailable_no_safe_menu_hint">Check them in Settings or try another meal.</string>
+    <string name="unavailable_no_priced_menu">No %1$s dish today is in the price range you chose</string>
+    <string name="unavailable_no_priced_menu_hint">Try another price range or meal.</string>
     <string name="unavailable_exhausted">You’ve seen every dish on today’s menu</string>
     <string name="unavailable_exhausted_hint">Start over to see them again.</string>
 
@@ -225,10 +242,13 @@
     <string name="group_decide">Go here</string>
     <string name="group_host_picking">The host is choosing</string>
     <string name="group_meet">Meet at %1$s</string>
+    <string name="group_agree">Agree %1$d</string>
+    <string name="group_agree_action">Agree with this place</string>
+    <string name="group_popular">Popular</string>
     <string name="group_error_not_found">No room is open with this code.</string>
     <string name="group_error_started">That room has already started.</string>
     <string name="group_error_full">That room is full (8 people).</string>
-    <string name="group_error_unavailable">No restaurant has a dish for everyone. Try another meal or distance.</string>
+    <string name="group_error_unavailable">No restaurant has a dish for everyone. Try another meal, distance or price range.</string>
     <string name="group_error_gone">The room has closed.</string>
     <string name="group_fit_great">Great fit</string>
     <string name="group_fit_good">Good fit</string>

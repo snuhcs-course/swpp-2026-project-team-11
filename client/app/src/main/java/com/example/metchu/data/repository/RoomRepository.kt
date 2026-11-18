@@ -10,6 +10,7 @@ import com.example.metchu.data.network.JoinRoomRequest
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.network.RoomApi
 import com.example.metchu.data.network.UserLocation
+import com.example.metchu.data.network.VoteRequest
 
 /** Which room this phone is in, and the secret that proves it is this member. */
 data class Membership(val code: String, val token: String)
@@ -27,10 +28,11 @@ class RoomRepository(private val api: RoomApi = RetrofitInstance.roomApi) {
         language: String,
         meal: String?,
         location: UserLocation?,
-        distanceScope: String
+        distanceScope: String,
+        priceLevel: Int? = null
     ): Pair<Membership, RoomState> = joined(api.create(
         account?.let { "Token $it" },
-        CreateRoomRequest(name.takeIf { account == null }, allergies.map { it.id }, language, meal, location, SOURCE, distanceScope)
+        CreateRoomRequest(name.takeIf { account == null }, allergies.map { it.id }, language, meal, location, SOURCE, distanceScope, priceLevel)
     ))
 
     suspend fun join(account: String?, code: String, name: String?, allergies: List<Allergen>, language: String): Pair<Membership, RoomState> =
@@ -46,6 +48,8 @@ class RoomRepository(private val api: RoomApi = RetrofitInstance.roomApi) {
     suspend fun recommendNow(room: Membership): RoomState = api.recommendNow(room.code, room.token)
 
     suspend fun another(room: Membership): RoomState = api.another(room.code, room.token)
+
+    suspend fun vote(room: Membership, pick: Int, agree: Boolean): RoomState = api.vote(room.code, room.token, VoteRequest(pick, agree))
 
     suspend fun decide(room: Membership, pick: Int): RoomState = api.decide(room.code, room.token, DecideRequest(pick))
 
