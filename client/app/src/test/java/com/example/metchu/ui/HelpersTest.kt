@@ -146,7 +146,7 @@ class DirectionsTest {
 
     @Test
     fun naverMapIsTriedFirstThenKakaoMapThenTheWeb() {
-        val links = directionsLinks("학생회관식당 2층", cafeteria, null, "com.example.metchu")
+        val links = directionsLinks("학생회관식당 2층", cafeteria, null, "내 위치", "com.example.metchu")
         val name = "%ED%95%99%EC%83%9D%ED%9A%8C%EA%B4%80%EC%8B%9D%EB%8B%B9%202%EC%B8%B5"
         assertEquals(
             listOf(
@@ -159,9 +159,13 @@ class DirectionsTest {
     }
 
     @Test
-    fun kakaoMapStartsFromTheUserWhenThePositionIsKnown() {
-        val links = directionsLinks("301동식당", cafeteria, Point(37.4481, 126.9527), "com.example.metchu")
+    fun kakaoMapAndItsWebPageStartFromTheUserWhenThePositionIsKnown() {
+        val links = directionsLinks("301동식당", cafeteria, Point(37.4481, 126.9527), "내 위치", "com.example.metchu")
         assertEquals("kakaomap://route?sp=37.4481,126.9527&ep=37.4592,126.9504&by=FOOT", links[1])
+        assertEquals(
+            "https://map.kakao.com/link/by/walk/%EB%82%B4%20%EC%9C%84%EC%B9%98,37.4481,126.9527/301%EB%8F%99%EC%8B%9D%EB%8B%B9,37.4592,126.9504",
+            links[2]
+        )
         assertTrue(links[0].startsWith("nmap://route/walk?dlat="))
     }
 }

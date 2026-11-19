@@ -5,6 +5,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getBoundsInRoot
@@ -67,6 +68,18 @@ class GroupScreensTest {
         }
         val agree = compose.onNodeWithTag("agree").getBoundsInRoot()
         assertTrue(agree.width >= 48.dp && agree.height >= 48.dp)
+    }
+
+    @Test
+    fun directionsFollowTheDistanceAndStayClearOfTheAgreeButton() {
+        val done = Fixtures.room("room_done").copy(decided = null)
+        compose.setContent { GroupResultScreen(done, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
+
+        val distance = compose.onNodeWithTag("distance").getBoundsInRoot()
+        val directions = compose.onNodeWithTag("directionsButton").assertIsDisplayed().assertHasClickAction().getBoundsInRoot()
+        val agree = compose.onNodeWithTag("agree").getBoundsInRoot()
+        assertTrue(directions.left >= distance.right)
+        assertTrue(directions.right <= agree.left)
     }
 
     @Test
