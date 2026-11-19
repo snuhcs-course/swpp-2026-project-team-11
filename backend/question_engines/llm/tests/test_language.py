@@ -7,7 +7,7 @@ from ..prompt import FALLBACK_QUESTIONS
 from ..schema import build_turn_model
 from .helpers import CANDIDATES, FakeLLM, ask_ko, check_step, recommend
 
-BROTH = "Do you feel like something with broth?"
+BROTH = "Do you feel like having something with broth?"
 BROTH_KO = "국물 있는 음식이 당기나요?"
 
 

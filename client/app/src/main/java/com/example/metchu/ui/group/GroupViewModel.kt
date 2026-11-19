@@ -33,7 +33,10 @@ import java.io.IOException
  *
  * [history] lists the rounds already over, with this member's answer ("not sure" when the
  * time ran out), for the question screen; the server keeps no question texts.
- * [busy] is true while this phone's own request runs, and taps meanwhile are ignored.
+ * [busy] is true while this phone's own request runs, and taps meanwhile are ignored; a
+ * vote does not set it, so "Go here" right after one still goes out. Only the reply to this
+ * phone's latest request is shown, and a poll is not sent while a request runs nor shown
+ * once a newer request has gone out: either may hold the room as it was before.
  */
 class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
 
@@ -53,6 +56,9 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
     /** The answer this phone last sent, with its question ID. */
     private var sent: Pair<String, String>? = null
     private var polling: Job? = null
+    /** This phone's requests so far, and how many are still out. */
+    private var actions = 0
+    private var acting = 0
 
     /** [account] is the signed-in account's token; without one, [name] names the member. */
     fun create(account: String?, name: String?, allergies: List<Allergen>, language: String, meal: String?, location: suspend () -> UserLocation?, distanceScope: String, priceLevel: Int? = null) =
@@ -73,6 +79,11 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
     }
 
     fun recommendNow() = act { repository.recommendNow(it) }
+
+    /** Replaces the restaurants with ones the room has not been shown. */
+    fun another() = act { repository.another(it) }
+
+    fun vote(pick: Int, agree: Boolean) = act(blocking = false) { repository.vote(it, pick, agree) }
 
     fun decide(pick: Int) = act { repository.decide(it, pick) }
 
@@ -116,14 +127,17 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
         }
     }
 
-    private fun act(request: suspend (Membership) -> RoomState) {
+    private fun act(blocking: Boolean = true, request: suspend (Membership) -> RoomState) {
         val room = membership ?: return
-        if (_busy.value == true) return
-        _busy.value = true
+        if (blocking && _busy.value == true) return
+        if (blocking) _busy.value = true
         _error.value = null
+        val mine = ++actions
+        acting++
         viewModelScope.launch {
             try {
-                show(request(room))
+                val state = request(room)
+                if (membership == room && actions == mine) show(state)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -131,7 +145,8 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
                 val code = code(e)
                 if (code != RoomApi.STALE_STEP) fail(e, code)
             } finally {
-                _busy.value = false
+                acting--
+                if (blocking) _busy.value = false
             }
         }
     }
@@ -143,9 +158,11 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
                 delay(POLL_MILLIS)
                 val room = membership ?: return@launch
                 if (_room.value?.decided != null) return@launch
+                if (acting > 0) continue
+                val seen = actions
                 try {
                     val state = repository.state(room)
-                    if (membership == room) show(state)
+                    if (membership == room && actions == seen) show(state)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

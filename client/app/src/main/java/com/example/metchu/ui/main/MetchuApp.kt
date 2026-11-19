@@ -141,7 +141,6 @@ fun MetchuApp(
     val reasons by viewModel.reasons.observeAsState(emptyMap())
     val canResume by viewModel.canResume.observeAsState(false)
     val menus by viewModel.menus.observeAsState(emptyMap())
-    val banned by viewModel.banned.observeAsState(emptySet())
     val account by accounts.account.observeAsState()
     val accountBusy by accounts.busy.observeAsState(false)
     val accountError by accounts.error.observeAsState()
@@ -353,14 +352,12 @@ fun MetchuApp(
                         shown = shown,
                         reasons = reasons,
                         menus = menus,
-                        banned = banned,
                         place = place,
                         loading = loading,
                         onBack = viewModel::undo,
                         onHome = viewModel::startOver,
                         onMore = { viewModel.feedback(accepted = false) },
-                        onMenu = viewModel::menu,
-                        onBan = viewModel::ban
+                        onMenu = viewModel::menu
                     )
                 }
                 Screen.JOIN -> {
@@ -383,7 +380,7 @@ fun MetchuApp(
                 }
                 Screen.GROUP_RESULT -> room?.let {
                     BackHandler(onBack = askToLeave)
-                    GroupResultScreen(it, roomBusy, onDecide = group::decide, onHome = askToLeave)
+                    GroupResultScreen(it, roomBusy, onVote = group::vote, onDecide = group::decide, onAnother = group::another, onHome = askToLeave)
                 }
                 Screen.UNAVAILABLE -> if (current != null) {
                     BackHandler { viewModel.startOver() }

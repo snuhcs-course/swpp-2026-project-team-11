@@ -59,6 +59,19 @@ def test_each_pick_scores_the_members_satisfaction_differently():
     assert picks(np.array([[.9, .1], [.9, .1]])) == list(zip(PICKS, [0, 1]))
 
 
+def test_later_picks_leave_out_the_restaurants_already_shown():
+    assert picks(np.array([[.9, .45], [.3, .45]]), shown={0}) == [("balanced", 1)]
+    engine = GroupEngine(MENUS, SCHEMA, [set(), set()])
+    play(engine)
+    first = engine.recommendation()
+    shown = {p["index"] for p in first["picks"]}
+    assert len(shown) == 2 and first["more"]
+    second = engine.recommendation(shown)
+    assert len(second["picks"]) == 2 and not shown & {p["index"] for p in second["picks"]}
+    assert not second["more"]
+    assert engine.recommendation(range(4))["picks"] == []
+
+
 def test_a_spread_belief_gets_the_menu_in_the_middle_not_a_likeliest_one():
     features = np.array([[0.], [.5], [1.]])
     assert closest(features, np.array([.4, .2, .4]), np.arange(3)) == 1

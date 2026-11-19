@@ -15,7 +15,7 @@ remembers the choice for the next session.
 
    ```bash
    python backend/manage.py migrate
-   python backend/manage.py loaddata menus_2026-11-02
+   python backend/manage.py loaddata menus_v3_contract
    METCHU_MENU_DATE=2026-11-02 python backend/manage.py runserver 0.0.0.0:8000
    ```
 
@@ -207,11 +207,11 @@ emulator, set a position under Extended controls > Location (for example
 | gear | Settings: the account (signed out: "Log in or sign up"; signed in: the username, whether Google is linked, "Link Google" and "Log out"), one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button; "Log in or sign up" opens the Account screen, which returns here once signed in |
 | Account | Log in or Create an account: username, password (twice to create one), the rules, "Continue with Google" in a build with a Google client ID | the line under the button switches between the two; errors show under the fields; the token is kept in its own preferences file, which backup leaves out |
 | `question` | The current question under the past ones, one grey line each with the answer on the right; a five-step slider with "I'm not sure"; a progress bar | dragging along the slider or tapping a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); home in the top-right corner; "Recommend now" floats bottom-right once there is an answer |
-| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user, a ban link and the cafeterias, one row per cafeteria | "Find another" (bottom-right) turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; home in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row glides the map to it; the directions icon at its end (when the cafeteria is on the map) opens a walking route in Naver Map, else Kakao Map, else Kakao Map's web page, with no route API in the app; the menu icon beside it lists what that cafeteria serves at that meal in a sheet built like the result sheet (its handle closes it; long menus scroll with faded edges), the proposed dish in orange; once a food group makes up two of the last three proposals, "Don't suggest any <group>" keeps that group out of the rest of the session, even after ‹ (a dish without a group offers "Don't suggest this dish" at once), and turns into Undo; a new session starts without bans; the locate button centers the map on the user, then turns it with the phone; the sheet's handle, dish name and description drag or tap it between folded, half and full |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one row per cafeteria | "Find another" (bottom-right) turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; home in the top-right corner; chips above the sheet switch between the dishes shown so far; a cafeteria row glides the map to it; the directions icon at its end (when the cafeteria is on the map) opens a walking route in Naver Map, else Kakao Map, else Kakao Map's web page, with no route API in the app; the menu icon beside it lists what that cafeteria serves at that meal in a sheet built like the result sheet (its handle closes it; long menus scroll with faded edges), the proposed dish in orange; there is no ban link: a dish "Find another" turned down does not come back in the session unless ‹ goes back past it; the locate button centers the map on the user, then turns it with the phone; the sheet's handle, dish name and description drag or tap it between folded, half and full |
 | Join | Four code boxes filled from an in-app number pad, and a name field for a guest | "Join" turns orange once the code (and a guest's name) is there; ‹ returns to the start screen |
-| room `lobby` | The code in large digits, "Send invite" (Android's share sheet), who is here with "Me" / "Host" and their allergies | the host's "Start · N" needs two people; others see "The host will start"; ‹ or Back leaves the room |
-| room `asking` | Members' circles across the top (orange ring and check once answered, never what), a bar running down the round's 15 seconds, "Question n · answer within 15 s" with the seconds left on the right, the past rounds with this phone's answer, the shared question, the five-step scale, the rounds | an answer is final; then the bar turns grey and "Waiting for … · 9 s"; in the last 5 s without an answer the bar and count turn orange, the count pulses each second, the phone ticks once and "I'm not sure" is marked; at 0 the server answers "not sure" for the silent; the host's "Recommend now" appears after the first round; home or Back asks before leaving, since nobody can come back |
-| room `done` | Map pins and chips for the one or two restaurants (by name), under "Today's lunch" (the meal picked at the start), each member's dish there with its price and "Great fit" / "Good fit", this phone's first, then the restaurant's other dishes | chips or pins switch restaurant; the directions icon beside the restaurant's name opens a walking route as on the result screen; the host's "Go here" decides, and every phone then shows "Meet at …"; home or Back asks before leaving until the host has decided |
+| room `lobby` | The code in large digits, "Send invite" (Android's share sheet), who is here with "Me" / "Host" and their allergies | the host's "Start · N" needs two people and spins, still orange, while the room starts (TalkBack reads it as loading); others see "The host will start"; ‹ or Back leaves the room |
+| room `asking` | Members' circles across the top (orange ring and check once answered, never what), a bar running down the round's 15 seconds, "Question n · answer within 15 s" with the seconds left on the right, the past rounds with this phone's answer, the shared question, the five-step scale, the rounds | an answer is final; a press still held when the round moves on answers nothing; then the bar turns grey and "Waiting for … · 9 s"; in the last 5 s without an answer the bar and count turn orange, the count pulses each second, the phone ticks once and "I'm not sure" is marked; at 0 the server answers "not sure" for the silent; the host's "Recommend now" appears after the first round; home or Back asks before leaving, since nobody can come back |
+| room `done` | Map pins and chips for the one or two restaurants (by name, each as wide as its name; when both do not fit, the shorter keeps its width and the longer ends in "…"), under "Today's lunch" (the meal picked at the start), each member's dish there with its price and "Great fit" / "Good fit", this phone's first, then the restaurant's other dishes; a round thumb (48 dp to tap) at the right of the restaurant's name and its distance, over "Agree n"; with two restaurants, an orange "Popular" tag on the chip of each one with the most votes (none before the first vote) | chips or pins switch restaurant; the directions icon after the distance opens a walking route as on the result screen; the thumb agrees with the restaurant shown, turning orange, and a second tap takes it back, until the host decides; the host's "Find another" (left of "Go here", while the server says `more`) replaces both with restaurants the room has not been shown, with no votes yet, on every phone; the host's "Go here" decides, and every phone then shows "Meet at …"; home or Back asks before leaving until the host has decided |
 | `unavailable` | Why nothing can be recommended today; with allergies saved, that no dish is known to be free of them and that Settings can change them | ‹ returns to the start screen |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
@@ -325,7 +325,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |
 | `POST /api/sessions/<id>/recommend-now/` | | Ask for a guess immediately |
 | `POST /api/sessions/<id>/undo/` | | Go back one step |
-| `POST /api/sessions/<id>/ban/` | `{"food_id" or "food_group", "banned"}` | Keep one dish, or every dish of a `food_group`, out of the rest of the session (`banned: false` lets it back). The step on screen stays; the next action that would show the dish turns it down, and an undo that would goes back further. Bans end with the session |
+| `POST /api/sessions/<id>/ban/` | `{"food_id" or "food_group", "banned"}` | Keep one dish, or every dish of a `food_group`, out of the rest of the session (`banned: false` lets it back). The step on screen stays; the next action that would show the dish turns it down, and an undo that would goes back further. Bans end with the session. The phone no longer calls it (i4-A10, i4-A22) |
 | `GET /api/sessions/<id>/reason/` | | `{"food_id", "reason", "source"}`: why the dish on screen suits the user, in the session's language. `source` is `llm`, or `template` when the server has no key or the LLM failed. With no dish on screen, a 409 `stale_step` |
 | `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy, by distance or by price are not listed. An unknown restaurant has no dishes |
 
@@ -335,7 +335,10 @@ Creating or joining sends the account token when signed in and a name otherwise;
 request sends the member token the reply returned. `GroupViewModel` polls `GET /api/rooms/<code>/`
 every second until the host has decided, and counts the seconds left down between replies. A
 409 `stale_step` (the round moved on) waits for the next poll; `room_not_found` or `not_member`
-on a poll takes the phone back to the start screen.
+on a poll takes the phone back to the start screen. No poll is sent while this phone's own
+request is out, and a poll reply is dropped once a newer request has gone out, since it may
+hold the room from before; of the requests, only the latest one's reply is shown (i4-A13).
+A vote does not block the other taps, so "Go here" right after one still goes out.
 
 The account requests (`backend/accounts`, see backend/README.md "Accounts") go through
 `AuthApi` and `AuthRepository`, on a separate HTTP client that logs headers only, with the
@@ -427,14 +430,19 @@ and `resources/contract/*.json`, replies captured from the real server on the
 2026-09-29 snapshot, since replaced by 2026-11-02 (the reply shape has not changed),
 with `METCHU_MAX_QUESTIONS=10` (`question_llm.json` with a
 scripted LLM in place of Gemini). `menu.json` was captured on 2026-11-02 (301동식당, lunch), so
-it includes a set listed once at its whole price. The RL question fixture was captured from Django with three v2 cafeteria dishes.
+it includes a set listed once at its whole price. `question.json` and `question_rl.json` were recaptured on 2026-11-18 from the `menus_v3_contract`
+fixture; `recommendation.json` from a general session with two mapped sales menus of one restaurant.
 The `auth_*.json` and account `error_*.json` replies were captured on 2026-11-10 from a local
 server on its own SQLite database (the token is that throwaway database's); `FakeAuthApi` stands
 in for the account server.
 The `room_*.json` replies and `error_room_not_found.json` were captured on 2026-11-13 from the
 room views on a local SQLite with the 2026-11-02 snapshot (two members, cafeteria lunch, the
-host answering three seconds in; the member token replaced by `member-token`); `FakeRoomApi`
-stands in for the room server.
+host answering three seconds in; the member token replaced by `member-token`). `room_done.json` was
+recaptured on 2026-11-17 the same way with votes (the guest agreeing with the second restaurant, the
+host with both) and a location on campus. `more` (i4-A13) is false in every capture: the lobby
+and the questions have no result yet, and `room_done.json` is after the host's decision.
+`FakeRoomApi` stands in for the room server; `hold()` keeps a reply back to deliver replies out
+of order.
 The client tests decode those files, so they are the client's
 side of the REST contract. Recapture them when the server's JSON changes.
 
@@ -442,3 +450,7 @@ The server tests include seeded random sessions on the fixture. A failure prints
 its seed; rerun that seed to reproduce it. `test_public_access.py` runs
 `serve_public` against scripted stand-ins for the server and cloudflared, so it
 needs neither cloudflared nor the network.
+
+## Canonical personal menus (i4-P19)
+
+The personal result can name a canonical type while each offer carries its actual `menu_name` and `restaurant_code`. The result sheet shows that sales name under its restaurant; price and location remain those of the offer. Both solo and group questions now use the server's shared 53-feature English/Korean wording. Group inference remains DT-only. Optional offer fields preserve older response decoding.

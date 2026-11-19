@@ -36,6 +36,9 @@ data class JoinRoomRequest(
 /** [pick] is a position in the room's picks: two branches of one chain share a name. */
 data class DecideRequest(val pick: Int)
 
+/** Agrees with the pick at [pick], or takes that back. */
+data class VoteRequest(val pick: Int, val agree: Boolean)
+
 interface RoomApi {
 
     @POST("api/rooms/")
@@ -55,6 +58,12 @@ interface RoomApi {
 
     @POST("api/rooms/{code}/recommend-now/")
     suspend fun recommendNow(@Path("code") code: String, @Header(MEMBER) token: String): RoomState
+
+    @POST("api/rooms/{code}/another/")
+    suspend fun another(@Path("code") code: String, @Header(MEMBER) token: String): RoomState
+
+    @POST("api/rooms/{code}/vote/")
+    suspend fun vote(@Path("code") code: String, @Header(MEMBER) token: String, @Body request: VoteRequest): RoomState
 
     @POST("api/rooms/{code}/decide/")
     suspend fun decide(@Path("code") code: String, @Header(MEMBER) token: String, @Body request: DecideRequest): RoomState

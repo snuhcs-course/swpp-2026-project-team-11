@@ -37,17 +37,24 @@ class RLEngine:
         self._max_questions = max_questions
         self._answers = np.full(len(FEATURE_KEYS), -1, dtype=np.int8)
         self._rejected = np.zeros(len(ids), dtype=bool)
-        self._penalty = np.zeros(len(ids), dtype=np.float64)
+        self._rng = np.random.default_rng()
+        self._rng_history = []
         self._events = []
         self._step = None
 
     def _choose(self, force=False):
         if self.world is None or self._rejected.all():
             return "unavailable", None
-        q, m, _ = self.world.decide(self._answers, self._rejected, refusal_sum=self._penalty)
+        if len(self._foods)==1:
+            return "guess", 0
+        q, m, _ = self.world.decide(self._answers, self._rejected, requests=self.requests, offers=sum(e[0] == "feedback" for _,e in self._events), force=force, rng=self._rng)
         if q >= 0 and not force and (self._max_questions is None or self.question_count < self._max_questions):
             return "question", q
         return "guess", m
+
+    @property
+    def requests(self):
+        return sum(event[0] in ("answer", "feedback") for _,event in self._events)
 
     @property
     def question_count(self):
@@ -91,6 +98,7 @@ class RLEngine:
         step = self.next_step()
         if step["type"] != "question" or question_id != step["question_id"] or answer_id not in _ANSWERS:
             raise ValueError("Invalid answer for the current question")
+        self._rng_history.append(copy.deepcopy(self._rng.bit_generator.state))
         self._events.append((self._step, ("answer", question_id, answer_id)))
         self._answers[self._step[1]] = _ANSWERS.index(answer_id)
         self._step = None
@@ -101,17 +109,18 @@ class RLEngine:
         if step["type"] != "guess" or guess_id != step["guess_id"] or type(accepted) is not bool:
             raise ValueError("Invalid feedback for the current proposal")
         index = self._step[1]
+        self._rng_history.append(copy.deepcopy(self._rng.bit_generator.state))
         self._events.append((self._step, ("feedback", guess_id, accepted)))
         if accepted:
             self._step = ("recommendation", index)
         else:
             self._rejected[index] = True
-            self._penalty += self.world.refusal_row(index)
             self._step = None
         return self.next_step()
 
     def recommend_now(self):
         if self.next_step()["type"] == "question":
+            self._rng_history.append(copy.deepcopy(self._rng.bit_generator.state))
             self._events.append((self._step, ("recommend_now",)))
             self._step = self._choose(force=True)
         return self.next_step()
@@ -119,12 +128,12 @@ class RLEngine:
     def undo(self):
         if self._events:
             self._step, event = self._events.pop()
+            self._rng.bit_generator.state = self._rng_history.pop()
             index = self._step[1]
             if event[0] == "answer":
                 self._answers[index] = -1
             elif event[0] == "feedback" and not event[2]:
                 self._rejected[index] = False
-                self._penalty -= self.world.refusal_row(index)
         return self.next_step()
 
     def answered(self):
@@ -133,36 +142,48 @@ class RLEngine:
 
     def diagnostics(self):
         return {"engine_version": MODEL_VERSION, "checkpoint_sha256": CHECKPOINT_SHA256,
-                "feature_version": "v2", "candidate_count": len(self._foods),
+                "feature_version": "v3", "candidate_count": len(self._foods),
+                "proposal_only": self.requests >= 20, "requests": self.requests,
                 "question_count": self.question_count, "rejection_count": int(self._rejected.sum())}
 
     def snapshot(self):
-        if self._step is None:
-            self._step = self._choose()
-        return {"version": 1, "engine_version": MODEL_VERSION, "fingerprint": self.fingerprint,
+        self.next_step()
+        return {"version": 2, "engine_version": MODEL_VERSION, "fingerprint": self.fingerprint,
                 "config": {"max_questions": self._max_questions, "language": self.language},
-                "events": [list(event) for _, event in self._events], "pending": list(self._step)}
+                "events": [[list(step), list(event)] for step, event in self._events],
+                "event_rng": copy.deepcopy(self._rng_history),
+                "pending": list(self._step), "rng": copy.deepcopy(self._rng.bit_generator.state)}
+
+    def _validate_step(self, step):
+        if not isinstance(step,list) or len(step)!=2 or step[0] not in ("question","guess","recommendation","unavailable"):
+            raise ValueError("Malformed saved step")
+        kind,index=step
+        if kind=="unavailable":
+            if index is not None or (self._foods and not self._rejected.all()):raise ValueError("Invalid unavailable step")
+        elif type(index) is not int or not 0<=index<(len(FEATURE_KEYS) if kind=="question" else len(self._foods)):
+            raise ValueError("Invalid saved index")
+        elif kind=="question" and (self._answers[index]>=0 or self.requests>=20):
+            raise ValueError("Invalid repeated or capped question")
+        elif kind!="question" and self._rejected[index]:raise ValueError("Invalid rejected proposal")
+        return tuple(step)
 
     @classmethod
     def from_snapshot(cls, candidates, snapshot):
-        if (not isinstance(snapshot, dict) or snapshot.get("version") != 1
-                or snapshot.get("engine_version") != MODEL_VERSION or not isinstance(snapshot.get("events"), list)
-                or not isinstance(snapshot.get("config"), dict) or set(snapshot["config"]) != {"max_questions", "language"}):
+        if not isinstance(snapshot,dict) or snapshot.get("version")!=2 or snapshot.get("engine_version")!=MODEL_VERSION:
             raise ValueError("Unsupported RL snapshot")
-        engine = cls(candidates, **snapshot["config"])
-        if snapshot.get("fingerprint") != engine.fingerprint:
-            raise ValueError("RL snapshot catalogue or configuration differs")
-        engine.start()
-        for event in snapshot["events"]:
+        config=snapshot.get("config")
+        if not isinstance(config,dict) or set(config)!={"max_questions","language"}:raise ValueError("Invalid config")
+        engine=cls(candidates,**config)
+        if snapshot.get("fingerprint")!=engine.fingerprint:raise ValueError("RL snapshot catalogue differs")
+        for before,event in snapshot.get("events",[]):
+            engine._step=engine._validate_step(before)
             match event:
-                case ["answer", question_id, answer_id]:
-                    engine.answer(question_id, answer_id)
-                case ["feedback", guess_id, accepted]:
-                    engine.feedback(guess_id, accepted)
-                case ["recommend_now"] if engine._step[0] == "question":
-                    engine.recommend_now()
-                case _:
-                    raise ValueError("Malformed RL snapshot event")
-        if list(engine._step) != snapshot.get("pending"):
-            raise ValueError("RL snapshot pending step differs")
+                case ["answer",qi,ai]:engine.answer(qi,ai)
+                case ["feedback",gi,accepted]:engine.feedback(gi,accepted)
+                case ["recommend_now"]:engine.recommend_now()
+                case _:raise ValueError("Malformed RL snapshot event")
+        engine._rng_history=copy.deepcopy(snapshot["event_rng"])
+        if len(engine._rng_history)!=len(engine._events):raise ValueError("Invalid RNG history")
+        engine._step=engine._validate_step(snapshot.get("pending"))
+        engine._rng.bit_generator.state=snapshot["rng"]
         return engine

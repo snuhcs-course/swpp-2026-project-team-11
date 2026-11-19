@@ -1,0 +1,21 @@
+[project]
+name = "metchu-backend"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "django==5.2.*", "langchain-google-genai==4.4.0", "langchain-openai==1.*",
+  "matplotlib>=3.9,<4", "openpyxl==3.*", "pydantic==2.*", "python-dotenv==1.*",
+  "pytest==9.*", "pytest-django==4.*", "requests==2.*", "google-auth==2.*",
+  "numpy>=2.2,<3", "dj-database-url==3.*", "psycopg[binary]>=3.2,<4", "torch==2.14.0",
+  "waitress>=3,<4",
+]
+[tool.uv]
+package = false
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }]

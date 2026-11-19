@@ -1,8 +1,8 @@
 # AI-generated: written with Claude (Anthropic) and reviewed by the team.
 """Integrity: the one pass/fail section. Every record must have the right keys and bounded values.
 
-- keys: an extraction run measures the 32 rubric features; a food copied from the
-  database (stored) also carries meal_variety, so 33
+- keys: an extraction run measures the 53 rubric features; a food copied from the
+  database (stored) uses the same 53 keys
 - bounds: 0 <= mean <= 1, 0 <= std <= 0.5, and std² <= mean * (1 - mean), the
   largest variance a measurement in [0, 1] with that mean can have
 - precision: at most two decimals, as the extractor asks
@@ -52,6 +52,6 @@ def evaluate(records) -> tuple[dict, list]:
     bad = len(records) - len(valid)
     lines = [f"{len(records)} records, {bad} with problems; those are left out of the other sections."]
     return {"title": "1. Integrity", "lines": lines,
-            "checks": [("records with 33/32 keys and bounded two-decimal values", f"{len(valid)}/{len(records)}",
+            "checks": [("records with 53 keys and bounded two-decimal values", f"{len(valid)}/{len(records)}",
                         "all", bad == 0)],
             "tables": [("integrity_problems.csv", "Problems", ["run", "dish", "problem"], rows, 20)]}, valid

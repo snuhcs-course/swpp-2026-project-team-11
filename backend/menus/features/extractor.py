@@ -6,17 +6,20 @@ from pydantic import BaseModel, ConfigDict, Field, create_model, field_validator
 from menus import llm
 
 from .prompt import SYSTEM_PROMPT, build_user_message
-from .schema import LLM_FEATURES
+from .schema import LLM_FEATURES, RUBRIC
 
 
 class FeatureStats(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    mean: float = Field(ge=0, le=1)
-    std: float = Field(ge=0, le=0.5)
+    mean: float | None = Field(ge=0, le=1)
+    std: float | None = Field(ge=0, le=0.5)
+    mask: bool = True
 
     @field_validator("mean", "std", mode="before")
     @classmethod
     def finite_number(cls, value):
+        if value is None:
+            return None
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
             raise ValueError("Expected a finite number")
         if abs(value - round(value, 2)) > 1e-9:
@@ -25,13 +28,19 @@ class FeatureStats(BaseModel):
 
     @model_validator(mode="after")
     def bounded_variance(self):
+        if not self.mask:
+            if self.mean is not None or self.std is not None:
+                raise ValueError("Unknown features require null mean and std")
+            return self
+        if self.mean is None or self.std is None:
+            raise ValueError("Known features require mean and std")
         if self.std ** 2 > self.mean * (1 - self.mean) + 1e-12:
             raise ValueError("Variance exceeds the bound for a measurement in [0, 1]")
         return self
 
 FoodFeatures = create_model(
-    "FoodFeatures", __config__=ConfigDict(extra="forbid"),
-    **{f.key: (FeatureStats, Field(description=f.guide)) for f in LLM_FEATURES},
+    "FoodFeatures", __config__=ConfigDict(extra="forbid", populate_by_name=True),
+    **{f.key: (FeatureStats, Field(description=f.guide, alias=r["label_ko"])) for f, r in zip(LLM_FEATURES, RUBRIC["features"])},
 )
 
 class FoodAnnotation(BaseModel):

@@ -1,31 +1,15 @@
-# AI-generated: written with Codex (OpenAI) and reviewed by the team.
-"""The accepted food-name rubric, without recommendation questions."""
-from __future__ import annotations
+"""User-authored extraction rubric; only the API envelope differs from the CSV task."""
 import json
 from pathlib import Path
 from .schema import LLM_FEATURE_KEYS, RUBRIC
-
 PROMPT_VERSION = RUBRIC["prompt_version"]
-_INSTRUCTIONS = Path(__file__).with_name("instructions.txt").read_text(encoding="utf-8").strip()
-_RUBRIC = {feature["key"]: feature for feature in RUBRIC["features"]}
+_INSTRUCTIONS = Path(__file__).with_name("instructions.txt").read_text().strip()
 
-def build_system_prompt(feature_order=LLM_FEATURE_KEYS) -> str:
-    """The rubric prompt with its features in `feature_order` (the stability benchmark shuffles it)."""
+def build_system_prompt(feature_order=LLM_FEATURE_KEYS):
     if sorted(feature_order) != sorted(LLM_FEATURE_KEYS):
-        raise ValueError("feature_order must list every LLM feature key once")
-    blocks = [_INSTRUCTIONS, "출력 feature key 순서\n" + ", ".join(feature_order)]
-    for number, key in enumerate(feature_order, 1):
-        feature = _RUBRIC[key]
-        blocks.append(
-            f"\n{number}. {feature['label_en']} | {feature['label_ko']} | {feature['key']}\n"
-            f"정의: {feature['definition']}\n구분 규칙:\n"
-            + "\n".join("- " + rule for rule in feature["distinction_rules"])
-            + "\n평균 판단: " + feature["mean_guidance"]
-            + "\n표준편차 판단: " + feature["std_guidance"] + "\n"
-        )
-    return "\n".join(blocks)
-
+        raise ValueError("feature_order must list every feature once")
+    order = "출력 feature key 순서\n" + ", ".join(feature_order) + "\n" + "\n".join("| " + key for key in feature_order) + "\n"
+    return _INSTRUCTIONS + order + "\n\n전송 형식만 JSON으로 바꾼다. 위 CSV 출력 지시 대신 items 배열을 출력한다. 각 항목은 입력 input_name과 features를 포함한다. features에는 53개 한국어 이름을 key로 사용하고 각 값은 mean, std, mask 객체다. mask=false일 때 mean/std는 null이다. 음식 의미와 점수 기준은 위 원문 그대로 따른다.\n" + json.dumps({f["label_ko"]:f["key"] for f in RUBRIC["features"]},ensure_ascii=False)
 SYSTEM_PROMPT = build_system_prompt()
-
-def build_user_message(names: list[str]) -> str:
-    return json.dumps({"items": [{"input_name": name} for name in names]}, ensure_ascii=False)
+def build_user_message(names):
+    return json.dumps({"items":[{"food_id":str(i),"name":name,"input_name":name} for i,name in enumerate(names)]},ensure_ascii=False)

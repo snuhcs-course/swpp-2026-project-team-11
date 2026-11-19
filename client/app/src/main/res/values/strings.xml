@@ -176,10 +176,6 @@
     <string name="sheet_close">Close</string>
     <string name="result_menu_note">Only dishes Metchu can suggest</string>
     <string name="result_menu_failed">Couldn’t load the menu. Close this and try again.</string>
-    <string name="result_ban">Don’t suggest this dish</string>
-    <string name="result_unban">Left out of this session · Undo</string>
-    <string name="result_ban_group">Don’t suggest any %1$s</string>
-    <string name="result_unban_group">No %1$s this session · Undo</string>
 
     <!-- unavailable -->
     <string name="unavailable_no_menu">There is no %1$s menu for today yet</string>
@@ -194,6 +190,7 @@
     <!-- errors -->
     <string name="retry">Try again</string>
     <string name="error_no_server">You can try again once the server is reachable.</string>
+    <string name="loading">Loading</string>
     <string name="error_server">The server couldn’t handle that. You can try again.</string>
     <string name="error_engine_unavailable">The selected question engine is unavailable. Choose another in Settings.</string>
     <string name="error_all_source_llm">All restaurants is available with Decision tree or RL. Change the engine in Settings.</string>
@@ -243,6 +240,9 @@
     <string name="group_decide">Go here</string>
     <string name="group_host_picking">The host is choosing</string>
     <string name="group_meet">Meet at %1$s</string>
+    <string name="group_agree">Agree %1$d</string>
+    <string name="group_agree_action">Agree with this place</string>
+    <string name="group_popular">Popular</string>
     <string name="group_error_not_found">No room is open with this code.</string>
     <string name="group_error_started">That room has already started.</string>
     <string name="group_error_full">That room is full (8 people).</string>

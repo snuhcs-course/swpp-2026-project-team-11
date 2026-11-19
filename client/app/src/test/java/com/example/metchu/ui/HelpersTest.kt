@@ -132,6 +132,12 @@ class CafeteriasTest {
         val list = cafeteriaList(food.copy(offers = listOf(near, dinner, near)), user, Place.ANY)
         assertEquals(listOf(near, dinner), list.cafeterias.map { it.offer })
     }
+
+    @Test
+    fun aRestaurantSellingSeveralVariantsGetsALineForEach() {
+        val variants = listOf(near.copy(menuName = "치즈피자"), near.copy(menuName = "페퍼로니피자", price = 7000))
+        assertEquals(variants, cafeteriaList(food.copy(offers = variants), user, Place.ANY).cafeterias.map { it.offer })
+    }
 }
 
 class DirectionsTest {

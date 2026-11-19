@@ -8,7 +8,9 @@ from .models import MenuItem, SalesMenu, StoreMenu
 def register_menu_ids(source, *, using="default", date=None, restaurant_ids=None, raw_name=None):
     if source not in {"cafeteria", "general"}:
         raise ValueError("Unknown menu source")
-    model = MenuItem if source == "cafeteria" else StoreMenu
+    if source == "general":
+        return 0
+    model = MenuItem
     fields = ["pk", "restaurant_id", "raw_name", "price", "food_id", "food__name", "food__is_set"]
     fields += ["date", "meal"] if source == "cafeteria" else ["description"]
     items = model.objects.using(using).select_related("food").only(*fields).order_by("pk")

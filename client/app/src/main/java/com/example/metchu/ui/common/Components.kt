@@ -63,11 +63,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.metchu.R
 import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 import kotlinx.coroutines.delay
@@ -214,10 +217,12 @@ fun ActionCapsule(
 /**
  * A 48 dp capsule with a centered label, for a form's actions: [filled] is the orange main
  * one; otherwise white with dark ink. Disabled, it keeps its place and greys its label.
+ * [busy] keeps its colors, shows a spinner beside the label and ignores taps.
  */
 @Composable
-fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true, busy: Boolean = false) {
     val interaction = remember { MutableInteractionSource() }
+    val loading = stringResource(R.string.loading)
     Box(
         modifier
             .height(48.dp)
@@ -225,7 +230,8 @@ fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: M
             .floating()
             .clip(CircleShape)
             .background(if (filled) MetchuColors.Primary else Color.White)
-            .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+            .clickable(interaction, indication = null, enabled = enabled && !busy, role = Role.Button, onClick = onClick)
+            .semantics { if (busy) stateDescription = loading }
             .padding(horizontal = 22.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -234,7 +240,10 @@ fun LabelCapsule(text: String, onClick: () -> Unit, filled: Boolean, modifier: M
             filled -> Color.White
             else -> MetchuColors.Grey900
         }
-        Text(text, style = MetchuType.Label, color = ink, maxLines = 1)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (busy) Spinner(ink, 16.dp)
+            Text(text, style = MetchuType.Label, color = ink, maxLines = 1)
+        }
     }
 }
 
@@ -344,6 +353,8 @@ object Icons {
         fill = SolidColor(Color.Black),
         pathFillType = PathFillType.EvenOdd
     ).build()
+    /** Agree: a thumb up. */
+    val ThumbUp = line("thumbUp", "M7 10v11M14.5 5.5 13.6 10h5.6a2 2 0 0 1 1.9 2.6l-2.2 7A2 2 0 0 1 17 21H4.5a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 4.5 10h2.7a2 2 0 0 0 1.8-1.1L11.8 3a2.6 2.6 0 0 1 2.7 2.5z", 2f)
     val ChevronDown = line("down", "M7 10l5 5 5-5", 2.4f)
     val Check = check(2.4f)
     val Cross = cross(2.4f)

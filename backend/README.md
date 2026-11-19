@@ -1,5 +1,9 @@
 # Metchu! backend
 
+Current catalogue and model: [53-feature canonical mapping and daily extraction](../docs/personal-catalogue.md). General sales menus resolve to the reviewed 267 types; whole campus menus are tagged directly. All DT, group and personal RL questions use the same Korean/English definitions. The former v2 extraction/evaluation sections below describe historical work; operational setup follows the linked v3 guide.
+
+Use `uv run --isolated --locked python -m pytest backend` from the repository root.
+
 The live team deployment now uses the Windows mini PC and its local SQLite database.
 See [host updates and rollback](../docs/mini-pc-host.md); the Supabase instructions
 below describe the earlier deployment and recovery reference.
@@ -43,12 +47,11 @@ pytest                           # every backend test; no API key needed
 ## A. Load the shared snapshot (no API key)
 
 ```bash
-python manage.py loaddata menus_2026-11-02
+python manage.py loaddata menus_v3_contract
 ```
 
-This loads `menus/fixtures/menus_2026-11-02.json`:
-- 15 cafeterias and 127 dishes, all meal candidates
-- v2 features (means and std) and allergen tags already filled in
+This loads `menus/fixtures/menus_v3_contract.json`: 15 cafeterias and 127 dishes with
+allergen tags and synthetic, partial v3 features ([details](../docs/personal-catalogue.md#verification-and-fixtures)).
 
 > **주의:** 스냅샷에는 2026-11-02 데이터만 있습니다. 날짜를 생략하면 "오늘" 기준이라 빈 목록이 나오니, 반드시 날짜를 넘기세요.
 > 예: `--date 2026-11-02`, `services.get_catalog(datetime.date(2026, 11, 2))[0]`
@@ -256,7 +259,7 @@ imports it and keeps the earlier menus of those stores. The snapshot is added by
 S=menus/data/naver_menus_2026-11-02.json
 python manage.py import_stores --file $S --dry-run                     # no LLM call, no write
 python manage.py import_stores --file $S --limit 30 --review review.csv  # try on a local DB
-python manage.py run_store_pipeline --file $S --review review.csv      # import + features + allergens
+python manage.py run_store_pipeline --file $S --mapping mapping.csv --review review.csv  # import + mapping + allergens
 ```
 
 - **Restaurants.** Matched stores with a menu are kept. Cafes, bakeries and dessert shops are left
@@ -351,6 +354,8 @@ in server memory, like sessions; the API is commented at the end of `recommend/v
 | `POST /api/rooms/<code>/start/` | host | `state` |
 | `POST /api/rooms/<code>/answer/` | `{"question_id", "answer_id"}` | `state` |
 | `POST /api/rooms/<code>/recommend-now/` | host | `state` |
+| `POST /api/rooms/<code>/another/` | host | `state` |
+| `POST /api/rooms/<code>/vote/` | `{"pick", "agree"}` (`agree: false` takes the vote back) | `state` |
 | `POST /api/rooms/<code>/decide/` | `{"pick"}` (its position in `picks`), host | `state` |
 | `POST /api/rooms/<code>/leave/` | | 204 |
 
@@ -358,11 +363,12 @@ Every request after create or join sends the returned member token as `X-Member-
 signed-in member (`Authorization: Token ...`) is shown by username; anyone else sends a `name`.
 `state` is `{"code", "status": "lobby" | "asking" | "done", "date", "meal", "me", "host",
 "members", "round", "max_rounds", "question", "my_answer", "seconds_left", "round_seconds", "picks",
-"decided"}`;
+"more", "decided"}`;
 `members` are `{"id", "name", "allergies", "left", "answered"}` and each pick is `{"restaurant",
-"kind", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others"}`; `others` are the
+"kind", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others", "votes", "voted"}`; `others` are the
 restaurant's other dishes, shaped like a session's `menu` dishes. `fit` is `great` when
 the restaurant is among that member's best tenth of the places they can eat at, otherwise `good`.
+`votes` counts the members who agree with the pick and `voted` says whether the caller does.
 
 - The creator hosts. A room has a four-digit code and 2 to 8 members; nobody joins after the start
   (409 `room_started`). A caller who tries 10 unknown codes within a minute waits out the minute
@@ -371,13 +377,26 @@ the restaurant is among that member's best tenth of the places they can eat at, 
   silent for `ROUND_SECONDS` (15) answers "unknown": unlike "any" ("doesn't matter"), it moves
   neither the engine's belief about their dish nor how relevant it takes the question's family to
   be. Deadlines are checked whenever the room is read or acted on, so the phones' polling moves it on.
-- Only the host starts, stops early ("recommend now": the engine's `stop()`) and decides. When the
-  host leaves, a random remaining member hosts; a member who leaves after the start answers "unknown".
+- Once the result is shown, any member may agree with any of the picks, to help the host choose.
+  Votes change nothing in the engine, end with the host's decision (later ones get 409 `stale_step`)
+  and leave with the member who cast them.
+- Only the host starts, stops early ("recommend now": the engine's `stop()`), asks for other
+  restaurants ("find another") and decides. When the host leaves, a random remaining member hosts;
+  a member who leaves after the start answers "unknown".
+- "Find another" (`another`, i4-A13) replaces `picks` with up to two restaurants the room has not
+  been shown, chosen the same way among the rest (`recommendation(shown)`), with no votes yet. `more`
+  is true while a restaurant where every member can eat is left; without one, or once the host has
+  decided, it is a 409 `stale_step`.
 - A member's allergies remove offers only from their own choice. They are matched to the full menu's
   offers by `menus/offers.py`, since a merged menu can come back without an allergen under another ID.
   Every member's allergies are shown to the whole room, by design.
-- Picks are told apart by position (`decided` is one): two branches of one chain share a name. Once
-  the result is made, the room lets its engine go. Rooms end with the process and
+- Picks are told apart by position (`decided` is one): two branches of one chain share a name. The
+  room lets its engine go with the result. For "find another" it keeps only a `GroupResult` (each
+  member's satisfaction and menus at each restaurant, without the engine's fit tables of about
+  29 MB per allergic member at 586 restaurants × 6,227 menus) until the host decides or everyone
+  has left. A pick that fails to build leaves the picks and their votes as they were; after the
+  decision every vote is a 409 `stale_step`, and a member who leaves no longer takes votes along.
+  Rooms end with the process and
   are not in the interaction log. With `source=all` and no distance cut, starting a room and each
   round take seconds (the engine's tables over thousands of menus).
 
@@ -409,7 +428,6 @@ DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-<n>-ap-northeast
 
 ```bash
 python manage.py migrate                       # creates the tables in Supabase
-python manage.py loaddata menus_2026-11-02     # the shared demo snapshot
 python manage.py run_daily_pipeline            # today's menu
 ```
 
@@ -484,7 +502,7 @@ from menus import services
 
 services.get_feature_schema()
 # [{"key": "spicy", "question": "Do you feel like something spicy?",
-#   "question_en": "...", "family": "taste"}, ...]  (33 features)
+#   "question_en": "...", "family": "taste"}, ...]  (53 features)
 
 candidates, schema = services.get_catalog(datetime.date(2026, 11, 2), meal="LU")   # meal=None: whole day, date=None: today
 # One candidate per sales menu, named as the restaurant lists it:
@@ -519,21 +537,18 @@ menus, generated features and checkpoints belong outside Git, for example in
 `.local/menus/`. Importing profiles makes no model calls. New catalogue features
 alone do not retrain the frozen RL policy or establish human recommendation accuracy.
 
-### Feature-only RL
+### Personal RL
 
 Select **Reinforcement learning (RL)** in Android Settings or send `"engine": "rl"`
-to `POST /api/sessions/`. Both cafeteria and general sessions use v2 dish features
-after allergy and distance filtering. An empty catalogue returns an unavailable step.
+to `POST /api/sessions/`. The model compares 267 mapped canonical types with
+whole-campus menus using the single v3 53-feature schema. English and Korean
+questions are shared with DT/group mode. Group inference remains DT-only.
 
-The frozen v20 policy ranks dishes from their features and the user's answers.
-After a refusal it excludes that dish and updates the scores of similar dishes
-before choosing whether to ask or propose again. Matching catalogues share
-numeric arrays; answers, refusals, offers and undo history belong to the session.
-Inference uses NumPy on CPU. The source checkpoint hash is in
-[`weights.json`](question_engines/rl/weights.json).
-
-From `backend/`, run `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m question_engines.rl.benchmark`
-to measure preparation and the first decision on synthetic menus of 500–12,000 dishes.
+The frozen 562,123-parameter predictor and policy run on CPU through the locked uv
+environment. Food choice is acceptance argmax, questions are sampled by value, and
+after 20 interactions the service proposes remaining candidates without asking
+again. See [the model/candidate contract](../docs/personal-catalogue.md) and the
+[checkpoint manifest](question_engines/rl/assets/manifest.json).
 
 ### Allergens (i3-A1)
 
@@ -552,12 +567,12 @@ the session (i3-A14): `POST /api/sessions/<id>/ban/` takes a `food_group` or the
 candidate's `food_id`. Rather than changing the engines, the session turns down any
 guess of a banned menu with `feedback` as soon as an action reaches it, and an undo
 that reaches one goes back further, so it does not return after Back either. A new
-session starts with no bans. The phone offers a group ban once the group makes up two
-of the last three proposals. A menu is left out when any of its dishes is in a banned
+session starts with no bans. The phone no longer offers bans (i4-A10, i4-A22): "Find
+another" turns the menu down, and the engines do not propose it again in the session.
+The endpoint stays for now. A menu is left out when any of its dishes is in a banned
 group: each candidate's `food_groups` lists them, a set dish taking the group of its
 single variant, so banning 버거 also leaves out the 버거운버거 sets. New dishes get no
-`food_group` (only rows that already had one keep it); a menu without any is banned
-one menu at a time.
+`food_group` (only rows that already had one keep it).
 
 `extract_allergens` asks the menu model which allergens each dish name may contain, sauces,
 broths and batters included; the prompt tells it to leave a key out only when it is sure.
@@ -786,7 +801,7 @@ and commit. Teammates then run `python manage.py loaddata menus_<date>`.
 | `extract_allergens [--date \\| --stores] [--limit N] [--dry-run] [--force]` | tag new dishes (with `--stores`, restaurant menu lines) with the allergens they may contain | **yes** |
 | `fetch_naver_menus --stores CSV --output PATH` | save the Naver Place menus of the food shops near 서울대입구역 and 낙성대역 to JSON | no |
 | `import_stores --file [--dry-run] [--limit N] [--allow-partial] [--no-llm] [--review PATH]` | import the restaurants near the stations from a crawl file | for new lines |
-| `run_store_pipeline --file [--review PATH]` | import + tag the restaurants near the stations | **yes** |
+| `run_store_pipeline --file --mapping [--review PATH]` | import, map and tag the restaurants near the stations | **yes** |
 | `build_fixed_menus [--start] [--end] [--review PATH]` | rebuild the fixed-menu catalog | for new lines |
 | `export_preprocess_review [--date] --output PATH` | the day's results as a review CSV | no |
 | `export_candidates [--date] [--meal] [--output]` | candidates + feature schema as JSON | no |

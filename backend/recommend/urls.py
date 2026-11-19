@@ -20,6 +20,8 @@ urlpatterns = [
     path("rooms/<str:code>/start/", views.start_room),
     path("rooms/<str:code>/answer/", views.answer_room),
     path("rooms/<str:code>/recommend-now/", views.recommend_room_now),
+    path("rooms/<str:code>/another/", views.another_room),
+    path("rooms/<str:code>/vote/", views.vote_room),
     path("rooms/<str:code>/decide/", views.decide_room),
     path("rooms/<str:code>/leave/", views.leave_room),
 ]

@@ -22,7 +22,8 @@ class Food(models.Model):
     each made of one or more of these.
 
     One row per (cleaned name, set status), shared across days and restaurants.
-    Both variants share name-based measurements; meal variety is deterministic.
+    Component annotations use the current rubric; whole campus menu profiles
+    live on SalesMenu. Sets have no deterministic sensory feature.
     """
 
     name = models.CharField(max_length=300)  # normalize.clean_name()
@@ -162,13 +163,6 @@ class StoreMenu(models.Model):
     price = models.IntegerField(null=True, blank=True)
     allergens = models.JSONField(default=list, blank=True)
     allergen_version = models.CharField(max_length=10, blank=True)
-
-    def save(self, *args, **kwargs):
-        from .menu_registry import register_menu_ids
-        using = kwargs.get("using") or self._state.db or "default"
-        with transaction.atomic(using=using):
-            super().save(*args, **kwargs)
-            register_menu_ids("general", using=using, restaurant_ids=[self.restaurant_id], raw_name=self.raw_name)
 
     class Meta:
         constraints = [

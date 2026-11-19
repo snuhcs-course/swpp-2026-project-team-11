@@ -4,7 +4,6 @@ import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.RestaurantMenu
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.AnswerRequest
-import com.example.metchu.data.network.BanRequest
 import com.example.metchu.data.network.ApiService
 import com.example.metchu.data.network.CreateSessionRequest
 import com.example.metchu.data.network.FeedbackRequest
@@ -68,8 +67,6 @@ class FakeApi : ApiService {
         next("feedback $sessionId ${request.guessId} ${request.accepted}")
     override suspend fun recommendNow(sessionId: String) = next("recommend-now $sessionId")
     override suspend fun undo(sessionId: String) = next("undo $sessionId")
-    override suspend fun ban(sessionId: String, request: BanRequest) =
-        next("ban $sessionId ${request.foodId ?: request.foodGroup} ${request.banned}")
     override suspend fun reason(sessionId: String): Reason {
         reasonCalls.add(sessionId)
         val gate = heldReason

@@ -42,7 +42,7 @@ class Command(BaseCommand):
         day = date.isoformat()
 
         steps = [("[1/5] 메뉴 수집·전처리", ["fetch_menus", "--date", day]),
-                 ("[2/5] 새 요리 특징 추출", ["extract_features", "--date", day]),
+                 ("[2/5] 새 요리 특징 추출", ["extract_menu_features", "--date", day]),
                  ("[3/5] 새 요리 알레르기 태깅", ["extract_allergens", "--date", day]),
                  ("[4/5] 메뉴 표시 이름 태깅", ["tag_menu_labels", "--date", day])]
         if options["review"]:

@@ -17,7 +17,7 @@ import numpy as np
 
 from .contracts import ANSWER_OPTIONS
 
-POLICY_VERSION = "decision-tree.3.2"
+POLICY_VERSION = "decision-tree.4.0"
 
 
 @dataclass(frozen=True)

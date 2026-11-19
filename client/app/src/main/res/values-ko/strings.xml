@@ -160,10 +160,6 @@
     <string name="sheet_close">닫기</string>
     <string name="result_menu_note">Metchu가 추천할 수 있는 메뉴만 보여요</string>
     <string name="result_menu_failed">메뉴를 불러오지 못했어요. 닫고 다시 시도해 주세요.</string>
-    <string name="result_ban">이 메뉴 추천하지 않기</string>
-    <string name="result_unban">이번 추천에서 뺐어요 · 되돌리기</string>
-    <string name="result_ban_group">%1$s 종류는 추천하지 않기</string>
-    <string name="result_unban_group">%1$s 종류는 이번 추천에서 뺐어요 · 되돌리기</string>
 
     <string name="unavailable_no_menu">오늘 %1$s 메뉴가 아직 없어요</string>
     <string name="unavailable_no_menu_hint">다른 식사로 추천받을 수 있어요.</string>
@@ -176,6 +172,7 @@
 
     <string name="retry">다시 시도</string>
     <string name="error_no_server">서버에 연결되면 다시 시도할 수 있어요.</string>
+    <string name="loading">불러오는 중</string>
     <string name="error_server">서버가 요청을 처리하지 못했어요. 다시 시도할 수 있어요.</string>
     <string name="error_engine_unavailable">지금은 선택한 질문 방식을 사용할 수 없어요. 설정에서 다른 방식을 골라 주세요.</string>
     <string name="error_all_source_llm">모든 식당 추천은 결정 트리 또는 RL을 지원해요. 설정에서 엔진을 바꿔 주세요.</string>
@@ -225,6 +222,9 @@
     <string name="group_decide">여기로 정하기</string>
     <string name="group_host_picking">방장이 고르는 중</string>
     <string name="group_meet">%1$s에서 만나요</string>
+    <string name="group_agree">찬성 %1$d</string>
+    <string name="group_agree_action">이 식당에 찬성하기</string>
+    <string name="group_popular">인기</string>
     <string name="group_error_not_found">이 코드로 열린 방이 없어요.</string>
     <string name="group_error_started">이미 시작한 방이에요.</string>
     <string name="group_error_full">방이 꽉 찼어요(8명).</string>

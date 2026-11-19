@@ -24,6 +24,8 @@ data class RoomState(
     @SerializedName("round_seconds") val roundSeconds: Int,
     // done
     val picks: List<RoomPick>?,
+    /** Whether the host can still replace [picks] with restaurants the room has not been shown. */
+    val more: Boolean,
     /** The position in [picks] the host chose. */
     val decided: Int?
 ) {
@@ -53,7 +55,8 @@ data class RoomQuestion(
 
 /**
  * A suggested restaurant, each member's dish there and its [others] dishes. [kind] is the
- * engine's reason for it: "balanced" or "no_one_unhappy".
+ * engine's reason for it: "balanced" or "no_one_unhappy". [votes] members agree with it;
+ * [voted] is whether this member does.
  */
 data class RoomPick(
     val restaurant: String,
@@ -62,7 +65,9 @@ data class RoomPick(
     val lng: Double?,
     @SerializedName("distance_m") val distanceM: Int?,
     val menus: List<RoomDish>,
-    val others: List<MenuDish>
+    val others: List<MenuDish>,
+    val votes: Int,
+    val voted: Boolean
 )
 
 /** [fit] is "great" when the place is among the member's best for them, otherwise "good". */

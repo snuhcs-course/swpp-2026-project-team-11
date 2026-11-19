@@ -1,11 +1,12 @@
 """price_level: only dishes priced inside the picked band reach the engine, in sessions and rooms."""
 import json
+from unittest import mock
 
 from django.test import TestCase
 
 from menus.allergens import ALLERGEN_VERSION
-from menus.features.schema import FEATURE_KEYS, FEATURE_VERSION
-from menus.models import Food, Restaurant, StoreMenu
+from menus.models import Restaurant, StoreMenu
+from menus.personal import offers
 from recommend import sessions
 from recommend.prices import PRICE_BANDS, within_price
 
@@ -103,13 +104,13 @@ class MergedOfferPriceTests(TestCase):
     for a session and for every member's allergy-filtered load in a room."""
 
     def setUp(self):
-        stew = Food.objects.create(name="김치찌개", is_food=True, features={key: 0.5 for key in FEATURE_KEYS},
-                                   feature_std={key: 0.1 for key in FEATURE_KEYS},
-                                   feature_version=FEATURE_VERSION, allergen_version=ALLERGEN_VERSION)
+        patch = mock.patch.object(offers, "resolve", return_value="food_009")  # 김치찌개
+        patch.start()
+        self.addCleanup(patch.stop)
         lines = [("가게 A", 6000, []), ("가게 B", 9000, ["pork"]), ("가게 C", 12000, []), ("가게 D", 16000, [])]
         for i, (name, price, tags) in enumerate(lines):
             place = Restaurant.objects.create(code=f"MA000{i}", name=name, source="naver", lat=37.48 + i / 1000, lng=126.95)
-            StoreMenu.objects.create(restaurant=place, raw_name="김치찌개", description=f"{name} 김치찌개", food=stew,
+            StoreMenu.objects.create(restaurant=place, raw_name="김치찌개", description=f"{name} 김치찌개",
                                      price=price, allergens=tags, allergen_version=ALLERGEN_VERSION)
 
     def test_a_session_keeps_only_the_offers_in_the_band(self):

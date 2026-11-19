@@ -11,8 +11,8 @@ from .helpers import check_state
 from .test_edge_cases import SmallMenuTestCase
 from .test_llm_engine import LLMSessionTestCase
 
-SPICY = "Do you feel like something spicy?"
-BROTH = "Do you feel like something with broth?"
+SPICY = "Do you feel like having something spicy?"
+BROTH = "Do you feel like having something with broth?"
 FRIED = "Do you feel like something fried?"
 
 
@@ -64,7 +64,7 @@ class ExplainTests(SimpleTestCase):
         llm = FakeLLM(draft(" A spicy broth, as you wanted. ", [1, 2]))
         self.assertEqual(explain(facts(), llm), {"reason": "A spicy broth, as you wanted.", "source": "llm"})
         prompt = llm.prompt()
-        self.assertIn("Q1. Do you feel like something spicy? -> Yes, sounds good (this dish: 0.9 of 1)", prompt)
+        self.assertIn("Q1. Do you feel like having something spicy? -> Yes, sounds good (this dish: 0.9 of 1)", prompt)
         self.assertIn("Write in English", prompt)
 
     def test_a_refused_draft_goes_back_with_the_reason(self):
@@ -80,11 +80,11 @@ class ExplainTests(SimpleTestCase):
 
 class TemplateTests(SimpleTestCase):
     def test_names_the_last_two_yes_answers_the_dish_fits(self):
-        self.assertEqual(template(facts()), "You felt like something spicy and something with broth, "
+        self.assertEqual(template(facts()), "You felt like having something spicy and having something with broth, "
                                             "and 짬뽕 is a good match.")
-        self.assertEqual(template(facts("ko")), "매운 음식, 국물 있는 음식을 원하셔서 짬뽕을 골랐어요.")
-        beef = facts("ko", answers=(("Do you feel like beef?", "yes", .9),))
-        self.assertEqual(template(beef), "소고기를 원하셔서 짬뽕을 골랐어요.")
+        self.assertEqual(template(facts("ko")), "매콤한 음식, 국물 있는 음식을 원하셔서 짬뽕을 골랐어요.")
+        beef = facts("ko", answers=(("Do you feel like having a dish centered on beef?", "yes", .9),))
+        self.assertEqual(template(beef), "소고기 요리를 원하셔서 짬뽕을 골랐어요.")
 
     def test_without_such_an_answer_it_stays_general_in_the_session_language(self):
         for answers in ((), ((SPICY, "no", .9),), ((SPICY, "yes", None),), ((SPICY, "any", .9),)):
@@ -146,7 +146,7 @@ class ReasonApiTests(SmallMenuTestCase):
 
 class LLMSessionReasonTests(LLMSessionTestCase):
     def test_an_llm_session_is_explained_from_its_english_questions(self):
-        self.use_llm(ask("Do you feel like noodles?", "Beef noodles"), {"action": "recommend", "question": "",
+        self.use_llm(ask("Do you feel like having a noodle dish?", "Beef noodles"), {"action": "recommend", "question": "",
                                                                          "food": "Beef noodles"})
         reason_llm = FakeLLM(draft("Noodles, as you wanted.", [1]))
         with mock.patch("recommend.reasons.default_llm", return_value=reason_llm):
@@ -154,7 +154,7 @@ class LLMSessionReasonTests(LLMSessionTestCase):
             self.call(url + "answer/", {"question_id": state["step"]["question_id"], "answer_id": "yes"})
             reason = self.client.get(url + "reason/").json()
         self.assertEqual(reason["reason"], "Noodles, as you wanted.")
-        self.assertIn("Q1. Do you feel like noodles? -> Yes, sounds good (this dish: 0.9 of 1)", reason_llm.prompt())
+        self.assertIn("Q1. Do you feel like having a noodle dish? -> Yes, sounds good (this dish: 0.9 of 1)", reason_llm.prompt())
 
     def test_unmapped_question_does_not_explain_a_dish_fit(self):
         self.use_llm(ask("In the mood for chili heat?", "Rice bowl"),

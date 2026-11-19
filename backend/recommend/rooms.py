@@ -4,12 +4,13 @@
     join(code, name, allergies, language)       -> (Room, Member)
     get(code)                                   -> Room | None
     room.start(member) / answer(member, question_id, answer_id) / recommend_now(member)
-    room.decide(member, pick) / leave(member)
+    room.another(member) / vote(member, pick, agree) / decide(member, pick) / leave(member)
     room.public_state(member)                   -> what that member's phone draws
 
 A room has a four-digit code and 2 to 8 members. Each phone holds its member's secret
 token. The host sets the meal, the restaurants, the price range and the location, starts the questions,
-may stop them early ("recommend now") and decides on a restaurant. Nobody joins after
+may stop them early ("recommend now"), may ask for other restaurants ("find another")
+and decides on a restaurant. Nobody joins after
 the start, and a caller who tries JOIN_ATTEMPTS unknown codes waits JOIN_WINDOW seconds.
 When the host leaves, a random remaining member becomes host.
 
@@ -21,8 +22,11 @@ checked whenever the room is read or acted on, so phones polling the room move i
 
 The result is up to two restaurants, each with every member's dish there, the restaurant's
 other dishes (by meal and name, like a session's menu), and how well the place fits them: "great" among their best tenth of the restaurants they can eat at, otherwise
-"good". A member's allergies only remove dishes from their own choice. Rooms live in this process only,
-like sessions (recommend/sessions.py).
+"good". Until the host decides, every member may agree with any of the restaurants; each
+shows how many agree and whether this member does. A member who leaves takes their votes along. A member's allergies only remove dishes from their own choice. "Find another" replaces
+the result with up to two restaurants the room has not been shown, with no votes yet, while one where everyone can
+eat is left (`more`). For that the room keeps the group's result (each member's satisfaction and
+menus at each restaurant, not the engine's tables) until the host decides or everyone has left. Rooms live in this process only, like sessions (recommend/sessions.py).
 """
 
 from __future__ import annotations
@@ -39,8 +43,8 @@ import numpy as np
 
 from menus.offers import safe_offers
 from question_engines.decision_tree.contracts import Answer, answer_options, translate
-from question_engines.group import GroupConfig, GroupEngine
-from question_engines.group.engine import MAX_MEMBERS, place
+from question_engines.group import GroupConfig, GroupEngine, GroupResult
+from question_engines.group.engine import MAX_MEMBERS, place, offer_identity
 
 from .sessions import EngineUnavailable, StaleStep, load_candidates, restaurant_menus
 
@@ -92,12 +96,16 @@ class Room:
         self.host_id = 0
         self.status = "lobby"
         self.engine: GroupEngine | None = None
+        self.result: GroupResult | None = None  # kept for "find another" until the host decides
         self.round_started = 0.0
         self.round_answers: dict[int, str] = {}
         self.rounds = 0  # the engine's count, kept once the engine is let go
         self.picks: list[dict] | None = None
+        self.shown: set[int] = set()  # the engine's indices of every restaurant picked so far
+        self.more = False
         self.menus: dict[tuple, list[dict]] = {}
         self.decided: int | None = None
+        self.votes: list[set[int]] = []  # per pick, the members who agree with it
         self.lock = threading.Lock()
 
     def member(self, token: str | None) -> Member | None:
@@ -134,14 +142,17 @@ class Room:
         self.menus = restaurant_menus(candidates, place)
         offers = _offers(candidates)
         excluded = []
+        offer_filters = []
         try:
             for m in self.members:
                 if m.allergies:
                     allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.source, s.location, s.distance_scope, s.price_level)
                     excluded.append(offers - safe_offers(candidates, allowed))
+                    offer_filters.append({offer_identity(c["food_id"], o) for c in allowed for o in c["offers"]})
                 else:
                     excluded.append(set())
-            self.engine = GroupEngine(candidates, schema, excluded, config=GroupConfig(max_rounds=MAX_ROUNDS, language="en"))
+                    offer_filters.append({offer_identity(c["food_id"], o) for c in candidates for o in c["offers"]})
+            self.engine = GroupEngine(candidates, schema, excluded, config=GroupConfig(max_rounds=MAX_ROUNDS, language="en"), offer_filters=offer_filters)
         except ValueError as error:
             raise RoomError("group_unavailable", str(error)) from error
         self.status = "asking"
@@ -197,41 +208,74 @@ class Room:
 
     def _finish(self) -> None:
         self.status = "done"
-        self.picks = []
-        satisfaction = self.engine.satisfaction()
-        index = {p: r for r, p in enumerate(self.engine.places)}
-        for pick in self.engine.recommendation()["picks"]:
-            at = (pick["restaurant"], pick["lat"], pick["lng"])
-            r = index[at]
+        self.result, self.rounds, self.engine = GroupResult(self.engine), self.engine.round, None
+        self._choose()
+
+    def _choose(self) -> None:
+        """Up to two restaurants the room has not been shown yet, with no votes."""
+        result = self.result.recommendation(self.shown)
+        satisfaction = self.result.satisfaction
+        picks = []
+        for pick in result["picks"]:
+            at, r = (pick["restaurant"], pick["lat"], pick["lng"]), pick["index"]
             suggested = {food["food_id"] for food in pick["menus"] if food}
             offer = next(o for food in pick["menus"] if food for o in food["offers"] if place(o) == at)
-            self.picks.append({
+            picks.append({
                 "restaurant": pick["restaurant"], "kind": pick["kind"],
                 "lat": pick["lat"], "lng": pick["lng"], "distance_m": offer.get("distance_m"),
                 "menus": [{"member_id": m.id, "food": food, "fit": _fit(satisfaction[m.id], r)}
                           for m, food in zip(self.members, pick["menus"])],
                 "others": [dish for dish in self.menus.get(at, []) if dish["food_id"] not in suggested]})
-        # The engine's tables (one per allergic member over every restaurant and menu) are not needed again.
-        self.rounds, self.engine, self.menus = self.engine.round, None, {}
+        # All at once, so a failure above leaves the picks and their votes as they were.
+        self.picks, self.votes, self.more = picks, [set() for _ in picks], result["more"]
+        self.shown.update(pick["index"] for pick in result["picks"])
 
-    def decide(self, member: Member, pick: int) -> None:
-        """Chooses a pick by its position: two branches of one chain share a name."""
+    def another(self, member: Member) -> None:
+        """Replaces the picks with restaurants the room has not been shown yet."""
         self._require_host(member)
+        if self.status != "done" or not self.more:
+            raise StaleStep("There is no other restaurant to suggest.")
+        self._choose()
+
+    def _let_go(self) -> None:
+        """Drops what later picks would need, once there will be none."""
+        self.result, self.menus, self.more = None, {}, False
+
+    def _pick(self, pick: int) -> int:
+        """Checks a pick's position: two branches of one chain share a name."""
         if self.status != "done":
-            raise StaleStep("There is no result to decide on yet.")
+            raise StaleStep("There is no result yet.")
         if type(pick) is not int or not 0 <= pick < len(self.picks):
             raise ValueError("pick must be the position of a suggested restaurant.")
-        self.decided = pick
+        return pick
+
+    def vote(self, member: Member, pick: int, agree: bool) -> None:
+        if self.decided is not None:
+            raise StaleStep("The host has already decided.")
+        self._pick(pick)
+        if type(agree) is not bool:
+            raise ValueError("agree must be true or false.")
+        (self.votes[pick].add if agree else self.votes[pick].discard)(member.id)
+
+    def decide(self, member: Member, pick: int) -> None:
+        self._require_host(member)
+        self.decided = self._pick(pick)
+        self._let_go()
 
     def leave(self, member: Member) -> None:
         if member.left:
             return
         member.left = True
+        if self.decided is None:  # the decided restaurant keeps the votes it was chosen with
+            for voters in self.votes:
+                voters.discard(member.id)
         present = self._present()
         if member.id == self.host_id and present:
             self.host_id = random.choice(present).id
         if self.status == "asking":
             self._answer_for([member.id])
+        if self.status == "done" and not present:
+            self._let_go()
 
     def public_state(self, member: Member) -> dict:
         self.tick()
@@ -257,7 +301,10 @@ class Room:
             "my_answer": self.round_answers.get(member.id) if asking else None,
             "seconds_left": max(0.0, round(ROUND_SECONDS - (clock() - self.round_started), 1)) if asking else None,
             "round_seconds": ROUND_SECONDS,
-            "picks": self.picks,
+            "more": self.more,
+            "picks": None if self.picks is None else [
+                {**pick, "votes": len(voters), "voted": member.id in voters}
+                for pick, voters in zip(self.picks, self.votes)],
             "decided": self.decided,
         }
 

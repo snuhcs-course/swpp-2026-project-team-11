@@ -40,12 +40,6 @@ data class MenuDish(
     val price: Int?
 )
 
-/** What a ban covers for the rest of a session: one dish ([foodId]) or every dish of a [foodGroup]. */
-data class Ban(
-    val foodId: Int? = null,
-    val foodGroup: String? = null
-)
-
 /** The question engines the server can run a session with; see [SessionState.engine]. */
 object Engine {
     /** P10: picks each question from the dishes' extracted features. Answers at once. */
@@ -116,7 +110,9 @@ data class Offer(
     val price: Int?,
     val lat: Double?,
     val lng: Double?,
-    @SerializedName("distance_m") val distanceM: Int?
+    @SerializedName("distance_m") val distanceM: Int?,
+    @SerializedName("menu_name") val menuName: String? = null,
+    @SerializedName("restaurant_code") val restaurantCode: String? = null
 )
 
 /** Present when a guess names a whole group; [Step.food] is then one example from it. */

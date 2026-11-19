@@ -110,16 +110,16 @@ class RunsTests(SimpleTestCase):
 
 
 class IntegrityTests(SimpleTestCase):
-    def test_extraction_needs_32_keys_and_stored_foods_33(self):
+    def test_extraction_and_storage_require_the_same_53_keys(self):
         means, stds = full()
         good_run = runs.Record("repeat-0", "repeat", "menu", "짬뽕", means, stds)
-        good_stored = runs.Record("stored-0", "stored", "menu", "라면", means | {"meal_variety": 0.0},
-                                  stds | {"meal_variety": 0.0})
-        short_stored = runs.Record("stored-0", "stored", "menu", "우동", means, stds)
+        good_stored = runs.Record("stored-0", "stored", "menu", "라면", means | {"mixed": 0.0},
+                                  stds | {"mixed": 0.0})
+        short_stored = runs.Record("stored-0", "stored", "menu", "우동", {k:v for k,v in means.items() if k!="mixed"}, {k:v for k,v in stds.items() if k!="mixed"})
         section, valid = integrity.evaluate([good_run, good_stored, short_stored])
         self.assertEqual(valid, [good_run, good_stored])
         self.assertFalse(section["checks"][0][3])
-        self.assertIn("missing ['meal_variety']", section["tables"][0][3][0][2])
+        self.assertIn("missing ['mixed']", section["tables"][0][3][0][2])
 
     def test_variance_bound_and_ranges(self):
         means, stds = full()
@@ -234,7 +234,7 @@ class HumanTests(SimpleTestCase):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         path = pathlib.Path(folder.name) / name
-        header = header or "name,rater,recipe_notes,spicy_mean: 매운맛 평균,spicy_std,noodle_mean,noodle_std"
+        header = header or "name,rater,recipe_notes,spicy_mean: 매콤함 평균,spicy_std,noodle_mean,noodle_std"
         path.write_text(header + "\n" + "\n".join(rows) + "\n", encoding="utf-8-sig")
         return path
 
@@ -244,7 +244,7 @@ class HumanTests(SimpleTestCase):
             human.write_form(path, [("짬뽕", "매일 바뀌는 메뉴"), ("라면", "고정 메뉴")])
             text = path.read_text(encoding="utf-8-sig").splitlines()
             self.assertEqual(len(text[0].split(",")), 4 + 2 * len(LLM_FEATURE_KEYS))
-            self.assertIn("spicy_mean: 매운맛 평균", text[0])
+            self.assertIn("spicy_mean: 매콤함 평균", text[0])
             self.assertTrue(text[1].startswith("짬뽕,매일 바뀌는 메뉴,"))
             self.assertEqual(human.load([path]), {"form": {"짬뽕": {"mean": {}, "std": {}, "notes": ""},
                                                            "라면": {"mean": {}, "std": {}, "notes": ""}}})
@@ -259,15 +259,15 @@ class HumanTests(SimpleTestCase):
             self.assertEqual(book.sheetnames, ["평가", "안내", "루브릭"])
             sheet = book["평가"]
             self.assertEqual([c.value for c in sheet[4][:5]],
-                             ["name", "kind", "recipe_notes", "spicy_mean", "spicy_std"])
+                             ["name", "kind", "recipe_notes", "soupy_mean", "soupy_std"])
             self.assertEqual([sheet["A6"].value, sheet["B6"].value], ["라면", "고정 메뉴"])
             sheet["B1"], sheet["C5"], sheet["D5"], sheet["E5"] = "kim", "레시피 2개", 0.6, 0.15
             book.save(path)
             self.assertEqual(human.load([path])["kim"]["짬뽕"],
-                             {"mean": {"spicy": 0.6}, "std": {"spicy": 0.15}, "notes": "레시피 2개"})
+                             {"mean": {"soupy": 0.6}, "std": {"soupy": 0.15}, "notes": "레시피 2개"})
             sheet["E5"] = 0.55
             book.save(path)
-            with self.assertRaisesMessage(ValueError, "form.xlsx row 5, spicy"):
+            with self.assertRaisesMessage(ValueError, "form.xlsx row 5, soupy"):
                 human.load([path])
 
     def test_values_notes_and_rater_from_file_name(self):
@@ -283,8 +283,8 @@ class HumanTests(SimpleTestCase):
                 human.load([self.form([f"짬뽕,kim,,{text},0.1,1,0"])])
         with self.assertRaisesMessage(ValueError, "line 2, spicy"):
             human.load([self.form(["짬뽕,kim,,0.05,0.4,1,0"])])  # std² > mean(1 - mean)
-        with self.assertRaisesMessage(ValueError, "unknown column 'umami_mean'"):
-            human.load([self.form(["짬뽕,kim,,0.5"], header="name,rater,recipe_notes,umami_mean")])
+        with self.assertRaisesMessage(ValueError, "unknown column 'not_a_feature_mean'"):
+            human.load([self.form(["짬뽕,kim,,0.5"], header="name,rater,recipe_notes,not_a_feature_mean")])
 
     def test_reference_needs_every_feature(self):
         means, stds = full(0.5, 0.1)
@@ -304,7 +304,7 @@ class HumanTests(SimpleTestCase):
         rows, overall = human.compare(rs, ratings, "mean")
         self.assertAlmostEqual(overall["raters"], 0.1)   # (0.2 + 0) / 2
         self.assertAlmostEqual(overall["llm"], 0.05)     # (0.1 + 0.1 + 0 + 0) / 4
-        self.assertEqual(rows[0][4], 0.5)
+        self.assertEqual(next(row for row in rows if row[0] == "spicy")[4], 0.5)
         result = human.evaluate(rs, ratings)
         self.assertIn("ratio 0.50", result["lines"][2])
         one = human.evaluate(rs, {"kim": ratings["kim"]})
@@ -371,10 +371,10 @@ class DownstreamTests(SimpleTestCase):
         self.assertEqual(human_row[1:], ai_row[1:])
         self.assertIn("lose 0 and win 0", result["lines"][1])
 
-    def test_candidates_carry_33_keys(self):
+    def test_candidates_carry_all_53_keys(self):
         rows = downstream.candidates({"짬뽕": full()})
         self.assertEqual(set(rows[0]["features"]), set(FEATURE_KEYS))
-        self.assertEqual(rows[0]["features"]["meal_variety"], 0.0)
+        self.assertEqual(rows[0]["features"]["mixed"], 0.5)
 
     def test_skipped_without_a_reference(self):
         self.assertIn("skipped", downstream.evaluate(runset(record("짬뽕")), {}, "preference"))
@@ -407,8 +407,8 @@ class CommandTests(IsolatedCatalog, TestCase):
         means, stds = full(0.5, 0.1)
         for name, is_set in (("짬뽕", False), ("짬뽕", True), ("핫치킨버거", False), ("라면", False)):
             food = Food.objects.create(name=name, is_set=is_set, is_food=True, feature_version=FEATURE_VERSION,
-                                       features=means | {"meal_variety": float(is_set)},
-                                       feature_std=stds | {"meal_variety": 0.0}, extraction_model="m")
+                                       features=means | {"mixed": float(is_set)},
+                                       feature_std=stds | {"mixed": 0.0}, extraction_model="m")
             MenuItem.objects.create(date=datetime.date(2026, 10, 20), meal="LU", restaurant=hall,
                                     raw_name=name, food=food, price=5000)
         Food.objects.filter(name="라면").update(feature_version="v1")
