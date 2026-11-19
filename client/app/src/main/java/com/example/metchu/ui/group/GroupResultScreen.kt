@@ -65,6 +65,8 @@ import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.TopRow
 import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.common.cssShadow
+import com.example.metchu.ui.common.rememberLocationPermission
+import com.example.metchu.ui.common.rememberUserPoint
 import com.example.metchu.ui.result.MapPin
 import com.example.metchu.ui.result.Point
 import com.example.metchu.ui.result.RowIconButton
@@ -113,6 +115,7 @@ fun GroupResultScreen(
     val shownAt = viewing.coerceIn(picks.indices)
     val pick = picks[shownAt]
     val popular = popularPicks(room)
+    val user = rememberUserPoint(rememberLocationPermission().granted)
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MetchuColors.MapBlank)) {
         val sheetTop = maxHeight * 0.42f
@@ -158,7 +161,7 @@ fun GroupResultScreen(
                 .padding(top = 20.dp, bottom = 140.dp)
         ) {
             key(shownAt) {
-                PickDetails(room, pick) {
+                PickDetails(room, pick, user) {
                     AgreeButton(pick, enabled = room.decided == null && !busy, onToggle = { onVote(shownAt, !pick.voted) })
                 }
             }
@@ -184,9 +187,12 @@ fun GroupResultScreen(
     }
 }
 
-/** [vote] sits at the right of the restaurant's name. */
+/**
+ * [vote] sits at the right of the restaurant's name. Directions start from this phone's
+ * position [user], not the host's, which the distance is measured from.
+ */
 @Composable
-private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () -> Unit) {
+private fun PickDetails(room: RoomState, pick: RoomPick, user: Point?, vote: @Composable () -> Unit) {
     Column(Modifier.padding(horizontal = 20.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Column {
@@ -204,7 +210,7 @@ private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () ->
                         val context = LocalContext.current
                         val name = placeName(pick.restaurant)
                         RowIconButton(Icons.Directions, stringResource(R.string.result_directions), "directionsButton") {
-                            context.openDirections(name, Point(pick.lat, pick.lng), null)
+                            context.openDirections(name, Point(pick.lat, pick.lng), user)
                         }
                     }
                 }

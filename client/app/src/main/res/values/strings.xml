@@ -172,6 +172,7 @@
     <string name="offer_none">No cafeteria listed</string>
     <string name="result_menu">See menu</string>
     <string name="result_directions">Walking directions</string>
+    <string name="directions_from">My location</string>
     <string name="result_menu_caption">%1$s menu</string>
     <string name="sheet_close">Close</string>
     <string name="result_menu_note">Only dishes Metchu can suggest</string>

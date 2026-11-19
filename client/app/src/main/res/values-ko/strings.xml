@@ -156,6 +156,7 @@
     <string name="offer_none">이 메뉴를 파는 식당 정보가 없어요</string>
     <string name="result_menu">메뉴 보기</string>
     <string name="result_directions">길찾기</string>
+    <string name="directions_from">내 위치</string>
     <string name="result_menu_caption">오늘 %1$s 메뉴</string>
     <string name="sheet_close">닫기</string>
     <string name="result_menu_note">Metchu가 추천할 수 있는 메뉴만 보여요</string>
