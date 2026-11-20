@@ -15,6 +15,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -573,6 +574,13 @@ class MainActivityTest {
         startWith(guess)
         compose.onNodeWithTag("dish").assertIsDisplayed()
         compose.onNodeWithTag("reasonWriting").assertDoesNotExist()
+    }
+
+    @Test
+    fun aCafeteriaOnTheMapOffersWalkingDirections() {
+        startWith(guess)
+        compose.onNodeWithTag("directionsButton").assertIsDisplayed()
+        compose.onNodeWithContentDescription(text(R.string.result_directions)).assertHasClickAction()
     }
 
     @Test

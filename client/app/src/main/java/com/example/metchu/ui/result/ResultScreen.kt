@@ -81,7 +81,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -256,6 +258,7 @@ fun ResultScreen(
             writingReason = step.proposalId in reasons && reasons[step.proposalId] == null,
             caption = captionFor(session.meal),
             cafeterias = cafeterias,
+            user = user,
             chosen = chosen,
             selected = selected,
             onSelect = { selected = it; focus++; locate = Locate.FREE },
@@ -379,6 +382,7 @@ private fun ResultSheet(
     writingReason: Boolean,
     @StringRes caption: Int,
     cafeterias: CafeteriaList,
+    user: Point?,
     chosen: Cafeteria?,
     selected: String?,
     onSelect: (String) -> Unit,
@@ -503,7 +507,7 @@ private fun ResultSheet(
                 if (cafeterias.cafeterias.isEmpty()) Text(stringResource(R.string.offer_none), Modifier.padding(horizontal = 20.dp), style = MetchuType.Body)
                 cafeterias.cafeterias.forEach { cafeteria ->
                     CafeteriaRow(
-                        cafeteria, on = cafeteria.offer.restaurant == selected || count == 1,
+                        cafeteria, user, on = cafeteria.offer.restaurant == selected || count == 1,
                         onClick = { onSelect(cafeteria.offer.restaurant) },
                         onMenu = { onMenu(cafeteria.offer) }
                     )
@@ -530,10 +534,11 @@ private val PeekSecondStyle = MetchuType.Body.copy(fontSize = 13.sp, lineHeight 
 
 /**
  * A Material two-line list item, edge to edge: a pin in a 40 dp circle (orange for the chosen
- * cafeteria), the name over the meal and price, and the distance over the walk on the right.
+ * cafeteria), the name over the meal and price, the distance over the walk, and buttons for
+ * walking directions (when the cafeteria is on the map) and the menu.
  */
 @Composable
-private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit, onMenu: () -> Unit) {
+private fun CafeteriaRow(cafeteria: Cafeteria, user: Point?, on: Boolean, onClick: () -> Unit, onMenu: () -> Unit) {
     val badge by animateColorAsState(if (on) MetchuColors.Primary else MetchuColors.Grey100, tween(200), label = "badge")
     val pin by animateColorAsState(if (on) Color.White else MetchuColors.Grey600, tween(200), label = "pin")
     val offer = cafeteria.offer
@@ -562,23 +567,34 @@ private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit,
                 Text(stringResource(R.string.walk_minutes, cafeteria.walkMinutes ?: 1), style = MetchuType.Caption)
             }
         }
-        // A 24 dp icon at the row's end, its 40 dp touch circle reaching into the margin.
-        Box(Modifier.padding(start = 4.dp).size(24.dp), contentAlignment = Alignment.Center) {
-            val interaction = remember { MutableInteractionSource() }
-            val pressed by interaction.collectIsPressedAsState()
-            val label = stringResource(R.string.result_menu)
-            Box(
-                Modifier
-                    .requiredSize(40.dp)
-                    .clip(CircleShape)
-                    .background(if (pressed) MetchuColors.Grey100 else Color.Transparent)
-                    .clickable(interaction, indication = null, role = Role.Button, onClickLabel = label, onClick = onMenu)
-                    .semantics { contentDescription = label }
-                    .testTag("menuButton"),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(Icons.Menu, null, Modifier.size(24.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey600))
+        val point = cafeteria.point
+        if (point != null) {
+            val context = LocalContext.current
+            RowIconButton(Icons.Directions, stringResource(R.string.result_directions), "directionsButton") {
+                context.openDirections(offer.restaurant, point, user)
             }
+        }
+        RowIconButton(Icons.Menu, stringResource(R.string.result_menu), "menuButton", onMenu)
+    }
+}
+
+/** A 24 dp icon at a row's end, its 40 dp touch circle reaching into the margin. */
+@Composable
+internal fun RowIconButton(icon: ImageVector, label: String, tag: String, onClick: () -> Unit) {
+    Box(Modifier.padding(start = 4.dp).size(24.dp), contentAlignment = Alignment.Center) {
+        val interaction = remember { MutableInteractionSource() }
+        val pressed by interaction.collectIsPressedAsState()
+        Box(
+            Modifier
+                .requiredSize(40.dp)
+                .clip(CircleShape)
+                .background(if (pressed) MetchuColors.Grey100 else Color.Transparent)
+                .clickable(interaction, indication = null, role = Role.Button, onClickLabel = label, onClick = onClick)
+                .semantics { contentDescription = label }
+                .testTag(tag),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(icon, null, Modifier.size(24.dp), colorFilter = ColorFilter.tint(MetchuColors.Grey600))
         }
     }
 }
