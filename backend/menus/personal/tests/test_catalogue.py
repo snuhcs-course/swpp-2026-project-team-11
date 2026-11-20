@@ -44,7 +44,7 @@ class MappingTests(SimpleTestCase):
         from pathlib import Path
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'source.csv'
-            with path.open('w') as f:
+            with path.open('w', encoding='utf-8') as f:
                 writer=csv.writer(f);writer.writerow(['식당명','기존 음식명','정규화 음식명'])
                 writer.writerows([['Shop','[점심]Pizza','피자'],['Shop','Pizza','NULL'],['Shop','덮밥','덮밥']])
             index=mapping_import.load(path)
@@ -114,7 +114,7 @@ class BilingualQuestionTests(SimpleTestCase):
         import json
         from pathlib import Path
         from question_engines.decision_tree.contracts import FEATURE_PRESENTATION, translate
-        source=json.loads((Path(__file__).parents[3]/'question_engines/rl/assets/questions.json').read_text())['questions']
+        source=json.loads((Path(__file__).parents[3]/'question_engines/rl/assets/questions.json').read_text(encoding='utf-8'))['questions']
         for key,expected in zip(FEATURE_KEYS,source):
             text=FEATURE_PRESENTATION[key][0]
             self.assertEqual(text,expected['en'])

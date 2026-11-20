@@ -17,7 +17,7 @@ class ImportMappingTests(TestCase):
         shop=Restaurant.objects.create(code='shop',name='Shop',source='naver')
         for menu in ['Cheese pizza','Unknown','Deleted dish']:
             StoreMenu.objects.create(restaurant=shop,raw_name=menu,price=9000,allergens=[])
-        with self.file.open('w') as f:
+        with self.file.open('w', encoding='utf-8') as f:
             writer=csv.writer(f);writer.writerow(['식당명','기존 음식명','정규화 음식명'])
             writer.writerows([['Shop','Cheese pizza','피자'],['Shop','Unknown','NULL'],['Shop','Deleted dish','덮밥']])
         services._store_menus=None;self.addCleanup(setattr,services,'_store_menus',None)
@@ -45,6 +45,6 @@ class ImportMappingTests(TestCase):
 
     def test_invalid_source_leaves_existing_db_mappings_untouched(self):
         self.run_import('--apply');before=list(SalesMenu.objects.values('key','annotation_metadata'))
-        self.file.write_text('식당명,기존 음식명,정규화 음식명\nShop,Cheese pizza,unknown type\n')
+        self.file.write_text('식당명,기존 음식명,정규화 음식명\nShop,Cheese pizza,unknown type\n', encoding='utf-8')
         with self.assertRaises(CommandError):self.run_import('--apply')
         self.assertEqual(list(SalesMenu.objects.values('key','annotation_metadata')),before)
