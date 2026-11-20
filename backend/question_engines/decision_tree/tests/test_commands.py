@@ -15,7 +15,7 @@ class CommandIntegrationTests(TestCase):
             output = Path(directory) / "session.json"
             stream = io.StringIO()
             call_command("demo_decision_tree", "--date", "2026-11-02", "--smoke", "--output", str(output), stdout=stream)
-            result = json.loads(output.read_text())
+            result = json.loads(output.read_text(encoding="utf-8"))
         self.assertEqual(result["events"][-1]["step"]["type"], "recommendation")
         self.assertEqual([x["action"] for x in result["events"]], ["start", "answer", "recommend_now", "reject", "recommend_now", "accept"])
         self.assertEqual(result["snapshot"]["version"], 1)

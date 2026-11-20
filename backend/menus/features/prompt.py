@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from .schema import LLM_FEATURE_KEYS, RUBRIC
 PROMPT_VERSION = RUBRIC["prompt_version"]
-_INSTRUCTIONS = Path(__file__).with_name("instructions.txt").read_text().strip()
+_INSTRUCTIONS = Path(__file__).with_name("instructions.txt").read_text(encoding="utf-8").strip()
 
 def build_system_prompt(feature_order=LLM_FEATURE_KEYS):
     if sorted(feature_order) != sorted(LLM_FEATURE_KEYS):

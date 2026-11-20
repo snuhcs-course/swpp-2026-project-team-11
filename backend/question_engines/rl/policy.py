@@ -11,7 +11,7 @@ import numpy as np
 from menus.features.schema import FEATURE_KEYS, MODEL_LABELS
 
 ASSETS = Path(__file__).with_name('assets')
-MANIFEST = json.loads((ASSETS/'manifest.json').read_text())
+MANIFEST = json.loads((ASSETS/'manifest.json').read_text(encoding='utf-8'))
 MODEL_VERSION = MANIFEST['version']
 CHECKPOINT_SHA256 = MANIFEST['checkpoint_sha256']
 _lock = threading.Lock()

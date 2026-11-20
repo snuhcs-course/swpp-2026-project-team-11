@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 FEATURE_VERSION = "v3"
-RUBRIC = json.loads((Path(__file__).parents[2] / "question_engines" / "feature_schema.json").read_text())
+RUBRIC = json.loads((Path(__file__).parents[2] / "question_engines" / "feature_schema.json").read_text(encoding="utf-8"))
 @dataclass(frozen=True)
 class Feature:
     key: str

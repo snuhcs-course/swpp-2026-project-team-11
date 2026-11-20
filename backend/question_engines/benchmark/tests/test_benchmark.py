@@ -630,7 +630,7 @@ class CommandTests(TestCase):
         call_command("build_engine_scenarios", "--date", "2026-10-13", "--date", "2026-10-14",
                      "--output", str(self.scenarios), stdout=out)
         self.assertIn("2026-10-14 LU: 태깅된 후보가 없어 건너뜁니다.", out.getvalue())
-        self.assertEqual(list(json.loads(self.scenarios.read_text())["menus"]), [MENU_ID])
+        self.assertEqual(list(json.loads(self.scenarios.read_text(encoding="utf-8"))["menus"]), [MENU_ID])
 
     def test_dry_run_estimates_without_calling(self):
         self.build()
