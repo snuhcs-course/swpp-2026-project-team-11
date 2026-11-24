@@ -8,12 +8,14 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
@@ -22,6 +24,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.metchu.ui.group.GroupResultScreen
 import com.example.metchu.ui.group.LobbyScreen
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -92,6 +95,47 @@ class GroupScreensTest {
         }
         // 18 sp of line height at 1.3x is about 23 dp; a fixed 18 dp would cut it.
         assertTrue(compose.onNodeWithTag("popular_1").assertIsDisplayed().getBoundsInRoot().height > 18.dp)
+    }
+
+    @Test
+    fun theDecisionOpensWhereToMeetWithEveryonesDishMineFirst() {
+        val done = Fixtures.room("room_done")
+        compose.setContent { GroupResultScreen(done, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
+
+        compose.onNodeWithTag("decidedDialog").assertIsDisplayed()
+        compose.onNodeWithTag("decidedRestaurant").assertTextEquals(done.picks!![done.decided!!].restaurant.replace('>', ' '))
+        compose.onNodeWithTag("decidedDistance").assertIsDisplayed()
+        compose.onNodeWithTag("decidedDirections").assertHasClickAction()
+        val others = done.members.map { it.id }.filter { it != done.me }
+        val mine = compose.onNodeWithTag("decidedDish_${done.me}").assertIsDisplayed().getBoundsInRoot()
+        others.forEach { id -> assertTrue(compose.onNodeWithTag("decidedDish_$id").assertIsDisplayed().getBoundsInRoot().top >= mine.bottom) }
+    }
+
+    @Test
+    fun okClosesWhereToMeetAndTheMeetPillOpensItAgain() {
+        val done = Fixtures.room("room_done")
+        compose.setContent { GroupResultScreen(done, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
+
+        compose.onNodeWithTag("decidedOk").performClick()
+        compose.onNodeWithTag("decidedDialog").assertDoesNotExist()
+        compose.onNodeWithTag("decided").assertHasClickAction().performClick()
+        compose.onNodeWithTag("decidedDialog").assertIsDisplayed()
+    }
+
+    @Test
+    fun startOverInWhereToMeetLeavesTheRoom() {
+        var left = 0
+        compose.setContent { GroupResultScreen(Fixtures.room("room_done"), busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = { left++ }) }
+
+        compose.onNodeWithTag("decidedHome").performClick()
+        assertEquals(1, left)
+        compose.onNodeWithTag("decidedDialog").assertDoesNotExist()
+    }
+
+    @Test
+    fun noDialogBeforeTheHostDecides() {
+        compose.setContent { GroupResultScreen(Fixtures.room("room_done").copy(decided = null), busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
+        compose.onNodeWithTag("decidedDialog").assertDoesNotExist()
     }
 
     @Test
