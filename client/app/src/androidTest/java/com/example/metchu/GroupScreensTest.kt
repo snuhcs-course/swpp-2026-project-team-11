@@ -1,10 +1,14 @@
 package com.example.metchu
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -12,16 +16,19 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.metchu.data.model.RoomState
 import com.example.metchu.ui.group.GroupResultScreen
 import com.example.metchu.ui.group.LobbyScreen
 import org.junit.Assert.assertEquals
@@ -42,8 +49,19 @@ class GroupScreensTest {
         }
     }
 
+    /** A room after finds in [batches], one restaurant per entry, named "식당 0", "식당 1", ... */
+    private fun found(vararg batches: Int, votes: List<Int> = batches.map { 0 }): RoomState {
+        val done = Fixtures.room("room_done").copy(decided = null)
+        val base = done.picks!!
+        return done.copy(picks = batches.mapIndexed { i, batch ->
+            base[i % base.size].copy(restaurant = "식당 $i", batch = batch, votes = votes[i], voted = false)
+        })
+    }
+
+    private fun agree(votes: Int) = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.group_agree, votes)
+
     @Test
-    fun aLongRestaurantNameLeavesRoomForTheOtherChip() {
+    fun aLongRestaurantNameIsCutSoTheNextChipShows() {
         val done = Fixtures.room("room_done").copy(decided = null)
         val picks = done.picks!!
         val long = done.copy(picks = listOf(picks[0].copy(restaurant = "샤로수길 아주 긴 이름의 이탈리안 레스토랑 서울대입구역 본점"), picks[1]))
@@ -52,9 +70,66 @@ class GroupScreensTest {
         val screen = compose.onRoot().getBoundsInRoot()
         val first = compose.onNodeWithTag("pick_0").assertIsDisplayed().getBoundsInRoot()
         val second = compose.onNodeWithTag("pick_1").assertIsDisplayed().getBoundsInRoot()
-        assertTrue(first.right < second.left)
-        assertTrue(second.right <= screen.right)
-        assertTrue(second.right - second.left >= 60.dp)
+        assertTrue("$first", first.width <= 240.5.dp)
+        assertTrue("$first $second", first.right < second.left)
+        assertTrue("$second $screen", second.left + 60.dp <= screen.right)
+    }
+
+    @Test
+    fun theNewestFindComesFirstAndEarlierOnesAreAScrollAway() {
+        val room = found(0, 0, 1, 1, 2)
+        compose.setContent { GroupResultScreen(room, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
+
+        compose.onNodeWithTag("restaurant").assertTextEquals("식당 4")
+        val newest = compose.onNodeWithTag("pick_4").assertIsDisplayed().getBoundsInRoot()
+        assertTrue(newest.right < compose.onNodeWithTag("pick_2").getBoundsInRoot().left)
+        compose.onNodeWithTag("pickChips").performScrollToNode(hasTestTag("pick_0"))
+        compose.onNodeWithTag("pick_0").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("restaurant").assertTextEquals("식당 0")
+    }
+
+    @Test
+    fun eachChipShowsHowManyAgreeAndNothingAtNone() {
+        compose.setContent { GroupResultScreen(found(0, 0, 1, votes = listOf(2, 0, 1)), busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
+
+        compose.onNodeWithTag("chipVotes_0", useUnmergedTree = true).assertContentDescriptionEquals(agree(2))
+        compose.onNodeWithTag("chipVotes_2", useUnmergedTree = true).assertContentDescriptionEquals(agree(1))
+        compose.onNodeWithTag("chipVotes_1", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("popular_0").assertIsDisplayed()
+    }
+
+    @Test
+    fun aFindMovesThePhoneToTheFirstNewRestaurantButVotesDoNot() {
+        var room by mutableStateOf(found(0, 0))
+        compose.setContent { GroupResultScreen(room, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
+
+        compose.onNodeWithTag("pick_1").performClick()
+        room = found(0, 0, votes = listOf(1, 0))
+        compose.onNodeWithTag("restaurant").assertTextEquals("식당 1")
+        room = found(0, 0, 1, 1, votes = listOf(1, 0, 0, 0))
+        compose.onNodeWithTag("restaurant").assertTextEquals("식당 2")
+        compose.onNodeWithTag("pick_2").assertIsDisplayed()
+    }
+
+    @Test
+    fun onceDecidedOnlyTheChosenChipIsLeft() {
+        compose.setContent { GroupResultScreen(found(0, 0, 1).copy(decided = 1), busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
+
+        compose.onNodeWithTag("decidedOk").performClick()
+        compose.onNodeWithTag("pick_1").assertIsDisplayed()
+        compose.onNodeWithTag("pick_0").assertDoesNotExist()
+        compose.onNodeWithTag("pick_2").assertDoesNotExist()
+        compose.onNodeWithTag("restaurant").assertTextEquals("식당 1")
+    }
+
+    @Test
+    fun theHostAsksForOtherPlacesNotOtherMenus() {
+        var asked = 0
+        compose.setContent { GroupResultScreen(found(0, 0).copy(more = true), busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = { asked++ }, onHome = {}) }
+
+        val label = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.group_more)
+        compose.onNodeWithTag("more").assert(hasText(label)).performClick()
+        assertEquals(1, asked)
     }
 
     @Test

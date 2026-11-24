@@ -249,8 +249,8 @@ class ResultTests(RoomTestCase):
         picks = done["picks"]
         self.assertTrue(1 <= len(picks) <= 2)
         for pick in picks:
-            self.assertEqual(set(pick), {"restaurant", "kind", "lat", "lng", "distance_m", "menus", "others", "votes", "voted"})
-            self.assertEqual((pick["votes"], pick["voted"]), (0, False))
+            self.assertEqual(set(pick), {"restaurant", "kind", "batch", "lat", "lng", "distance_m", "menus", "others", "votes", "voted"})
+            self.assertEqual((pick["batch"], pick["votes"], pick["voted"]), (0, 0, False))
             suggested = {menu["food"]["food_id"] for menu in pick["menus"]}
             served = {name for name, restaurant, _, _ in MENUS if restaurant == pick["restaurant"]}
             self.assertEqual({dish["display_name"] for dish in pick["others"]} | {menu["food"]["name"] for menu in pick["menus"]},
@@ -287,10 +287,26 @@ class ResultTests(RoomTestCase):
         self.assertEqual(len(first), 2)
         self.assertTrue(done["more"])
         again = self.call(code, "another", host)
-        self.assertEqual({pick["restaurant"] for pick in again["picks"]}, {"Red hall", "Soup hall", "Noodle hall"} - first)
+        new = {pick["restaurant"] for pick in again["picks"] if pick["batch"] == 1}
+        self.assertEqual(new, {"Red hall", "Soup hall", "Noodle hall"} - first)
         self.assertFalse(again["more"])
         self.assertEqual(self.state(code, guest)["picks"], again["picks"])
         self.assertEqual(self.call(code, "another", host, status=409)["error"]["code"], "stale_step")
+
+    def test_earlier_restaurants_stay_where_they_were_after_find_another(self):
+        code, host, _, _ = self.started()
+        done = self.call(code, "recommend-now", host)
+        picks = self.call(code, "another", host)["picks"]
+        self.assertEqual(picks[:2], done["picks"])
+        self.assertEqual([pick["batch"] for pick in picks], [0, 0, 1])
+
+    def test_the_host_can_decide_on_an_earlier_restaurant(self):
+        code, host, (guest,), _ = self.started()
+        done = self.call(code, "recommend-now", host)
+        self.call(code, "another", host)
+        decided = self.call(code, "decide", host, {"pick": 1})
+        self.assertEqual(decided["decided"], 1)
+        self.assertEqual(self.state(code, guest)["picks"][1]["restaurant"], done["picks"][1]["restaurant"])
 
     def test_find_another_counts_only_places_where_everyone_can_eat(self):
         code, host, _ = self.create()
@@ -419,12 +435,26 @@ class VoteTests(RoomTestCase):
         for body in ({"pick": 99, "agree": True}, {"pick": 0, "agree": "yes"}, {"pick": 0}):
             self.assertEqual(self.call(code, "vote", host, body, status=409)["error"]["code"], "stale_step", body)
 
-    def test_find_another_starts_without_votes(self):
+    def test_find_another_keeps_the_votes_and_new_restaurants_start_without(self):
         code, host, (guest,) = self.finished(2)
         self.call(code, "vote", host, {"pick": 0, "agree": True})
         self.call(code, "vote", guest, {"pick": 1, "agree": True})
         again = self.call(code, "another", host)
-        self.assertEqual([(p["votes"], p["voted"]) for p in again["picks"]], [(0, False)] * len(again["picks"]))
+        self.assertEqual([(p["votes"], p["voted"]) for p in again["picks"]], [(1, True), (1, False), (0, False)])
+
+    def test_members_still_agree_with_earlier_restaurants(self):
+        code, host, (guest,) = self.finished(2)
+        self.call(code, "another", host)
+        picks = self.call(code, "vote", guest, {"pick": 0, "agree": True})["picks"]
+        self.assertEqual([p["votes"] for p in picks], [1, 0, 0])
+
+    def test_a_member_who_leaves_takes_their_votes_from_every_find(self):
+        code, host, (guest,) = self.finished(2)
+        self.call(code, "vote", guest, {"pick": 0, "agree": True})
+        self.call(code, "another", host)
+        self.call(code, "vote", guest, {"pick": 2, "agree": True})
+        self.call(code, "leave", guest, status=204)
+        self.assertEqual([p["votes"] for p in self.state(code, host)["picks"]], [0, 0, 0])
 
 
 class MergedOfferTests(TestCase):
