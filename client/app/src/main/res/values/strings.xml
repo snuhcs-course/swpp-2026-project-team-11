@@ -241,6 +241,9 @@
     <string name="group_decide">Go here</string>
     <string name="group_host_picking">The host is choosing</string>
     <string name="group_meet">Meet at %1$s</string>
+    <string name="group_decided_title">Meet here</string>
+    <string name="group_decided_ok">OK</string>
+    <string name="group_decided_directions">Directions</string>
     <string name="group_agree">Agree %1$d</string>
     <string name="group_agree_action">Agree with this place</string>
     <string name="group_popular">Popular</string>
