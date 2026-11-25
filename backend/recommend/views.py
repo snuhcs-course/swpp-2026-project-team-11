@@ -41,6 +41,10 @@ reading the candidates and building and starting the engine (`candidates`, `engi
 it when it opens and when the user changes them, and Start does not wait for it. It
 creates no session and records nothing.
 
+A session created with a signed-in user's `Authorization: Token ...` belongs to that
+user: each dish it proposes (a guess or the recommendation) joins the user's history once
+(accounts/history.py, GET /api/auth/history/). A missing or invalid token is a guest.
+
 `health` touches nothing; it is for checking from a browser that the server can
 be reached, for example through the tunnel of `manage.py serve_public`.
 
@@ -77,6 +81,7 @@ from django.views.decorators.http import require_GET, require_POST
 from menus.allergens import ALLERGEN_KEYS
 from question_engines.decision_tree.contracts import LANGUAGES
 
+from accounts import history
 from accounts.tokens import user_for
 
 from . import interaction_log, rooms, sessions
@@ -164,12 +169,15 @@ def create_session(request):
         return _error(400, "invalid_request", str(error))
     if source == "all" and engine == "llm":
         return _error(400, "all_source_llm_unsupported", "All restaurants supports the decision tree and RL engines.")
+    user = user_for(request)
     try:
-        session = sessions.create(date, meal, engine, location, allergies, source, language, distance_scope, price_level)
+        session = sessions.create(date, meal, engine, location, allergies, source, language, distance_scope, price_level,
+                                  user.pk if user else None)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     state = session.public_state()
     interaction_log.record(session, "start", after=state["step"])
+    history.record(session, state["step"])
     response = JsonResponse(state, status=201)
     response["Server-Timing"] = ", ".join(f"{name};dur={seconds * 1000:.1f}" for name, seconds in session.timings.items())
     return response
@@ -219,6 +227,7 @@ def _action(request, session_id: str, event: str, apply):
         interaction_log.record(session, event, before=before, after=state["step"],
                                answer_id=body.get("answer_id") if event == "answer" else None,
                                accepted=body.get("accepted") if event == "feedback" else None)
+        history.record(session, state["step"])
         return JsonResponse(state)
 
 

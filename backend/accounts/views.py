@@ -6,6 +6,11 @@
     POST /api/auth/google/link/  {"id_token"}        (signed in) -> {"user"}
     GET  /api/auth/me/                               (signed in) -> {"user"}
     POST /api/auth/logout/                           (signed in) -> 204
+    GET  /api/auth/bookmarks/                        (signed in) -> {"bookmarks"}
+    POST /api/auth/bookmarks/  {"food_id", "display_name", "restaurant"}
+                                                     (signed in) -> 201 {"bookmark"}
+    DELETE /api/auth/bookmarks/<food_id>/            (signed in) -> 204
+    GET  /api/auth/history/                          (signed in) -> {"history"}
 
 "Signed in" means an `Authorization: Token <token>` header carrying a token from one of
 the first three (accounts/tokens.py). `user` is {"username", "google_email",
@@ -13,7 +18,9 @@ the first three (accounts/tokens.py). `user` is {"username", "google_email",
 Google shared no verified address. Errors are `{"error": {"code", "message"}}`, as in
 recommend/views.py.
 
-Signing in is optional; the recommendation API does not read the token. Usernames are
+Signing in is optional. A solo session created with the token records the dishes it
+proposes in the user's history (accounts/history.py); otherwise the recommendation API
+does not read it. Usernames are
 3 to 30 letters, digits or . @ + - _, unique ignoring case, and log in in any case.
 Passwords must pass settings.AUTH_PASSWORD_VALIDATORS (400 `weak_password`). A wrong
 username and a wrong password get the same 401 `invalid_credentials`.
@@ -24,6 +31,14 @@ to the signed-in user, so that either way of signing in reaches the same account
 Google account belongs to one user only (409 `google_in_use`), and a user has one
 Google account (409 `already_linked`). Without METCHU_GOOGLE_CLIENT_ID both are 503
 `google_unavailable` (accounts/google.py).
+
+A bookmark is {"food_id", "display_name", "restaurant", "created_at"}: one per dish
+(`food_id`) and user, with the name and restaurant the phone showed. Saving a dish that
+is saved already returns it unchanged with 200; deleting one that is not saved is a 204
+too, so a repeated tap does no harm. `history` is the newest 100 entries {"date",
+"meal", "food_id", "display_name", "restaurant", "created_at"}, newest first; `meal`
+is null for a whole-day session. Both lists are newest first and belong to the signed-in
+user only.
 """
 
 from __future__ import annotations
@@ -37,13 +52,14 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from . import google, tokens
-from .models import GoogleIdentity
+from .models import Bookmark, GoogleIdentity
 
 User = get_user_model()
 USERNAME = re.compile(r"[\w.@+-]{3,30}")
+BOOKMARK_FIELDS = ("food_id", "display_name", "restaurant", "created_at")
 
 
 def _error(status: int, code: str, message: str) -> JsonResponse:
@@ -216,3 +232,53 @@ def log_out(request):
         return _not_signed_in()
     record.delete()
     return HttpResponse(status=204)
+
+
+def _bookmark(payload: dict) -> dict:
+    food_id = payload.get("food_id")
+    if type(food_id) is not int or food_id <= 0:
+        raise ValueError("food_id must be a food ID.")
+    fields = {"food_id": food_id}
+    for field, limit in (("display_name", 300), ("restaurant", 100)):
+        value = _text(payload, field).strip()
+        if len(value) > limit:
+            raise ValueError(f"{field} must be at most {limit} characters.")
+        fields[field] = value
+    return fields
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def bookmarks(request):
+    user = tokens.user_for(request)
+    if user is None:
+        return _not_signed_in()
+    if request.method == "GET":
+        return JsonResponse({"bookmarks": list(user.bookmarks.order_by("-id").values(*BOOKMARK_FIELDS))})
+    try:
+        fields = _bookmark(_body(request))
+    except ValueError as error:
+        return _error(400, "invalid_request", str(error))
+    # get_or_create also returns the row when the same dish is saved twice at once.
+    saved, created = Bookmark.objects.get_or_create(user=user, food_id=fields.pop("food_id"), defaults=fields)
+    return JsonResponse({"bookmark": {field: getattr(saved, field) for field in BOOKMARK_FIELDS}},
+                        status=201 if created else 200)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def bookmark(request, food_id: int):
+    user = tokens.user_for(request)
+    if user is None:
+        return _not_signed_in()
+    user.bookmarks.filter(food_id=food_id).delete()
+    return HttpResponse(status=204)
+
+
+@require_GET
+def history(request):
+    user = tokens.user_for(request)
+    if user is None:
+        return _not_signed_in()
+    entries = user.history.order_by("-id").values("date", "meal", "food_id", "display_name", "restaurant", "created_at")
+    return JsonResponse({"history": list(entries)})

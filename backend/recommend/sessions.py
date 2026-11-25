@@ -1,7 +1,7 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal, engine, location, allergies, source, language, distance_scope, price_level)
-                               -> RecommendSession
+    create(date, meal, engine, location, allergies, source, language, distance_scope, price_level,
+           user_id)            -> RecommendSession
     get(session_id)            -> RecommendSession | None
     prewarm(meal, allergies, source) -> builds the restaurant catalogue ahead of create
     session.public_state()     -> what the phone is allowed to see
@@ -46,6 +46,9 @@ long as the session.
 
 `timings` holds how long creation took to read the candidates and to build and start
 the engine, in seconds; the API reports them as a Server-Timing header.
+
+`user_id` is the signed-in user who started the session, or None for a guest; the API
+records each dish such a session proposes in the user's history (accounts/history.py).
 
 `reason()` calls the LLM outside the session lock, so a tap on the result screen
 never waits for it, and keeps each reason for the answers it was written for.
@@ -132,8 +135,9 @@ class RecommendSession:
     def __init__(self, date: datetime.date, meal: str | None, engine: str,
                  location: tuple[float, float] | None, allergies: frozenset[str],
                  source: str = "cafeteria", language: str = "en", distance_scope: str | None = None,
-                 price_level: int | None = None):
+                 price_level: int | None = None, user_id: int | None = None):
         self.session_id = uuid.uuid4().hex
+        self.user_id = user_id
         self.interaction_id = uuid.uuid4().hex
         self.source = source
         self.distance_scope = distance_scope
@@ -294,7 +298,7 @@ def create(date: datetime.date | None = None, meal: str | None = None,
            engine: str | None = None, location: tuple[float, float] | None = None,
            allergies: frozenset[str] = frozenset(), source: str | None = None,
            language: str = "en", distance_scope: str | None = None,
-           price_level: int | None = None) -> RecommendSession:
+           price_level: int | None = None, user_id: int | None = None) -> RecommendSession:
     """General sessions fall back to DT if the configured default is LLM."""
     source = source or "cafeteria"
     if engine is None:
@@ -302,7 +306,8 @@ def create(date: datetime.date | None = None, meal: str | None = None,
         if source in ("general", "all") and engine == "llm":
             engine = "decision_tree"
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine, location, allergies, source, language, distance_scope, price_level)
+                               meal, engine, location, allergies, source, language, distance_scope, price_level,
+                               user_id)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:
