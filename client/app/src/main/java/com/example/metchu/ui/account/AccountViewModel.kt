@@ -29,6 +29,7 @@ import java.io.IOException
  * [bookmarks] and [history] are the signed-in account's lists, null until loaded and for a
  * guest; [savedFailed] is true when the last load failed. [toggleBookmark] changes the list at
  * once and puts it back if the server refuses, ignoring taps on a dish whose change is on its way.
+ * A list loaded while a change was on its way keeps that change, so a reload never undoes it.
  * A bookmark is one per restaurant and dish name, since a dish's food ID can change by the day.
  */
 class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
@@ -52,6 +53,10 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
     val savedFailed: LiveData<Boolean> = _savedFailed
 
     private val pending = mutableSetOf<Pair<String, String>>()
+
+    /** Each dish's latest state here (null: removed) and when it changed, for lists loaded meanwhile. */
+    private val changed = mutableMapOf<Pair<String, String>, Pair<Bookmark?, Int>>()
+    private var changes = 0
 
     init {
         // The saved account may have been revoked while the app was closed.
@@ -102,9 +107,23 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 
-    fun loadBookmarks() = load(_bookmarks) { repository.bookmarks() }
+    fun loadBookmarks() {
+        val since = changes
+        load(_bookmarks, { list -> withChanges(list, since) }) { repository.bookmarks() }
+    }
 
-    fun loadHistory() = load(_history) { repository.history() }
+    fun loadHistory() = load(_history, { it }) { repository.history() }
+
+    /** [list] as loaded, with the changes made here since [since] or still on their way laid over it. */
+    private fun withChanges(list: List<Bookmark>, since: Int): List<Bookmark> {
+        val newer = changed.filter { (key, change) -> change.second > since || key in pending }
+        val kept = list.filterNot { bookmark -> newer.keys.any { (restaurant, name) -> bookmark.isOf(name, restaurant) } }
+        return newer.values.mapNotNull { it.first } + kept
+    }
+
+    private fun change(key: Pair<String, String>, now: Bookmark?) {
+        changed[key] = now to ++changes
+    }
 
     /** Saves the dish [displayName] at [restaurant] as shown, with its [foodId], or removes it if saved. */
     fun toggleBookmark(foodId: Int, displayName: String, restaurant: String) {
@@ -115,14 +134,19 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
         val old = saved.firstOrNull { it.isOf(displayName, restaurant) }
         val added = Bookmark(foodId, displayName, restaurant)
         _bookmarks.value = if (old == null) listOf(added) + saved else saved - old
+        change(key, if (old == null) added else null)
         viewModelScope.launch {
             try {
                 if (old == null) {
                     val kept = repository.bookmark(added)
-                    if (_account.value?.token == token) _bookmarks.value = _bookmarks.value?.map { if (it.isOf(displayName, restaurant)) kept else it }
+                    if (_account.value?.token == token) {
+                        _bookmarks.value = _bookmarks.value?.map { if (it.isOf(displayName, restaurant)) kept else it }
+                        change(key, kept)
+                    }
                 } else {
                     // A bookmark added here has its id once the reply is in, and taps wait for that.
                     repository.unbookmark(checkNotNull(old.id) { "Bookmark has no id" })
+                    change(key, null)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -131,6 +155,7 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
                 if (_account.value?.token == token && !signedOutBy(e)) {
                     val now = _bookmarks.value.orEmpty().filterNot { it.isOf(displayName, restaurant) }
                     _bookmarks.value = if (old == null) now else listOf(old) + now
+                    change(key, old)
                 }
             } finally {
                 pending.remove(key)
@@ -138,13 +163,13 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 
-    private fun <T> load(target: MutableLiveData<List<T>?>, call: suspend () -> List<T>) {
+    private fun <T> load(target: MutableLiveData<List<T>?>, adjust: (List<T>) -> List<T>, call: suspend () -> List<T>) {
         val token = _account.value?.token ?: return
         _savedFailed.value = false
         viewModelScope.launch {
             try {
                 val list = call()
-                if (_account.value?.token == token) target.value = list
+                if (_account.value?.token == token) target.value = adjust(list)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -169,6 +194,7 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
     }
 
     private fun forgetSaved() {
+        changed.clear()
         _bookmarks.value = null
         _history.value = null
         _savedFailed.value = false
