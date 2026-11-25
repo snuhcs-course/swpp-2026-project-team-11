@@ -1,7 +1,9 @@
 package com.example.metchu.ui.common
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -16,6 +18,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.metchu.data.location.LOCATION_PERMISSIONS
 import com.example.metchu.data.location.hasLocationPermission
 import com.example.metchu.ui.result.Point
@@ -26,17 +31,43 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import kotlin.math.abs
 
-/** Whether the user allows location, and how to ask. Declining keeps the app working without distances. */
-class LocationPermission(val granted: Boolean, val request: () -> Unit)
+/** How a request for location ended: [BLOCKED] when Android will not show its dialog again, so only the app's settings page can allow it. */
+enum class LocationAnswer { GRANTED, DENIED, BLOCKED }
 
+/** After the system's answer: Android shows its dialog again only while [canAskAgain] (it would show a rationale). */
+fun locationAnswer(granted: Boolean, canAskAgain: Boolean): LocationAnswer = when {
+    granted -> LocationAnswer.GRANTED
+    canAskAgain -> LocationAnswer.DENIED
+    else -> LocationAnswer.BLOCKED
+}
+
+/** Whether the user allows location, and how to ask. Declining keeps the app working without distances. */
+class LocationPermission(val granted: Boolean, private val launch: ((LocationAnswer) -> Unit) -> Unit) {
+    fun request(onAnswer: (LocationAnswer) -> Unit = {}) = launch(onAnswer)
+}
+
+/** Checked again whenever the app comes back, for location allowed on the app's settings page meanwhile. */
 @Composable
 fun rememberLocationPermission(): LocationPermission {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(context.hasLocationPermission()) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = context.hasLocationPermission() }
+    var onAnswer by remember { mutableStateOf<(LocationAnswer) -> Unit>({}) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         granted = context.hasLocationPermission()
+        onAnswer(locationAnswer(granted, context.canAskForLocation()))
     }
-    return LocationPermission(granted) { launcher.launch(LOCATION_PERMISSIONS) }
+    return LocationPermission(granted) {
+        onAnswer = it
+        launcher.launch(LOCATION_PERMISSIONS)
+    }
+}
+
+private fun Context.canAskForLocation(): Boolean {
+    var context = this
+    while (context !is Activity && context is ContextWrapper) context = context.baseContext
+    val activity = context as? Activity ?: return false
+    return LOCATION_PERMISSIONS.any { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
 }
 
 /**

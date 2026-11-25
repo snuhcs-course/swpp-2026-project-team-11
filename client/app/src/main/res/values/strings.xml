@@ -47,6 +47,11 @@
     <string name="location_ask_body">We use your location to show nearby restaurants and how far each one is. Without it, every restaurant is listed.</string>
     <string name="location_ask_continue">Continue</string>
     <string name="location_ask_later">Not now</string>
+    <string name="location_refused_title">Location is off</string>
+    <string name="location_refused_body">Without your location, nearby restaurants can’t be found, so every restaurant is listed.</string>
+    <string name="location_refused_blocked_body">Without your location, nearby restaurants can’t be found, so every restaurant is listed. To pick nearby ones, allow location in the app’s settings.</string>
+    <string name="location_refused_ok">OK</string>
+    <string name="location_refused_settings">Open settings</string>
     <string name="setup_language_title" translatable="false">언어를 골라 주세요\nChoose your language</string>
     <string name="setup_allergies_title">Any allergies?</string>
     <string name="setup_next">Next</string>

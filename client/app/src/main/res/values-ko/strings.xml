@@ -40,6 +40,11 @@
     <string name="location_ask_body">가까운 식당과 식당까지의 거리를 보여드리려면 위치가 필요해요. 허용하지 않으면 모든 식당을 보여드려요.</string>
     <string name="location_ask_continue">계속</string>
     <string name="location_ask_later">나중에</string>
+    <string name="location_refused_title">위치 권한이 꺼져 있어요</string>
+    <string name="location_refused_body">위치를 모르면 가까운 식당을 찾을 수 없어서 모든 식당을 보여드려요.</string>
+    <string name="location_refused_blocked_body">위치를 모르면 가까운 식당을 찾을 수 없어서 모든 식당을 보여드려요. 가까운 식당을 고르려면 앱 설정에서 위치를 허용해 주세요.</string>
+    <string name="location_refused_ok">확인</string>
+    <string name="location_refused_settings">설정 열기</string>
     <string name="setup_allergies_title">알러지가 있나요?</string>
     <string name="setup_next">다음</string>
     <string name="setup_tip_title">언제든 바꿀 수 있어요</string>
