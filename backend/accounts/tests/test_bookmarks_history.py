@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.db import DatabaseError
 from django.test import TestCase
 
 from accounts import history
@@ -37,6 +38,11 @@ class BookmarkTests(SignedInTestCase):
         self.assertEqual(delete(self.client, f"/api/auth/bookmarks/{DISH['food_id']}/", token).status_code, 204)
         self.assertEqual(get(self.client, "/api/auth/bookmarks/", token).json(), {"bookmarks": []})
 
+    def test_a_name_as_long_as_a_menu_name_is_saved(self):
+        token = self.sign_up()
+        dish = {**DISH, "display_name": "정식" * 250}
+        self.assertEqual(post(self.client, "/api/auth/bookmarks/", dish, token).status_code, 201)
+
     def test_saving_twice_keeps_one_and_removing_twice_is_fine(self):
         token = self.sign_up()
         first = post(self.client, "/api/auth/bookmarks/", DISH, token).json()["bookmark"]
@@ -66,7 +72,7 @@ class BookmarkTests(SignedInTestCase):
     def test_bad_bodies_are_400(self):
         token = self.sign_up()
         for body in ({}, {**DISH, "food_id": "53"}, {**DISH, "food_id": True}, {**DISH, "food_id": 0},
-                     {**DISH, "display_name": " "}, {**DISH, "restaurant": None}, {**DISH, "display_name": "x" * 301}):
+                     {**DISH, "display_name": " "}, {**DISH, "restaurant": None}, {**DISH, "display_name": "x" * 501}):
             with self.subTest(body=body):
                 response = post(self.client, "/api/auth/bookmarks/", body, token)
                 self.assertEqual((response.status_code, error_code(response)), (400, "invalid_request"))
@@ -139,6 +145,14 @@ class HistoryApiTests(SignedInTestCase):
         self.assertEqual(len(self.history(mine)), 1)
         self.assertEqual(self.history(theirs), [])
 
+    def test_a_failed_write_does_not_fail_the_session(self):
+        token = self.sign_up()
+        url = self.start(token)
+        with mock.patch.object(HistoryEntry.objects, "get_or_create", side_effect=DatabaseError("connection lost")):
+            response = post(self.client, url + "recommend-now/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["step"]["type"], "guess")
+
     def test_the_session_belongs_to_whoever_started_it(self):
         token = self.sign_up()
         url = self.start(token)
@@ -166,6 +180,14 @@ class HistoryRecordTests(SignedInTestCase):
         history.record(self.session(user_id), self.step(offers=offers))
         entry = HistoryEntry.objects.get()
         self.assertEqual((entry.restaurant, entry.meal), ("가까운 곳", None))
+
+    def test_a_menu_long_name_and_no_offers_are_recorded(self):
+        user_id = self.user_id()
+        name = "정식" * 225
+        history.record(self.session(user_id), {"type": "guess", "food": {"food_id": 1, "display_name": name, "offers": []}})
+        entry = HistoryEntry.objects.get()
+        self.assertEqual((entry.display_name, entry.restaurant), (name, ""))
+        HistoryEntry._meta.get_field("display_name").clean(name, entry)
 
     def test_questions_and_guests_record_nothing(self):
         user_id = self.user_id()
