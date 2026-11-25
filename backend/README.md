@@ -365,10 +365,11 @@ signed-in member (`Authorization: Token ...`) is shown by username; anyone else 
 "members", "round", "max_rounds", "question", "my_answer", "seconds_left", "round_seconds", "picks",
 "more", "decided"}`;
 `members` are `{"id", "name", "allergies", "left", "answered"}` and each pick is `{"restaurant",
-"kind", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others", "votes", "voted"}`; `others` are the
+"kind", "batch", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others", "votes", "voted"}`; `others` are the
 restaurant's other dishes, shaped like a session's `menu` dishes. `fit` is `great` when
 the restaurant is among that member's best tenth of the places they can eat at, otherwise `good`.
 `votes` counts the members who agree with the pick and `voted` says whether the caller does.
+`batch` counts the "find another"s before the pick: 0 for the first result.
 
 - The creator hosts. A room has a four-digit code and 2 to 8 members; nobody joins after the start
   (409 `room_started`). A caller who tries 10 unknown codes within a minute waits out the minute
@@ -381,12 +382,15 @@ the restaurant is among that member's best tenth of the places they can eat at, 
   Votes change nothing in the engine, end with the host's decision (later ones get 409 `stale_step`)
   and leave with the member who cast them.
 - Only the host starts, stops early ("recommend now": the engine's `stop()`), asks for other
-  restaurants ("find another") and decides. When the host leaves, the next member in join order still here hosts (i5-P8);
+  restaurants ("find another") and decides, once: phones stop polling at the decision, so a second
+  `decide` is a 409 `stale_step` (i5-P17). When the host leaves, the next member in join order still
+  here hosts (i5-P8);
   a member who leaves after the start answers "unknown".
-- "Find another" (`another`, i4-A13) replaces `picks` with up to two restaurants the room has not
-  been shown, chosen the same way among the rest (`recommendation(shown)`), with no votes yet. `more`
-  is true while a restaurant where every member can eat is left; without one, or once the host has
-  decided, it is a 409 `stale_step`.
+- "Find another" (`another`, i4-A13) adds up to two restaurants the room has not been shown to the
+  end of `picks`, chosen the same way among the rest (`recommendation(shown)`), with no votes yet and
+  the next `batch`. The earlier picks keep their positions and votes (i5-P2), so members can still
+  agree with them and the host can still decide on one. `more` is true while a restaurant where every
+  member can eat is left; without one, or once the host has decided, it is a 409 `stale_step`.
 - A member's allergies remove offers only from their own choice. They are matched to the full menu's
   offers by `menus/offers.py`, since a merged menu can come back without an allergen under another ID.
   Every member's allergies are shown to the whole room, by design.

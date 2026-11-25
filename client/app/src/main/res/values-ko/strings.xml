@@ -222,8 +222,12 @@
     <string name="group_round">질문 %1$d · 최대 %2$d개</string>
     <string name="group_each_dish">추천 메뉴</string>
     <string name="group_decide">여기로 정하기</string>
+    <string name="group_more">식당 더 찾기</string>
     <string name="group_host_picking">방장이 고르는 중</string>
     <string name="group_meet">%1$s에서 만나요</string>
+    <string name="group_decided_title">여기서 만나요</string>
+    <string name="group_decided_ok">확인</string>
+    <string name="group_decided_directions">길찾기</string>
     <string name="group_agree">찬성 %1$d</string>
     <string name="group_agree_action">이 식당에 찬성하기</string>
     <string name="group_popular">인기</string>
