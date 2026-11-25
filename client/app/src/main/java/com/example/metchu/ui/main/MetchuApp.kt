@@ -372,8 +372,8 @@ fun MetchuApp(
                 }
                 Screen.RESULT -> if (current != null) {
                     BackHandler { viewModel.undo() }
-                    // The bookmark button shows once the account's bookmarks are known.
-                    LaunchedEffect(account?.token) { if (account != null && bookmarks == null) accounts.loadBookmarks() }
+                    // The bookmark button shows once the account's bookmarks are known; a failed load is tried again at the next result.
+                    LaunchedEffect(account?.token, current) { if (account != null && bookmarks == null) accounts.loadBookmarks() }
                     ResultScreen(
                         session = current,
                         shown = shown,
