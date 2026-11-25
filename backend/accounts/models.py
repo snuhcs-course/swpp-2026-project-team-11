@@ -27,7 +27,7 @@ class Bookmark(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bookmarks")
     food_id = models.BigIntegerField()
-    display_name = models.CharField(max_length=300)
+    display_name = models.CharField(max_length=500)  # as long as a menu name
     restaurant = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -43,7 +43,7 @@ class HistoryEntry(models.Model):
     date = models.DateField()
     meal = models.CharField(max_length=2, null=True)  # null: the whole day
     food_id = models.BigIntegerField()
-    display_name = models.CharField(max_length=300)
+    display_name = models.CharField(max_length=500)  # as long as a menu name
     restaurant = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('food_id', models.BigIntegerField()),
-                ('display_name', models.CharField(max_length=300)),
+                ('display_name', models.CharField(max_length=500)),
                 ('restaurant', models.CharField(max_length=100)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bookmarks', to=settings.AUTH_USER_MODEL)),
@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
                 ('date', models.DateField()),
                 ('meal', models.CharField(max_length=2, null=True)),
                 ('food_id', models.BigIntegerField()),
-                ('display_name', models.CharField(max_length=300)),
+                ('display_name', models.CharField(max_length=500)),
                 ('restaurant', models.CharField(max_length=100)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='history', to=settings.AUTH_USER_MODEL)),

@@ -239,7 +239,7 @@ def _bookmark(payload: dict) -> dict:
     if type(food_id) is not int or food_id <= 0:
         raise ValueError("food_id must be a food ID.")
     fields = {"food_id": food_id}
-    for field, limit in (("display_name", 300), ("restaurant", 100)):
+    for field, limit in (("display_name", 500), ("restaurant", 100)):
         value = _text(payload, field).strip()
         if len(value) > limit:
             raise ValueError(f"{field} must be at most {limit} characters.")
