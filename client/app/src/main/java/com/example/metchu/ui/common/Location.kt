@@ -1,7 +1,9 @@
 package com.example.metchu.ui.common
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -14,10 +16,16 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.metchu.data.location.LOCATION_PERMISSIONS
 import com.example.metchu.data.location.hasLocationPermission
+import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.ui.result.Point
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -26,17 +34,55 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import kotlin.math.abs
 
+/** How a request for location ended: [BLOCKED] when Android will not show its dialog again, so only the app's settings page can allow it. */
+enum class LocationAnswer { GRANTED, DENIED, BLOCKED }
+
+/**
+ * After the system's answer: Android shows its dialog again only while it would show a rationale
+ * ([rationaleAfter]). Without one, the dialog was either closed unanswered (Back or a tap outside a
+ * first dialog leaves no trace) or never shown because the user blocked it. The app cannot tell these
+ * apart (it is paused and gets the same result either way), so no rationale counts as blocked only
+ * after an earlier refusal: a rationale before this request, or the last request [refusedBefore].
+ */
+fun locationAnswer(granted: Boolean, rationaleBefore: Boolean, rationaleAfter: Boolean, refusedBefore: Boolean): LocationAnswer = when {
+    granted -> LocationAnswer.GRANTED
+    rationaleAfter || !(rationaleBefore || refusedBefore) -> LocationAnswer.DENIED
+    else -> LocationAnswer.BLOCKED
+}
+
 /** Whether the user allows location, and how to ask. Declining keeps the app working without distances. */
 class LocationPermission(val granted: Boolean, val request: () -> Unit)
 
+/**
+ * Checked again whenever the app comes back, for location allowed on the app's settings page meanwhile.
+ * Every answer goes to [onAnswer], the one of the latest composition, so a screen recreated while
+ * Android's dialog is open still gets it.
+ */
 @Composable
-fun rememberLocationPermission(): LocationPermission {
+fun rememberLocationPermission(onAnswer: (LocationAnswer) -> Unit = {}): LocationPermission {
     val context = LocalContext.current
+    val settings = remember { SettingsStore(context) }
     var granted by remember { mutableStateOf(context.hasLocationPermission()) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = context.hasLocationPermission() }
+    val answer by rememberUpdatedState(onAnswer)
+    var rationaleBefore by rememberSaveable { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         granted = context.hasLocationPermission()
+        val result = locationAnswer(granted, rationaleBefore, context.canAskForLocation(), settings.locationRefused)
+        settings.locationRefused = !granted
+        answer(result)
     }
-    return LocationPermission(granted) { launcher.launch(LOCATION_PERMISSIONS) }
+    return LocationPermission(granted) {
+        rationaleBefore = context.canAskForLocation()
+        launcher.launch(LOCATION_PERMISSIONS)
+    }
+}
+
+private fun Context.canAskForLocation(): Boolean {
+    var context = this
+    while (context !is Activity && context is ContextWrapper) context = context.baseContext
+    val activity = context as? Activity ?: return false
+    return LOCATION_PERMISSIONS.any { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
 }
 
 /**

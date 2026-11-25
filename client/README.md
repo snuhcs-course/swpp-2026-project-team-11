@@ -198,6 +198,20 @@ session starts without a location and the list has no distances. On the
 emulator, set a position under Extended controls > Location (for example
 37.4600, 126.9520).
 
+Picking "nearby" (alone or with friends) without location asks Android for it
+again. Allowed, "nearby" is kept; declined, the distance goes back to "anywhere"
+and a short message says why, always with **Open settings** (the app's settings
+page); back from there with location allowed, "nearby" is picked. When Android no
+longer shows its dialog, the message says location must be allowed there and
+**Open settings** is the main button. The app reads that from the rationale: none
+after the answer, though one showed before the request or the last request was
+refused (its dialog closed unanswered included). A first dialog closed with Back
+leaves no rationale either and is not counted; the app cannot tell it from a
+blocked request (it is paused and gets the same answer both ways), which is why
+the plain message offers settings too. Android's answer still picks "nearby" when
+the screen is recreated (a rotation, a dark mode switch) while its dialog is open.
+Every screen checks the permission again when the app comes back.
+
 ## Screens
 
 | When | Screen | Actions |

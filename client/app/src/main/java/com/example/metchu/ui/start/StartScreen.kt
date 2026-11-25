@@ -1,5 +1,8 @@
 package com.example.metchu.ui.start
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -75,6 +78,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -90,14 +94,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
+import com.example.metchu.data.location.hasLocationPermission
 import com.example.metchu.data.network.RoomApi
 import com.example.metchu.data.repository.Place
 import com.example.metchu.data.repository.Price
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Languages
+import com.example.metchu.ui.common.LocationAnswer
 import com.example.metchu.ui.common.PickerOption
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.Spinner
@@ -143,7 +151,7 @@ private enum class Sheet { MEAL, PLACE, PRICE, WHO }
  * from the background; the button stands where the user is. With [tip], a tip over the
  * screen points to the globe and the gear, where the language and the allergies change.
  * With [askForLocation] and no permission yet, a notice says why before the system asks,
- * once the tip is closed.
+ * once the tip is closed. Picking "nearby" without permission asks again ([pickPlace]).
  *
  * [whitened] covers the whole screen in white as the search hands over to the question.
  *
@@ -182,8 +190,22 @@ fun StartScreen(
     val english = LocalConfiguration.current.locales[0].language != "ko"
     val scope = rememberCoroutineScope()
 
-    val permission = rememberLocationPermission()
+    // Nearby asked for and refused: why the distance went back to anywhere.
+    var refused by rememberSaveable { mutableStateOf<LocationAnswer?>(null) }
+    // Nearby picked without location: decided by Android's answer, even after the screen is recreated meanwhile.
+    var nearAsked by rememberSaveable { mutableStateOf(false) }
+    val permission = rememberLocationPermission { answer ->
+        nearAnswered(nearAsked, answer, onPlace) { refused = it }
+        nearAsked = false
+    }
     val user = rememberUserPoint(permission.granted)
+    val context = LocalContext.current
+    // Sent to the app's settings page for Nearby: picked once location is allowed there.
+    var nearFromSettings by rememberSaveable { mutableStateOf(false) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        if (nearFromSettings && context.hasLocationPermission()) onPlace(Place.NEAR)
+        nearFromSettings = false
+    }
     val searching = loading && !group
     val search by animateFloatAsState(
         if (searching) 1f else 0f,
@@ -261,7 +283,7 @@ fun StartScreen(
             searching = searching,
             located = user != null,
             // Nothing else on screen asks for attention.
-            nudging = !group && sheet == null && !priceGuideOpen && !tip && !languageOpen && !locationNotice,
+            nudging = !group && sheet == null && !priceGuideOpen && !tip && !languageOpen && !locationNotice && refused == null,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).fade { words }
@@ -326,7 +348,10 @@ fun StartScreen(
                         stringResource(if (it == Place.NEAR) R.string.place_near_option else R.string.place_any_option),
                         stringResource(if (it == Place.NEAR) R.string.place_near_note else R.string.place_any_note),
                         selected = it == place
-                    ) { onPlace(it); sheet = null }
+                    ) {
+                        pickPlace(it, permission.granted, onPlace) { nearAsked = true; permission.request() }
+                        sheet = null
+                    }
                 }
             } else {
                 Meal.entries.map {
@@ -355,6 +380,20 @@ fun StartScreen(
             LocationNotice(
                 onContinue = { onLocationAsked(); permission.request() },
                 onLater = onLocationAsked
+            )
+        }
+
+        refused?.let { answer ->
+            LocationRefused(
+                blocked = answer == LocationAnswer.BLOCKED,
+                onSettings = {
+                    refused = null
+                    nearFromSettings = true
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                    )
+                },
+                onDismiss = { refused = null }
             )
         }
     }
@@ -440,6 +479,64 @@ private fun LocationNotice(onContinue: () -> Unit, onLater: () -> Unit) {
         },
         title = { Text(stringResource(R.string.location_ask_title), style = MetchuType.Item) },
         text = { Text(stringResource(R.string.location_ask_body), style = MetchuType.Body) },
+        shape = RoundedCornerShape(20.dp),
+        containerColor = Color.White
+    )
+}
+
+/** Picks [place]. Nearby needs the location, so without it Android is asked first ([ask]); see [nearAnswered]. */
+fun pickPlace(place: Place, granted: Boolean, onPlace: (Place) -> Unit, ask: () -> Unit) {
+    if (place != Place.NEAR || granted) onPlace(place) else ask()
+}
+
+/**
+ * Android's [answer] when Nearby [asked] for it (not the location notice): Nearby is kept only when
+ * allowed; otherwise the distance goes back to anywhere, the only other choice, and [onRefused] gets the answer.
+ */
+fun nearAnswered(asked: Boolean, answer: LocationAnswer, onPlace: (Place) -> Unit, onRefused: (LocationAnswer) -> Unit) {
+    if (!asked) return
+    if (answer == LocationAnswer.GRANTED) return onPlace(Place.NEAR)
+    onPlace(Place.ANY)
+    onRefused(answer)
+}
+
+/** Says Nearby needs location; when Android no longer asks ([blocked]), offers the app's settings page. */
+@Composable
+private fun LocationRefused(blocked: Boolean, onSettings: () -> Unit, onDismiss: () -> Unit) {
+    // Settings is always offered: a phone blocked before the app could tell reads as a plain refusal.
+    val settings = @Composable {
+        TextButton(onSettings, Modifier.testTag("locationSettings")) {
+            Text(stringResource(R.string.location_refused_settings), style = MetchuType.Button,
+                color = if (blocked) MetchuColors.Primary else MetchuColors.Grey600)
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            if (blocked) {
+                settings()
+            } else {
+                TextButton(onDismiss, Modifier.testTag("locationRefusedOk")) {
+                    Text(stringResource(R.string.location_refused_ok), style = MetchuType.Button, color = MetchuColors.Primary)
+                }
+            }
+        },
+        dismissButton = {
+            if (blocked) {
+                TextButton(onDismiss) {
+                    Text(stringResource(R.string.location_ask_later), style = MetchuType.Button, color = MetchuColors.Grey600)
+                }
+            } else {
+                settings()
+            }
+        },
+        title = { Text(stringResource(R.string.location_refused_title), style = MetchuType.Item) },
+        text = {
+            Text(
+                stringResource(if (blocked) R.string.location_refused_blocked_body else R.string.location_refused_body),
+                style = MetchuType.Body
+            )
+        },
         shape = RoundedCornerShape(20.dp),
         containerColor = Color.White
     )

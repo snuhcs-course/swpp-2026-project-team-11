@@ -39,6 +39,11 @@ class SettingsStore(context: Context) {
         get() = runCatching { Price.valueOf(prefs.getString(PRICE, null).orEmpty()) }.getOrDefault(Price.ANY)
         set(value) = prefs.edit().putString(PRICE, value.name).apply()
 
+    /** Whether the last request for location ended without it, its dialog closed unanswered included; see locationAnswer. */
+    var locationRefused: Boolean
+        get() = prefs.getBoolean(LOCATION_REFUSED, false)
+        set(value) = prefs.edit().putBoolean(LOCATION_REFUSED, value).apply()
+
     /** How long each question of a room this phone creates waits: one of [RoomApi.ROUND_SECONDS]. */
     var roundSeconds: Int
         get() = prefs.getInt(ROUND_SECONDS, RoomApi.DEFAULT_ROUND_SECONDS).takeIf { it in RoomApi.ROUND_SECONDS } ?: RoomApi.DEFAULT_ROUND_SECONDS
@@ -55,5 +60,6 @@ class SettingsStore(context: Context) {
         const val PRICE = "price"
         const val ROUND_SECONDS = "round_seconds"
         const val SETUP = "setup"
+        const val LOCATION_REFUSED = "location_refused"
     }
 }
