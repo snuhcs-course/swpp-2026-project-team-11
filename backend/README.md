@@ -346,7 +346,8 @@ token (`POST /api/sessions/`) belongs to that user, and each dish it proposes, a
 recommendation, is kept once per session as `{"date", "meal", "food_id", "display_name",
 "restaurant", "created_at"}` (`accounts/history.py`). The restaurant is the offer nearest the
 session's location, else the first; `meal` is null for a whole-day session. Only a user's
-newest 100 entries are kept. Group rooms record no history. Without a valid token, all four
+newest 100 entries are kept. A history write that fails is logged and never fails the session
+request. Group rooms record no history. Without a valid token, all four
 requests are 401 `not_authenticated`, and every list holds the signed-in user's rows only.
 
 Google sign-in needs `METCHU_GOOGLE_CLIENT_ID`, the client ID of the team's **web** OAuth client
@@ -356,7 +357,7 @@ Google sign-in needs `METCHU_GOOGLE_CLIENT_ID`, the client ID of the team's **we
 network. Tests patch the check and need neither. Creating a solo session reads the token for the
 history above; group rooms use it to name members.
 
-> **주의:** `accounts/migrations/0002_bookmarks_history.py`가 새 테이블 `accounts_bookmark`, `accounts_historyentry`를 만듭니다. 머지 후 공유 DB에 `migrate`가 적용되면 RLS SQL을 다시 실행하세요.
+> **Note:** `accounts/migrations/0002_bookmarks_history.py` creates the tables `accounts_bookmark` and `accounts_historyentry`. After the merge, once `migrate` has run on the shared DB, run the RLS SQL again.
 
 ## Group rooms (i4-P9)
 
