@@ -234,6 +234,7 @@
     <string name="group_start">Start · %1$d</string>
     <string name="group_need_more">Need one more person</string>
     <string name="group_host_will_start">The host will start</string>
+    <string name="group_now_host">You’re the host now</string>
     <string name="group_leave">Leave room</string>
     <string name="group_answered">%1$d of %2$d answered</string>
     <string name="group_round">Question %1$d · up to %2$d</string>

@@ -37,6 +37,7 @@ import java.io.IOException
  * vote does not set it, so "Go here" right after one still goes out. Only the reply to this
  * phone's latest request is shown, and a poll is not sent while a request runs nor shown
  * once a newer request has gone out: either may hold the room as it was before.
+ * When the host leaves and this member takes over, [error] says so until the next request.
  */
 class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
 
@@ -185,6 +186,7 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
             val mine = before.myAnswer ?: sent?.takeIf { it.first == asked.questionId }?.second
             _history.value = _history.value.orEmpty() + AnsweredQuestion(asked.text, mine ?: AnswerId.UNKNOWN)
         }
+        if (before != null && !before.isHost && state.isHost) _error.value = UiError(R.string.group_now_host, canRetry = false)
         _room.value = state
     }
 
