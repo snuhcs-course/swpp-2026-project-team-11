@@ -3,6 +3,7 @@ package com.example.metchu.data
 import com.example.metchu.Fixtures
 import com.example.metchu.MemoryAccountStore
 import com.example.metchu.data.network.AccountUser
+import com.example.metchu.data.network.Bookmark
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.repository.Account
 import com.example.metchu.data.repository.AuthRepository
@@ -192,6 +193,47 @@ class AuthRepositoryTest {
             "error_not_authenticated" to "not_authenticated"
         )) {
             assertEquals(code, Fixtures.error(name).error!!.code)
+        }
+    }
+
+    @Test
+    fun bookmarksAndHistoryAreReadWithTheToken() = runTest {
+        store.account = signedIn
+        reply("bookmarks")
+        reply("history")
+        assertEquals(listOf(5, 6), repository.bookmarks().map { it.foodId })
+        assertEquals(listOf(6, 5), repository.history().map { it.foodId })
+        for (path in listOf("/api/auth/bookmarks/", "/api/auth/history/")) {
+            val request = server.takeRequest()
+            assertEquals("GET" to path, request.method to request.path)
+            assertEquals("Token device-token", request.getHeader("Authorization"))
+        }
+    }
+
+    @Test
+    fun savingSendsTheDishAsShownAndRemovingNamesIt() = runTest {
+        store.account = signedIn
+        reply("bookmark_saved", 201)
+        server.enqueue(MockResponse().setResponseCode(204))
+        val kept = repository.bookmark(Bookmark(6, "한입떡말이", "버거운버거"))
+        assertEquals("2026-11-25T03:24:00.396Z", kept.createdAt)
+        repository.unbookmark(6)
+
+        assertEquals("/api/auth/bookmarks/" to """{"food_id":6,"display_name":"한입떡말이","restaurant":"버거운버거"}""", sentJson())
+        val removed = server.takeRequest()
+        assertEquals("DELETE" to "/api/auth/bookmarks/6/", removed.method to removed.path)
+        assertEquals("Token device-token", removed.getHeader("Authorization"))
+    }
+
+    @Test
+    fun aRefusedRemovalThrows() = runTest {
+        store.account = signedIn
+        reply("error_not_authenticated", 401)
+        try {
+            repository.unbookmark(6)
+            fail("expected HttpException")
+        } catch (e: HttpException) {
+            assertEquals("not_authenticated", repository.errorCode(e))
         }
     }
 }

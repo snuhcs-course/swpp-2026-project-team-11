@@ -7,6 +7,11 @@ import com.example.metchu.MemoryAccountStore
 import com.example.metchu.R
 import com.example.metchu.data.network.AccountReply
 import com.example.metchu.data.network.AccountUser
+import com.example.metchu.data.network.Bookmark
+import com.example.metchu.data.network.BookmarkReply
+import com.example.metchu.data.network.BookmarksReply
+import com.example.metchu.data.network.HistoryEntry
+import com.example.metchu.data.network.HistoryReply
 import com.example.metchu.data.repository.Account
 import com.example.metchu.data.repository.AuthRepository
 import com.example.metchu.ui.account.AccountViewModel
@@ -213,5 +218,111 @@ class AccountViewModelTest {
         api.reply(Response.success(Unit))
         viewModel.logOut()
         assertNull(viewModel.account.value)
+    }
+
+    // --- bookmarks and history ---
+
+    private val saved = Bookmark(5, "짜장면", "홍콩반점 낙성대점", "2026-11-25T03:24:00.398Z")
+
+    private fun launchWithBookmarks(vararg bookmarks: Bookmark) {
+        launchSignedIn()
+        api.reply(BookmarksReply(bookmarks.toList()))
+        viewModel.loadBookmarks()
+        api.calls.clear()
+    }
+
+    @Test
+    fun aGuestLoadsNothingAndCannotBookmark() {
+        viewModel.loadBookmarks()
+        viewModel.loadHistory()
+        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        assertEquals(emptyList<String>(), api.calls)
+        assertNull(viewModel.bookmarks.value)
+        assertNull(viewModel.history.value)
+    }
+
+    @Test
+    fun theListsLoadForTheSignedInAccount() {
+        launchSignedIn()
+        val entry = HistoryEntry("2026-11-02", "LU", 5, "짜장면", "홍콩반점 낙성대점", "2026-11-25T03:24:00.391Z")
+        api.reply(BookmarksReply(listOf(saved)))
+        api.reply(HistoryReply(listOf(entry)))
+        viewModel.loadBookmarks()
+        viewModel.loadHistory()
+        assertEquals(listOf("bookmarks Token device-token", "history Token device-token"), api.calls)
+        assertEquals(listOf(saved), viewModel.bookmarks.value)
+        assertEquals(listOf(entry), viewModel.history.value)
+        assertEquals(false, viewModel.savedFailed.value)
+    }
+
+    @Test
+    fun aFailedLoadCanBeRetried() {
+        launchSignedIn()
+        api.fail(IOException("offline"))
+        viewModel.loadHistory()
+        assertEquals(true, viewModel.savedFailed.value)
+        assertNull(viewModel.history.value)
+        api.reply(HistoryReply(emptyList()))
+        viewModel.loadHistory()
+        assertEquals(false, viewModel.savedFailed.value)
+        assertEquals(emptyList<HistoryEntry>(), viewModel.history.value)
+    }
+
+    @Test
+    fun aToggleSavesAndThenRemovesTheDish() {
+        launchWithBookmarks()
+        api.reply(BookmarkReply(saved))
+        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        assertEquals(listOf(saved), viewModel.bookmarks.value)
+
+        api.reply(Response.success(Unit))
+        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        assertEquals(listOf("bookmark Token device-token 5", "unbookmark Token device-token 5"), api.calls)
+        assertEquals(emptyList<Bookmark>(), viewModel.bookmarks.value)
+    }
+
+    @Test
+    fun theListChangesAtOnceAndTapsWaitForTheServer() {
+        launchWithBookmarks()
+        var shownMeanwhile: List<Bookmark>? = null
+        api.answer {
+            shownMeanwhile = viewModel.bookmarks.value
+            viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+            BookmarkReply(saved)
+        }
+        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        assertEquals(listOf(Bookmark(5, "짜장면", "홍콩반점 낙성대점")), shownMeanwhile)
+        assertEquals(listOf("bookmark Token device-token 5"), api.calls)
+        assertEquals(listOf(saved), viewModel.bookmarks.value)
+    }
+
+    @Test
+    fun aRefusedToggleIsPutBack() {
+        launchWithBookmarks(saved)
+        api.fail(IOException("offline"))
+        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        assertEquals(listOf(saved), viewModel.bookmarks.value)
+        api.fail(IOException("offline"))
+        viewModel.toggleBookmark(6, "짬뽕", "홍콩반점 낙성대점")
+        assertEquals(listOf(saved), viewModel.bookmarks.value)
+    }
+
+    @Test
+    fun aRejectedTokenSignsOutAndForgetsTheLists() {
+        launchWithBookmarks(saved)
+        api.fail(httpError(401, "error_not_authenticated"))
+        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        assertNull(viewModel.account.value)
+        assertNull(store.account)
+        assertNull(viewModel.bookmarks.value)
+        assertEquals(R.string.account_error_signed_out, viewModel.error.value)
+    }
+
+    @Test
+    fun loggingOutForgetsTheLists() {
+        launchWithBookmarks(saved)
+        api.reply(Response.success(Unit))
+        viewModel.logOut()
+        assertNull(viewModel.bookmarks.value)
     }
 }

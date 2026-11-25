@@ -97,6 +97,14 @@ class RecommendViewModelTest {
     }
 
     @Test
+    fun aSignedInStartSendsTheAccountsToken() {
+        api.reply(question)
+        viewModel.start("DN", token = "device-token")
+        assertEquals(listOf("create DN Token device-token"), api.calls)
+        assertIdle(question)
+    }
+
+    @Test
     fun startAsksForTheChosenEngine() {
         val llmQuestion = Fixtures.state("question_llm")
         api.reply(llmQuestion)
