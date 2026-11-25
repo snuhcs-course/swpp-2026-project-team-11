@@ -2,6 +2,7 @@ package com.example.metchu.data.repository
 
 import android.content.Context
 import com.example.metchu.data.model.Engine
+import com.example.metchu.data.network.RoomApi
 
 /** How far the user will walk. The server has no distance filter, so the result screen applies it. */
 enum class Place { NEAR, ANY }
@@ -43,6 +44,11 @@ class SettingsStore(context: Context) {
         get() = prefs.getBoolean(LOCATION_REFUSED, false)
         set(value) = prefs.edit().putBoolean(LOCATION_REFUSED, value).apply()
 
+    /** How long each question of a room this phone creates waits: one of [RoomApi.ROUND_SECONDS]. */
+    var roundSeconds: Int
+        get() = prefs.getInt(ROUND_SECONDS, RoomApi.DEFAULT_ROUND_SECONDS).takeIf { it in RoomApi.ROUND_SECONDS } ?: RoomApi.DEFAULT_ROUND_SECONDS
+        set(value) = prefs.edit().putInt(ROUND_SECONDS, value).apply()
+
     var setup: Setup
         get() = runCatching { Setup.valueOf(prefs.getString(SETUP, null).orEmpty()) }.getOrDefault(Setup.LANGUAGE)
         set(value) = prefs.edit().putString(SETUP, value.name).apply()
@@ -52,6 +58,7 @@ class SettingsStore(context: Context) {
         const val ENGINE = "engine"
         const val PLACE = "place"
         const val PRICE = "price"
+        const val ROUND_SECONDS = "round_seconds"
         const val SETUP = "setup"
         const val LOCATION_REFUSED = "location_refused"
     }

@@ -67,7 +67,9 @@ data class RoomPick(
     val menus: List<RoomDish>,
     val others: List<MenuDish>,
     val votes: Int,
-    val voted: Boolean
+    val voted: Boolean,
+    /** How many finds came before this pick: 0 for the first result. Older servers send none. */
+    val batch: Int = 0
 )
 
 /** [fit] is "great" when the place is among the member's best for them, otherwise "good". */

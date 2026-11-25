@@ -19,6 +19,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,23 +43,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.model.RoomDish
+import com.example.metchu.data.model.RoomMember
 import com.example.metchu.data.model.RoomPick
 import com.example.metchu.data.model.RoomState
 import com.example.metchu.ui.common.ActionCapsule
@@ -89,12 +93,13 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import kotlin.math.ceil
 
 /**
- * Up to two restaurants, named on chips over the map, and each member's dish at the one
- * chosen, this phone's member first. Until the host decides, everyone may agree with each
- * restaurant; with two or more, every one with the most votes is marked popular. The host
- * decides with "Go here"; everyone's screen then shows where to meet. While the room has
- * [RoomState.more], the host's "Find another" replaces the restaurants on every phone with
- * ones the room has not been shown.
+ * Every restaurant the room has been shown, named on chips over the map with the newest find
+ * first, and each member's dish at the one chosen, this phone's member first. Until the host
+ * decides, everyone may agree with any of them; each chip shows how many agree and, with two or
+ * more restaurants, every one with the most votes is marked popular. The host decides with
+ * "Go here"; every phone then opens [DecidedDialog] once, and the "Meet at" pill opens it again.
+ * While the room has [RoomState.more], the host's "Find other places" adds restaurants the room
+ * has not been shown, and every phone moves to the first new one.
  */
 @Composable
 fun GroupResultScreen(
@@ -108,14 +113,24 @@ fun GroupResultScreen(
     val picks = room.picks.orEmpty()
     if (picks.isEmpty()) return
     // Picks are told apart by position: two branches of one chain share a name. Votes change the
-    // picks without changing the restaurants, so the view and the scroll follow the restaurants.
+    // picks without changing the restaurants, so the view and the scroll follow the restaurants:
+    // when a find adds some, every phone moves to the first new one.
     val restaurants = picks.map { Triple(it.restaurant, it.lat, it.lng) }
-    var viewing by rememberSaveable(restaurants) { mutableIntStateOf(0) }
+    var viewing by rememberSaveable(restaurants) { mutableIntStateOf(newestFirst(picks)) }
     room.decided?.let { viewing = it }
     val shownAt = viewing.coerceIn(picks.indices)
     val pick = picks[shownAt]
     val popular = popularPicks(room)
     val user = rememberUserPoint(rememberLocationPermission().granted)
+    // The decision opens the dialog once per room: the host's from the decide reply, the others' from their next poll.
+    var decidedOpen by rememberSaveable(room.code) { mutableStateOf(false) }
+    var decidedSeen by rememberSaveable(room.code) { mutableStateOf(false) }
+    LaunchedEffect(room.decided) {
+        if (room.decided != null && !decidedSeen) {
+            decidedSeen = true
+            decidedOpen = true
+        }
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MetchuColors.MapBlank)) {
         val sheetTop = maxHeight * 0.42f
@@ -124,30 +139,10 @@ fun GroupResultScreen(
         TopRow(Modifier.statusBarsPadding(), arrangement = Arrangement.End) {
             CircleIconButton(Icons.Home, stringResource(R.string.result_home), onHome, Modifier.testTag("home"))
         }
-        ChipRow(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = sheetTop - 56.dp), spacing = 8.dp) {
-            picks.forEachIndexed { index, p ->
-                if (room.decided != null && index != room.decided) return@forEachIndexed
-                val on = index == shownAt
-                Box {
-                    Text(
-                        placeName(p.restaurant),
-                        Modifier
-                            .height(40.dp)
-                            .chipShadow()
-                            .clip(CircleShape)
-                            .background(if (on) MetchuColors.Grey900 else Color.White)
-                            .clickable(role = Role.Tab) { if (room.decided == null) viewing = index }
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                            .testTag("pick_$index"),
-                        style = MetchuType.Label,
-                        color = if (on) Color.White else MetchuColors.Grey900,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (index in popular) PopularBadge(Modifier.offset(x = (-6).dp, y = (-9).dp).testTag("popular_$index"))
-                }
-            }
-        }
+        PickChips(
+            picks, chipOrder(picks).filter { room.decided == null || it == room.decided }, shownAt, popular,
+            Modifier.fillMaxWidth().padding(top = sheetTop - 56.dp - ChipInset)
+        ) { if (room.decided == null) viewing = it }
 
         val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         Column(
@@ -169,11 +164,14 @@ fun GroupResultScreen(
 
         val bottom = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp)
         when {
-            room.decided != null -> StatusPill(stringResource(R.string.group_meet, placeName(pick.restaurant)), dark = true, modifier = bottom.testTag("decided"))
+            room.decided != null -> StatusPill(
+                stringResource(R.string.group_meet, placeName(pick.restaurant)), dark = true, modifier = bottom.testTag("decided"),
+                onClick = { decidedOpen = true }
+            )
             room.isHost -> Row(bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (room.more) {
                     ActionCapsule(
-                        stringResource(R.string.result_more), Icons.Plus, { if (!busy) onAnother() },
+                        stringResource(R.string.group_more), Icons.Plus, { if (!busy) onAnother() },
                         filled = false, modifier = Modifier.testTag("more")
                     )
                 }
@@ -183,6 +181,15 @@ fun GroupResultScreen(
                 )
             }
             else -> StatusPill(stringResource(R.string.group_host_picking), dark = false, modifier = bottom)
+        }
+    }
+    room.decided?.let { decided ->
+        if (decidedOpen) {
+            DecidedDialog(
+                room, picks[decided.coerceIn(picks.indices)], user,
+                onClose = { decidedOpen = false },
+                onHome = { decidedOpen = false; onHome() }
+            )
         }
     }
 }
@@ -200,11 +207,7 @@ private fun PickDetails(room: RoomState, pick: RoomPick, user: Point?, vote: @Co
                 Text(placeName(pick.restaurant), Modifier.padding(top = 2.dp, end = 56.dp).testTag("restaurant"), style = MetchuType.Title)
                 Row(Modifier.padding(top = 2.dp, end = 56.dp), verticalAlignment = Alignment.CenterVertically) {
                     pick.distanceM?.let { meters ->
-                        val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
-                        Text(
-                            "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}",
-                            Modifier.padding(end = 8.dp).testTag("distance"), style = MetchuType.Body
-                        )
+                        Text(walkLine(meters), Modifier.padding(end = 8.dp).testTag("distance"), style = MetchuType.Body)
                     }
                     if (pick.lat != null && pick.lng != null) {
                         val context = LocalContext.current
@@ -219,35 +222,7 @@ private fun PickDetails(room: RoomState, pick: RoomPick, user: Point?, vote: @Co
         }
         Text(stringResource(R.string.group_each_dish), Modifier.padding(top = 20.dp, bottom = 4.dp), style = MetchuType.Caption)
     }
-    val byId = room.members.associateBy { it.id }
-    pick.menus.sortedBy { if (it.memberId == room.me) -1 else it.memberId }.forEach { dish ->
-        val member = byId[dish.memberId] ?: return@forEach
-        val mine = member.id == room.me
-        Row(
-            Modifier.fillMaxWidth().heightIn(min = 68.dp).padding(horizontal = 20.dp, vertical = 10.dp).testTag("dish_${member.id}"),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Avatar(member, 40.dp, ring = MetchuColors.Primary.takeIf { mine })
-            Column(Modifier.weight(1f)) {
-                Text(dish.food.displayName, style = MetchuType.Button, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                val who = if (mine) "${stringResource(R.string.group_me)} · ${member.name}" else member.name
-                Text(
-                    if (member.allergies.isEmpty()) who else "$who · ${allergyText(member)}",
-                    style = MetchuType.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
-            }
-            val price = dish.food.offers.firstOrNull { it.restaurant == pick.restaurant && it.lat == pick.lat && it.lng == pick.lng }?.price
-            Column(horizontalAlignment = Alignment.End) {
-                Text(priceText(price), style = MetchuType.Label)
-                val great = dish.fit == RoomDish.GREAT
-                Text(
-                    stringResource(if (great) R.string.group_fit_great else R.string.group_fit_good),
-                    style = MetchuType.Caption, color = if (great) MetchuColors.Primary else MetchuColors.Grey600
-                )
-            }
-        }
-    }
+    dishesMeFirst(room, pick).forEach { (dish, member) -> MemberDish(room, pick, dish, member, "dish_${member.id}", 20.dp) }
     if (pick.others.isNotEmpty()) {
         Text(stringResource(R.string.group_other_dishes), Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 4.dp), style = MetchuType.Caption)
         pick.others.forEach { dish ->
@@ -261,6 +236,50 @@ private fun PickDetails(room: RoomState, pick: RoomPick, user: Point?, vote: @Co
             }
         }
     }
+}
+
+/** Each member's dish at [pick] with the member, this phone's member first. */
+internal fun dishesMeFirst(room: RoomState, pick: RoomPick): List<Pair<RoomDish, RoomMember>> {
+    val byId = room.members.associateBy { it.id }
+    return pick.menus.sortedBy { if (it.memberId == room.me) -1 else it.memberId }
+        .mapNotNull { dish -> byId[dish.memberId]?.let { dish to it } }
+}
+
+/** One member's dish at [pick]: who, their allergies, the price there and how well it fits them. */
+@Composable
+internal fun MemberDish(room: RoomState, pick: RoomPick, dish: RoomDish, member: RoomMember, tag: String, inset: Dp) {
+    val mine = member.id == room.me
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 68.dp).padding(horizontal = inset, vertical = 10.dp).testTag(tag),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Avatar(member, 40.dp, ring = MetchuColors.Primary.takeIf { mine })
+        Column(Modifier.weight(1f)) {
+            Text(dish.food.displayName, style = MetchuType.Button, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val who = if (mine) "${stringResource(R.string.group_me)} · ${member.name}" else member.name
+            Text(
+                if (member.allergies.isEmpty()) who else "$who · ${allergyText(member)}",
+                style = MetchuType.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+        }
+        val price = dish.food.offers.firstOrNull { it.restaurant == pick.restaurant && it.lat == pick.lat && it.lng == pick.lng }?.price
+        Column(horizontalAlignment = Alignment.End) {
+            Text(priceText(price), style = MetchuType.Label)
+            val great = dish.fit == RoomDish.GREAT
+            Text(
+                stringResource(if (great) R.string.group_fit_great else R.string.group_fit_good),
+                style = MetchuType.Caption, color = if (great) MetchuColors.Primary else MetchuColors.Grey600
+            )
+        }
+    }
+}
+
+/** "350 m · 5 min walk". */
+@Composable
+internal fun walkLine(meters: Int): String {
+    val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
+    return "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}"
 }
 
 /** A round thumb that is orange while this member agrees, over "Agree n". It takes taps 48 dp wide. */
@@ -305,10 +324,13 @@ private fun PopularBadge(modifier: Modifier = Modifier) {
     )
 }
 
+/** A pill at the bottom; [onClick], when given, makes it a button. */
 @Composable
-private fun StatusPill(text: String, dark: Boolean, modifier: Modifier = Modifier) {
+private fun StatusPill(text: String, dark: Boolean, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     Row(
-        modifier.height(48.dp).clip(CircleShape).background(if (dark) MetchuColors.Grey900 else MetchuColors.Grey100).padding(horizontal = 20.dp),
+        modifier.height(48.dp).clip(CircleShape)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .background(if (dark) MetchuColors.Grey900 else MetchuColors.Grey100).padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -354,34 +376,72 @@ private fun PicksMap(picks: List<RoomPick>, selected: Int, sheetHeight: Dp, onSe
     }
 }
 
+/** Room around the chips inside their row, so the popular tag over a chip's corner is not cut off. */
+private val ChipInset = 10.dp
+
 /**
- * Lays the chips in a row, each as wide as its name needs. When they do not all fit, the
- * narrower ones keep their width and the rest share what is left, ending in "…".
+ * The chips of the picks in [order], in a row that scrolls sideways: the name, how many agree
+ * (hidden at none) and the popular tag. New picks scroll the row back to its start.
  */
 @Composable
-private fun ChipRow(modifier: Modifier, spacing: Dp, content: @Composable () -> Unit) {
-    Layout(content, modifier) { measurables, constraints ->
-        val gap = spacing.roundToPx()
-        val free = constraints.maxWidth - gap * (measurables.size - 1).coerceAtLeast(0)
-        val widths = chipWidths(measurables.map { it.maxIntrinsicWidth(constraints.maxHeight) }, free)
-        val placeables = measurables.mapIndexed { i, it -> it.measure(Constraints(maxWidth = widths[i])) }
-        layout(constraints.maxWidth, placeables.maxOfOrNull { it.height } ?: 0) {
-            var x = 0
-            placeables.forEach { it.placeRelative(x, 0); x += it.width + gap }
+private fun PickChips(picks: List<RoomPick>, order: List<Int>, viewing: Int, popular: Set<Int>, modifier: Modifier, onView: (Int) -> Unit) {
+    val row = rememberLazyListState()
+    LaunchedEffect(picks.size) { row.animateScrollToItem(0) }
+    LazyRow(
+        modifier.testTag("pickChips"),
+        state = row,
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = ChipInset),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(order, key = { it }) { index ->
+            val p = picks[index]
+            val on = index == viewing
+            Box {
+                Row(
+                    Modifier
+                        .height(40.dp)
+                        .widthIn(max = 240.dp)
+                        .chipShadow()
+                        .clip(CircleShape)
+                        .background(if (on) MetchuColors.Grey900 else Color.White)
+                        .clickable(role = Role.Tab) { onView(index) }
+                        .padding(horizontal = 16.dp)
+                        .testTag("pick_$index"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        placeName(p.restaurant),
+                        Modifier.weight(1f, fill = false),
+                        style = MetchuType.Label,
+                        color = if (on) Color.White else MetchuColors.Grey900,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (p.votes > 0) {
+                        val agree = stringResource(R.string.group_agree, p.votes)
+                        Row(
+                            Modifier.testTag("chipVotes_$index").clearAndSetSemantics { contentDescription = agree },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Image(Icons.ThumbUp, null, Modifier.size(14.dp), colorFilter = ColorFilter.tint(MetchuColors.Primary))
+                            Text("${p.votes}", style = MetchuType.Label, color = MetchuColors.Primary, maxLines = 1)
+                        }
+                    }
+                }
+                if (index in popular) PopularBadge(Modifier.offset(x = (-6).dp, y = (-9).dp).testTag("popular_$index"))
+            }
         }
     }
 }
 
-/** Widths for chips that want [wanted] within [free]: the narrowest first, each at most an even share of what is left. */
-internal fun chipWidths(wanted: List<Int>, free: Int): List<Int> {
-    val widths = MutableList(wanted.size) { 0 }
-    var left = free.coerceAtLeast(0)
-    wanted.indices.sortedBy { wanted[it] }.forEachIndexed { placed, i ->
-        widths[i] = minOf(wanted[i], left / (wanted.size - placed))
-        left -= widths[i]
-    }
-    return widths
-}
+/** The chips' order: the newest find first, each find as the server listed it. Votes never move a chip. */
+internal fun chipOrder(picks: List<RoomPick>): List<Int> =
+    picks.indices.sortedWith(compareByDescending<Int> { picks[it].batch }.thenBy { it })
+
+/** The first restaurant of the newest find, which every phone shows when a find adds restaurants. */
+internal fun newestFirst(picks: List<RoomPick>): Int = chipOrder(picks).firstOrNull() ?: 0
 
 /** The positions of the picks with the most votes, all of them on a tie; none while fewer than two
  *  picks are open or nobody has voted. */
@@ -393,4 +453,4 @@ internal fun popularPicks(room: RoomState): Set<Int> {
 }
 
 /** "자하연식당>2층" reads "자하연식당 2층"; two floors of one building stay apart. */
-private fun placeName(restaurant: String): String = restaurant.replace('>', ' ')
+internal fun placeName(restaurant: String): String = restaurant.replace('>', ' ')

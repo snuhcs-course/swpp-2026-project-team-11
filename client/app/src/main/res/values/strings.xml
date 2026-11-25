@@ -213,6 +213,8 @@
     <string name="who_group_option">With friends</string>
     <string name="who_group_note">2–8 people, picks a place</string>
     <string name="start_sub_group">Everyone answers the same questions, and we’ll pick a place for all of you.</string>
+    <string name="start_round_time">Time to answer each question</string>
+    <string name="start_round_seconds">%1$d s</string>
     <string name="group_create">Create a room</string>
     <string name="group_join_open">Join with a code</string>
     <string name="group_name_title">Your name</string>
@@ -239,13 +241,18 @@
     <string name="group_start">Start · %1$d</string>
     <string name="group_need_more">Need one more person</string>
     <string name="group_host_will_start">The host will start</string>
+    <string name="group_now_host">You’re the host now</string>
     <string name="group_leave">Leave room</string>
     <string name="group_answered">%1$d of %2$d answered</string>
     <string name="group_round">Question %1$d · up to %2$d</string>
     <string name="group_each_dish">Suggested dishes</string>
     <string name="group_decide">Go here</string>
+    <string name="group_more">Find other places</string>
     <string name="group_host_picking">The host is choosing</string>
     <string name="group_meet">Meet at %1$s</string>
+    <string name="group_decided_title">Meet here</string>
+    <string name="group_decided_ok">OK</string>
+    <string name="group_decided_directions">Directions</string>
     <string name="group_agree">Agree %1$d</string>
     <string name="group_agree_action">Agree with this place</string>
     <string name="group_popular">Popular</string>

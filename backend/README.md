@@ -348,7 +348,7 @@ in server memory, like sessions; the API is commented at the end of `recommend/v
 
 | Request | Body | Reply |
 | --- | --- | --- |
-| `POST /api/rooms/` | `{"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?, "distance_scope"?, "price_level"?, "location"?}` | 201 `{"token", "state"}` |
+| `POST /api/rooms/` | `{"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?, "distance_scope"?, "price_level"?, "location"?, "round_seconds"?}` | 201 `{"token", "state"}` |
 | `POST /api/rooms/join/` | `{"code", "name"?, "allergies"?, "language"?}` | 201 `{"token", "state"}` |
 | `GET /api/rooms/<code>/` | | `state` |
 | `POST /api/rooms/<code>/start/` | host | `state` |
@@ -365,28 +365,34 @@ signed-in member (`Authorization: Token ...`) is shown by username; anyone else 
 "members", "round", "max_rounds", "question", "my_answer", "seconds_left", "round_seconds", "picks",
 "more", "decided"}`;
 `members` are `{"id", "name", "allergies", "left", "answered"}` and each pick is `{"restaurant",
-"kind", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others", "votes", "voted"}`; `others` are the
+"kind", "batch", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others", "votes", "voted"}`; `others` are the
 restaurant's other dishes, shaped like a session's `menu` dishes. `fit` is `great` when
 the restaurant is among that member's best tenth of the places they can eat at, otherwise `good`.
 `votes` counts the members who agree with the pick and `voted` says whether the caller does.
+`batch` counts the "find another"s before the pick: 0 for the first result.
 
 - The creator hosts. A room has a four-digit code and 2 to 8 members; nobody joins after the start
   (409 `room_started`). A caller who tries 10 unknown codes within a minute waits out the minute
-  (429 `too_many_attempts`); behind the tunnel the caller is its `CF-Connecting-IP`. The host's meal, source, distance, price range and location apply to everyone.
+  (429 `too_many_attempts`); behind the tunnel the caller is its `CF-Connecting-IP`. The host's meal, source, distance, price range, location and round time apply to everyone.
 - Each member reads the question in their own language. An answer cannot be changed. A member
-  silent for `ROUND_SECONDS` (15) answers "unknown": unlike "any" ("doesn't matter"), it moves
+  silent for the room's `round_seconds` answers "unknown". The host picks it at create from
+  `ROUND_CHOICES` (10, 15, 30 or 60; 15 when left out, i5-P11); any other value, a string included,
+  is a 400 `invalid_request`. Unlike "any" ("doesn't matter"), "unknown" moves
   neither the engine's belief about their dish nor how relevant it takes the question's family to
   be. Deadlines are checked whenever the room is read or acted on, so the phones' polling moves it on.
 - Once the result is shown, any member may agree with any of the picks, to help the host choose.
   Votes change nothing in the engine, end with the host's decision (later ones get 409 `stale_step`)
   and leave with the member who cast them.
 - Only the host starts, stops early ("recommend now": the engine's `stop()`), asks for other
-  restaurants ("find another") and decides. When the host leaves, a random remaining member hosts;
+  restaurants ("find another") and decides, once: phones stop polling at the decision, so a second
+  `decide` is a 409 `stale_step` (i5-P17). When the host leaves, the next member in join order still
+  here hosts (i5-P8);
   a member who leaves after the start answers "unknown".
-- "Find another" (`another`, i4-A13) replaces `picks` with up to two restaurants the room has not
-  been shown, chosen the same way among the rest (`recommendation(shown)`), with no votes yet. `more`
-  is true while a restaurant where every member can eat is left; without one, or once the host has
-  decided, it is a 409 `stale_step`.
+- "Find another" (`another`, i4-A13) adds up to two restaurants the room has not been shown to the
+  end of `picks`, chosen the same way among the rest (`recommendation(shown)`), with no votes yet and
+  the next `batch`. The earlier picks keep their positions and votes (i5-P2), so members can still
+  agree with them and the host can still decide on one. `more` is true while a restaurant where every
+  member can eat is left; without one, or once the host has decided, it is a 409 `stale_step`.
 - A member's allergies remove offers only from their own choice. They are matched to the full menu's
   offers by `menus/offers.py`, since a merged menu can come back without an allergen under another ID.
   Every member's allergies are shown to the whole room, by design.
