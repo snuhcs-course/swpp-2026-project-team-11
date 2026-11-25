@@ -23,6 +23,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.metchu.data.location.LOCATION_PERMISSIONS
 import com.example.metchu.data.location.hasLocationPermission
+import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.ui.result.Point
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -34,10 +35,14 @@ import kotlin.math.abs
 /** How a request for location ended: [BLOCKED] when Android will not show its dialog again, so only the app's settings page can allow it. */
 enum class LocationAnswer { GRANTED, DENIED, BLOCKED }
 
-/** After the system's answer: Android shows its dialog again only while [canAskAgain] (it would show a rationale). */
-fun locationAnswer(granted: Boolean, canAskAgain: Boolean): LocationAnswer = when {
+/**
+ * After the system's answer: Android shows its dialog again only while [canAskAgain] (it would show a
+ * rationale). Without a rationale it is blocked only once the user has [deniedBefore]: a first dialog
+ * closed by tapping outside it also leaves no rationale, yet Android asks again next time.
+ */
+fun locationAnswer(granted: Boolean, canAskAgain: Boolean, deniedBefore: Boolean): LocationAnswer = when {
     granted -> LocationAnswer.GRANTED
-    canAskAgain -> LocationAnswer.DENIED
+    canAskAgain || !deniedBefore -> LocationAnswer.DENIED
     else -> LocationAnswer.BLOCKED
 }
 
@@ -50,14 +55,20 @@ class LocationPermission(val granted: Boolean, private val launch: ((LocationAns
 @Composable
 fun rememberLocationPermission(): LocationPermission {
     val context = LocalContext.current
+    val settings = remember { SettingsStore(context) }
     var granted by remember { mutableStateOf(context.hasLocationPermission()) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = context.hasLocationPermission() }
     var onAnswer by remember { mutableStateOf<(LocationAnswer) -> Unit>({}) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         granted = context.hasLocationPermission()
-        onAnswer(locationAnswer(granted, context.canAskForLocation()))
+        val canAskAgain = context.canAskForLocation()
+        val deniedBefore = settings.locationDenied
+        // A rationale means the user has turned location down at least once.
+        if (canAskAgain) settings.locationDenied = true
+        onAnswer(locationAnswer(granted, canAskAgain, deniedBefore))
     }
     return LocationPermission(granted) {
+        if (context.canAskForLocation()) settings.locationDenied = true
         onAnswer = it
         launcher.launch(LOCATION_PERMISSIONS)
     }
