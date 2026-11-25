@@ -197,6 +197,8 @@
     <string name="who_group_option">친구들과</string>
     <string name="who_group_note">2~8명, 식당을 골라요</string>
     <string name="start_sub_group">모두 같은 질문에 답하면 다 같이 갈 식당을 골라드려요.</string>
+    <string name="start_round_time">질문마다 답할 시간</string>
+    <string name="start_round_seconds">%1$d초</string>
     <string name="group_create">방 만들기</string>
     <string name="group_join_open">코드로 참여</string>
     <string name="group_name_title">이름을 알려 주세요</string>
@@ -223,13 +225,18 @@
     <string name="group_start">시작하기 · %1$d명</string>
     <string name="group_need_more">한 명 더 있어야 해요</string>
     <string name="group_host_will_start">방장이 시작하면 넘어가요</string>
+    <string name="group_now_host">이제 방장이 되었어요</string>
     <string name="group_leave">방 나가기</string>
     <string name="group_answered">%2$d명 중 %1$d명 답했어요</string>
     <string name="group_round">질문 %1$d · 최대 %2$d개</string>
     <string name="group_each_dish">추천 메뉴</string>
     <string name="group_decide">여기로 정하기</string>
+    <string name="group_more">식당 더 찾기</string>
     <string name="group_host_picking">방장이 고르는 중</string>
     <string name="group_meet">%1$s에서 만나요</string>
+    <string name="group_decided_title">여기서 만나요</string>
+    <string name="group_decided_ok">확인</string>
+    <string name="group_decided_directions">길찾기</string>
     <string name="group_agree">찬성 %1$d</string>
     <string name="group_agree_action">이 식당에 찬성하기</string>
     <string name="group_popular">인기</string>

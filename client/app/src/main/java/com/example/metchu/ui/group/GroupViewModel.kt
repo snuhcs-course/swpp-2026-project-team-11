@@ -29,7 +29,7 @@ import java.io.IOException
 /**
  * The group room this phone is in. [room] is null outside one. While in a room the phone
  * asks the server for it every [POLL_MILLIS], since the others' answers, the host's start
- * and the 10-second deadlines all happen elsewhere; it stops once the host has decided.
+ * and the rounds' deadlines all happen elsewhere; it stops once the host has decided.
  *
  * [history] lists the rounds already over, with this member's answer ("not sure" when the
  * time ran out), for the question screen; the server keeps no question texts.
@@ -37,6 +37,7 @@ import java.io.IOException
  * vote does not set it, so "Go here" right after one still goes out. Only the reply to this
  * phone's latest request is shown, and a poll is not sent while a request runs nor shown
  * once a newer request has gone out: either may hold the room as it was before.
+ * When the host leaves and this member takes over, [error] says so until the next request.
  */
 class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
 
@@ -61,8 +62,17 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
     private var acting = 0
 
     /** [account] is the signed-in account's token; without one, [name] names the member. */
-    fun create(account: String?, name: String?, allergies: List<Allergen>, language: String, meal: String?, location: suspend () -> UserLocation?, distanceScope: String, priceLevel: Int? = null) =
-        enter { repository.create(account, name, allergies, language, meal, location(), distanceScope, priceLevel) }
+    fun create(
+        account: String?,
+        name: String?,
+        allergies: List<Allergen>,
+        language: String,
+        meal: String?,
+        location: suspend () -> UserLocation?,
+        distanceScope: String,
+        priceLevel: Int? = null,
+        roundSeconds: Int = RoomApi.DEFAULT_ROUND_SECONDS
+    ) = enter { repository.create(account, name, allergies, language, meal, location(), distanceScope, priceLevel, roundSeconds) }
 
     fun join(account: String?, code: String, name: String?, allergies: List<Allergen>, language: String) =
         enter { repository.join(account, code, name, allergies, language) }
@@ -185,6 +195,7 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
             val mine = before.myAnswer ?: sent?.takeIf { it.first == asked.questionId }?.second
             _history.value = _history.value.orEmpty() + AnsweredQuestion(asked.text, mine ?: AnswerId.UNKNOWN)
         }
+        if (before != null && !before.isHost && state.isHost) _error.value = UiError(R.string.group_now_host, canRetry = false)
         _room.value = state
     }
 
@@ -194,6 +205,7 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
         sent = null
         _room.value = null
         _history.value = emptyList()
+        _error.value = null
     }
 
     private fun fail(e: Exception, code: String?) {

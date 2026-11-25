@@ -147,22 +147,32 @@ class JoinLimitTests(RoomTestCase):
 
 
 class HostTests(RoomTestCase):
-    def test_when_the_host_leaves_someone_else_hosts(self):
+    def test_when_the_host_leaves_the_next_to_join_hosts(self):
         code, host, _ = self.create()
-        guests = [self.join(code, name)["token"] for name in ("Seoyeon", "Doyun")]
-        with mock.patch.object(rooms.random, "choice", lambda members: members[-1]):
-            self.call(code, "leave", host, status=204)
-        state = self.state(code, guests[1])
-        self.assertEqual((state["host"], state["me"]), (2, 2))
+        guests = [self.join(code, name)["token"] for name in ("Seoyeon", "Doyun", "Minji")]
+        self.call(code, "leave", host, status=204)
+        state = self.state(code, guests[0])
+        self.assertEqual((state["host"], state["me"]), (1, 1))
         self.assertEqual(self.state(code, host, status=403)["error"]["code"], "not_member")
-        self.assertEqual(self.call(code, "start", guests[1])["status"], "asking")
+        self.assertEqual(self.call(code, "start", guests[0])["status"], "asking")
 
-    def test_the_new_host_is_one_of_those_still_here(self):
+    def test_the_role_skips_those_who_have_left(self):
         code, host, _ = self.create()
         tokens_ = [self.join(code, name)["token"] for name in ("A", "B", "C")]
         self.call(code, "leave", tokens_[0], status=204)
         self.call(code, "leave", host, status=204)
-        self.assertIn(self.state(code, tokens_[1])["host"], (2, 3))
+        self.assertEqual(self.state(code, tokens_[2])["host"], 2)
+        self.call(code, "leave", tokens_[1], status=204)
+        self.assertEqual(self.state(code, tokens_[2])["host"], 3)
+
+    def test_the_role_passes_on_while_asking_and_on_the_result(self):
+        code, host, guests, _ = self.started(people=4)
+        self.call(code, "leave", host, status=204)
+        self.assertEqual(self.state(code, guests[2])["host"], 1)
+        self.assertEqual(self.call(code, "recommend-now", guests[0])["status"], "done")
+        self.call(code, "leave", guests[0], status=204)
+        self.assertEqual(self.state(code, guests[2])["host"], 2)
+        self.assertEqual(self.call(code, "decide", guests[1], {"pick": 0})["decided"], 0)
 
 
 class RoundTests(RoomTestCase):
@@ -209,6 +219,29 @@ class RoundTests(RoomTestCase):
             self.assertEqual(later["seconds_left"], 15)
             self.assertEqual([m["answered"] for m in later["members"]], [False, False])
 
+    def test_the_host_picks_how_long_a_round_waits(self):
+        code, host, created = self.create(round_seconds=30)
+        self.assertEqual(created["round_seconds"], 30)
+        self.join(code)
+        state = self.call(code, "start", host)
+        self.assertEqual((state["seconds_left"], state["round_seconds"]), (30, 30))
+        self.clock.now += 15
+        waiting = self.state(code, host)
+        self.assertEqual((waiting["round"], waiting["seconds_left"]), (0, 15))
+        self.clock.now += 15
+        later = self.state(code, host)
+        self.assertTrue(later["round"] == 1 or later["status"] == "done")
+
+    def test_a_round_waits_only_one_of_the_offered_times(self):
+        for seconds in (0, 20, 600, "15", 15.0, True, None):
+            response = post(self.client, "/api/rooms/", {"name": "Jimin", "date": DAY, "round_seconds": seconds})
+            self.assertEqual(response.status_code, 400, seconds)
+            self.assertEqual(response.json()["error"]["code"], "invalid_request")
+            self.assertIn("round_seconds", response.json()["error"]["message"])
+        for seconds in rooms.ROUND_CHOICES:
+            self.assertEqual(self.create(round_seconds=seconds)[2]["round_seconds"], seconds)
+        self.assertEqual(self.create()[2]["round_seconds"], 15)
+
     def test_an_answer_after_the_deadline_is_stale(self):
         code, host, _, state = self.started()
         self.clock.now += rooms.ROUND_SECONDS
@@ -249,8 +282,8 @@ class ResultTests(RoomTestCase):
         picks = done["picks"]
         self.assertTrue(1 <= len(picks) <= 2)
         for pick in picks:
-            self.assertEqual(set(pick), {"restaurant", "kind", "lat", "lng", "distance_m", "menus", "others", "votes", "voted"})
-            self.assertEqual((pick["votes"], pick["voted"]), (0, False))
+            self.assertEqual(set(pick), {"restaurant", "kind", "batch", "lat", "lng", "distance_m", "menus", "others", "votes", "voted"})
+            self.assertEqual((pick["batch"], pick["votes"], pick["voted"]), (0, 0, False))
             suggested = {menu["food"]["food_id"] for menu in pick["menus"]}
             served = {name for name, restaurant, _, _ in MENUS if restaurant == pick["restaurant"]}
             self.assertEqual({dish["display_name"] for dish in pick["others"]} | {menu["food"]["name"] for menu in pick["menus"]},
@@ -287,10 +320,26 @@ class ResultTests(RoomTestCase):
         self.assertEqual(len(first), 2)
         self.assertTrue(done["more"])
         again = self.call(code, "another", host)
-        self.assertEqual({pick["restaurant"] for pick in again["picks"]}, {"Red hall", "Soup hall", "Noodle hall"} - first)
+        new = {pick["restaurant"] for pick in again["picks"] if pick["batch"] == 1}
+        self.assertEqual(new, {"Red hall", "Soup hall", "Noodle hall"} - first)
         self.assertFalse(again["more"])
         self.assertEqual(self.state(code, guest)["picks"], again["picks"])
         self.assertEqual(self.call(code, "another", host, status=409)["error"]["code"], "stale_step")
+
+    def test_earlier_restaurants_stay_where_they_were_after_find_another(self):
+        code, host, _, _ = self.started()
+        done = self.call(code, "recommend-now", host)
+        picks = self.call(code, "another", host)["picks"]
+        self.assertEqual(picks[:2], done["picks"])
+        self.assertEqual([pick["batch"] for pick in picks], [0, 0, 1])
+
+    def test_the_host_can_decide_on_an_earlier_restaurant(self):
+        code, host, (guest,), _ = self.started()
+        done = self.call(code, "recommend-now", host)
+        self.call(code, "another", host)
+        decided = self.call(code, "decide", host, {"pick": 1})
+        self.assertEqual(decided["decided"], 1)
+        self.assertEqual(self.state(code, guest)["picks"][1]["restaurant"], done["picks"][1]["restaurant"])
 
     def test_find_another_counts_only_places_where_everyone_can_eat(self):
         code, host, _ = self.create()
@@ -342,6 +391,15 @@ class ResultTests(RoomTestCase):
         code, host, _, _ = self.started()
         self.assertEqual(self.call(code, "decide", host, {"pick": 0}, status=409)["error"]["code"],
                          "stale_step")
+
+    def test_the_host_decides_only_once(self):
+        code, host, (guest,), _ = self.started()
+        self.call(code, "recommend-now", host)
+        self.call(code, "decide", host, {"pick": 0})
+        again = self.call(code, "decide", host, {"pick": 1}, status=409)
+        self.assertEqual(again["error"]["code"], "stale_step")
+        self.assertEqual(again["state"]["decided"], 0)
+        self.assertEqual(self.state(code, guest)["decided"], 0)
 
 
 
@@ -410,12 +468,26 @@ class VoteTests(RoomTestCase):
         for body in ({"pick": 99, "agree": True}, {"pick": 0, "agree": "yes"}, {"pick": 0}):
             self.assertEqual(self.call(code, "vote", host, body, status=409)["error"]["code"], "stale_step", body)
 
-    def test_find_another_starts_without_votes(self):
+    def test_find_another_keeps_the_votes_and_new_restaurants_start_without(self):
         code, host, (guest,) = self.finished(2)
         self.call(code, "vote", host, {"pick": 0, "agree": True})
         self.call(code, "vote", guest, {"pick": 1, "agree": True})
         again = self.call(code, "another", host)
-        self.assertEqual([(p["votes"], p["voted"]) for p in again["picks"]], [(0, False)] * len(again["picks"]))
+        self.assertEqual([(p["votes"], p["voted"]) for p in again["picks"]], [(1, True), (1, False), (0, False)])
+
+    def test_members_still_agree_with_earlier_restaurants(self):
+        code, host, (guest,) = self.finished(2)
+        self.call(code, "another", host)
+        picks = self.call(code, "vote", guest, {"pick": 0, "agree": True})["picks"]
+        self.assertEqual([p["votes"] for p in picks], [1, 0, 0])
+
+    def test_a_member_who_leaves_takes_their_votes_from_every_find(self):
+        code, host, (guest,) = self.finished(2)
+        self.call(code, "vote", guest, {"pick": 0, "agree": True})
+        self.call(code, "another", host)
+        self.call(code, "vote", guest, {"pick": 2, "agree": True})
+        self.call(code, "leave", guest, status=204)
+        self.assertEqual([p["votes"] for p in self.state(code, host)["picks"]], [0, 0, 0])
 
 
 class MergedOfferTests(TestCase):

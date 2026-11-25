@@ -172,6 +172,7 @@ fun MetchuApp(
     var engine by remember { mutableStateOf(settings.engine) }
     var place by remember { mutableStateOf(settings.place) }
     var price by remember { mutableStateOf(settings.price) }
+    var roundSeconds by remember { mutableIntStateOf(settings.roundSeconds) }
     // Kept while the app runs, so coming back from a session keeps the meal the user picked.
     var meal by rememberSaveable { mutableStateOf(Meal.now()) }
     // The server writes its questions in the language the app is showing.
@@ -187,7 +188,7 @@ fun MetchuApp(
     val askToLeave = { if (room?.decided != null) group.leave() else confirmLeave = true }
     val distanceScope = if (place == Place.NEAR) "near" else "any"
     val createRoom = { name: String? ->
-        group.create(account?.token, name, allergies, language, meal.code, { location.current() }, distanceScope, price.level)
+        group.create(account?.token, name, allergies, language, meal.code, { location.current() }, distanceScope, price.level, roundSeconds)
     }
     LaunchedEffect(room != null) { if (room != null) joinOpen = false }
 
@@ -301,6 +302,8 @@ fun MetchuApp(
                         onSettings = { settingsOpen = true },
                         group = together,
                         onGroup = { together = it },
+                        roundSeconds = roundSeconds,
+                        onRoundSeconds = { roundSeconds = it; settings.roundSeconds = it },
                         onJoin = { group.clearError(); joinOpen = true },
                         onResume = viewModel::resume.takeIf { canResume },
                         onTipDone = { advance(Setup.DONE) },

@@ -73,6 +73,15 @@ class GroupViewModelTest {
     }
 
     @Test
+    fun theRoomCarriesTheRoundTime() {
+        api.reply(created)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", { null }, "any", roundSeconds = 30)
+        assertEquals(30, api.lastCreateRequest?.roundSeconds)
+        create()
+        assertEquals(15, api.lastCreateRequest?.roundSeconds)
+    }
+
+    @Test
     fun aSignedInMemberSendsTheAccountInsteadOfAName() {
         api.reply(created)
         viewModel.join("device-token", code, "ignored", emptyList(), "ko")
@@ -99,6 +108,35 @@ class GroupViewModelTest {
         scheduler.advanceTimeBy(1001)
         assertEquals("state $code member-token", api.calls.last())
         assertEquals(asking, viewModel.room.value)
+    }
+
+    @Test
+    fun aMemberWhoBecomesHostIsToldUntilTheNextRequest() {
+        val lobby = Fixtures.room("room_lobby")
+        api.reply(created.copy(state = lobby))
+        viewModel.join(null, code, "서연", emptyList(), "ko")
+        api.reply(lobby)
+        scheduler.advanceTimeBy(1001)
+        assertNull(viewModel.error.value)
+        api.reply(lobby.copy(host = lobby.me))
+        scheduler.advanceTimeBy(1000)
+        assertEquals(R.string.group_now_host, viewModel.error.value!!.message)
+        assertTrue(viewModel.room.value!!.isHost)
+        api.reply(asking)
+        viewModel.start()
+        assertNull(viewModel.error.value)
+    }
+
+    @Test
+    fun leavingClearsTheNewHostNotice() {
+        val lobby = Fixtures.room("room_lobby")
+        api.reply(created.copy(state = lobby))
+        viewModel.join(null, code, "서연", emptyList(), "ko")
+        api.reply(lobby.copy(host = lobby.me))
+        scheduler.advanceTimeBy(1001)
+        assertEquals(R.string.group_now_host, viewModel.error.value!!.message)
+        viewModel.leave()
+        assertNull(viewModel.error.value)
     }
 
     @Test
