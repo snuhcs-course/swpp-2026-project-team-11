@@ -147,22 +147,32 @@ class JoinLimitTests(RoomTestCase):
 
 
 class HostTests(RoomTestCase):
-    def test_when_the_host_leaves_someone_else_hosts(self):
+    def test_when_the_host_leaves_the_next_to_join_hosts(self):
         code, host, _ = self.create()
-        guests = [self.join(code, name)["token"] for name in ("Seoyeon", "Doyun")]
-        with mock.patch.object(rooms.random, "choice", lambda members: members[-1]):
-            self.call(code, "leave", host, status=204)
-        state = self.state(code, guests[1])
-        self.assertEqual((state["host"], state["me"]), (2, 2))
+        guests = [self.join(code, name)["token"] for name in ("Seoyeon", "Doyun", "Minji")]
+        self.call(code, "leave", host, status=204)
+        state = self.state(code, guests[0])
+        self.assertEqual((state["host"], state["me"]), (1, 1))
         self.assertEqual(self.state(code, host, status=403)["error"]["code"], "not_member")
-        self.assertEqual(self.call(code, "start", guests[1])["status"], "asking")
+        self.assertEqual(self.call(code, "start", guests[0])["status"], "asking")
 
-    def test_the_new_host_is_one_of_those_still_here(self):
+    def test_the_role_skips_those_who_have_left(self):
         code, host, _ = self.create()
         tokens_ = [self.join(code, name)["token"] for name in ("A", "B", "C")]
         self.call(code, "leave", tokens_[0], status=204)
         self.call(code, "leave", host, status=204)
-        self.assertIn(self.state(code, tokens_[1])["host"], (2, 3))
+        self.assertEqual(self.state(code, tokens_[2])["host"], 2)
+        self.call(code, "leave", tokens_[1], status=204)
+        self.assertEqual(self.state(code, tokens_[2])["host"], 3)
+
+    def test_the_role_passes_on_while_asking_and_on_the_result(self):
+        code, host, guests, _ = self.started(people=4)
+        self.call(code, "leave", host, status=204)
+        self.assertEqual(self.state(code, guests[2])["host"], 1)
+        self.assertEqual(self.call(code, "recommend-now", guests[0])["status"], "done")
+        self.call(code, "leave", guests[0], status=204)
+        self.assertEqual(self.state(code, guests[2])["host"], 2)
+        self.assertEqual(self.call(code, "decide", guests[1], {"pick": 0})["decided"], 0)
 
 
 class RoundTests(RoomTestCase):
