@@ -2,6 +2,7 @@ package com.example.metchu.ui.start
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
@@ -44,6 +45,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -90,6 +92,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
+import com.example.metchu.data.network.RoomApi
 import com.example.metchu.data.repository.Place
 import com.example.metchu.data.repository.Price
 import com.example.metchu.ui.common.CircleIconButton
@@ -100,6 +103,7 @@ import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.TopRow
 import com.example.metchu.ui.common.TopRowHeight
+import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.common.cssShadow
 import com.example.metchu.ui.common.fade
 import com.example.metchu.ui.common.floating
@@ -133,7 +137,8 @@ private enum class Sheet { MEAL, PLACE, PRICE, WHO }
 /**
  * "Today I'll have [lunch] [nearby] [at a fair price] [for me]": the meal, the distance, the [price] range
  * and whether friends join ([group]) are picked inside the sentence, and the round button starts a session, or
- * with friends creates a room; "Join with a code" (top right) enters someone else's. The price
+ * with friends creates a room, whose questions each wait [roundSeconds], picked under the sentence;
+ * "Join with a code" (top right) enters someone else's. The price
  * range is picked as one to three ₩ signs and read in words; the small "?" beside it shows what each covers. The map behind the button fades in
  * from the background; the button stands where the user is. With [tip], a tip over the
  * screen points to the globe and the gear, where the language and the allergies change.
@@ -161,6 +166,8 @@ fun StartScreen(
     onSettings: () -> Unit,
     group: Boolean,
     onGroup: (Boolean) -> Unit,
+    roundSeconds: Int,
+    onRoundSeconds: (Int) -> Unit,
     onJoin: () -> Unit,
     onResume: (() -> Unit)?,
     onTipDone: () -> Unit,
@@ -239,6 +246,7 @@ fun StartScreen(
                     Text(stringResource(R.string.start_line4), Modifier.padding(start = 8.dp), style = title)
                 }
                 Text(stringResource(if (group) R.string.start_sub_group else R.string.start_sub), Modifier.padding(top = 16.dp), style = MetchuType.Lead)
+                if (group) RoundTimeChoice(roundSeconds, onRoundSeconds)
             }
         }
 
@@ -348,6 +356,35 @@ fun StartScreen(
                 onContinue = { onLocationAsked(); permission.request() },
                 onLater = onLocationAsked
             )
+        }
+    }
+}
+
+/** How long each question of the room waits; a member still silent then answers "not sure". */
+@Composable
+private fun RoundTimeChoice(seconds: Int, onPick: (Int) -> Unit) {
+    Text(stringResource(R.string.start_round_time), Modifier.padding(top = 16.dp, bottom = 8.dp), style = MetchuType.Caption)
+    Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        RoomApi.ROUND_SECONDS.forEach { option ->
+            val on = option == seconds
+            val background by animateColorAsState(if (on) MetchuColors.Primary else Color.White, label = "roundTime")
+            Box(
+                Modifier
+                    .height(40.dp)
+                    .chipShadow()
+                    .clip(CircleShape)
+                    .background(background)
+                    .selectable(on, role = Role.RadioButton) { onPick(option) }
+                    .padding(horizontal = 14.dp)
+                    .testTag("roundSeconds_$option"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    stringResource(R.string.start_round_seconds, option),
+                    style = MetchuType.Label.copy(fontWeight = MetchuType.Caption.fontWeight),
+                    color = if (on) Color.White else MetchuColors.Grey900
+                )
+            }
         }
     }
 }

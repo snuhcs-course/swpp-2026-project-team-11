@@ -285,7 +285,7 @@ def ban(request, session_id: str):
 # member's token from those replies as `X-Member-Token`.
 #
 #   POST /api/rooms/        {"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?,
-#                            "distance_scope"?, "price_level"?, "location"?} -> 201 {"token", "state"}
+#                            "distance_scope"?, "price_level"?, "location"?, "round_seconds"?} -> 201 {"token", "state"}
 #   POST /api/rooms/join/   {"code", "name"?, "allergies"?, "language"?} -> 201 {"token", "state"}
 #   GET  /api/rooms/<code>/                                             -> state
 #   POST /api/rooms/<code>/start/                         (host)        -> state
@@ -344,10 +344,13 @@ def create_room(request):
             raise ValueError("distance_scope must be near or any.")
         location = _location(payload.get("location"))
         price_level = _price_level(payload.get("price_level"))
+        round_seconds = payload.get("round_seconds", rooms.ROUND_SECONDS)
+        if type(round_seconds) is not int or round_seconds not in rooms.ROUND_CHOICES:
+            raise ValueError(f"round_seconds must be one of {', '.join(map(str, rooms.ROUND_CHOICES))}.")
     except ValueError as error:
         return _error(400, "invalid_request", str(error))
     room_settings = rooms.RoomSettings(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                                       meal, source, distance_scope, location, price_level)
+                                       meal, source, distance_scope, location, price_level, round_seconds)
     return _joined(*rooms.create(name, allergies, language, room_settings))
 
 
