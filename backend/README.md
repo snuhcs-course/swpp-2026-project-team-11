@@ -330,7 +330,7 @@ the docstring of `accounts/views.py`:
 | `POST /api/auth/logout/` | signed in | 204, ends this device's token only |
 | `GET /api/auth/bookmarks/` | signed in | `{"bookmarks"}`, newest first |
 | `POST /api/auth/bookmarks/` | `{"food_id", "display_name", "restaurant"}`, signed in | 201 `{"bookmark"}`, 200 if saved already |
-| `DELETE /api/auth/bookmarks/<food_id>/` | signed in | 204, also when not saved |
+| `DELETE /api/auth/bookmarks/<id>/` | signed in | 204, also when gone already |
 | `GET /api/auth/history/` | signed in | `{"history"}`, the newest 100, newest first |
 
 `user` is `{"username", "google_email", "has_password"}`. Usernames are 3–30 letters, digits or
@@ -338,10 +338,12 @@ the docstring of `accounts/views.py`:
 username and a wrong password get the same 401. Google sign-in makes an account named after the
 address, without a password, the first time; linking lets an existing account sign in either way.
 
-A bookmark (`Bookmark`) is one per user and `food_id`, the durable recommendation ID a result
-carries, with the name and restaurant the phone showed: `{"food_id", "display_name",
-"restaurant", "created_at"}`. It does not point at the menu tables, so it survives a new
-snapshot. History (`HistoryEntry`) is recorded by the server: a solo session created with the
+A bookmark (`Bookmark`) is one per user, restaurant and dish name, as the phone showed them:
+`{"id", "food_id", "display_name", "restaurant", "created_at"}`. A result's `food_id` is not the
+key, since the same dish can carry another ID on another day's menu; the bookmark keeps the one
+it was last saved with, for information. Saving a dish saved already returns it with 200 and
+that `food_id` updated; it is removed by its own `id`, and only the owner's. It does not point
+at the menu tables, so it survives a new snapshot. History (`HistoryEntry`) is recorded by the server: a solo session created with the
 token (`POST /api/sessions/`) belongs to that user, and each dish it proposes, a guess or the
 recommendation, is kept once per session as `{"date", "meal", "food_id", "display_name",
 "restaurant", "created_at"}` (`accounts/history.py`). The restaurant is the offer nearest the

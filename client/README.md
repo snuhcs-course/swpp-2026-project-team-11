@@ -352,9 +352,9 @@ token hidden, so no password reaches the debug log:
 | `POST /api/auth/google/link/` | `{"id_token"}`, with `Authorization: Token <token>` | `{"user"}` with `google_email` |
 | `GET /api/auth/me/` | `Authorization: Token <token>` | `{"user"}`; asked once at launch for a saved account |
 | `POST /api/auth/logout/` | `Authorization: Token <token>` | 204; the app forgets the account even if this fails |
-| `GET /api/auth/bookmarks/` | `Authorization: Token <token>` | `{"bookmarks"}`; read when a result or the Bookmarks list opens |
+| `GET /api/auth/bookmarks/` | `Authorization: Token <token>` | `{"bookmarks"}`; read when a result or the Bookmarks list opens. The result shows a dish as saved by its restaurant and name, not its food ID, which can change from day to day |
 | `POST /api/auth/bookmarks/` | `{"food_id", "display_name", "restaurant"}`, with the token | `{"bookmark"}`, 201 or 200 if saved already |
-| `DELETE /api/auth/bookmarks/<food_id>/` | `Authorization: Token <token>` | 204 |
+| `DELETE /api/auth/bookmarks/<id>/` | `Authorization: Token <token>` | 204 |
 | `GET /api/auth/history/` | `Authorization: Token <token>` | `{"history"}`; read when the History list opens |
 
 A 401 `not_authenticated`, at launch or on any account request, signs the app out. The launch
@@ -440,9 +440,10 @@ it includes a set listed once at its whole price. `question.json` and `question_
 fixture; `recommendation.json` from a general session with two mapped sales menus of one restaurant.
 The `auth_*.json` and account `error_*.json` replies were captured on 2026-11-10 from a local
 server on its own SQLite database (the token is that throwaway database's); `FakeAuthApi` stands
-in for the account server. `bookmark_saved.json`, `bookmarks.json` and `history.json` were captured
+in for the account server. `history.json` was captured
 on 2026-11-25 the same way after a signed-in cafeteria lunch session on the `menus_v3_contract`
-fixture that showed two dishes, both then bookmarked.
+fixture that showed two dishes; `bookmark_saved.json` and `bookmarks.json` were recaptured the
+same day the same way, with the bookmark `id`, after both dishes were bookmarked.
 The `room_*.json` replies and `error_room_not_found.json` were captured on 2026-11-13 from the
 room views on a local SQLite with the 2026-11-02 snapshot (two members, cafeteria lunch, the
 host answering three seconds in; the member token replaced by `member-token`). `room_done.json` was
