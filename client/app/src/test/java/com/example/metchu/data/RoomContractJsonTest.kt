@@ -15,9 +15,10 @@ import org.junit.Test
 class RoomContractJsonTest {
 
     @Test
-    fun createSendsThePriceRangeUnderTheServerName() {
-        val body = Gson().toJsonTree(CreateRoomRequest(null, emptyList(), "ko", "LU", null, "all", "any", 3)).asJsonObject
+    fun createSendsThePriceRangeAndRoundTimeUnderTheServerNames() {
+        val body = Gson().toJsonTree(CreateRoomRequest(null, emptyList(), "ko", "LU", null, "all", "any", 3, 30)).asJsonObject
         assertEquals(3, body["price_level"].asInt)
+        assertEquals(30, body["round_seconds"].asInt)
     }
 
     @Test

@@ -73,6 +73,15 @@ class GroupViewModelTest {
     }
 
     @Test
+    fun theRoomCarriesTheRoundTime() {
+        api.reply(created)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", { null }, "any", roundSeconds = 30)
+        assertEquals(30, api.lastCreateRequest?.roundSeconds)
+        create()
+        assertEquals(15, api.lastCreateRequest?.roundSeconds)
+    }
+
+    @Test
     fun aSignedInMemberSendsTheAccountInsteadOfAName() {
         api.reply(created)
         viewModel.join("device-token", code, "ignored", emptyList(), "ko")
