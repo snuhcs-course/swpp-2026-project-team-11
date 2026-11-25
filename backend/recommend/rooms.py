@@ -8,14 +8,15 @@
     room.public_state(member)                   -> what that member's phone draws
 
 A room has a four-digit code and 2 to 8 members. Each phone holds its member's secret
-token. The host sets the meal, the restaurants, the price range and the location, starts the questions,
+token. The host sets the meal, the restaurants, the price range, the location and how long a round
+waits (one of ROUND_CHOICES seconds, ROUND_SECONDS unless picked), starts the questions,
 may stop them early ("recommend now"), may ask for other restaurants ("find another")
 and decides on a restaurant, once. Nobody joins after
 the start, and a caller who tries JOIN_ATTEMPTS unknown codes waits JOIN_WINDOW seconds.
 When the host leaves, the next member in join order who is still here becomes host.
 
 Every round asks all members the same question (question_engines/group). A member who
-has not answered ROUND_SECONDS after the round began answers "unknown" (not sure), which
+has not answered the room's round time after the round began answers "unknown" (not sure), which
 tells the engine nothing about them, unlike "any"; an answer cannot be changed. A member
 who left answers "unknown" at once. Deadlines are
 checked whenever the room is read or acted on, so phones polling the room move it on.
@@ -49,6 +50,7 @@ from question_engines.group.engine import MAX_MEMBERS, place, offer_identity
 from .sessions import EngineUnavailable, StaleStep, load_candidates, restaurant_menus
 
 ROUND_SECONDS = 15
+ROUND_CHOICES = (10, 15, 30, 60)
 TIMEOUT_ANSWER = Answer.UNKNOWN.value
 ANSWER_IDS = {answer.value for answer in Answer}
 MAX_ROOMS = 200
@@ -76,6 +78,7 @@ class RoomSettings:
     distance_scope: str | None
     location: tuple[float, float] | None
     price_level: int | None = None
+    round_seconds: int = ROUND_SECONDS
 
 
 @dataclass
@@ -186,7 +189,7 @@ class Room:
 
     def tick(self) -> None:
         """Answers for everyone still silent once the round's time is up."""
-        if self.status == "asking" and clock() - self.round_started >= ROUND_SECONDS:
+        if self.status == "asking" and clock() - self.round_started >= self.settings.round_seconds:
             self._answer_for(sorted(self.engine.questions()))
 
     def answer(self, member: Member, question_id: str, answer_id: str) -> None:
@@ -285,6 +288,7 @@ class Room:
     def public_state(self, member: Member) -> dict:
         self.tick()
         asking = self.status == "asking"
+        limit = self.settings.round_seconds
         pending = self.engine.questions() if asking else {}
         question = None
         if asking:
@@ -304,8 +308,8 @@ class Room:
             "max_rounds": MAX_ROUNDS,
             "question": question,
             "my_answer": self.round_answers.get(member.id) if asking else None,
-            "seconds_left": max(0.0, round(ROUND_SECONDS - (clock() - self.round_started), 1)) if asking else None,
-            "round_seconds": ROUND_SECONDS,
+            "seconds_left": max(0.0, round(limit - (clock() - self.round_started), 1)) if asking else None,
+            "round_seconds": limit,
             "more": self.more,
             "picks": None if self.picks is None else [
                 {**pick, "votes": len(voters), "voted": member.id in voters}

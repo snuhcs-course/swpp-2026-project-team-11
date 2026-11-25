@@ -29,7 +29,7 @@ import java.io.IOException
 /**
  * The group room this phone is in. [room] is null outside one. While in a room the phone
  * asks the server for it every [POLL_MILLIS], since the others' answers, the host's start
- * and the 10-second deadlines all happen elsewhere; it stops once the host has decided.
+ * and the rounds' deadlines all happen elsewhere; it stops once the host has decided.
  *
  * [history] lists the rounds already over, with this member's answer ("not sure" when the
  * time ran out), for the question screen; the server keeps no question texts.
@@ -62,8 +62,17 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
     private var acting = 0
 
     /** [account] is the signed-in account's token; without one, [name] names the member. */
-    fun create(account: String?, name: String?, allergies: List<Allergen>, language: String, meal: String?, location: suspend () -> UserLocation?, distanceScope: String, priceLevel: Int? = null) =
-        enter { repository.create(account, name, allergies, language, meal, location(), distanceScope, priceLevel) }
+    fun create(
+        account: String?,
+        name: String?,
+        allergies: List<Allergen>,
+        language: String,
+        meal: String?,
+        location: suspend () -> UserLocation?,
+        distanceScope: String,
+        priceLevel: Int? = null,
+        roundSeconds: Int = RoomApi.DEFAULT_ROUND_SECONDS
+    ) = enter { repository.create(account, name, allergies, language, meal, location(), distanceScope, priceLevel, roundSeconds) }
 
     fun join(account: String?, code: String, name: String?, allergies: List<Allergen>, language: String) =
         enter { repository.join(account, code, name, allergies, language) }

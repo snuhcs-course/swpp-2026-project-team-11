@@ -348,7 +348,7 @@ in server memory, like sessions; the API is commented at the end of `recommend/v
 
 | Request | Body | Reply |
 | --- | --- | --- |
-| `POST /api/rooms/` | `{"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?, "distance_scope"?, "price_level"?, "location"?}` | 201 `{"token", "state"}` |
+| `POST /api/rooms/` | `{"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?, "distance_scope"?, "price_level"?, "location"?, "round_seconds"?}` | 201 `{"token", "state"}` |
 | `POST /api/rooms/join/` | `{"code", "name"?, "allergies"?, "language"?}` | 201 `{"token", "state"}` |
 | `GET /api/rooms/<code>/` | | `state` |
 | `POST /api/rooms/<code>/start/` | host | `state` |
@@ -373,9 +373,11 @@ the restaurant is among that member's best tenth of the places they can eat at, 
 
 - The creator hosts. A room has a four-digit code and 2 to 8 members; nobody joins after the start
   (409 `room_started`). A caller who tries 10 unknown codes within a minute waits out the minute
-  (429 `too_many_attempts`); behind the tunnel the caller is its `CF-Connecting-IP`. The host's meal, source, distance, price range and location apply to everyone.
+  (429 `too_many_attempts`); behind the tunnel the caller is its `CF-Connecting-IP`. The host's meal, source, distance, price range, location and round time apply to everyone.
 - Each member reads the question in their own language. An answer cannot be changed. A member
-  silent for `ROUND_SECONDS` (15) answers "unknown": unlike "any" ("doesn't matter"), it moves
+  silent for the room's `round_seconds` answers "unknown". The host picks it at create from
+  `ROUND_CHOICES` (10, 15, 30 or 60; 15 when left out, i5-P11); any other value, a string included,
+  is a 400 `invalid_request`. Unlike "any" ("doesn't matter"), "unknown" moves
   neither the engine's belief about their dish nor how relevant it takes the question's family to
   be. Deadlines are checked whenever the room is read or acted on, so the phones' polling moves it on.
 - Once the result is shown, any member may agree with any of the picks, to help the host choose.

@@ -190,6 +190,8 @@
     <string name="who_group_option">친구들과</string>
     <string name="who_group_note">2~8명, 식당을 골라요</string>
     <string name="start_sub_group">모두 같은 질문에 답하면 다 같이 갈 식당을 골라드려요.</string>
+    <string name="start_round_time">질문마다 답할 시간</string>
+    <string name="start_round_seconds">%1$d초</string>
     <string name="group_create">방 만들기</string>
     <string name="group_join_open">코드로 참여</string>
     <string name="group_name_title">이름을 알려 주세요</string>

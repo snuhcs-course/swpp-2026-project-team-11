@@ -23,7 +23,8 @@ data class CreateRoomRequest(
     val location: UserLocation?,
     val source: String,
     @SerializedName("distance_scope") val distanceScope: String,
-    @SerializedName("price_level") val priceLevel: Int? = null
+    @SerializedName("price_level") val priceLevel: Int? = null,
+    @SerializedName("round_seconds") val roundSeconds: Int = RoomApi.DEFAULT_ROUND_SECONDS
 )
 
 data class JoinRoomRequest(
@@ -73,6 +74,9 @@ interface RoomApi {
 
     companion object {
         const val MEMBER = "X-Member-Token"
+        /** How long a round may wait, as backend/recommend/rooms.py allows (ROUND_CHOICES). */
+        val ROUND_SECONDS = listOf(10, 15, 30, 60)
+        const val DEFAULT_ROUND_SECONDS = 15
         const val ROOM_NOT_FOUND = "room_not_found"
         const val ROOM_STARTED = "room_started"
         const val ROOM_FULL = "room_full"

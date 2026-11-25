@@ -219,6 +219,29 @@ class RoundTests(RoomTestCase):
             self.assertEqual(later["seconds_left"], 15)
             self.assertEqual([m["answered"] for m in later["members"]], [False, False])
 
+    def test_the_host_picks_how_long_a_round_waits(self):
+        code, host, created = self.create(round_seconds=30)
+        self.assertEqual(created["round_seconds"], 30)
+        self.join(code)
+        state = self.call(code, "start", host)
+        self.assertEqual((state["seconds_left"], state["round_seconds"]), (30, 30))
+        self.clock.now += 15
+        waiting = self.state(code, host)
+        self.assertEqual((waiting["round"], waiting["seconds_left"]), (0, 15))
+        self.clock.now += 15
+        later = self.state(code, host)
+        self.assertTrue(later["round"] == 1 or later["status"] == "done")
+
+    def test_a_round_waits_only_one_of_the_offered_times(self):
+        for seconds in (0, 20, 600, "15", 15.0, True, None):
+            response = post(self.client, "/api/rooms/", {"name": "Jimin", "date": DAY, "round_seconds": seconds})
+            self.assertEqual(response.status_code, 400, seconds)
+            self.assertEqual(response.json()["error"]["code"], "invalid_request")
+            self.assertIn("round_seconds", response.json()["error"]["message"])
+        for seconds in rooms.ROUND_CHOICES:
+            self.assertEqual(self.create(round_seconds=seconds)[2]["round_seconds"], seconds)
+        self.assertEqual(self.create()[2]["round_seconds"], 15)
+
     def test_an_answer_after_the_deadline_is_stale(self):
         code, host, _, state = self.started()
         self.clock.now += rooms.ROUND_SECONDS
