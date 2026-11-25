@@ -201,7 +201,8 @@ emulator, set a position under Extended controls > Location (for example
 Picking "nearby" (alone or with friends) without location asks Android for it
 again. Allowed, "nearby" is kept; declined, the distance goes back to "anywhere"
 and a short message says why. When Android no longer shows its dialog (no
-rationale after the answer, as after a second denial), the message offers
+rationale after the answer once the user has declined before, as after a second
+denial; a first dialog closed without an answer is not counted), the message offers
 **Open settings**, the app's settings page; back from there with location
 allowed, "nearby" is picked. Every screen checks the permission again when the
 app comes back.
