@@ -239,6 +239,7 @@
     <string name="group_round">Question %1$d · up to %2$d</string>
     <string name="group_each_dish">Suggested dishes</string>
     <string name="group_decide">Go here</string>
+    <string name="group_more">Find other places</string>
     <string name="group_host_picking">The host is choosing</string>
     <string name="group_meet">Meet at %1$s</string>
     <string name="group_decided_title">Meet here</string>
