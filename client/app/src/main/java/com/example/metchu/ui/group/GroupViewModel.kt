@@ -196,6 +196,7 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
         sent = null
         _room.value = null
         _history.value = emptyList()
+        _error.value = null
     }
 
     private fun fail(e: Exception, code: String?) {
