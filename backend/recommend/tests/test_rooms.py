@@ -343,6 +343,15 @@ class ResultTests(RoomTestCase):
         self.assertEqual(self.call(code, "decide", host, {"pick": 0}, status=409)["error"]["code"],
                          "stale_step")
 
+    def test_the_host_decides_only_once(self):
+        code, host, (guest,), _ = self.started()
+        self.call(code, "recommend-now", host)
+        self.call(code, "decide", host, {"pick": 0})
+        again = self.call(code, "decide", host, {"pick": 1}, status=409)
+        self.assertEqual(again["error"]["code"], "stale_step")
+        self.assertEqual(again["state"]["decided"], 0)
+        self.assertEqual(self.state(code, guest)["decided"], 0)
+
 
 
 class VoteTests(RoomTestCase):

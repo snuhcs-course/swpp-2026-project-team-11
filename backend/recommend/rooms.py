@@ -10,7 +10,7 @@
 A room has a four-digit code and 2 to 8 members. Each phone holds its member's secret
 token. The host sets the meal, the restaurants, the price range and the location, starts the questions,
 may stop them early ("recommend now"), may ask for other restaurants ("find another")
-and decides on a restaurant. Nobody joins after
+and decides on a restaurant, once. Nobody joins after
 the start, and a caller who tries JOIN_ATTEMPTS unknown codes waits JOIN_WINDOW seconds.
 When the host leaves, a random remaining member becomes host.
 
@@ -258,7 +258,10 @@ class Room:
         (self.votes[pick].add if agree else self.votes[pick].discard)(member.id)
 
     def decide(self, member: Member, pick: int) -> None:
+        """Once only: phones stop polling at the decision, so a second one would reach nobody."""
         self._require_host(member)
+        if self.decided is not None:
+            raise StaleStep("The host has already decided.")
         self.decided = self._pick(pick)
         self._let_go()
 

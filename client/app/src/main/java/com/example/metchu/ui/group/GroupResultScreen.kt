@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.model.RoomDish
+import com.example.metchu.data.model.RoomMember
 import com.example.metchu.data.model.RoomPick
 import com.example.metchu.data.model.RoomState
 import com.example.metchu.ui.common.ActionCapsule
@@ -92,7 +93,8 @@ import kotlin.math.ceil
  * Up to two restaurants, named on chips over the map, and each member's dish at the one
  * chosen, this phone's member first. Until the host decides, everyone may agree with each
  * restaurant; with two or more, every one with the most votes is marked popular. The host
- * decides with "Go here"; everyone's screen then shows where to meet. While the room has
+ * decides with "Go here"; every phone then opens [DecidedDialog] once and shows where to meet,
+ * which opens the dialog again. While the room has
  * [RoomState.more], the host's "Find another" replaces the restaurants on every phone with
  * ones the room has not been shown.
  */
@@ -116,6 +118,15 @@ fun GroupResultScreen(
     val pick = picks[shownAt]
     val popular = popularPicks(room)
     val user = rememberUserPoint(rememberLocationPermission().granted)
+    // The decision opens the dialog once per room: the host's from the decide reply, the others' from their next poll.
+    var decidedOpen by rememberSaveable(room.code) { mutableStateOf(false) }
+    var decidedSeen by rememberSaveable(room.code) { mutableStateOf(false) }
+    LaunchedEffect(room.decided) {
+        if (room.decided != null && !decidedSeen) {
+            decidedSeen = true
+            decidedOpen = true
+        }
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(MetchuColors.MapBlank)) {
         val sheetTop = maxHeight * 0.42f
@@ -169,7 +180,10 @@ fun GroupResultScreen(
 
         val bottom = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 16.dp)
         when {
-            room.decided != null -> StatusPill(stringResource(R.string.group_meet, placeName(pick.restaurant)), dark = true, modifier = bottom.testTag("decided"))
+            room.decided != null -> StatusPill(
+                stringResource(R.string.group_meet, placeName(pick.restaurant)), dark = true, modifier = bottom.testTag("decided"),
+                onClick = { decidedOpen = true }
+            )
             room.isHost -> Row(bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (room.more) {
                     ActionCapsule(
@@ -183,6 +197,15 @@ fun GroupResultScreen(
                 )
             }
             else -> StatusPill(stringResource(R.string.group_host_picking), dark = false, modifier = bottom)
+        }
+    }
+    room.decided?.let { decided ->
+        if (decidedOpen) {
+            DecidedDialog(
+                room, picks[decided.coerceIn(picks.indices)], user,
+                onClose = { decidedOpen = false },
+                onHome = { decidedOpen = false; onHome() }
+            )
         }
     }
 }
@@ -200,11 +223,7 @@ private fun PickDetails(room: RoomState, pick: RoomPick, user: Point?, vote: @Co
                 Text(placeName(pick.restaurant), Modifier.padding(top = 2.dp, end = 56.dp).testTag("restaurant"), style = MetchuType.Title)
                 Row(Modifier.padding(top = 2.dp, end = 56.dp), verticalAlignment = Alignment.CenterVertically) {
                     pick.distanceM?.let { meters ->
-                        val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
-                        Text(
-                            "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}",
-                            Modifier.padding(end = 8.dp).testTag("distance"), style = MetchuType.Body
-                        )
+                        Text(walkLine(meters), Modifier.padding(end = 8.dp).testTag("distance"), style = MetchuType.Body)
                     }
                     if (pick.lat != null && pick.lng != null) {
                         val context = LocalContext.current
@@ -219,35 +238,7 @@ private fun PickDetails(room: RoomState, pick: RoomPick, user: Point?, vote: @Co
         }
         Text(stringResource(R.string.group_each_dish), Modifier.padding(top = 20.dp, bottom = 4.dp), style = MetchuType.Caption)
     }
-    val byId = room.members.associateBy { it.id }
-    pick.menus.sortedBy { if (it.memberId == room.me) -1 else it.memberId }.forEach { dish ->
-        val member = byId[dish.memberId] ?: return@forEach
-        val mine = member.id == room.me
-        Row(
-            Modifier.fillMaxWidth().heightIn(min = 68.dp).padding(horizontal = 20.dp, vertical = 10.dp).testTag("dish_${member.id}"),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Avatar(member, 40.dp, ring = MetchuColors.Primary.takeIf { mine })
-            Column(Modifier.weight(1f)) {
-                Text(dish.food.displayName, style = MetchuType.Button, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                val who = if (mine) "${stringResource(R.string.group_me)} · ${member.name}" else member.name
-                Text(
-                    if (member.allergies.isEmpty()) who else "$who · ${allergyText(member)}",
-                    style = MetchuType.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
-            }
-            val price = dish.food.offers.firstOrNull { it.restaurant == pick.restaurant && it.lat == pick.lat && it.lng == pick.lng }?.price
-            Column(horizontalAlignment = Alignment.End) {
-                Text(priceText(price), style = MetchuType.Label)
-                val great = dish.fit == RoomDish.GREAT
-                Text(
-                    stringResource(if (great) R.string.group_fit_great else R.string.group_fit_good),
-                    style = MetchuType.Caption, color = if (great) MetchuColors.Primary else MetchuColors.Grey600
-                )
-            }
-        }
-    }
+    dishesMeFirst(room, pick).forEach { (dish, member) -> MemberDish(room, pick, dish, member, "dish_${member.id}", 20.dp) }
     if (pick.others.isNotEmpty()) {
         Text(stringResource(R.string.group_other_dishes), Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 4.dp), style = MetchuType.Caption)
         pick.others.forEach { dish ->
@@ -261,6 +252,50 @@ private fun PickDetails(room: RoomState, pick: RoomPick, user: Point?, vote: @Co
             }
         }
     }
+}
+
+/** Each member's dish at [pick] with the member, this phone's member first. */
+internal fun dishesMeFirst(room: RoomState, pick: RoomPick): List<Pair<RoomDish, RoomMember>> {
+    val byId = room.members.associateBy { it.id }
+    return pick.menus.sortedBy { if (it.memberId == room.me) -1 else it.memberId }
+        .mapNotNull { dish -> byId[dish.memberId]?.let { dish to it } }
+}
+
+/** One member's dish at [pick]: who, their allergies, the price there and how well it fits them. */
+@Composable
+internal fun MemberDish(room: RoomState, pick: RoomPick, dish: RoomDish, member: RoomMember, tag: String, inset: Dp) {
+    val mine = member.id == room.me
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 68.dp).padding(horizontal = inset, vertical = 10.dp).testTag(tag),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Avatar(member, 40.dp, ring = MetchuColors.Primary.takeIf { mine })
+        Column(Modifier.weight(1f)) {
+            Text(dish.food.displayName, style = MetchuType.Button, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val who = if (mine) "${stringResource(R.string.group_me)} · ${member.name}" else member.name
+            Text(
+                if (member.allergies.isEmpty()) who else "$who · ${allergyText(member)}",
+                style = MetchuType.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+        }
+        val price = dish.food.offers.firstOrNull { it.restaurant == pick.restaurant && it.lat == pick.lat && it.lng == pick.lng }?.price
+        Column(horizontalAlignment = Alignment.End) {
+            Text(priceText(price), style = MetchuType.Label)
+            val great = dish.fit == RoomDish.GREAT
+            Text(
+                stringResource(if (great) R.string.group_fit_great else R.string.group_fit_good),
+                style = MetchuType.Caption, color = if (great) MetchuColors.Primary else MetchuColors.Grey600
+            )
+        }
+    }
+}
+
+/** "350 m · 5 min walk". */
+@Composable
+internal fun walkLine(meters: Int): String {
+    val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
+    return "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}"
 }
 
 /** A round thumb that is orange while this member agrees, over "Agree n". It takes taps 48 dp wide. */
@@ -305,10 +340,13 @@ private fun PopularBadge(modifier: Modifier = Modifier) {
     )
 }
 
+/** A pill at the bottom; [onClick], when given, makes it a button. */
 @Composable
-private fun StatusPill(text: String, dark: Boolean, modifier: Modifier = Modifier) {
+private fun StatusPill(text: String, dark: Boolean, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     Row(
-        modifier.height(48.dp).clip(CircleShape).background(if (dark) MetchuColors.Grey900 else MetchuColors.Grey100).padding(horizontal = 20.dp),
+        modifier.height(48.dp).clip(CircleShape)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .background(if (dark) MetchuColors.Grey900 else MetchuColors.Grey100).padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -393,4 +431,4 @@ internal fun popularPicks(room: RoomState): Set<Int> {
 }
 
 /** "자하연식당>2층" reads "자하연식당 2층"; two floors of one building stay apart. */
-private fun placeName(restaurant: String): String = restaurant.replace('>', ' ')
+internal fun placeName(restaurant: String): String = restaurant.replace('>', ' ')
