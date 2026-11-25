@@ -313,6 +313,8 @@ fun Modifier.fadeEdges(top: Boolean, bottom: Boolean, edge: Dp = 56.dp): Modifie
         }
 
 /** The canvas's line icons, from their SVG paths on a 24-unit grid. */
+private const val BOOKMARK = "M7 3.5h10a1.5 1.5 0 0 1 1.5 1.5v15.5L12 16l-6.5 4.5V5A1.5 1.5 0 0 1 7 3.5z"
+
 object Icons {
     private fun line(name: String, pathData: String, width: Float, round: Boolean = true) =
         ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f).addPath(
@@ -352,6 +354,13 @@ object Icons {
         pathData = addPathNodes("M12 21s-6.5-5.6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.4-6.5 11-6.5 11zM14.4 10a2.4 2.4 0 1 0-4.8 0 2.4 2.4 0 1 0 4.8 0z"),
         fill = SolidColor(Color.Black),
         pathFillType = PathFillType.EvenOdd
+    ).build()
+    /** Bookmark: a ribbon, outlined; [BookmarkFilled] once the dish is saved. */
+    val Bookmark = line("bookmark", BOOKMARK, 2f)
+    val BookmarkFilled = ImageVector.Builder("bookmarkFilled", 24.dp, 24.dp, 24f, 24f).addPath(
+        pathData = addPathNodes(BOOKMARK),
+        fill = SolidColor(Color.Black),
+        stroke = SolidColor(Color.Black), strokeLineWidth = 2f, strokeLineJoin = StrokeJoin.Round
     ).build()
     /** Agree: a thumb up. */
     val ThumbUp = line("thumbUp", "M7 10v11M14.5 5.5 13.6 10h5.6a2 2 0 0 1 1.9 2.6l-2.2 7A2 2 0 0 1 17 21H4.5a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 4.5 10h2.7a2 2 0 0 0 1.8-1.1L11.8 3a2.6 2.6 0 0 1 2.7 2.5z", 2f)

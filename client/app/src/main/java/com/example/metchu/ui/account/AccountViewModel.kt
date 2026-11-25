@@ -9,6 +9,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.metchu.R
 import com.example.metchu.data.network.AuthError
+import com.example.metchu.data.network.Bookmark
+import com.example.metchu.data.network.HistoryEntry
 import com.example.metchu.data.repository.Account
 import com.example.metchu.data.repository.AuthRepository
 import kotlinx.coroutines.CancellationException
@@ -23,6 +25,10 @@ import java.io.IOException
  *
  * Google's account picker needs an Activity, so the screen passes the token request in
  * as a function; this ViewModel never holds the Activity.
+ *
+ * [bookmarks] and [history] are the signed-in account's lists, null until loaded and for a
+ * guest; [savedFailed] is true when the last load failed. [toggleBookmark] changes the list at
+ * once and puts it back if the server refuses, ignoring taps on a dish whose change is on its way.
  */
 class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
 
@@ -34,6 +40,17 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
 
     private val _error = MutableLiveData<Int?>(null)
     val error: LiveData<Int?> = _error
+
+    private val _bookmarks = MutableLiveData<List<Bookmark>?>(null)
+    val bookmarks: LiveData<List<Bookmark>?> = _bookmarks
+
+    private val _history = MutableLiveData<List<HistoryEntry>?>(null)
+    val history: LiveData<List<HistoryEntry>?> = _history
+
+    private val _savedFailed = MutableLiveData(false)
+    val savedFailed: LiveData<Boolean> = _savedFailed
+
+    private val pending = mutableSetOf<Int>()
 
     init {
         // The saved account may have been revoked while the app was closed.
@@ -78,9 +95,80 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
                 Log.w(TAG, "sign-out not confirmed by the server", e)
             } finally {
                 _account.value = null
+                forgetSaved()
                 _busy.value = false
             }
         }
+    }
+
+    fun loadBookmarks() = load(_bookmarks) { repository.bookmarks() }
+
+    fun loadHistory() = load(_history) { repository.history() }
+
+    /** Saves the dish [foodId] as shown, with its name and [restaurant], or removes it if saved. */
+    fun toggleBookmark(foodId: Int, displayName: String, restaurant: String) {
+        val token = _account.value?.token ?: return
+        val saved = _bookmarks.value ?: return
+        if (!pending.add(foodId)) return
+        val old = saved.firstOrNull { it.foodId == foodId }
+        val added = Bookmark(foodId, displayName, restaurant)
+        _bookmarks.value = if (old == null) listOf(added) + saved else saved - old
+        viewModelScope.launch {
+            try {
+                if (old == null) {
+                    val kept = repository.bookmark(added)
+                    if (_account.value?.token == token) _bookmarks.value = _bookmarks.value?.map { if (it.foodId == foodId) kept else it }
+                } else {
+                    repository.unbookmark(foodId)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "bookmark not changed", e)
+                if (_account.value?.token == token && !signedOutBy(e)) {
+                    val now = _bookmarks.value.orEmpty().filter { it.foodId != foodId }
+                    _bookmarks.value = if (old == null) now else listOf(old) + now
+                }
+            } finally {
+                pending.remove(foodId)
+            }
+        }
+    }
+
+    private fun <T> load(target: MutableLiveData<List<T>?>, call: suspend () -> List<T>) {
+        val token = _account.value?.token ?: return
+        _savedFailed.value = false
+        viewModelScope.launch {
+            try {
+                val list = call()
+                if (_account.value?.token == token) target.value = list
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "saved list not loaded", e)
+                if (_account.value?.token == token && !signedOutBy(e)) _savedFailed.value = true
+            }
+        }
+    }
+
+    /** Signs out here when the server no longer accepts this device's token. */
+    private fun signedOutBy(e: Exception): Boolean {
+        if (e !is HttpException || repository.errorCode(e) != AuthError.NOT_AUTHENTICATED) return false
+        signOutHere()
+        _error.value = R.string.account_error_signed_out
+        return true
+    }
+
+    private fun signOutHere() {
+        repository.forget()
+        _account.value = null
+        forgetSaved()
+    }
+
+    private fun forgetSaved() {
+        _bookmarks.value = null
+        _history.value = null
+        _savedFailed.value = false
     }
 
     fun clearError() {
@@ -129,8 +217,7 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
         AuthError.ALREADY_LINKED -> R.string.account_error_already_linked
         // The server no longer accepts this device's token: sign out here too.
         AuthError.NOT_AUTHENTICATED -> {
-            repository.forget()
-            _account.value = null
+            signOutHere()
             R.string.account_error_signed_out
         }
         else -> R.string.error_server

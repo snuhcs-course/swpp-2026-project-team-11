@@ -78,6 +78,13 @@
     <string name="account_google_linked_as">Google account linked · %1$s</string>
     <string name="account_link_google">Link Google</string>
     <string name="account_log_out">Log out</string>
+    <string name="account_bookmarks">Bookmarks</string>
+    <string name="account_history">History</string>
+    <string name="bookmarks_empty">No bookmarks yet. Save a dish from its result with the bookmark button.</string>
+    <string name="history_empty">Dishes recommended to you while signed in appear here.</string>
+    <string name="saved_failed">Couldn’t load the list.</string>
+    <string name="result_bookmark">Bookmark this dish</string>
+    <string name="result_unbookmark">Remove the bookmark</string>
     <string name="account_error_empty">Enter a username and a password.</string>
     <string name="account_error_mismatch">The two passwords differ.</string>
     <string name="account_error_username">Use 3–30 letters, digits or . @ + - _ for the username.</string>

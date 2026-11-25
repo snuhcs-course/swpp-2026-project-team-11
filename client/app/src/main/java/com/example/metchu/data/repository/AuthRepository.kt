@@ -4,6 +4,8 @@ import com.example.metchu.data.network.AccountUser
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.AuthApi
 import com.example.metchu.data.network.AuthError
+import com.example.metchu.data.network.Bookmark
+import com.example.metchu.data.network.HistoryEntry
 import com.example.metchu.data.network.Credentials
 import com.example.metchu.data.network.GoogleTokenRequest
 import com.example.metchu.data.network.RetrofitInstance
@@ -13,7 +15,8 @@ import retrofit2.HttpException
 /**
  * Signs in and out with the server and keeps the account in [store]. Like
  * [RecommendRepository], the only class on its side that knows Retrofit exists.
- * Signing in is optional: recommendations work the same for a guest.
+ * Signing in is optional: recommendations work the same for a guest. The signed-in
+ * account's bookmarks and history are read and changed here too; they need an account.
  */
 class AuthRepository(private val store: AccountStore, private val api: AuthApi = RetrofitInstance.authApi) {
 
@@ -57,6 +60,27 @@ class AuthRepository(private val store: AccountStore, private val api: AuthApi =
         if (store.account == account) store.account = user?.let { account.copy(user = it) }
         return store.account
     }
+
+    /** The account's saved dishes, newest first. */
+    @Suppress("SENSELESS_COMPARISON")
+    suspend fun bookmarks(): List<Bookmark> =
+        api.bookmarks(signedIn()).bookmarks.also { check(it != null) { "Bookmarks reply has no list" } }
+
+    /** Saves [bookmark]; saving a dish saved already returns the one kept. */
+    suspend fun bookmark(bookmark: Bookmark): Bookmark = api.bookmark(signedIn(), bookmark).bookmark
+
+    /** Removes the dish [foodId]; one that is not saved is no error. */
+    suspend fun unbookmark(foodId: Int) {
+        val reply = api.unbookmark(signedIn(), foodId)
+        if (!reply.isSuccessful) throw HttpException(reply)
+    }
+
+    /** The dishes the account was recommended, newest first. */
+    @Suppress("SENSELESS_COMPARISON")
+    suspend fun history(): List<HistoryEntry> =
+        api.history(signedIn()).history.also { check(it != null) { "History reply has no list" } }
+
+    private fun signedIn(): String = checkNotNull(store.account) { "Not signed in" }.authorization
 
     /** Forgets an account the server no longer accepts. */
     fun forget() {

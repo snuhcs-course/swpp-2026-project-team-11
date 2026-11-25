@@ -2,8 +2,12 @@ package com.example.metchu
 
 import com.example.metchu.data.network.AccountReply
 import com.example.metchu.data.network.AuthApi
+import com.example.metchu.data.network.Bookmark
+import com.example.metchu.data.network.BookmarkReply
+import com.example.metchu.data.network.BookmarksReply
 import com.example.metchu.data.network.Credentials
 import com.example.metchu.data.network.GoogleTokenRequest
+import com.example.metchu.data.network.HistoryReply
 import com.example.metchu.data.network.SignedIn
 import com.example.metchu.data.repository.Account
 import com.example.metchu.data.repository.AccountStore
@@ -39,6 +43,11 @@ class FakeAuthApi : AuthApi {
         next("link $authorization ${request.idToken}")
     override suspend fun me(authorization: String): AccountReply = next("me $authorization")
     override suspend fun logOut(authorization: String): Response<Unit> = next("logout $authorization")
+    override suspend fun bookmarks(authorization: String): BookmarksReply = next("bookmarks $authorization")
+    override suspend fun bookmark(authorization: String, bookmark: Bookmark): BookmarkReply =
+        next("bookmark $authorization ${bookmark.foodId}")
+    override suspend fun unbookmark(authorization: String, foodId: Int): Response<Unit> = next("unbookmark $authorization $foodId")
+    override suspend fun history(authorization: String): HistoryReply = next("history $authorization")
 }
 
 /** An [AccountStore] in memory, for tests that have no Android preferences. */

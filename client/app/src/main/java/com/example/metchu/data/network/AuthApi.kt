@@ -3,9 +3,11 @@ package com.example.metchu.data.network
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 data class Credentials(val username: String, val password: String)
 
@@ -22,6 +24,33 @@ data class AccountUser(
 data class SignedIn(val token: String, val user: AccountUser, val created: Boolean? = null)
 
 data class AccountReply(val user: AccountUser)
+
+/**
+ * A dish the account saved, by its [foodId], with the name and restaurant shown when it was
+ * saved. [createdAt] is the server's ISO time; the phone leaves it out when saving.
+ */
+data class Bookmark(
+    @SerializedName("food_id") val foodId: Int,
+    @SerializedName("display_name") val displayName: String,
+    val restaurant: String,
+    @SerializedName("created_at") val createdAt: String? = null
+)
+
+data class BookmarkReply(val bookmark: Bookmark)
+
+data class BookmarksReply(val bookmarks: List<Bookmark>)
+
+/** A dish a solo session proposed to the account. [meal] is null for a whole-day session. */
+data class HistoryEntry(
+    val date: String,
+    val meal: String?,
+    @SerializedName("food_id") val foodId: Int,
+    @SerializedName("display_name") val displayName: String,
+    val restaurant: String,
+    @SerializedName("created_at") val createdAt: String
+)
+
+data class HistoryReply(val history: List<HistoryEntry>)
 
 /** The account endpoints (backend/accounts/views.py). Signed-in calls take "Token <token>". */
 interface AuthApi {
@@ -43,6 +72,18 @@ interface AuthApi {
 
     @POST("api/auth/logout/")
     suspend fun logOut(@Header("Authorization") authorization: String): Response<Unit>
+
+    @GET("api/auth/bookmarks/")
+    suspend fun bookmarks(@Header("Authorization") authorization: String): BookmarksReply
+
+    @POST("api/auth/bookmarks/")
+    suspend fun bookmark(@Header("Authorization") authorization: String, @Body bookmark: Bookmark): BookmarkReply
+
+    @DELETE("api/auth/bookmarks/{food_id}/")
+    suspend fun unbookmark(@Header("Authorization") authorization: String, @Path("food_id") foodId: Int): Response<Unit>
+
+    @GET("api/auth/history/")
+    suspend fun history(@Header("Authorization") authorization: String): HistoryReply
 }
 
 /** Error codes of the account endpoints, in `{"error": {"code", "message"}}`. */
