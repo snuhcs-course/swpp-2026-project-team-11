@@ -41,7 +41,7 @@
     <string name="location_ask_continue">계속</string>
     <string name="location_ask_later">나중에</string>
     <string name="location_refused_title">위치 권한이 꺼져 있어요</string>
-    <string name="location_refused_body">위치를 모르면 가까운 식당을 찾을 수 없어서 모든 식당을 보여드려요.</string>
+    <string name="location_refused_body">위치를 모르면 가까운 식당을 찾을 수 없어서 모든 식당을 보여드려요. 앱 설정에서 위치를 허용할 수도 있어요.</string>
     <string name="location_refused_blocked_body">위치를 모르면 가까운 식당을 찾을 수 없어서 모든 식당을 보여드려요. 가까운 식당을 고르려면 앱 설정에서 위치를 허용해 주세요.</string>
     <string name="location_refused_ok">확인</string>
     <string name="location_refused_settings">설정 열기</string>

@@ -48,7 +48,7 @@
     <string name="location_ask_continue">Continue</string>
     <string name="location_ask_later">Not now</string>
     <string name="location_refused_title">Location is off</string>
-    <string name="location_refused_body">Without your location, nearby restaurants can’t be found, so every restaurant is listed.</string>
+    <string name="location_refused_body">Without your location, nearby restaurants can’t be found, so every restaurant is listed. You can also allow location in the app’s settings.</string>
     <string name="location_refused_blocked_body">Without your location, nearby restaurants can’t be found, so every restaurant is listed. To pick nearby ones, allow location in the app’s settings.</string>
     <string name="location_refused_ok">OK</string>
     <string name="location_refused_settings">Open settings</string>

@@ -466,26 +466,33 @@ fun nearAnswered(asked: Boolean, answer: LocationAnswer, onPlace: (Place) -> Uni
 /** Says Nearby needs location; when Android no longer asks ([blocked]), offers the app's settings page. */
 @Composable
 private fun LocationRefused(blocked: Boolean, onSettings: () -> Unit, onDismiss: () -> Unit) {
+    // Settings is always offered: a phone blocked before the app could tell reads as a plain refusal.
+    val settings = @Composable {
+        TextButton(onSettings, Modifier.testTag("locationSettings")) {
+            Text(stringResource(R.string.location_refused_settings), style = MetchuType.Button,
+                color = if (blocked) MetchuColors.Primary else MetchuColors.Grey600)
+        }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             if (blocked) {
-                TextButton(onSettings, Modifier.testTag("locationSettings")) {
-                    Text(stringResource(R.string.location_refused_settings), style = MetchuType.Button, color = MetchuColors.Primary)
-                }
+                settings()
             } else {
                 TextButton(onDismiss, Modifier.testTag("locationRefusedOk")) {
                     Text(stringResource(R.string.location_refused_ok), style = MetchuType.Button, color = MetchuColors.Primary)
                 }
             }
         },
-        dismissButton = if (blocked) {
-            {
+        dismissButton = {
+            if (blocked) {
                 TextButton(onDismiss) {
                     Text(stringResource(R.string.location_ask_later), style = MetchuType.Button, color = MetchuColors.Grey600)
                 }
+            } else {
+                settings()
             }
-        } else null,
+        },
         title = { Text(stringResource(R.string.location_refused_title), style = MetchuType.Item) },
         text = {
             Text(
