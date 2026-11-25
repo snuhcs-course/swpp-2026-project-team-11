@@ -12,7 +12,7 @@ token. The host sets the meal, the restaurants, the price range and the location
 may stop them early ("recommend now"), may ask for other restaurants ("find another")
 and decides on a restaurant, once. Nobody joins after
 the start, and a caller who tries JOIN_ATTEMPTS unknown codes waits JOIN_WINDOW seconds.
-When the host leaves, a random remaining member becomes host.
+When the host leaves, the next member in join order who is still here becomes host.
 
 Every round asks all members the same question (question_engines/group). A member who
 has not answered ROUND_SECONDS after the round began answers "unknown" (not sure), which
@@ -33,7 +33,6 @@ menus at each restaurant, not the engine's tables) until the host decides or eve
 from __future__ import annotations
 
 import datetime
-import random
 import secrets
 import threading
 import time
@@ -276,7 +275,8 @@ class Room:
                 voters.discard(member.id)
         present = self._present()
         if member.id == self.host_id and present:
-            self.host_id = random.choice(present).id
+            # Everyone who joined before the host has left, so the next one still here is the first.
+            self.host_id = present[0].id
         if self.status == "asking":
             self._answer_for([member.id])
         if self.status == "done" and not present:

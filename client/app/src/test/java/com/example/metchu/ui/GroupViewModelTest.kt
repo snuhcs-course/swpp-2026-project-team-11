@@ -102,6 +102,35 @@ class GroupViewModelTest {
     }
 
     @Test
+    fun aMemberWhoBecomesHostIsToldUntilTheNextRequest() {
+        val lobby = Fixtures.room("room_lobby")
+        api.reply(created.copy(state = lobby))
+        viewModel.join(null, code, "서연", emptyList(), "ko")
+        api.reply(lobby)
+        scheduler.advanceTimeBy(1001)
+        assertNull(viewModel.error.value)
+        api.reply(lobby.copy(host = lobby.me))
+        scheduler.advanceTimeBy(1000)
+        assertEquals(R.string.group_now_host, viewModel.error.value!!.message)
+        assertTrue(viewModel.room.value!!.isHost)
+        api.reply(asking)
+        viewModel.start()
+        assertNull(viewModel.error.value)
+    }
+
+    @Test
+    fun leavingClearsTheNewHostNotice() {
+        val lobby = Fixtures.room("room_lobby")
+        api.reply(created.copy(state = lobby))
+        viewModel.join(null, code, "서연", emptyList(), "ko")
+        api.reply(lobby.copy(host = lobby.me))
+        scheduler.advanceTimeBy(1001)
+        assertEquals(R.string.group_now_host, viewModel.error.value!!.message)
+        viewModel.leave()
+        assertNull(viewModel.error.value)
+    }
+
+    @Test
     fun aFinishedRoundGoesIntoTheHistoryWithTheAnswerOrNotSure() {
         create()
         api.reply(asking)
