@@ -16,6 +16,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
@@ -36,40 +38,42 @@ import kotlin.math.abs
 enum class LocationAnswer { GRANTED, DENIED, BLOCKED }
 
 /**
- * After the system's answer: Android shows its dialog again only while [canAskAgain] (it would show a
- * rationale). Without a rationale it is blocked only once the user has [deniedBefore]: a first dialog
- * closed by tapping outside it also leaves no rationale, yet Android asks again next time.
+ * After the system's answer: Android shows its dialog again only while it would show a rationale
+ * ([rationaleAfter]). Without one, the dialog was either closed unanswered (Back or a tap outside a
+ * first dialog leaves no trace) or never shown because the user blocked it. The app cannot tell these
+ * apart (it is paused and gets the same result either way), so no rationale counts as blocked only
+ * after an earlier refusal: a rationale before this request, or the last request [refusedBefore].
  */
-fun locationAnswer(granted: Boolean, canAskAgain: Boolean, deniedBefore: Boolean): LocationAnswer = when {
+fun locationAnswer(granted: Boolean, rationaleBefore: Boolean, rationaleAfter: Boolean, refusedBefore: Boolean): LocationAnswer = when {
     granted -> LocationAnswer.GRANTED
-    canAskAgain || !deniedBefore -> LocationAnswer.DENIED
+    rationaleAfter || !(rationaleBefore || refusedBefore) -> LocationAnswer.DENIED
     else -> LocationAnswer.BLOCKED
 }
 
 /** Whether the user allows location, and how to ask. Declining keeps the app working without distances. */
-class LocationPermission(val granted: Boolean, private val launch: ((LocationAnswer) -> Unit) -> Unit) {
-    fun request(onAnswer: (LocationAnswer) -> Unit = {}) = launch(onAnswer)
-}
+class LocationPermission(val granted: Boolean, val request: () -> Unit)
 
-/** Checked again whenever the app comes back, for location allowed on the app's settings page meanwhile. */
+/**
+ * Checked again whenever the app comes back, for location allowed on the app's settings page meanwhile.
+ * Every answer goes to [onAnswer], the one of the latest composition, so a screen recreated while
+ * Android's dialog is open still gets it.
+ */
 @Composable
-fun rememberLocationPermission(): LocationPermission {
+fun rememberLocationPermission(onAnswer: (LocationAnswer) -> Unit = {}): LocationPermission {
     val context = LocalContext.current
     val settings = remember { SettingsStore(context) }
     var granted by remember { mutableStateOf(context.hasLocationPermission()) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = context.hasLocationPermission() }
-    var onAnswer by remember { mutableStateOf<(LocationAnswer) -> Unit>({}) }
+    val answer by rememberUpdatedState(onAnswer)
+    var rationaleBefore by rememberSaveable { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         granted = context.hasLocationPermission()
-        val canAskAgain = context.canAskForLocation()
-        val deniedBefore = settings.locationDenied
-        // A rationale means the user has turned location down at least once.
-        if (canAskAgain) settings.locationDenied = true
-        onAnswer(locationAnswer(granted, canAskAgain, deniedBefore))
+        val result = locationAnswer(granted, rationaleBefore, context.canAskForLocation(), settings.locationRefused)
+        settings.locationRefused = !granted
+        answer(result)
     }
     return LocationPermission(granted) {
-        if (context.canAskForLocation()) settings.locationDenied = true
-        onAnswer = it
+        rationaleBefore = context.canAskForLocation()
         launcher.launch(LOCATION_PERMISSIONS)
     }
 }

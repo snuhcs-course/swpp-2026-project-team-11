@@ -38,10 +38,10 @@ class SettingsStore(context: Context) {
         get() = runCatching { Price.valueOf(prefs.getString(PRICE, null).orEmpty()) }.getOrDefault(Price.ANY)
         set(value) = prefs.edit().putString(PRICE, value.name).apply()
 
-    /** Whether the user has turned location down before (Android then showed a rationale); see locationAnswer. */
-    var locationDenied: Boolean
-        get() = prefs.getBoolean(LOCATION_DENIED, false)
-        set(value) = prefs.edit().putBoolean(LOCATION_DENIED, value).apply()
+    /** Whether the last request for location ended without it, its dialog closed unanswered included; see locationAnswer. */
+    var locationRefused: Boolean
+        get() = prefs.getBoolean(LOCATION_REFUSED, false)
+        set(value) = prefs.edit().putBoolean(LOCATION_REFUSED, value).apply()
 
     var setup: Setup
         get() = runCatching { Setup.valueOf(prefs.getString(SETUP, null).orEmpty()) }.getOrDefault(Setup.LANGUAGE)
@@ -53,6 +53,6 @@ class SettingsStore(context: Context) {
         const val PLACE = "place"
         const val PRICE = "price"
         const val SETUP = "setup"
-        const val LOCATION_DENIED = "location_denied"
+        const val LOCATION_REFUSED = "location_refused"
     }
 }

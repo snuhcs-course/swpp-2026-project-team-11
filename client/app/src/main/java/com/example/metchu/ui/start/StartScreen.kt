@@ -183,11 +183,16 @@ fun StartScreen(
     val english = LocalConfiguration.current.locales[0].language != "ko"
     val scope = rememberCoroutineScope()
 
-    val permission = rememberLocationPermission()
-    val user = rememberUserPoint(permission.granted)
-    val context = LocalContext.current
     // Nearby asked for and refused: why the distance went back to anywhere.
     var refused by rememberSaveable { mutableStateOf<LocationAnswer?>(null) }
+    // Nearby picked without location: decided by Android's answer, even after the screen is recreated meanwhile.
+    var nearAsked by rememberSaveable { mutableStateOf(false) }
+    val permission = rememberLocationPermission { answer ->
+        nearAnswered(nearAsked, answer, onPlace) { refused = it }
+        nearAsked = false
+    }
+    val user = rememberUserPoint(permission.granted)
+    val context = LocalContext.current
     // Sent to the app's settings page for Nearby: picked once location is allowed there.
     var nearFromSettings by rememberSaveable { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -335,7 +340,10 @@ fun StartScreen(
                         stringResource(if (it == Place.NEAR) R.string.place_near_option else R.string.place_any_option),
                         stringResource(if (it == Place.NEAR) R.string.place_near_note else R.string.place_any_note),
                         selected = it == place
-                    ) { pickPlace(it, permission.granted, permission::request, onPlace) { answer -> refused = answer }; sheet = null }
+                    ) {
+                        pickPlace(it, permission.granted, onPlace) { nearAsked = true; permission.request() }
+                        sheet = null
+                    }
                 }
             } else {
                 Meal.entries.map {
@@ -439,27 +447,20 @@ private fun LocationNotice(onContinue: () -> Unit, onLater: () -> Unit) {
     )
 }
 
+/** Picks [place]. Nearby needs the location, so without it Android is asked first ([ask]); see [nearAnswered]. */
+fun pickPlace(place: Place, granted: Boolean, onPlace: (Place) -> Unit, ask: () -> Unit) {
+    if (place != Place.NEAR || granted) onPlace(place) else ask()
+}
+
 /**
- * Picks [place]. Nearby needs the location, so without it Android is asked first ([request]) and
- * Nearby is kept only when allowed; otherwise the distance goes back to anywhere, the only
- * other choice, and [onRefused] gets the answer.
+ * Android's [answer] when Nearby [asked] for it (not the location notice): Nearby is kept only when
+ * allowed; otherwise the distance goes back to anywhere, the only other choice, and [onRefused] gets the answer.
  */
-fun pickPlace(
-    place: Place,
-    granted: Boolean,
-    request: ((LocationAnswer) -> Unit) -> Unit,
-    onPlace: (Place) -> Unit,
-    onRefused: (LocationAnswer) -> Unit
-) {
-    if (place != Place.NEAR || granted) return onPlace(place)
-    request { answer ->
-        if (answer == LocationAnswer.GRANTED) {
-            onPlace(Place.NEAR)
-        } else {
-            onPlace(Place.ANY)
-            onRefused(answer)
-        }
-    }
+fun nearAnswered(asked: Boolean, answer: LocationAnswer, onPlace: (Place) -> Unit, onRefused: (LocationAnswer) -> Unit) {
+    if (!asked) return
+    if (answer == LocationAnswer.GRANTED) return onPlace(Place.NEAR)
+    onPlace(Place.ANY)
+    onRefused(answer)
 }
 
 /** Says Nearby needs location; when Android no longer asks ([blocked]), offers the app's settings page. */
