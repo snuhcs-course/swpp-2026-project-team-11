@@ -381,7 +381,7 @@ the restaurant is among that member's best tenth of the places they can eat at, 
   Votes change nothing in the engine, end with the host's decision (later ones get 409 `stale_step`)
   and leave with the member who cast them.
 - Only the host starts, stops early ("recommend now": the engine's `stop()`), asks for other
-  restaurants ("find another") and decides. When the host leaves, a random remaining member hosts;
+  restaurants ("find another") and decides. When the host leaves, the next member in join order still here hosts (i5-P8);
   a member who leaves after the start answers "unknown".
 - "Find another" (`another`, i4-A13) replaces `picks` with up to two restaurants the room has not
   been shown, chosen the same way among the rest (`recommendation(shown)`), with no votes yet. `more`

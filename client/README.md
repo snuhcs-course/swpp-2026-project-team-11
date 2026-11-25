@@ -339,6 +339,8 @@ on a poll takes the phone back to the start screen. No poll is sent while this p
 request is out, and a poll reply is dropped once a newer request has gone out, since it may
 hold the room from before; of the requests, only the latest one's reply is shown (i4-A13).
 A vote does not block the other taps, so "Go here" right after one still goes out.
+When a poll shows that this phone's member has taken over as host, the top banner says
+"You're the host now" until the next request, and the host's controls appear (i5-P8).
 
 The account requests (`backend/accounts`, see backend/README.md "Accounts") go through
 `AuthApi` and `AuthRepository`, on a separate HTTP client that logs headers only, with the
