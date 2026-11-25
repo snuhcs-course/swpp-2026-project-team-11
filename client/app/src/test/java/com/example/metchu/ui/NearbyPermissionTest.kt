@@ -59,8 +59,14 @@ class NearbyPermissionTest {
 
     @Test
     fun noRationaleAfterADenialMeansAndroidWillNotAskAgain() {
-        assertEquals(LocationAnswer.GRANTED, locationAnswer(granted = true, canAskAgain = false))
-        assertEquals(LocationAnswer.DENIED, locationAnswer(granted = false, canAskAgain = true))
-        assertEquals(LocationAnswer.BLOCKED, locationAnswer(granted = false, canAskAgain = false))
+        assertEquals(LocationAnswer.GRANTED, locationAnswer(granted = true, canAskAgain = false, deniedBefore = true))
+        assertEquals(LocationAnswer.DENIED, locationAnswer(granted = false, canAskAgain = true, deniedBefore = false))
+        assertEquals(LocationAnswer.DENIED, locationAnswer(granted = false, canAskAgain = true, deniedBefore = true))
+        assertEquals(LocationAnswer.BLOCKED, locationAnswer(granted = false, canAskAgain = false, deniedBefore = true))
+    }
+
+    @Test
+    fun aFirstDialogClosedWithoutAnAnswerIsNotBlocked() {
+        assertEquals(LocationAnswer.DENIED, locationAnswer(granted = false, canAskAgain = false, deniedBefore = false))
     }
 }
