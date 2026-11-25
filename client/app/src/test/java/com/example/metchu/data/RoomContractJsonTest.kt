@@ -3,6 +3,7 @@ package com.example.metchu.data
 import com.example.metchu.Fixtures
 import com.example.metchu.data.model.RoomState
 import com.example.metchu.data.network.CreateRoomRequest
+import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.network.RoomApi
 import com.google.gson.Gson
 import org.junit.Assert.assertEquals
@@ -66,6 +67,8 @@ class RoomContractJsonTest {
         assertEquals(listOf("balanced", "no_one_unhappy"), picks.map { it.kind })
         assertEquals(listOf(1, 2), picks.map { it.votes })
         assertEquals(listOf(true, true), picks.map { it.voted })
+        // Both come from the first result: nobody asked for other places.
+        assertEquals(listOf(0, 0), picks.map { it.batch })
         assertTrue(picks.first().others.isNotEmpty())
         for (pick in picks) {
             assertEquals(listOf(0, 1), pick.menus.map { it.memberId })
@@ -73,6 +76,15 @@ class RoomContractJsonTest {
             assertTrue(pick.others.none { other -> pick.menus.any { it.food.foodId == other.foodId } })
             assertTrue(pick.menus.all { dish -> dish.food.offers.any { it.restaurant == pick.restaurant } })
         }
+    }
+
+    @Test
+    fun aServerWithoutFindNumbersReadsAsTheFirstResult() {
+        val older = Fixtures.json("room_done").replace("\"batch\": 0,", "")
+        assertFalse(older.contains("batch"))
+        val room = RetrofitInstance.gson.fromJson(older, RoomState::class.java)
+        assertEquals(listOf(0, 0), room.picks!!.map { it.batch })
+        assertEquals(Fixtures.room("room_done").picks!!.map { it.restaurant }, room.picks!!.map { it.restaurant })
     }
 
     @Test

@@ -291,7 +291,7 @@ def ban(request, session_id: str):
 #   POST /api/rooms/<code>/start/                         (host)        -> state
 #   POST /api/rooms/<code>/answer/  {"question_id", "answer_id"}        -> state
 #   POST /api/rooms/<code>/recommend-now/                 (host)        -> state
-#   POST /api/rooms/<code>/another/                       (host)        -> state
+#   POST /api/rooms/<code>/another/                       (host)        -> state (adds picks after the earlier ones)
 #   POST /api/rooms/<code>/vote/    {"pick", "agree"}                   -> state
 #   POST /api/rooms/<code>/decide/  {"pick"}              (host)        -> state
 #   POST /api/rooms/<code>/leave/                                       -> 204

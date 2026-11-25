@@ -11,7 +11,7 @@ A room has a four-digit code and 2 to 8 members. Each phone holds its member's s
 token. The host sets the meal, the restaurants, the price range, the location and how long a round
 waits (one of ROUND_CHOICES seconds, ROUND_SECONDS unless picked), starts the questions,
 may stop them early ("recommend now"), may ask for other restaurants ("find another")
-and decides on a restaurant. Nobody joins after
+and decides on a restaurant, once. Nobody joins after
 the start, and a caller who tries JOIN_ATTEMPTS unknown codes waits JOIN_WINDOW seconds.
 When the host leaves, a random remaining member becomes host.
 
@@ -24,9 +24,10 @@ checked whenever the room is read or acted on, so phones polling the room move i
 The result is up to two restaurants, each with every member's dish there, the restaurant's
 other dishes (by meal and name, like a session's menu), and how well the place fits them: "great" among their best tenth of the restaurants they can eat at, otherwise
 "good". Until the host decides, every member may agree with any of the restaurants; each
-shows how many agree and whether this member does. A member who leaves takes their votes along. A member's allergies only remove dishes from their own choice. "Find another" replaces
-the result with up to two restaurants the room has not been shown, with no votes yet, while one where everyone can
-eat is left (`more`). For that the room keeps the group's result (each member's satisfaction and
+shows how many agree and whether this member does. A member who leaves takes their votes along. A member's allergies only remove dishes from their own choice. "Find another" adds
+up to two restaurants the room has not been shown, with no votes yet, while one where everyone can
+eat is left (`more`). The earlier ones stay at their positions with their votes, so members can still agree
+with them and the host can still choose one; each pick's `batch` counts the finds before it (0 for the first result). For that the room keeps the group's result (each member's satisfaction and
 menus at each restaurant, not the engine's tables) until the host decides or everyone has left. Rooms live in this process only, like sessions (recommend/sessions.py).
 """
 
@@ -215,8 +216,9 @@ class Room:
         self._choose()
 
     def _choose(self) -> None:
-        """Up to two restaurants the room has not been shown yet, with no votes."""
+        """Adds up to two restaurants the room has not been shown yet, with no votes, after the earlier ones."""
         result = self.result.recommendation(self.shown)
+        batch = self.picks[-1]["batch"] + 1 if self.picks else 0
         satisfaction = self.result.satisfaction
         picks = []
         for pick in result["picks"]:
@@ -224,17 +226,17 @@ class Room:
             suggested = {food["food_id"] for food in pick["menus"] if food}
             offer = next(o for food in pick["menus"] if food for o in food["offers"] if place(o) == at)
             picks.append({
-                "restaurant": pick["restaurant"], "kind": pick["kind"],
+                "restaurant": pick["restaurant"], "kind": pick["kind"], "batch": batch,
                 "lat": pick["lat"], "lng": pick["lng"], "distance_m": offer.get("distance_m"),
                 "menus": [{"member_id": m.id, "food": food, "fit": _fit(satisfaction[m.id], r)}
                           for m, food in zip(self.members, pick["menus"])],
                 "others": [dish for dish in self.menus.get(at, []) if dish["food_id"] not in suggested]})
         # All at once, so a failure above leaves the picks and their votes as they were.
-        self.picks, self.votes, self.more = picks, [set() for _ in picks], result["more"]
+        self.picks, self.votes, self.more = (self.picks or []) + picks, self.votes + [set() for _ in picks], result["more"]
         self.shown.update(pick["index"] for pick in result["picks"])
 
     def another(self, member: Member) -> None:
-        """Replaces the picks with restaurants the room has not been shown yet."""
+        """Adds restaurants the room has not been shown yet; the earlier picks keep their positions and votes."""
         self._require_host(member)
         if self.status != "done" or not self.more:
             raise StaleStep("There is no other restaurant to suggest.")
@@ -261,7 +263,10 @@ class Room:
         (self.votes[pick].add if agree else self.votes[pick].discard)(member.id)
 
     def decide(self, member: Member, pick: int) -> None:
+        """Once only: phones stop polling at the decision, so a second one would reach nobody."""
         self._require_host(member)
+        if self.decided is not None:
+            raise StaleStep("The host has already decided.")
         self.decided = self._pick(pick)
         self._let_go()
 

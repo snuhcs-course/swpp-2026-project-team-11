@@ -35,6 +35,7 @@
     {
       "restaurant": "버거운버거",
       "kind": "balanced",
+      "batch": 0,
       "lat": 37.46328,
       "lng": 126.95015,
       "distance_m": 418,
@@ -418,6 +419,7 @@
     {
       "restaurant": "자하연식당>3층",
       "kind": "no_one_unhappy",
+      "batch": 0,
       "lat": 37.46098,
       "lng": 126.95252,
       "distance_m": 198,
