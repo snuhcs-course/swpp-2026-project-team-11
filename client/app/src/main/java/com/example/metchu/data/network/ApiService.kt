@@ -7,6 +7,7 @@ import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -23,6 +24,8 @@ import retrofit2.http.Query
  * [CreateSessionRequest.priceLevel] is the number of ₩ signs picked (1 to 3), or null for any price.
  * Gson leaves a null field out of the body. The menu date is the server's decision, so
  * the phone does not send one. `source=all` combines cafeteria and restaurant menus.
+ * A signed-in phone sends its "Token <token>" with the request, so the server records the
+ * session's dishes in the account's history; a null header is left out.
  */
 data class CreateSessionRequest(
     val meal: String?,
@@ -66,7 +69,7 @@ data class ApiError(val code: String, val message: String) {
 interface ApiService {
 
     @POST("api/sessions/")
-    suspend fun createSession(@Body request: CreateSessionRequest): SessionState
+    suspend fun createSession(@Header("Authorization") authorization: String?, @Body request: CreateSessionRequest): SessionState
 
     @POST("api/sessions/prewarm/")
     suspend fun prewarm(@Body request: PrewarmRequest): Response<Unit>

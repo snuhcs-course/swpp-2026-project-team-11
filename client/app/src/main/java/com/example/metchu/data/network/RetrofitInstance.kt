@@ -17,9 +17,11 @@ object RetrofitInstance {
 
     val gson = Gson()
 
+    // Session requests carry the account token when signed in; it never reaches the debug log.
     private val logging = HttpLoggingInterceptor().apply {
         level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
         else HttpLoggingInterceptor.Level.NONE
+        redactHeader("Authorization")
     }
 
     private val client = OkHttpClient.Builder()

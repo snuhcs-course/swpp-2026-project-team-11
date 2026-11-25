@@ -312,7 +312,8 @@ python manage.py run_store_pipeline --file $S --mapping mapping.csv --review rev
 
 ## Accounts (i4-P6)
 
-Signing in is optional; it is there so that the group mode can tell users apart.
+Signing in is optional; it is there so that the group mode can tell users apart, and to keep a
+user's bookmarks and recommendation history (i5-P25).
 `accounts/` keeps Django's own `auth.User` (a username and a PBKDF2 password hash) and adds
 two tables: `AuthToken`, one per signed-in device, holding only the SHA-256 of the token the
 app sends as `Authorization: Token <token>`, and `GoogleIdentity`, the Google account (its
@@ -327,18 +328,38 @@ the docstring of `accounts/views.py`:
 | `POST /api/auth/google/link/` | `{"id_token"}`, signed in | `{"user"}` |
 | `GET /api/auth/me/` | signed in | `{"user"}` |
 | `POST /api/auth/logout/` | signed in | 204, ends this device's token only |
+| `GET /api/auth/bookmarks/` | signed in | `{"bookmarks"}`, newest first |
+| `POST /api/auth/bookmarks/` | `{"food_id", "display_name", "restaurant"}`, signed in | 201 `{"bookmark"}`, 200 if saved already |
+| `DELETE /api/auth/bookmarks/<id>/` | signed in | 204, also when gone already |
+| `GET /api/auth/history/` | signed in | `{"history"}`, the newest 100, newest first |
 
 `user` is `{"username", "google_email", "has_password"}`. Usernames are 3–30 letters, digits or
 `. @ + - _`, unique ignoring case; passwords must pass `AUTH_PASSWORD_VALIDATORS`. A wrong
 username and a wrong password get the same 401. Google sign-in makes an account named after the
 address, without a password, the first time; linking lets an existing account sign in either way.
 
+A bookmark (`Bookmark`) is one per user, restaurant and dish name, as the phone showed them:
+`{"id", "food_id", "display_name", "restaurant", "created_at"}`. A result's `food_id` is not the
+key, since the same dish can carry another ID on another day's menu; the bookmark keeps the one
+it was last saved with, for information. Saving a dish saved already returns it with 200 and
+that `food_id` updated; it is removed by its own `id`, and only the owner's. It does not point
+at the menu tables, so it survives a new snapshot. History (`HistoryEntry`) is recorded by the server: a solo session created with the
+token (`POST /api/sessions/`) belongs to that user, and each dish it proposes, a guess or the
+recommendation, is kept once per session as `{"date", "meal", "food_id", "display_name",
+"restaurant", "created_at"}` (`accounts/history.py`). The restaurant is the offer nearest the
+session's location, else the first; `meal` is null for a whole-day session. Only a user's
+newest 100 entries are kept. A history write that fails is logged and never fails the session
+request. Group rooms record no history. Without a valid token, all four
+requests are 401 `not_authenticated`, and every list holds the signed-in user's rows only.
+
 Google sign-in needs `METCHU_GOOGLE_CLIENT_ID`, the client ID of the team's **web** OAuth client
 (the app's `metchu.googleWebClientId`, see client/README.md); without it those two requests answer
 503 and password accounts still work. The server checks each ID token with `google-auth`
 (signature, expiry, issuer and that audience); that fetches Google's public keys, so it needs the
-network. Tests patch the check and need neither. Recommendation sessions do not read the token yet;
-group rooms use it to name members.
+network. Tests patch the check and need neither. Creating a solo session reads the token for the
+history above; group rooms use it to name members.
+
+> **Note:** `accounts/migrations/0002_bookmarks_history.py` creates the tables `accounts_bookmark` and `accounts_historyentry`. After the merge, once `migrate` has run on the shared DB, run the RLS SQL again.
 
 ## Group rooms (i4-P9)
 

@@ -59,6 +59,16 @@ class RecommendRepositoryTest {
     }
 
     @Test
+    fun aSignedInSessionSendsTheToken() = runTest {
+        reply("question", 201)
+        reply("question", 201)
+        repository.createSession("LU", token = "device-token")
+        repository.createSession("LU")
+        assertEquals("Token device-token", server.takeRequest().getHeader("Authorization"))
+        assertNull(server.takeRequest().getHeader("Authorization"))
+    }
+
+    @Test
     fun allRestaurantsIsSentToTheServer() = runTest {
         reply("question", 201)
         repository.createSession("LU", source = "all", distanceScope = "near")

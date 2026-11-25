@@ -42,6 +42,7 @@ import com.example.metchu.R
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.repository.Account
+import com.example.metchu.ui.account.SavedList
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.LabelCapsule
@@ -57,6 +58,7 @@ import com.example.metchu.ui.theme.screenBackground
  * The account, allergies to avoid and, for development, which engine asks the questions.
  * Every change is kept at once, so there is no save button. A guest opens the account
  * screen with [onAccount]; [onLinkGoogle] is null when this build has no Google client ID.
+ * A signed-in user opens the account's bookmarks or history with [onSaved].
  */
 @Composable
 fun SettingsScreen(
@@ -68,6 +70,7 @@ fun SettingsScreen(
     onAccount: () -> Unit,
     onLinkGoogle: (() -> Unit)?,
     onLogOut: () -> Unit,
+    onSaved: (SavedList) -> Unit,
     onAllergies: (List<Allergen>) -> Unit,
     onEngine: (String) -> Unit,
     onBack: () -> Unit
@@ -79,7 +82,7 @@ fun SettingsScreen(
             Text(stringResource(R.string.settings), Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp), style = MetchuType.Title)
 
             Section(stringResource(R.string.settings_account)) {
-                AccountSection(account, accountBusy, accountError, onAccount, onLinkGoogle, onLogOut)
+                AccountSection(account, accountBusy, accountError, onAccount, onLinkGoogle, onLogOut, onSaved)
             }
 
             Section(stringResource(R.string.settings_allergies)) {
@@ -112,7 +115,8 @@ private fun AccountSection(
     @StringRes error: Int?,
     onAccount: () -> Unit,
     onLinkGoogle: (() -> Unit)?,
-    onLogOut: () -> Unit
+    onLogOut: () -> Unit,
+    onSaved: (SavedList) -> Unit
 ) {
     if (account == null) {
         Text(stringResource(R.string.account_guest), style = MetchuType.Item)
@@ -129,6 +133,12 @@ private fun AccountSection(
             },
             style = MetchuType.Caption
         )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            LabelCapsule(stringResource(R.string.account_bookmarks), { onSaved(SavedList.BOOKMARKS) }, filled = false,
+                         modifier = Modifier.testTag("accountBookmarks"))
+            LabelCapsule(stringResource(R.string.account_history), { onSaved(SavedList.HISTORY) }, filled = false,
+                         modifier = Modifier.testTag("accountHistory"))
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (email == null && onLinkGoogle != null) {
                 LabelCapsule(stringResource(R.string.account_link_google), onLinkGoogle, filled = false, enabled = !busy,

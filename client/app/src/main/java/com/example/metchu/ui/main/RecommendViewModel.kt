@@ -92,7 +92,8 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
      * that can take a few seconds, so it is part of the request and shows as [loading]. No dish
      * with one of [allergies] is proposed. [language] ("en" or "ko") is the language of every
      * text the server sends. With a [priceLevel] (1 to 3 ₩ signs) only dishes in that price
-     * range are proposed.
+     * range are proposed. With the signed-in account's [token] the server keeps the dishes
+     * proposed in the account's history.
      */
     fun start(
         meal: String?,
@@ -102,12 +103,13 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         language: String? = null,
         source: String? = null,
         distanceScope: String? = null,
-        priceLevel: Int? = null
+        priceLevel: Int? = null,
+        token: String? = null
     ) {
         if (_loading.value == true) return
         forgetSession()
         park(null)
-        request { repository.createSession(meal, engine, location?.current(), allergies, language, source, distanceScope, priceLevel) }
+        request { repository.createSession(meal, engine, location?.current(), allergies, language, source, distanceScope, priceLevel, token) }
     }
 
     /**

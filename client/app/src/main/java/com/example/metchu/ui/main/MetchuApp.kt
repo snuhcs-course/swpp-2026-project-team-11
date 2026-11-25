@@ -59,6 +59,8 @@ import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.data.repository.Setup
 import com.example.metchu.ui.account.AccountScreen
 import com.example.metchu.ui.account.AccountViewModel
+import com.example.metchu.ui.account.SavedList
+import com.example.metchu.ui.account.SavedScreen
 import com.example.metchu.ui.common.PillSegment
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.fade
@@ -85,10 +87,10 @@ import kotlinx.coroutines.flow.first
 
 /**
  * Which screen is up. Before a session: the first launch's steps, then start, settings, or
- * the account screen opened from the settings. During one: the step's screen. In a group
+ * the account screen or the account's bookmarks or history opened from the settings. During one: the step's screen. In a group
  * room: the room's stage, ahead of everything else.
  */
-private enum class Screen { LANGUAGE, ACCOUNT, ALLERGIES, START, SETTINGS, QUESTION, RESULT, UNAVAILABLE, JOIN, LOBBY, GROUP_QUESTION, GROUP_RESULT }
+private enum class Screen { LANGUAGE, ACCOUNT, ALLERGIES, START, SETTINGS, SAVED, QUESTION, RESULT, UNAVAILABLE, JOIN, LOBBY, GROUP_QUESTION, GROUP_RESULT }
 
 /** The least time the start screen searches, so a quick first question does not cut it short. */
 private const val SEARCH_MIN_MILLIS = 700
@@ -99,22 +101,23 @@ private const val SEARCH_WHITEN_MILLIS = 220
 /** Where a session goes from the start screen. */
 private val SessionScreens = setOf(Screen.QUESTION, Screen.RESULT, Screen.UNAVAILABLE)
 
-private fun screenOf(session: SessionState?, room: RoomState?, setup: Setup, settingsOpen: Boolean, accountOpen: Boolean, joinOpen: Boolean): Screen = when {
+private fun screenOf(session: SessionState?, room: RoomState?, setup: Setup, settingsOpen: Boolean, accountOpen: Boolean, savedOpen: Boolean, joinOpen: Boolean): Screen = when {
     room != null -> when (room.status) {
         RoomState.LOBBY -> Screen.LOBBY
         RoomState.ASKING -> Screen.GROUP_QUESTION
         else -> Screen.GROUP_RESULT
     }
     session == null && joinOpen -> Screen.JOIN
-    else -> soloScreenOf(session, setup, settingsOpen, accountOpen)
+    else -> soloScreenOf(session, setup, settingsOpen, accountOpen, savedOpen)
 }
 
-private fun soloScreenOf(session: SessionState?, setup: Setup, settingsOpen: Boolean, accountOpen: Boolean): Screen = when (session?.step?.type) {
+private fun soloScreenOf(session: SessionState?, setup: Setup, settingsOpen: Boolean, accountOpen: Boolean, savedOpen: Boolean): Screen = when (session?.step?.type) {
     null -> when {
         setup == Setup.LANGUAGE -> Screen.LANGUAGE
         setup == Setup.ACCOUNT -> Screen.ACCOUNT
         setup == Setup.ALLERGIES -> Screen.ALLERGIES
         settingsOpen && accountOpen -> Screen.ACCOUNT
+        settingsOpen && savedOpen -> Screen.SAVED
         settingsOpen -> Screen.SETTINGS
         else -> Screen.START
     }
@@ -144,6 +147,9 @@ fun MetchuApp(
     val account by accounts.account.observeAsState()
     val accountBusy by accounts.busy.observeAsState(false)
     val accountError by accounts.error.observeAsState()
+    val bookmarks by accounts.bookmarks.observeAsState()
+    val accountHistory by accounts.history.observeAsState()
+    val savedFailed by accounts.savedFailed.observeAsState(false)
     val room by group.room.observeAsState()
     val roomHistory by group.history.observeAsState(emptyList())
     val roomBusy by group.busy.observeAsState(false)
@@ -154,6 +160,9 @@ fun MetchuApp(
     val advance = { next: Setup -> setup = next; settings.setup = next }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     var accountOpen by rememberSaveable { mutableStateOf(false) }
+    // The account's list opened from the settings; only while signed in.
+    var savedList by rememberSaveable { mutableStateOf<SavedList?>(null) }
+    LaunchedEffect(account == null) { if (account == null) savedList = null }
     // Google's account picker opens over the activity.
     val context = LocalContext.current
     val googleToken: suspend () -> String? = { google.idToken(context) }
@@ -207,7 +216,7 @@ fun MetchuApp(
     // Whitened only on the way out of a search; resuming a session leaves the usual way.
     val whitened = if (session != null) whiten.value else 0f
     LaunchedEffect(session == null) { if (session == null && !holding) whiten.snapTo(0f) }
-    val screen = if (held) Screen.START else screenOf(session, room, setup, settingsOpen, accountOpen, joinOpen)
+    val screen = if (held) Screen.START else screenOf(session, room, setup, settingsOpen, accountOpen, savedList != null, joinOpen)
     val closeSettings = {
         allergyStore.allergies = allergies
         settingsOpen = false
@@ -303,7 +312,7 @@ fun MetchuApp(
                             when {
                                 !together -> {
                                     searches++
-                                    viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope, priceLevel = price.level)
+                                    viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope, priceLevel = price.level, token = account?.token)
                                 }
                                 account == null -> askName = true
                                 else -> createRoom(null)
@@ -322,9 +331,25 @@ fun MetchuApp(
                         onAccount = openAccount,
                         onLinkGoogle = { accounts.linkGoogle(googleToken) }.takeIf { BuildConfig.HAS_GOOGLE_SIGN_IN },
                         onLogOut = accounts::logOut,
+                        onSaved = { list ->
+                            savedList = list
+                            if (list == SavedList.BOOKMARKS) accounts.loadBookmarks() else accounts.loadHistory()
+                        },
                         onAllergies = { allergies = it; allergyStore.allergies = it },
                         onEngine = { engine = it; settings.engine = it },
                         onBack = closeSettings
+                    )
+                }
+                Screen.SAVED -> savedList?.let { list ->
+                    val back = { savedList = null }
+                    BackHandler(onBack = back)
+                    SavedScreen(
+                        list = list,
+                        bookmarks = bookmarks,
+                        history = accountHistory,
+                        failed = savedFailed,
+                        onRetry = { if (list == SavedList.BOOKMARKS) accounts.loadBookmarks() else accounts.loadHistory() },
+                        onBack = back
                     )
                 }
                 Screen.QUESTION -> if (current != null) {
@@ -350,6 +375,8 @@ fun MetchuApp(
                 }
                 Screen.RESULT -> if (current != null) {
                     BackHandler { viewModel.undo() }
+                    // The bookmark button shows once the account's bookmarks are known; a failed load is tried again at the next result.
+                    LaunchedEffect(account?.token, current) { if (account != null && bookmarks == null) accounts.loadBookmarks() }
                     ResultScreen(
                         session = current,
                         shown = shown,
@@ -360,7 +387,9 @@ fun MetchuApp(
                         onBack = viewModel::undo,
                         onHome = viewModel::startOver,
                         onMore = { viewModel.feedback(accepted = false) },
-                        onMenu = viewModel::menu
+                        onMenu = viewModel::menu,
+                        bookmarked = bookmarks?.takeIf { account != null },
+                        onBookmark = accounts::toggleBookmark
                     )
                 }
                 Screen.JOIN -> {
