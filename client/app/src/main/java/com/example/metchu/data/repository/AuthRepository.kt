@@ -69,9 +69,9 @@ class AuthRepository(private val store: AccountStore, private val api: AuthApi =
     /** Saves [bookmark]; saving a dish saved already returns the one kept. */
     suspend fun bookmark(bookmark: Bookmark): Bookmark = api.bookmark(signedIn(), bookmark).bookmark
 
-    /** Removes the dish [foodId]; one that is not saved is no error. */
-    suspend fun unbookmark(foodId: Int) {
-        val reply = api.unbookmark(signedIn(), foodId)
+    /** Removes the bookmark [id]; one that is gone already is no error. */
+    suspend fun unbookmark(id: Int) {
+        val reply = api.unbookmark(signedIn(), id)
         if (!reply.isSuccessful) throw HttpException(reply)
     }
 

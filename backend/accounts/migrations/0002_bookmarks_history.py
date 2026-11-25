@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bookmarks', to=settings.AUTH_USER_MODEL)),
             ],
             options={
-                'constraints': [models.UniqueConstraint(fields=('user', 'food_id'), name='unique_bookmark_per_user')],
+                'constraints': [models.UniqueConstraint(fields=('user', 'restaurant', 'display_name'), name='unique_bookmark_per_user')],
             },
         ),
         migrations.CreateModel(

@@ -10,6 +10,6 @@ urlpatterns = [
     path("me/", views.me),
     path("logout/", views.log_out),
     path("bookmarks/", views.bookmarks),
-    path("bookmarks/<int:food_id>/", views.bookmark),
+    path("bookmarks/<int:bookmark_id>/", views.bookmark),
     path("history/", views.history),
 ]

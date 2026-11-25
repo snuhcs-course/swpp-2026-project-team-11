@@ -29,6 +29,7 @@ import java.io.IOException
  * [bookmarks] and [history] are the signed-in account's lists, null until loaded and for a
  * guest; [savedFailed] is true when the last load failed. [toggleBookmark] changes the list at
  * once and puts it back if the server refuses, ignoring taps on a dish whose change is on its way.
+ * A bookmark is one per restaurant and dish name, since a dish's food ID can change by the day.
  */
 class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
 
@@ -50,7 +51,7 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
     private val _savedFailed = MutableLiveData(false)
     val savedFailed: LiveData<Boolean> = _savedFailed
 
-    private val pending = mutableSetOf<Int>()
+    private val pending = mutableSetOf<Pair<String, String>>()
 
     init {
         // The saved account may have been revoked while the app was closed.
@@ -105,32 +106,34 @@ class AccountViewModel(private val repository: AuthRepository) : ViewModel() {
 
     fun loadHistory() = load(_history) { repository.history() }
 
-    /** Saves the dish [foodId] as shown, with its name and [restaurant], or removes it if saved. */
+    /** Saves the dish [displayName] at [restaurant] as shown, with its [foodId], or removes it if saved. */
     fun toggleBookmark(foodId: Int, displayName: String, restaurant: String) {
         val token = _account.value?.token ?: return
         val saved = _bookmarks.value ?: return
-        if (!pending.add(foodId)) return
-        val old = saved.firstOrNull { it.foodId == foodId }
+        val key = restaurant to displayName
+        if (!pending.add(key)) return
+        val old = saved.firstOrNull { it.isOf(displayName, restaurant) }
         val added = Bookmark(foodId, displayName, restaurant)
         _bookmarks.value = if (old == null) listOf(added) + saved else saved - old
         viewModelScope.launch {
             try {
                 if (old == null) {
                     val kept = repository.bookmark(added)
-                    if (_account.value?.token == token) _bookmarks.value = _bookmarks.value?.map { if (it.foodId == foodId) kept else it }
+                    if (_account.value?.token == token) _bookmarks.value = _bookmarks.value?.map { if (it.isOf(displayName, restaurant)) kept else it }
                 } else {
-                    repository.unbookmark(foodId)
+                    // A bookmark added here has its id once the reply is in, and taps wait for that.
+                    repository.unbookmark(checkNotNull(old.id) { "Bookmark has no id" })
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.w(TAG, "bookmark not changed", e)
                 if (_account.value?.token == token && !signedOutBy(e)) {
-                    val now = _bookmarks.value.orEmpty().filter { it.foodId != foodId }
+                    val now = _bookmarks.value.orEmpty().filterNot { it.isOf(displayName, restaurant) }
                     _bookmarks.value = if (old == null) now else listOf(old) + now
                 }
             } finally {
-                pending.remove(foodId)
+                pending.remove(key)
             }
         }
     }

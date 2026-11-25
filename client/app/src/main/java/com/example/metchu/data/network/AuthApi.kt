@@ -26,15 +26,19 @@ data class SignedIn(val token: String, val user: AccountUser, val created: Boole
 data class AccountReply(val user: AccountUser)
 
 /**
- * A dish the account saved, by its [foodId], with the name and restaurant shown when it was
- * saved. [createdAt] is the server's ISO time; the phone leaves it out when saving.
+ * A dish the account saved, one per [restaurant] and [displayName] as shown; [foodId] is the
+ * result's ID when last saved, which can differ from day to day. [createdAt] (the server's ISO
+ * time) and [id] (removes it) come from the server; the phone leaves them out when saving.
  */
 data class Bookmark(
     @SerializedName("food_id") val foodId: Int,
     @SerializedName("display_name") val displayName: String,
     val restaurant: String,
-    @SerializedName("created_at") val createdAt: String? = null
-)
+    @SerializedName("created_at") val createdAt: String? = null,
+    val id: Int? = null
+) {
+    fun isOf(displayName: String, restaurant: String) = this.displayName == displayName && this.restaurant == restaurant
+}
 
 data class BookmarkReply(val bookmark: Bookmark)
 
@@ -79,8 +83,8 @@ interface AuthApi {
     @POST("api/auth/bookmarks/")
     suspend fun bookmark(@Header("Authorization") authorization: String, @Body bookmark: Bookmark): BookmarkReply
 
-    @DELETE("api/auth/bookmarks/{food_id}/")
-    suspend fun unbookmark(@Header("Authorization") authorization: String, @Path("food_id") foodId: Int): Response<Unit>
+    @DELETE("api/auth/bookmarks/{id}/")
+    suspend fun unbookmark(@Header("Authorization") authorization: String, @Path("id") id: Int): Response<Unit>
 
     @GET("api/auth/history/")
     suspend fun history(@Header("Authorization") authorization: String): HistoryReply

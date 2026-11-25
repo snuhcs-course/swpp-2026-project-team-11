@@ -22,8 +22,8 @@ class GoogleIdentity(models.Model):
 
 
 class Bookmark(models.Model):
-    """A dish a user saved: its food ID (the durable SalesMenu ID results carry), with the
-    name and restaurant shown when it was saved."""
+    """A dish a user saved, by the restaurant and dish name the phone showed. `food_id` is the
+    result's ID when last saved; it is not the key, since it can change from day to day."""
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bookmarks")
     food_id = models.BigIntegerField()
@@ -32,7 +32,8 @@ class Bookmark(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["user", "food_id"], name="unique_bookmark_per_user")]
+        constraints = [models.UniqueConstraint(fields=["user", "restaurant", "display_name"],
+                                               name="unique_bookmark_per_user")]
 
 
 class HistoryEntry(models.Model):

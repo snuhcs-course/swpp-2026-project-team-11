@@ -9,7 +9,7 @@
     GET  /api/auth/bookmarks/                        (signed in) -> {"bookmarks"}
     POST /api/auth/bookmarks/  {"food_id", "display_name", "restaurant"}
                                                      (signed in) -> 201 {"bookmark"}
-    DELETE /api/auth/bookmarks/<food_id>/            (signed in) -> 204
+    DELETE /api/auth/bookmarks/<id>/                 (signed in) -> 204
     GET  /api/auth/history/                          (signed in) -> {"history"}
 
 "Signed in" means an `Authorization: Token <token>` header carrying a token from one of
@@ -32,10 +32,12 @@ Google account belongs to one user only (409 `google_in_use`), and a user has on
 Google account (409 `already_linked`). Without METCHU_GOOGLE_CLIENT_ID both are 503
 `google_unavailable` (accounts/google.py).
 
-A bookmark is {"food_id", "display_name", "restaurant", "created_at"}: one per dish
-(`food_id`) and user, with the name and restaurant the phone showed. Saving a dish that
-is saved already returns it unchanged with 200; deleting one that is not saved is a 204
-too, so a repeated tap does no harm. `history` is the newest 100 entries {"date",
+A bookmark is {"id", "food_id", "display_name", "restaurant", "created_at"}: one per
+user, restaurant and dish name, as the phone showed them. `food_id` is the result's ID
+when last saved, kept for information only: the same dish can carry another ID on
+another day. Saving a dish that is saved already returns it with 200, its `food_id`
+set to the new one; deleting a bookmark by its `id` is a 204 also when it is gone
+already, so a repeated tap does no harm. `history` is the newest 100 entries {"date",
 "meal", "food_id", "display_name", "restaurant", "created_at"}, newest first; `meal`
 is null for a whole-day session. Both lists are newest first and belong to the signed-in
 user only.
@@ -59,7 +61,7 @@ from .models import Bookmark, GoogleIdentity
 
 User = get_user_model()
 USERNAME = re.compile(r"[\w.@+-]{3,30}")
-BOOKMARK_FIELDS = ("food_id", "display_name", "restaurant", "created_at")
+BOOKMARK_FIELDS = ("id", "food_id", "display_name", "restaurant", "created_at")
 
 
 def _error(status: int, code: str, message: str) -> JsonResponse:
@@ -259,19 +261,20 @@ def bookmarks(request):
         fields = _bookmark(_body(request))
     except ValueError as error:
         return _error(400, "invalid_request", str(error))
-    # get_or_create also returns the row when the same dish is saved twice at once.
-    saved, created = Bookmark.objects.get_or_create(user=user, food_id=fields.pop("food_id"), defaults=fields)
+    food_id = fields.pop("food_id")
+    # update_or_create also returns the row when the same dish is saved twice at once.
+    saved, created = Bookmark.objects.update_or_create(user=user, **fields, defaults={"food_id": food_id})
     return JsonResponse({"bookmark": {field: getattr(saved, field) for field in BOOKMARK_FIELDS}},
                         status=201 if created else 200)
 
 
 @csrf_exempt
 @require_http_methods(["DELETE"])
-def bookmark(request, food_id: int):
+def bookmark(request, bookmark_id: int):
     user = tokens.user_for(request)
     if user is None:
         return _not_signed_in()
-    user.bookmarks.filter(food_id=food_id).delete()
+    user.bookmarks.filter(pk=bookmark_id).delete()
     return HttpResponse(status=204)
 
 

@@ -99,6 +99,7 @@ import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.Offer
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
+import com.example.metchu.data.network.Bookmark
 import com.example.metchu.data.repository.Place
 import com.example.metchu.ui.common.BottomSheet
 import com.example.metchu.ui.common.CircleIconButton
@@ -136,9 +137,9 @@ import kotlin.math.abs
  * them and always turns down the server's current guess. "Menu" on a cafeteria lists
  * what else it serves at that meal; [menus] holds those lists, null while one loads.
  * There is no ban: the engines never propose a turned-down dish again in the session, so
- * "Find another" already leaves it behind. [bookmarked] holds the food IDs the signed-in
+ * "Find another" already leaves it behind. [bookmarked] holds the dishes the signed-in
  * account saved, null for a guest, who has no bookmark button; [onBookmark] saves or removes
- * the dish on view with the cafeteria chosen.
+ * the dish on view with the cafeteria chosen, which is what the button shows.
  */
 @Composable
 fun ResultScreen(
@@ -152,7 +153,7 @@ fun ResultScreen(
     onHome: () -> Unit,
     onMore: () -> Unit,
     onMenu: (restaurant: String) -> Unit,
-    bookmarked: Set<Int>?,
+    bookmarked: List<Bookmark>?,
     onBookmark: (foodId: Int, displayName: String, restaurant: String) -> Unit
 ) {
     val current = session.step
@@ -233,7 +234,7 @@ fun ResultScreen(
                     val restaurant = cafeterias.cafeterias.firstOrNull { it.offer.restaurant == selected }?.offer?.restaurant
                         ?: food.offers.firstOrNull()?.restaurant
                     if (bookmarked != null && restaurant != null) {
-                        val on = food.foodId in bookmarked
+                        val on = bookmarked.any { it.isOf(food.displayName, restaurant) }
                         CircleIconButton(
                             if (on) Icons.BookmarkFilled else Icons.Bookmark,
                             stringResource(if (on) R.string.result_unbookmark else R.string.result_bookmark),

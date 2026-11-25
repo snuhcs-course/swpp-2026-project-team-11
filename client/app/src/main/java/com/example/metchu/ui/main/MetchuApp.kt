@@ -385,7 +385,7 @@ fun MetchuApp(
                         onHome = viewModel::startOver,
                         onMore = { viewModel.feedback(accepted = false) },
                         onMenu = viewModel::menu,
-                        bookmarked = bookmarks?.takeIf { account != null }?.map { it.foodId }?.toSet(),
+                        bookmarked = bookmarks?.takeIf { account != null },
                         onBookmark = accounts::toggleBookmark
                     )
                 }
