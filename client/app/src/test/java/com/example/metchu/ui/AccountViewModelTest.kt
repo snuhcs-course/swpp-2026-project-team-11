@@ -316,6 +316,42 @@ class AccountViewModelTest {
     }
 
     @Test
+    fun aListLoadedWhileASaveIsOnItsWayKeepsTheSave() {
+        launchWithBookmarks()
+        api.answer {
+            api.reply(BookmarksReply(emptyList()))
+            viewModel.loadBookmarks()
+            BookmarkReply(saved)
+        }
+        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        assertEquals(listOf(saved), viewModel.bookmarks.value)
+    }
+
+    @Test
+    fun aListLoadedWhileARemovalIsOnItsWayKeepsTheRemoval() {
+        launchWithBookmarks(saved)
+        api.answer {
+            api.reply(BookmarksReply(listOf(saved)))
+            viewModel.loadBookmarks()
+            Response.success(Unit)
+        }
+        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        assertEquals(emptyList<Bookmark>(), viewModel.bookmarks.value)
+    }
+
+    @Test
+    fun aListSentBeforeAChangeAndAnsweredAfterItKeepsTheChange() {
+        launchWithBookmarks()
+        api.answer {
+            api.reply(BookmarkReply(saved))
+            viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+            BookmarksReply(emptyList())
+        }
+        viewModel.loadBookmarks()
+        assertEquals(listOf(saved), viewModel.bookmarks.value)
+    }
+
+    @Test
     fun aRefusedToggleIsPutBack() {
         launchWithBookmarks(saved)
         api.fail(IOException("offline"))
