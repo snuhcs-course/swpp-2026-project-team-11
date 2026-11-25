@@ -222,7 +222,7 @@ class AccountViewModelTest {
 
     // --- bookmarks and history ---
 
-    private val saved = Bookmark(5, "짜장면", "홍콩반점 낙성대점", "2026-11-25T03:24:00.398Z")
+    private val saved = Bookmark(5, "짜장면", "홍콩반점 낙성대점", "2026-11-25T03:24:00.398Z", id = 1)
 
     private fun launchWithBookmarks(vararg bookmarks: Bookmark) {
         launchSignedIn()
@@ -277,8 +277,27 @@ class AccountViewModelTest {
 
         api.reply(Response.success(Unit))
         viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
-        assertEquals(listOf("bookmark Token device-token 5", "unbookmark Token device-token 5"), api.calls)
+        assertEquals(listOf("bookmark Token device-token 5", "unbookmark Token device-token 1"), api.calls)
         assertEquals(emptyList<Bookmark>(), viewModel.bookmarks.value)
+    }
+
+    @Test
+    fun theSameDishUnderAnotherFoodIdIsTheSavedOne() {
+        launchWithBookmarks(saved)
+        api.reply(Response.success(Unit))
+        viewModel.toggleBookmark(9, "짜장면", "홍콩반점 낙성대점")
+        assertEquals(listOf("unbookmark Token device-token 1"), api.calls)
+        assertEquals(emptyList<Bookmark>(), viewModel.bookmarks.value)
+    }
+
+    @Test
+    fun theSameNameAtAnotherRestaurantIsAnotherBookmark() {
+        launchWithBookmarks(saved)
+        val elsewhere = Bookmark(5, "짜장면", "다른 곳", "2026-11-25T03:25:00.000Z", id = 2)
+        api.reply(BookmarkReply(elsewhere))
+        viewModel.toggleBookmark(5, "짜장면", "다른 곳")
+        assertEquals(listOf("bookmark Token device-token 5"), api.calls)
+        assertEquals(listOf(elsewhere, saved), viewModel.bookmarks.value)
     }
 
     @Test

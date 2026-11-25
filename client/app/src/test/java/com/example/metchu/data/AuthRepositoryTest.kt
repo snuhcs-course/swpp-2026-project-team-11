@@ -211,17 +211,17 @@ class AuthRepositoryTest {
     }
 
     @Test
-    fun savingSendsTheDishAsShownAndRemovingNamesIt() = runTest {
+    fun savingSendsTheDishAsShownAndRemovingUsesTheBookmarkId() = runTest {
         store.account = signedIn
         reply("bookmark_saved", 201)
         server.enqueue(MockResponse().setResponseCode(204))
         val kept = repository.bookmark(Bookmark(6, "한입떡말이", "버거운버거"))
-        assertEquals("2026-11-25T03:24:00.396Z", kept.createdAt)
-        repository.unbookmark(6)
+        assertEquals("2026-11-25T06:28:09.246Z", kept.createdAt)
+        repository.unbookmark(kept.id!!)
 
         assertEquals("/api/auth/bookmarks/" to """{"food_id":6,"display_name":"한입떡말이","restaurant":"버거운버거"}""", sentJson())
         val removed = server.takeRequest()
-        assertEquals("DELETE" to "/api/auth/bookmarks/6/", removed.method to removed.path)
+        assertEquals("DELETE" to "/api/auth/bookmarks/1/", removed.method to removed.path)
         assertEquals("Token device-token", removed.getHeader("Authorization"))
     }
 

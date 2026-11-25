@@ -27,46 +27,62 @@ class SignedInTestCase(TestCase):
 
 
 class BookmarkTests(SignedInTestCase):
+    def save(self, token, dish=DISH):
+        return post(self.client, "/api/auth/bookmarks/", dish, token)
+
     def test_save_list_and_remove(self):
         token = self.sign_up()
-        saved = post(self.client, "/api/auth/bookmarks/", DISH, token)
+        saved = self.save(token)
         self.assertEqual(saved.status_code, 201)
         bookmark = saved.json()["bookmark"]
-        self.assertEqual(set(bookmark), {"food_id", "display_name", "restaurant", "created_at"})
+        self.assertEqual(set(bookmark), {"id", "food_id", "display_name", "restaurant", "created_at"})
         self.assertEqual({k: bookmark[k] for k in DISH}, DISH)
         self.assertEqual(get(self.client, "/api/auth/bookmarks/", token).json(), {"bookmarks": [bookmark]})
-        self.assertEqual(delete(self.client, f"/api/auth/bookmarks/{DISH['food_id']}/", token).status_code, 204)
+        self.assertEqual(delete(self.client, f"/api/auth/bookmarks/{bookmark['id']}/", token).status_code, 204)
         self.assertEqual(get(self.client, "/api/auth/bookmarks/", token).json(), {"bookmarks": []})
 
     def test_a_name_as_long_as_a_menu_name_is_saved(self):
         token = self.sign_up()
         dish = {**DISH, "display_name": "정식" * 250}
-        self.assertEqual(post(self.client, "/api/auth/bookmarks/", dish, token).status_code, 201)
+        self.assertEqual(self.save(token, dish).status_code, 201)
 
-    def test_saving_twice_keeps_one_and_removing_twice_is_fine(self):
+    def test_the_same_dish_on_another_day_is_one_bookmark(self):
         token = self.sign_up()
-        first = post(self.client, "/api/auth/bookmarks/", DISH, token).json()["bookmark"]
-        again = post(self.client, "/api/auth/bookmarks/", {**DISH, "restaurant": "다른 곳"}, token)
-        self.assertEqual((again.status_code, again.json()["bookmark"]), (200, first))
+        first = self.save(token).json()["bookmark"]
+        again = self.save(token, {**DISH, "food_id": DISH["food_id"] + 1})
+        self.assertEqual((again.status_code, again.json()["bookmark"]),
+                         (200, {**first, "food_id": DISH["food_id"] + 1}))
         self.assertEqual(Bookmark.objects.count(), 1)
+
+    def test_the_same_name_at_another_restaurant_is_another_bookmark(self):
+        token = self.sign_up()
+        first = self.save(token).json()["bookmark"]
+        other = self.save(token, {**DISH, "restaurant": "다른 곳"})
+        self.assertEqual(other.status_code, 201)
+        self.assertNotEqual(other.json()["bookmark"]["id"], first["id"])
+        self.assertEqual(Bookmark.objects.count(), 2)
+
+    def test_removing_twice_is_fine(self):
+        token = self.sign_up()
+        bookmark_id = self.save(token).json()["bookmark"]["id"]
         for _ in range(2):
-            self.assertEqual(delete(self.client, f"/api/auth/bookmarks/{DISH['food_id']}/", token).status_code, 204)
+            self.assertEqual(delete(self.client, f"/api/auth/bookmarks/{bookmark_id}/", token).status_code, 204)
         self.assertFalse(Bookmark.objects.exists())
 
     def test_newest_first(self):
         token = self.sign_up()
-        for food_id in (1, 2, 3):
-            post(self.client, "/api/auth/bookmarks/", {**DISH, "food_id": food_id}, token)
+        for name in ("짜장면", "짬뽕", "탕수육"):
+            self.save(token, {**DISH, "display_name": name})
         listed = get(self.client, "/api/auth/bookmarks/", token).json()["bookmarks"]
-        self.assertEqual([b["food_id"] for b in listed], [3, 2, 1])
+        self.assertEqual([b["display_name"] for b in listed], ["탕수육", "짬뽕", "짜장면"])
 
     def test_each_user_sees_and_removes_only_their_own(self):
         mine, theirs = self.sign_up("first_user"), self.sign_up("second_user")
-        post(self.client, "/api/auth/bookmarks/", DISH, mine)
+        bookmark_id = self.save(mine).json()["bookmark"]["id"]
         self.assertEqual(get(self.client, "/api/auth/bookmarks/", theirs).json(), {"bookmarks": []})
-        self.assertEqual(delete(self.client, f"/api/auth/bookmarks/{DISH['food_id']}/", theirs).status_code, 204)
+        self.assertEqual(delete(self.client, f"/api/auth/bookmarks/{bookmark_id}/", theirs).status_code, 204)
         self.assertEqual(len(get(self.client, "/api/auth/bookmarks/", mine).json()["bookmarks"]), 1)
-        self.assertEqual(post(self.client, "/api/auth/bookmarks/", DISH, theirs).status_code, 201)
+        self.assertEqual(self.save(theirs).status_code, 201)
         self.assertEqual(Bookmark.objects.count(), 2)
 
     def test_bad_bodies_are_400(self):

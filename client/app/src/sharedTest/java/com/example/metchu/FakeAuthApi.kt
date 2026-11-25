@@ -46,7 +46,7 @@ class FakeAuthApi : AuthApi {
     override suspend fun bookmarks(authorization: String): BookmarksReply = next("bookmarks $authorization")
     override suspend fun bookmark(authorization: String, bookmark: Bookmark): BookmarkReply =
         next("bookmark $authorization ${bookmark.foodId}")
-    override suspend fun unbookmark(authorization: String, foodId: Int): Response<Unit> = next("unbookmark $authorization $foodId")
+    override suspend fun unbookmark(authorization: String, id: Int): Response<Unit> = next("unbookmark $authorization $id")
     override suspend fun history(authorization: String): HistoryReply = next("history $authorization")
 }
 
