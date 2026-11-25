@@ -198,6 +198,14 @@ session starts without a location and the list has no distances. On the
 emulator, set a position under Extended controls > Location (for example
 37.4600, 126.9520).
 
+Picking "nearby" (alone or with friends) without location asks Android for it
+again. Allowed, "nearby" is kept; declined, the distance goes back to "anywhere"
+and a short message says why. When Android no longer shows its dialog (no
+rationale after the answer, as after a second denial), the message offers
+**Open settings**, the app's settings page; back from there with location
+allowed, "nearby" is picked. Every screen checks the permission again when the
+app comes back.
+
 ## Screens
 
 | When | Screen | Actions |
