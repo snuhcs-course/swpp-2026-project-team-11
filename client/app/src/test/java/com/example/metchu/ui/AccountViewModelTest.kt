@@ -222,7 +222,7 @@ class AccountViewModelTest {
 
     // --- bookmarks and history ---
 
-    private val saved = Bookmark(5, "짜장면", "홍콩반점 낙성대점", "2026-11-25T03:24:00.398Z", id = 1)
+    private val saved = Bookmark("홍콩반점 낙성대점", "서울특별시 관악구 남부순환로 1900", "2026-11-25T03:24:00.398Z", id = 1)
 
     private fun launchWithBookmarks(vararg bookmarks: Bookmark) {
         launchSignedIn()
@@ -235,7 +235,7 @@ class AccountViewModelTest {
     fun aGuestLoadsNothingAndCannotBookmark() {
         viewModel.loadBookmarks()
         viewModel.loadHistory()
-        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        viewModel.toggleBookmark("홍콩반점 낙성대점")
         assertEquals(emptyList<String>(), api.calls)
         assertNull(viewModel.bookmarks.value)
         assertNull(viewModel.history.value)
@@ -269,34 +269,25 @@ class AccountViewModelTest {
     }
 
     @Test
-    fun aToggleSavesAndThenRemovesTheDish() {
+    fun aToggleSavesAndThenRemovesTheRestaurant() {
         launchWithBookmarks()
         api.reply(BookmarkReply(saved))
-        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        viewModel.toggleBookmark("홍콩반점 낙성대점")
         assertEquals(listOf(saved), viewModel.bookmarks.value)
 
         api.reply(Response.success(Unit))
-        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
-        assertEquals(listOf("bookmark Token device-token 5", "unbookmark Token device-token 1"), api.calls)
+        viewModel.toggleBookmark("홍콩반점 낙성대점")
+        assertEquals(listOf("bookmark Token device-token 홍콩반점 낙성대점", "unbookmark Token device-token 1"), api.calls)
         assertEquals(emptyList<Bookmark>(), viewModel.bookmarks.value)
     }
 
     @Test
-    fun theSameDishUnderAnotherFoodIdIsTheSavedOne() {
+    fun anotherRestaurantIsAnotherBookmark() {
         launchWithBookmarks(saved)
-        api.reply(Response.success(Unit))
-        viewModel.toggleBookmark(9, "짜장면", "홍콩반점 낙성대점")
-        assertEquals(listOf("unbookmark Token device-token 1"), api.calls)
-        assertEquals(emptyList<Bookmark>(), viewModel.bookmarks.value)
-    }
-
-    @Test
-    fun theSameNameAtAnotherRestaurantIsAnotherBookmark() {
-        launchWithBookmarks(saved)
-        val elsewhere = Bookmark(5, "짜장면", "다른 곳", "2026-11-25T03:25:00.000Z", id = 2)
+        val elsewhere = Bookmark("버거운버거", null, "2026-11-25T03:25:00.000Z", id = 2)
         api.reply(BookmarkReply(elsewhere))
-        viewModel.toggleBookmark(5, "짜장면", "다른 곳")
-        assertEquals(listOf("bookmark Token device-token 5"), api.calls)
+        viewModel.toggleBookmark("버거운버거")
+        assertEquals(listOf("bookmark Token device-token 버거운버거"), api.calls)
         assertEquals(listOf(elsewhere, saved), viewModel.bookmarks.value)
     }
 
@@ -306,12 +297,12 @@ class AccountViewModelTest {
         var shownMeanwhile: List<Bookmark>? = null
         api.answer {
             shownMeanwhile = viewModel.bookmarks.value
-            viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+            viewModel.toggleBookmark("홍콩반점 낙성대점")
             BookmarkReply(saved)
         }
-        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
-        assertEquals(listOf(Bookmark(5, "짜장면", "홍콩반점 낙성대점")), shownMeanwhile)
-        assertEquals(listOf("bookmark Token device-token 5"), api.calls)
+        viewModel.toggleBookmark("홍콩반점 낙성대점")
+        assertEquals(listOf(Bookmark("홍콩반점 낙성대점")), shownMeanwhile)
+        assertEquals(listOf("bookmark Token device-token 홍콩반점 낙성대점"), api.calls)
         assertEquals(listOf(saved), viewModel.bookmarks.value)
     }
 
@@ -323,7 +314,7 @@ class AccountViewModelTest {
             viewModel.loadBookmarks()
             BookmarkReply(saved)
         }
-        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        viewModel.toggleBookmark("홍콩반점 낙성대점")
         assertEquals(listOf(saved), viewModel.bookmarks.value)
     }
 
@@ -335,7 +326,7 @@ class AccountViewModelTest {
             viewModel.loadBookmarks()
             Response.success(Unit)
         }
-        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        viewModel.toggleBookmark("홍콩반점 낙성대점")
         assertEquals(emptyList<Bookmark>(), viewModel.bookmarks.value)
     }
 
@@ -344,7 +335,7 @@ class AccountViewModelTest {
         launchWithBookmarks()
         api.answer {
             api.reply(BookmarkReply(saved))
-            viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+            viewModel.toggleBookmark("홍콩반점 낙성대점")
             BookmarksReply(emptyList())
         }
         viewModel.loadBookmarks()
@@ -355,10 +346,10 @@ class AccountViewModelTest {
     fun aRefusedToggleIsPutBack() {
         launchWithBookmarks(saved)
         api.fail(IOException("offline"))
-        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        viewModel.toggleBookmark("홍콩반점 낙성대점")
         assertEquals(listOf(saved), viewModel.bookmarks.value)
         api.fail(IOException("offline"))
-        viewModel.toggleBookmark(6, "짬뽕", "홍콩반점 낙성대점")
+        viewModel.toggleBookmark("버거운버거")
         assertEquals(listOf(saved), viewModel.bookmarks.value)
     }
 
@@ -366,7 +357,7 @@ class AccountViewModelTest {
     fun aRejectedTokenSignsOutAndForgetsTheLists() {
         launchWithBookmarks(saved)
         api.fail(httpError(401, "error_not_authenticated"))
-        viewModel.toggleBookmark(5, "짜장면", "홍콩반점 낙성대점")
+        viewModel.toggleBookmark("홍콩반점 낙성대점")
         assertNull(viewModel.account.value)
         assertNull(store.account)
         assertNull(viewModel.bookmarks.value)

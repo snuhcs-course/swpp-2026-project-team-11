@@ -6,12 +6,11 @@ import com.example.metchu.data.network.BookmarksReply
 import com.example.metchu.data.network.HistoryReply
 import com.example.metchu.data.network.RetrofitInstance
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The bookmark and history replies (backend/accounts), captured from a local server on the 2026-11-02 snapshot. */
+/** The bookmark and history replies (backend/accounts), captured from a local server (client/README.md, Tests). */
 class SavedContractJsonTest {
 
     private inline fun <reified T> parse(json: String): T = RetrofitInstance.gson.fromJson(json, T::class.java)
@@ -19,18 +18,17 @@ class SavedContractJsonTest {
     @Test
     fun savedBookmark() {
         val bookmark = parse<BookmarkReply>(Fixtures.json("bookmark_saved")).bookmark
-        assertEquals(1 to 6, bookmark.id to bookmark.foodId)
-        assertTrue(bookmark.displayName.startsWith("한입떡말이"))
+        assertEquals(1, bookmark.id)
         assertEquals("버거운버거", bookmark.restaurant)
-        assertTrue(bookmark.createdAt!!.startsWith("2026-11-25T"))
-        assertTrue(bookmark.isOf(bookmark.displayName, "버거운버거"))
-        assertFalse(bookmark.isOf(bookmark.displayName, "다른 곳"))
+        assertNull(bookmark.address)
+        assertTrue(bookmark.createdAt!!.startsWith("2026-11-28T"))
     }
 
     @Test
-    fun bookmarksNewestFirst() {
+    fun bookmarksNewestFirstWithTheAddressesKnown() {
         val bookmarks = parse<BookmarksReply>(Fixtures.json("bookmarks")).bookmarks
-        assertEquals(listOf(5, 6), bookmarks.map { it.foodId })
+        assertEquals(listOf("홍콩반점 낙성대점", "버거운버거"), bookmarks.map { it.restaurant })
+        assertEquals(listOf("서울특별시 관악구 남부순환로 1900", null), bookmarks.map { it.address })
         assertEquals(listOf(2, 1), bookmarks.map { it.id })
         assertEquals(bookmarks.map { it.createdAt!! }.sortedDescending(), bookmarks.map { it.createdAt!! })
         assertEquals(parse<BookmarkReply>(Fixtures.json("bookmark_saved")).bookmark, bookmarks[1])
