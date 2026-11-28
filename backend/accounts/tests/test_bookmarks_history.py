@@ -4,6 +4,7 @@ from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.db import DatabaseError, connection
+from django.db.migrations.exceptions import IrreversibleError
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TestCase, TransactionTestCase
 
@@ -155,6 +156,16 @@ class BookmarkMigrationTests(TransactionTestCase):
                                       (ids["first_user", "제육덮밥"], "first_user", "학생회관식당", 4),
                                       (ids["second_user", "짜장면"], "second_user", "홍콩반점 낙성대점", 5)])
         self.assertEqual({f.name for f in Bookmark._meta.concrete_fields}, {"id", "user", "restaurant", "created_at"})
+
+    def test_going_back_with_bookmarks_is_refused_and_changes_nothing(self):
+        user = get_user_model().objects.create(username="first_user")
+        Bookmark.objects.create(user=user, restaurant=PLACE["restaurant"])
+
+        with self.assertRaisesRegex(IrreversibleError, "backup"):
+            self.migrate("0002_bookmarks_history")
+        self.assertEqual(list(Bookmark.objects.values_list("restaurant", flat=True)), [PLACE["restaurant"]])
+        columns = {c.name for c in connection.introspection.get_table_description(connection.cursor(), "accounts_bookmark")}
+        self.assertEqual(columns, {"id", "user_id", "restaurant", "created_at"})
 
 
 class SignedOutTests(SignedInTestCase):
