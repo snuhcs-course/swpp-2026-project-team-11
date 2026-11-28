@@ -243,6 +243,14 @@ screen can offer to resume it until a new one starts. The result's cafeteria lis
 is in the server's order; the session already holds only the picked areas. The
 selected cafeteria is kept by name.
 
+Since the app never accepts a guess, it tells the server's interaction log what the user did
+instead (`POST /api/sessions/<id>/event/`, i5-A13): `home` when a session is left for the start
+screen, `resume` when one is taken up again, `directions` when a cafeteria's walking directions
+open, `bookmark` when one is saved (not when removed), and `background` when the whole app goes to
+the background with a session on screen (`ProcessLifecycleOwner`, which does not stop for a
+rotation). `RecommendViewModel.track` sends them beside the other requests; a failure is only
+logged on the phone, never shown, and holds nothing up.
+
 The meal starts at the next one the cafeterias serve (breakfast before 10,
 lunch before 15, dinner after); one the user picks is kept until the app closes. The areas and price ranges (every one until the user changes them; the single area or price an app from before i5-A7 kept becomes its set), round time, engine and allergies are kept on
 the phone (`SettingsStore`, `AllergyStore`, SharedPreferences). The language
@@ -319,7 +327,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | `POST /api/sessions/<id>/ban/` | `{"food_id" or "food_group", "banned"}` | Keep one dish, or every dish of a `food_group`, out of the rest of the session (`banned: false` lets it back). The step on screen stays; the next action that would show the dish turns it down, and an undo that would goes back further. Bans end with the session. The phone no longer calls it (i4-A10, i4-A22) |
 | `GET /api/sessions/<id>/reason/` | | `{"food_id", "reason", "source"}`: why the dish on screen suits the user, in the session's language. `source` is `llm`, or `template` when the server has no key or the LLM failed. With no dish on screen, a 409 `stale_step` |
 | `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy, outside the areas or by price are not listed. An unknown restaurant has no dishes |
-| `POST /api/sessions/<id>/event/` | `{"event", "restaurant"?}` | 204. Tells the server's interaction log what the user did in the app on the step on screen: `home`, `resume`, `directions` or `bookmark` (with the `restaurant`), `background`. It changes nothing in the session; an unknown event is a 400. The phone does not call it yet (i5-A13) |
+| `POST /api/sessions/<id>/event/` | `{"event", "restaurant"?}` | 204. Tells the server's interaction log what the user did in the app on the step on screen: `home`, `resume`, `directions` or `bookmark` (with the `restaurant`), `background`. It changes nothing in the session; an unknown event is a 400. Sent by `RecommendViewModel.track` (i5-A13); an older server's 404 is ignored |
 
 The group room requests (backend/README.md "Group rooms") go through `RoomApi` and
 `RoomRepository`, on a client that hides `Authorization` and `X-Member-Token` in the debug log.
