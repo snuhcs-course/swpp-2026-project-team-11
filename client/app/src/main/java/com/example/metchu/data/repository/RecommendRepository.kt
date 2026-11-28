@@ -9,6 +9,7 @@ import com.example.metchu.data.network.AnswerRequest
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.ApiService
 import com.example.metchu.data.network.CreateSessionRequest
+import com.example.metchu.data.network.EventRequest
 import com.example.metchu.data.network.PrewarmRequest
 import com.example.metchu.data.network.FeedbackRequest
 import com.example.metchu.data.network.RetrofitInstance
@@ -63,6 +64,12 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
 
     /** The session as the server has it now. Changes nothing. */
     suspend fun state(sessionId: String): SessionState = api.getState(sessionId).checked()
+
+    /** Tells the server's log about an [EventRequest] event; throws if the server did not take it. */
+    suspend fun event(sessionId: String, event: String, restaurant: String? = null) {
+        val response = api.event(sessionId, EventRequest(event, restaurant))
+        if (!response.isSuccessful) throw HttpException(response)
+    }
 
     /**
      * Decodes the server's `{"error": ..., "state": ...}` body, or null if it is not

@@ -131,7 +131,8 @@ import kotlin.math.abs
  * There is no ban: the engines never propose a turned-down dish again in the session, so
  * "Find another" already leaves it behind. [bookmarked] holds the restaurants the signed-in
  * account saved, null for a guest, who has no bookmark button; [onBookmark] saves or removes
- * the cafeteria chosen, which is what the button shows.
+ * the cafeteria chosen, which is what the button shows. [onDirections] hears of each restaurant
+ * whose walking directions are opened, as the map app starts.
  */
 @Composable
 fun ResultScreen(
@@ -145,7 +146,8 @@ fun ResultScreen(
     onMore: () -> Unit,
     onMenu: (restaurant: String) -> Unit,
     bookmarked: List<Bookmark>?,
-    onBookmark: (restaurant: String) -> Unit
+    onBookmark: (restaurant: String) -> Unit,
+    onDirections: (restaurant: String) -> Unit = {}
 ) {
     val current = session.step
     var viewing by remember(shown.size, current.guessId) { mutableIntStateOf(shown.indexOfFirst { it.guessId == current.guessId }) }
@@ -251,6 +253,7 @@ fun ResultScreen(
                 onMenu(offer.restaurant)
                 menuOf = offer
             },
+            onDirections = { offer -> onDirections(offer.restaurant) },
             revealed = revealed,
             stop = stop,
             onTap = { settle(tappedStop(stop)) },
@@ -361,6 +364,7 @@ private fun ResultSheet(
     selected: String?,
     onSelect: (String) -> Unit,
     onMenu: (Offer) -> Unit,
+    onDirections: (Offer) -> Unit,
     revealed: Boolean,
     stop: SheetStop,
     onTap: () -> Unit,
@@ -477,7 +481,8 @@ private fun ResultSheet(
                     CafeteriaRow(
                         cafeteria, on = cafeteria.offer.restaurant == selected || count == 1,
                         onClick = { onSelect(cafeteria.offer.restaurant) },
-                        onMenu = { onMenu(cafeteria.offer) }
+                        onMenu = { onMenu(cafeteria.offer) },
+                        onDirections = { onDirections(cafeteria.offer) }
                     )
                 }
                 // One empty row at the end, for the logo, so "find another" never covers the last cafeteria.
@@ -506,7 +511,7 @@ private val PeekSecondStyle = MetchuType.Body.copy(fontSize = 13.sp, lineHeight 
  * cafeteria is on the map) and the menu.
  */
 @Composable
-private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit, onMenu: () -> Unit) {
+private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit, onMenu: () -> Unit, onDirections: () -> Unit) {
     val badge by animateColorAsState(if (on) MetchuColors.Primary else MetchuColors.Grey100, tween(200), label = "badge")
     val pin by animateColorAsState(if (on) Color.White else MetchuColors.Grey600, tween(200), label = "pin")
     val offer = cafeteria.offer
@@ -532,6 +537,7 @@ private fun CafeteriaRow(cafeteria: Cafeteria, on: Boolean, onClick: () -> Unit,
         if (point != null) {
             val context = LocalContext.current
             RowIconButton(Icons.Directions, stringResource(R.string.result_directions), "directionsButton") {
+                onDirections()
                 context.openDirections(offer.restaurant, point)
             }
         }

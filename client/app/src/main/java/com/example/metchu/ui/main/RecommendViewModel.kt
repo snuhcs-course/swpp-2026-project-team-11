@@ -13,6 +13,7 @@ import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.ApiError
+import com.example.metchu.data.network.EventRequest
 import com.example.metchu.data.repository.RecommendRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -185,6 +186,7 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     fun startOver() {
         if (_loading.value == true) return
         val left = _session.value
+        left?.let { send(it.sessionId, EventRequest.HOME) }
         park(left?.takeIf { it.step.type == Step.GUESS || it.step.type == Step.RECOMMENDATION || it.step.type == Step.QUESTION && it.step.questionCount > 0 }?.let {
             Parked(it, _history.value.orEmpty(), _shown.value.orEmpty(), _reasons.value.orEmpty(), reasonContexts.toMap())
         })
@@ -204,6 +206,30 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         _reasons.value = left.reasons
         reasonContexts.putAll(left.contexts)
         _session.value = left.session
+        send(left.session.sessionId, EventRequest.RESUME)
+    }
+
+    /**
+     * Tells the server's interaction log what the user did in the app with the session on screen:
+     * an [EventRequest] name, with the [restaurant] for directions and a bookmark. Without a session
+     * it sends nothing. It runs beside other requests and never shows an error or [loading]: a lost
+     * event only leaves a gap in the log.
+     */
+    fun track(event: String, restaurant: String? = null) {
+        val sessionId = _session.value?.sessionId ?: return
+        send(sessionId, event, restaurant)
+    }
+
+    private fun send(sessionId: String, event: String, restaurant: String? = null) {
+        viewModelScope.launch {
+            try {
+                repository.event(sessionId, event, restaurant)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "event not logged", e)
+            }
+        }
     }
 
     private fun park(left: Parked?) {
