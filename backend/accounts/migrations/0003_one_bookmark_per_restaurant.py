@@ -1,7 +1,8 @@
 """Collapse the dish bookmarks to one per user and restaurant before 0004 drops the dish fields.
 
 The row kept is the earliest saved (by created_at, then id), so a restaurant keeps the date it was
-first bookmarked. Going back keeps the rows as they are: the removed duplicates are not restored.
+first bookmarked. There is no way back once a bookmark exists: 0004 refuses to go back, and a
+backup from before 0003 must be restored instead.
 """
 
 from django.db import migrations
