@@ -25,17 +25,17 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
         engine: String? = null,
         allergies: List<Allergen> = emptyList(),
         language: String? = null,
-        area: String? = null,
-        priceLevel: Int? = null,
+        areas: List<String>? = null,
+        priceLevels: List<Int>? = null,
         token: String? = null
     ): SessionState =
         api.createSession(
             token?.let { "Token $it" },
-            CreateSessionRequest(meal, engine, allergies.map { it.id }.ifEmpty { null }, language, area, priceLevel)
+            CreateSessionRequest(meal, engine, allergies.map { it.id }.ifEmpty { null }, language, areas, priceLevels)
         ).checked()
 
-    suspend fun prewarm(meal: String?, allergies: List<Allergen>, area: String?) {
-        api.prewarm(PrewarmRequest(meal, allergies.map { it.id }.ifEmpty { null }, area))
+    suspend fun prewarm(meal: String?, allergies: List<Allergen>, areas: List<String>?) {
+        api.prewarm(PrewarmRequest(meal, allergies.map { it.id }.ifEmpty { null }, areas))
     }
 
     suspend fun answer(sessionId: String, questionId: String, answerId: String): SessionState =

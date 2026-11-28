@@ -20,8 +20,10 @@ import retrofit2.http.Query
  * default. [CreateSessionRequest.allergies] lists Allergen
  * IDs the server must never propose, or is null for none. [CreateSessionRequest.language]
  * is "en" or "ko", the language of every text the server sends, or null for English.
- * [CreateSessionRequest.area] is an [com.example.metchu.data.repository.Area] ID; the phone sends no location.
- * [CreateSessionRequest.priceLevel] is the number of ₩ signs picked (1 to 3), or null for any price.
+ * [CreateSessionRequest.areas] are the picked [com.example.metchu.data.repository.Area] IDs; the phone
+ * sends no location. Without them the server falls back to the single `area` of older apps, which is
+ * campus when missing, so the app always sends them.
+ * [CreateSessionRequest.priceLevels] are the numbers of ₩ signs picked (1 to 3), or null for any price.
  * Gson leaves a null field out of the body. The menu date is the server's decision, so
  * the phone does not send one.
  * A signed-in phone sends its "Token <token>" with the request, so the server records the
@@ -32,12 +34,12 @@ data class CreateSessionRequest(
     val engine: String? = null,
     val allergies: List<String>?,
     val language: String? = null,
-    val area: String? = null,
-    @SerializedName("price_level") val priceLevel: Int? = null
+    val areas: List<String>? = null,
+    @SerializedName("price_levels") val priceLevels: List<Int>? = null
 )
 
 /** What a session with these fields reads, so the server builds it before Start. */
-data class PrewarmRequest(val meal: String?, val allergies: List<String>?, val area: String?)
+data class PrewarmRequest(val meal: String?, val allergies: List<String>?, val areas: List<String>?)
 
 data class AnswerRequest(
     @SerializedName("question_id") val questionId: String,

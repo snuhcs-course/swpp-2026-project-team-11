@@ -87,10 +87,10 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
 
     /**
      * [meal] is "BR", "LU", "DN" or null for the whole day. [engine] is one of the
-     * Engine IDs, or null for the server's default. [area] is where the user picked to eat, an
-     * Area ID. No dish with one of [allergies] is proposed. [language] ("en" or "ko") is the language of every
-     * text the server sends. With a [priceLevel] (1 to 3 ₩ signs) only dishes in that price
-     * range are proposed. With the signed-in account's [token] the server keeps the dishes
+     * Engine IDs, or null for the server's default. [areas] are where the user picked to eat,
+     * Area IDs. No dish with one of [allergies] is proposed. [language] ("en" or "ko") is the language of every
+     * text the server sends. With [priceLevels] (1 to 3 ₩ signs each) only dishes in one of those price
+     * ranges are proposed. With the signed-in account's [token] the server keeps the dishes
      * proposed in the account's history.
      */
     fun start(
@@ -98,24 +98,24 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
         engine: String? = null,
         allergies: List<Allergen> = emptyList(),
         language: String? = null,
-        area: String? = null,
-        priceLevel: Int? = null,
+        areas: List<String>? = null,
+        priceLevels: List<Int>? = null,
         token: String? = null
     ) {
         if (_loading.value == true) return
         forgetSession()
         park(null)
-        request { repository.createSession(meal, engine, allergies, language, area, priceLevel, token) }
+        request { repository.createSession(meal, engine, allergies, language, areas, priceLevels, token) }
     }
 
     /**
      * Lets the server build what a session with these fields reads, so [start] does not wait
      * for it. It runs beside other requests, and a failure only means Start does the work.
      */
-    fun prewarm(meal: String?, allergies: List<Allergen>, area: String?) {
+    fun prewarm(meal: String?, allergies: List<Allergen>, areas: List<String>?) {
         viewModelScope.launch {
             try {
-                repository.prewarm(meal, allergies, area)
+                repository.prewarm(meal, allergies, areas)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

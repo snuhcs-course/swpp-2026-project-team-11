@@ -67,10 +67,10 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
         allergies: List<Allergen>,
         language: String,
         meal: String?,
-        area: String,
-        priceLevel: Int? = null,
+        areas: List<String>,
+        priceLevels: List<Int>? = null,
         roundSeconds: Int = RoomApi.DEFAULT_ROUND_SECONDS
-    ) = enter { repository.create(account, name, allergies, language, meal, area, priceLevel, roundSeconds) }
+    ) = enter { repository.create(account, name, allergies, language, meal, areas, priceLevels, roundSeconds) }
 
     fun join(account: String?, code: String, name: String?, allergies: List<Allergen>, language: String) =
         enter { repository.join(account, code, name, allergies, language) }
