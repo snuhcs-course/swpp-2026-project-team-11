@@ -12,6 +12,7 @@ import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.ApiError
 import com.example.metchu.data.network.ApiErrorResponse
+import com.example.metchu.data.network.EventRequest
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.AnsweredQuestion
@@ -833,5 +834,45 @@ class RecommendViewModelTest {
         assertEquals(emptyMap<String, String?>(), viewModel.reasons.value)
         startWith(guess)
         assertEquals(2, api.reasonCalls.size)
+    }
+
+    // --- app events for the server's interaction log ---
+
+    @Test
+    fun leavingAndResumingTellTheLogBesideTheSessionRequests() {
+        startWith(guess)
+        viewModel.startOver()
+        viewModel.resume()
+        assertEquals(listOf("${guess.sessionId} home", "${guess.sessionId} resume"), api.eventCalls.toList())
+        assertEquals(emptyList<String>(), api.calls.toList())
+        assertIdle(guess)
+    }
+
+    @Test
+    fun anEventNamesItsRestaurantAndNeedsASession() {
+        viewModel.track(EventRequest.DIRECTIONS, "학생회관식당")
+        assertEquals(emptyList<String>(), api.eventCalls.toList())
+        startWith(guess)
+        viewModel.track(EventRequest.DIRECTIONS, "학생회관식당")
+        viewModel.track(EventRequest.BACKGROUND)
+        assertEquals(listOf("${guess.sessionId} directions 학생회관식당", "${guess.sessionId} background"),
+            api.eventCalls.toList())
+        viewModel.startOver()
+        viewModel.track(EventRequest.BACKGROUND)
+        assertEquals("${guess.sessionId} home", api.eventCalls.last())
+    }
+
+    @Test
+    fun aLostEventShowsNoErrorAndHoldsNothingUp() {
+        api.eventsFail = true
+        startWith(question)
+        viewModel.track(EventRequest.BACKGROUND)
+        assertIdle(question)
+        api.reply(guess)
+        answer("yes")
+        assertIdle(guess)
+        viewModel.startOver()
+        assertIdle(null)
+        assertEquals(2, api.eventCalls.size)
     }
 }

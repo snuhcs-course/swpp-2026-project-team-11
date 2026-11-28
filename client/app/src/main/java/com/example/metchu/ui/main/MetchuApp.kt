@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -45,12 +46,16 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.auth.GoogleTokenSource
 import com.example.metchu.data.model.RoomState
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
+import com.example.metchu.data.network.EventRequest
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.Price
 import com.example.metchu.data.repository.SettingsStore
@@ -148,6 +153,16 @@ fun MetchuApp(
     val accountError by accounts.error.observeAsState()
     val bookmarks by accounts.bookmarks.observeAsState()
     val accountHistory by accounts.history.observeAsState()
+    // The whole app going to the background tells the log, with any session on screen. The process's
+    // lifecycle, unlike the activity's, does not stop for a rotation or for one of the app's own screens.
+    DisposableEffect(viewModel) {
+        val lifecycle = ProcessLifecycleOwner.get().lifecycle
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) viewModel.track(EventRequest.BACKGROUND)
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     val savedFailed by accounts.savedFailed.observeAsState(false)
     val room by group.room.observeAsState()
     val roomHistory by group.history.observeAsState(emptyList())
@@ -384,7 +399,14 @@ fun MetchuApp(
                         onMore = { viewModel.feedback(accepted = false) },
                         onMenu = viewModel::menu,
                         bookmarked = bookmarks?.takeIf { account != null },
-                        onBookmark = accounts::toggleBookmark
+                        onBookmark = { restaurant ->
+                            // Only saving tells the log; removing a bookmark is not choosing a place.
+                            if (bookmarks?.none { it.restaurant == restaurant } == true) {
+                                viewModel.track(EventRequest.BOOKMARK, restaurant)
+                            }
+                            accounts.toggleBookmark(restaurant)
+                        },
+                        onDirections = { viewModel.track(EventRequest.DIRECTIONS, it) }
                     )
                 }
                 Screen.JOIN -> {

@@ -6,6 +6,7 @@ import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.network.AnswerRequest
 import com.example.metchu.data.network.ApiService
 import com.example.metchu.data.network.CreateSessionRequest
+import com.example.metchu.data.network.EventRequest
 import com.example.metchu.data.network.FeedbackRequest
 import com.example.metchu.data.network.PrewarmRequest
 import kotlinx.coroutines.CompletableDeferred
@@ -18,10 +19,13 @@ import java.util.concurrent.CopyOnWriteArrayList
  * recorded apart, in [reasonCalls], and answered with [reason]; without one they fail
  * as an unreachable server would. Menu requests likewise go to [menuCalls], as
  * "<session> <restaurant>", and are answered with [menu]. Prewarm requests only go to
- * [prewarmCalls] and always succeed.
+ * [prewarmCalls] and always succeed. App events go to [eventCalls], as "<session> <event>"
+ * with any restaurant after them, and fail as an unreachable server would while [eventsFail].
  */
 class FakeApi : ApiService {
     val calls = CopyOnWriteArrayList<String>()
+    val eventCalls = CopyOnWriteArrayList<String>()
+    var eventsFail = false
     val reasonCalls = CopyOnWriteArrayList<String>()
     var reason: Reason? = null
     var heldReason: CompletableDeferred<Reason>? = null
@@ -77,5 +81,10 @@ class FakeApi : ApiService {
     override suspend fun menu(sessionId: String, restaurant: String): RestaurantMenu {
         menuCalls.add("$sessionId $restaurant")
         return menu ?: throw IOException("no menu")
+    }
+    override suspend fun event(sessionId: String, request: EventRequest): Response<Unit> {
+        eventCalls.add(listOfNotNull(sessionId, request.event, request.restaurant).joinToString(" "))
+        if (eventsFail) throw IOException("no server")
+        return Response.success(204, Unit)
     }
 }

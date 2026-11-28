@@ -51,6 +51,26 @@ data class FeedbackRequest(
     val accepted: Boolean
 )
 
+/**
+ * What the user did in the app with the session's step on screen, for the server's interaction
+ * log (backend/recommend/views.py, `event`): one of the names below, with the [restaurant] for
+ * directions and a bookmark. It changes nothing in the session.
+ */
+data class EventRequest(val event: String, val restaurant: String? = null) {
+    companion object {
+        /** Back to the start screen. */
+        const val HOME = "home"
+        /** Back to the session left that way. */
+        const val RESUME = "resume"
+        /** Walking directions to a restaurant opened in a map app. */
+        const val DIRECTIONS = "directions"
+        /** A restaurant bookmarked. */
+        const val BOOKMARK = "bookmark"
+        /** The app went to the background. */
+        const val BACKGROUND = "background"
+    }
+}
+
 /** Body of a non-2xx response. `state` is only sent with a 409 stale_step. */
 data class ApiErrorResponse(val error: ApiError?, val state: SessionState?)
 
@@ -93,4 +113,8 @@ interface ApiService {
 
     @GET("api/sessions/{id}/menu/")
     suspend fun menu(@Path("id") sessionId: String, @Query("restaurant") restaurant: String): RestaurantMenu
+
+    /** 204; a server from before i5-A10 answers 404, which the caller ignores like any failure. */
+    @POST("api/sessions/{id}/event/")
+    suspend fun event(@Path("id") sessionId: String, @Body request: EventRequest): Response<Unit>
 }
