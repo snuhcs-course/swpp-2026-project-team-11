@@ -8,7 +8,7 @@
     room.public_state(member)                   -> what that member's phone draws
 
 A room has a four-digit code and 2 to 8 members. Each phone holds its member's secret
-token. The host sets the meal, the area (recommend/areas.py), the price range and how long a round
+token. The host sets the meal, the areas (recommend/areas.py), the price ranges and how long a round
 waits (one of ROUND_CHOICES seconds, ROUND_SECONDS unless picked), starts the questions,
 may stop them early ("recommend now"), may ask for other restaurants ("find another")
 and decides on a restaurant, once. Nobody joins after
@@ -47,6 +47,7 @@ from question_engines.decision_tree.contracts import Answer, answer_options, tra
 from question_engines.group import GroupConfig, GroupEngine, GroupResult
 from question_engines.group.engine import MAX_MEMBERS, place, offer_identity
 
+from .prices import PRICE_BANDS
 from .sessions import EngineUnavailable, StaleStep, load_candidates, restaurant_menus
 
 ROUND_SECONDS = 15
@@ -74,8 +75,8 @@ class RoomError(Exception):
 class RoomSettings:
     date: datetime.date
     meal: str | None
-    area: str
-    price_level: int | None = None
+    areas: tuple[str, ...]
+    price_levels: tuple[int, ...] = tuple(PRICE_BANDS)
     round_seconds: int = ROUND_SECONDS
 
 
@@ -139,7 +140,7 @@ class Room:
         self.members = [Member(i, m.name, m.allergies, m.language, m.token) for i, m in enumerate(present)]
         self.host_id = next(m.id for m in self.members if m.token == member.token)
         s = self.settings
-        candidates, schema, _ = load_candidates(s.date, s.meal, frozenset(), s.area, s.price_level)
+        candidates, schema, _ = load_candidates(s.date, s.meal, frozenset(), s.areas, s.price_levels)
         self.menus = restaurant_menus(candidates, place)
         offers = _offers(candidates)
         excluded = []
@@ -147,7 +148,7 @@ class Room:
         try:
             for m in self.members:
                 if m.allergies:
-                    allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.area, s.price_level)
+                    allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.areas, s.price_levels)
                     excluded.append(offers - safe_offers(candidates, allowed))
                     offer_filters.append({offer_identity(c["food_id"], o) for c in allowed for o in c["offers"]})
                 else:

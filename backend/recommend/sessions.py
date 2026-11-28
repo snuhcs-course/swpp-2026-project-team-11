@@ -1,8 +1,8 @@
 """One recommendation session per client, kept in server memory.
 
-    create(date, meal, engine, allergies, area, language, price_level, user_id) -> RecommendSession
+    create(date, meal, engine, allergies, areas, language, price_levels, user_id) -> RecommendSession
     get(session_id)            -> RecommendSession | None
-    prewarm(meal, allergies, area) -> builds the restaurant catalogue ahead of create
+    prewarm(meal, allergies, areas) -> builds the restaurant catalogue ahead of create
     session.public_state()     -> what the phone is allowed to see
     session.reason()           -> why the proposed dish suits the user (recommend/reasons.py)
     session.menu(restaurant)   -> the session's dishes that restaurant serves
@@ -22,18 +22,20 @@ requests at once, so every session carries its own lock. The candidate list is
 read once at creation and stays with the engine: a later `fetch_menus` run does
 not change a session that is already in progress.
 
-`area` is where the user picked to eat (recommend/areas.py): "campus", the day's SNU
-cafeteria menu (menus.services.get_catalog), "snu_station" or "nakseongdae", the
-restaurants near that station (get_store_catalog), or "all" for every one of them. Only
-campus sessions support the LLM engine, which would otherwise send thousands of dish
-names per question. The server never learns where the user is.
+`areas` are where the user picked to eat (recommend/areas.py), at least one: "campus", the
+day's SNU cafeteria menu (menus.services.get_catalog), and "snu_station" or "nakseongdae",
+the restaurants near that station (get_store_catalog). The candidates are the union of the
+picked areas; with every area picked no restaurant is cut, as before areas. Only campus-only
+sessions support the LLM engine, which would otherwise send thousands of dish names per
+question. The server never learns where the user is.
 
 `menu(restaurant)` lists the candidates a restaurant serves, so dishes withheld for
 an allergy, outside the area or out of the price range are not listed either.
 
-`price_level` is the user's price range, 1 to 3 (recommend/prices.py), or None for any
-price. Only offers priced inside that band reach the engine, so every later proposal and
-"find another" stays in it.
+`price_levels` are the user's price ranges, at least one of 1 to 3 (recommend/prices.py).
+Only offers priced inside one of those bands reach the engine, so every later proposal and
+"find another" stays in them. With every level picked nothing is cut, not even offers of
+unknown price.
 
 A banned menu, or one holding a dish of a banned group (its `food_groups`), is never
 proposed again in the session, even after undo: a guess of one is turned down with `feedback` as soon as an
@@ -68,8 +70,8 @@ from django.utils import timezone
 from menus.features.schema import FEATURE_VERSION
 from menus.services import MEAL_ORDER, get_catalog, get_store_catalog
 from recommend import reasons
-from recommend.areas import SOURCES, STATIONS, near_station
-from recommend.prices import within_price
+from recommend.areas import AREAS, STATIONS, near_stations
+from recommend.prices import PRICE_BANDS, within_price
 from question_engines.decision_tree import DecisionTreeEngine
 from question_engines.llm import LLMConfigError, LLMEngine
 from question_engines.rl import RLEngine
@@ -86,26 +88,25 @@ class EngineUnavailable(Exception):
     """The requested engine cannot run on this server as it is configured."""
 
 
-def load_candidates(date: datetime.date, meal: str | None, allergies: frozenset[str], area: str,
-                    price_level: int | None = None) -> tuple[list, list, int]:
-    """(candidates, schema, count before the station cut) for a session or a group room."""
-    source = SOURCES[area]
+def load_candidates(date: datetime.date, meal: str | None, allergies: frozenset[str],
+                    areas: tuple[str, ...] = ("campus",),
+                    price_levels: tuple[int, ...] = tuple(PRICE_BANDS)) -> tuple[list, list, int]:
+    """(candidates, schema, count before the station and price cuts) for a session or a group room."""
+    stations = [area for area in areas if area in STATIONS]
+    campus, stores = [], []
     try:
-        if source == "general":
-            candidates, schema = get_store_catalog(meal, allergies)
-        elif source == "all":
+        if "campus" in areas:
             campus, schema = get_catalog(date, meal, allergies)
-            stores, _ = get_store_catalog(meal, allergies)
-            candidates = campus + stores
-        else:
-            candidates, schema = get_catalog(date, meal, allergies)
+        if stations:
+            stores, schema = get_store_catalog(meal, allergies)
     except ValueError as error:
         raise EngineUnavailable("Invalid stored menu features.") from error
-    before = len(candidates)
-    if area in STATIONS:
-        candidates = near_station(candidates, area)
-    if price_level is not None:
-        candidates = within_price(candidates, price_level)
+    before = len(campus) + len(stores)
+    if set(areas) != set(AREAS):  # every area keeps every restaurant, also those without coordinates
+        stores = near_stations(stores, stations)
+    candidates = campus + stores
+    if set(price_levels) != set(PRICE_BANDS):
+        candidates = within_price(candidates, price_levels)
     return candidates, schema, before
 
 
@@ -124,13 +125,13 @@ def restaurant_menus(candidates: list, key=lambda offer: offer["restaurant"]) ->
 
 class RecommendSession:
     def __init__(self, date: datetime.date, meal: str | None, engine: str,
-                 allergies: frozenset[str], area: str = "campus", language: str = "en",
-                 price_level: int | None = None, user_id: int | None = None):
+                 allergies: frozenset[str], areas: tuple[str, ...] = ("campus",), language: str = "en",
+                 price_levels: tuple[int, ...] = tuple(PRICE_BANDS), user_id: int | None = None):
         self.session_id = uuid.uuid4().hex
         self.user_id = user_id
         self.interaction_id = uuid.uuid4().hex
-        self.area = area
-        self.price_level = price_level
+        self.areas = areas
+        self.price_levels = price_levels
         self.logged_allergies = sorted(allergies)
         self.engine_name = engine
         self.date = date
@@ -138,7 +139,7 @@ class RecommendSession:
         self.language = language
         self.lock = threading.Lock()
         started = time.perf_counter()
-        candidates, schema, self.candidates_before_area = load_candidates(date, meal, allergies, area, price_level)
+        candidates, schema, self.candidates_before_area = load_candidates(date, meal, allergies, areas, price_levels)
         loaded = time.perf_counter()
         self.candidate_count = len(candidates)
         # Reasons need only dish names and feature means after the engine is built.
@@ -282,15 +283,15 @@ _sessions_lock = threading.Lock()
 
 def create(date: datetime.date | None = None, meal: str | None = None,
            engine: str | None = None, allergies: frozenset[str] = frozenset(),
-           area: str = "campus", language: str = "en",
-           price_level: int | None = None, user_id: int | None = None) -> RecommendSession:
-    """Sessions outside campus fall back to DT if the configured default is LLM."""
+           areas: tuple[str, ...] = ("campus",), language: str = "en",
+           price_levels: tuple[int, ...] = tuple(PRICE_BANDS), user_id: int | None = None) -> RecommendSession:
+    """Sessions beyond campus fall back to DT if the configured default is LLM."""
     if engine is None:
         engine = settings.RECOMMEND_DEFAULT_ENGINE
-        if area != "campus" and engine == "llm":
+        if areas != ("campus",) and engine == "llm":
             engine = "decision_tree"
     session = RecommendSession(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                               meal, engine, allergies, area, language, price_level, user_id)
+                               meal, engine, allergies, areas, language, price_levels, user_id)
     with _sessions_lock:
         _sessions[session.session_id] = session
         while len(_sessions) > MAX_SESSIONS:
@@ -298,9 +299,9 @@ def create(date: datetime.date | None = None, meal: str | None = None,
     return session
 
 
-def prewarm(meal: str | None, allergies: frozenset[str], area: str) -> None:
+def prewarm(meal: str | None, allergies: frozenset[str], areas: tuple[str, ...]) -> None:
     """Builds the restaurant catalogue a session would read, which takes about a second."""
-    if area != "campus":
+    if any(area in STATIONS for area in areas):
         get_store_catalog(meal, allergies)
 
 
