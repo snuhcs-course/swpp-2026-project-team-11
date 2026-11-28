@@ -53,7 +53,7 @@ The PR does not install itself or restart the live service.
    checks before publication. Never replace an open live SQLite file.
 9. Start the existing host supervisor, check local/public health and personal DT/RL
    sessions against today's campus plus mapped restaurants. Verify both languages,
-   actual sales names/prices, allergy/distance filters, category rejection/undo,
+   actual sales names/prices, allergy/area filters, category rejection/undo,
    20-plus proposal-only continuation, group DT and new bilingual questions.
    Then re-enable the existing 07:00/09:00/12:00/16:00 daily schedule.
 
@@ -71,10 +71,10 @@ is an operator action, not an automatic concurrent DB copy.
 ## Known host concern
 
 The current DB retains operating-hours fields, but main's catalogue loader does
-not apply them. This PR preserves the current location/meal/allergy filtering;
+not apply them. This PR preserves the current area/meal/allergy filtering;
 restoring the old host-only operating-hours behavior is separate work. Do not
 claim that every listed restaurant is open now solely from these fields.
 
 Interaction logs are private (`.local/hosting/private/interaction-logs`), contain
-user-provided allergies/location, and expire after 30 days. Do not publish logs,
+user-provided allergies (version 1 lines, before i5-A1, also the location), and expire after 30 days. Do not publish logs,
 DB backups, `.env`, tokens or model-provider credentials.

@@ -184,49 +184,29 @@ The device needs Google Play services and a Google account (an emulator with a P
 image works once you sign in to Google on it). Google shows its own account picker; closing
 it changes nothing.
 
-Once per launch until it is allowed, the start screen says why it needs location
-(on the first launch, after the settings tip is closed)
-and, on **Continue**, asks for it. With it, a new session sends where the
-device is: a current fix, or the last known location when none comes within 3
-seconds (the start button shows it is loading meanwhile); the server then gives
-each cafeteria's `distance_m`. The start map centers on the user, the result map
-shows the user's position and fits it with the cafeterias (once, when the first
-fix arrives, and only within 3 km of one, so a phone off campus keeps the
-map on the cafeterias), and the cafeteria list shows distances and walking
-times, nearest first. Without it the start map shows the middle of campus, the
-session starts without a location and the list has no distances. On the
-emulator, set a position under Extended controls > Location (for example
-37.4600, 126.9520).
-
-Picking "nearby" (alone or with friends) without location asks Android for it
-again. Allowed, "nearby" is kept; declined, the distance goes back to "anywhere"
-and a short message says why, always with **Open settings** (the app's settings
-page); back from there with location allowed, "nearby" is picked. When Android no
-longer shows its dialog, the message says location must be allowed there and
-**Open settings** is the main button. The app reads that from the rationale: none
-after the answer, though one showed before the request or the last request was
-refused (its dialog closed unanswered included). A first dialog closed with Back
-leaves no rationale either and is not counted; the app cannot tell it from a
-blocked request (it is paused and gets the same answer both ways), which is why
-the plain message offers settings too. Android's answer still picks "nearby" when
-the screen is recreated (a rotation, a dark mode switch) while its dialog is open.
-Every screen checks the permission again when the app comes back.
+The app has no location permission and never reads or sends the phone's position
+(i5-A1). The start sentence picks where to eat instead: on campus (the cafeterias), near
+서울대입구역, near 낙성대역 or anywhere, and the server keeps only the restaurants of that
+area (backend/README.md, "Areas"). The start map centers on the campus or the picked
+station. The result and group maps show the restaurants only: no user dot, distances,
+walking times or locate button. Walking directions pass only the destination, and the
+map app picks the start itself.
 
 ## Screens
 
 | When | Screen | Actions |
 | --- | --- | --- |
 | first launch | Language (asked in both), then Account (log in or sign up, optional), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear (bottom-left), with a tip that both change there anytime | a language goes on at once; on Account, "Not now" goes on as a guest and signing in goes on by itself; ‹ on Allergies returns to Account (to Language once signed in); on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
-| no session | Start: "Today I'll have [lunch] [anywhere] [at a fair price] [for me]", a round start button, a faded map around the user, or around the SNU administration building until location is allowed | the meal, the distance and the price range open a small menu under them, without dimming the screen; the price range is picked as "any price" or one to three ₩ signs and read in words ("on a budget", "at a fair price", "for a treat"), and the small "?" beside it shows the won each covers; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home; "for me" / "with friends" switches to group mode, where the button creates a room (a guest names themselves first), chips under the sentence pick how long each question waits (10, 15, 30 or 60 s; 15 at first) and "Join with a code" (top-right) opens Join |
+| no session | Start: "Today I'll have [lunch] [anywhere] [at a fair price] [for me]", a round start button, a faded map around the picked area (the SNU administration building for campus and anywhere, else the station) | the meal, the area (campus, 서울대입구역, 낙성대역 or anywhere) and the price range open a small menu under them, without dimming the screen; the price range is picked as "any price" or one to three ₩ signs and read in words ("on a budget", "at a fair price", "for a treat"), and the small "?" beside it shows the won each covers; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home; "for me" / "with friends" switches to group mode, where the button creates a room (a guest names themselves first), chips under the sentence pick how long each question waits (10, 15, 30 or 60 s; 15 at first) and "Join with a code" (top-right) opens Join |
 | gear | Settings: the account (signed out: "Log in or sign up"; signed in: the username, whether Google is linked, "Bookmarks", "History", "Link Google" and "Log out"), one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button; "Log in or sign up" opens the Account screen, which returns here once signed in; "Bookmarks" and "History" open the account's lists |
 | Bookmarks, History | The account's saved dishes (name and restaurant) or the dishes it was recommended (name, restaurant, date and meal), newest first | ‹ returns to Settings; a failed load offers "Try again"; the rows do nothing when tapped |
 | Account | Log in or Create an account: username, password (twice to create one), the rules, "Continue with Google" in a build with a Google client ID | the line under the button switches between the two; errors show under the fields; the token is kept in its own preferences file, which backup leaves out |
 | `question` | The current question under the past ones, one grey line each with the answer on the right; a five-step slider with "I'm not sure"; a progress bar | dragging along the slider or tapping a circle answers; a past question goes back to it; ‹ undoes (on the first question, leaves); home in the top-right corner; "Recommend now" floats bottom-right once there is an answer |
-| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one row per cafeteria | "Find another" (bottom-right) turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; home in the top-right corner, with a bookmark button beside it when signed in that saves or removes the dish on view with the cafeteria chosen (the button fills at once and empties again if the server refuses); chips above the sheet switch between the dishes shown so far; a cafeteria row glides the map to it; the directions icon at its end (when the cafeteria is on the map) opens a walking route in Naver Map, else Kakao Map, else Kakao Map's web page (Kakao Map and the web page start from the phone's position when it is known), with no route API in the app; the menu icon beside it lists what that cafeteria serves at that meal in a sheet built like the result sheet (its handle closes it; long menus scroll with faded edges), the proposed dish in orange; there is no ban link: a dish "Find another" turned down does not come back in the session unless ‹ goes back past it; the locate button centers the map on the user, then turns it with the phone; the sheet's handle, dish name and description drag or tap it between folded, half and full |
+| `guess`, `recommendation` | Result: the dish (or a kind of dish with an example) over a map of its cafeterias, and a sheet with one or two sentences on why it suits the user and the cafeterias, one row per cafeteria | "Find another" (bottom-right) turns down the dish the server proposes now and asks on, whichever dish is shown; ‹ undoes; home in the top-right corner, with a bookmark button beside it when signed in that saves or removes the dish on view with the cafeteria chosen (the button fills at once and empties again if the server refuses); chips above the sheet switch between the dishes shown so far; a cafeteria row glides the map to it; the directions icon at its end (when the cafeteria is on the map) opens a walking route to it in Naver Map, else Kakao Map, else Kakao Map's web page, which pick the start themselves, with no route API in the app; the menu icon beside it lists what that cafeteria serves at that meal in a sheet built like the result sheet (its handle closes it; long menus scroll with faded edges), the proposed dish in orange; there is no ban link: a dish "Find another" turned down does not come back in the session unless ‹ goes back past it; the sheet's handle, dish name and description drag or tap it between folded, half and full |
 | Join | Four code boxes filled from an in-app number pad, and a name field for a guest | "Join" turns orange once the code (and a guest's name) is there; ‹ returns to the start screen |
 | room `lobby` | The code in large digits, "Send invite" (Android's share sheet), who is here with "Me" / "Host" and their allergies | the host's "Start · N" needs two people and spins, still orange, while the room starts (TalkBack reads it as loading); others see "The host will start"; ‹ or Back leaves the room |
 | room `asking` | Members' circles across the top (orange ring and check once answered, never what), a bar running down the round's time (`round_seconds`, the host's pick), "Question n · answer within N s" with the seconds left on the right, the past rounds with this phone's answer, the shared question, the five-step scale, the rounds | an answer is final; a press still held when the round moves on answers nothing; then the bar turns grey and "Waiting for … · 9 s"; in the last 5 s without an answer the bar and count turn orange, the count pulses each second, the phone ticks once and "I'm not sure" is marked; at 0 the server answers "not sure" for the silent; the host's "Recommend now" appears after the first round; home or Back asks before leaving, since nobody can come back |
-| room `done` | Map pins and chips for every restaurant the room has been shown (by name, at most 240 dp, longer names ending in "…"), the newest find first and each find in the server's order, in a row that scrolls sideways; a chip shows a thumb and the number who agree once anyone does (i5-P2); under "Today's lunch" (the meal picked at the start), each member's dish there with its price and "Great fit" / "Good fit", this phone's first, then the restaurant's other dishes; a round thumb (48 dp to tap) at the right of the restaurant's name and its distance, over "Agree n"; with two or more restaurants, an orange "Popular" tag on the chip of each one with the most votes (none before the first vote) | chips or pins switch restaurant; the directions icon after the distance opens a walking route from this phone's position (not the host's, which the distance is measured from) as on the result screen; the thumb agrees with the restaurant shown, turning orange, and a second tap takes it back, until the host decides; the host's "Find other places" (left of "Go here", while the server says `more`) adds restaurants the room has not been shown, with no votes yet, and every phone moves to the first new one and scrolls the chips back to the start; the earlier ones keep their votes, and members may still agree with them and the host may still choose one; the host's "Go here" decides, and every phone then opens "Meet here" once (i5-P17): a centered card with the restaurant, its distance and each member's dish and price, this phone's first, with "Start over" (leaves the room), "Directions" (from this phone's position) and "OK"; "Meet at …" stays at the bottom and opens the card again; home or Back asks before leaving until the host has decided |
+| room `done` | Map pins and chips for every restaurant the room has been shown (by name, at most 240 dp, longer names ending in "…"), the newest find first and each find in the server's order, in a row that scrolls sideways; a chip shows a thumb and the number who agree once anyone does (i5-P2); under "Today's lunch" (the meal picked at the start), each member's dish there with its price and "Great fit" / "Good fit", this phone's first, then the restaurant's other dishes; a round thumb (48 dp to tap) at the right of the restaurant's name, over "Agree n"; with two or more restaurants, an orange "Popular" tag on the chip of each one with the most votes (none before the first vote) | chips or pins switch restaurant; the directions icon under the name opens a walking route as on the result screen; the thumb agrees with the restaurant shown, turning orange, and a second tap takes it back, until the host decides; the host's "Find other places" (left of "Go here", while the server says `more`) adds restaurants the room has not been shown, with no votes yet, and every phone moves to the first new one and scrolls the chips back to the start; the earlier ones keep their votes, and members may still agree with them and the host may still choose one; the host's "Go here" decides, and every phone then opens "Meet here" once (i5-P17): a centered card with the restaurant and each member's dish and price, this phone's first, with "Start over" (leaves the room), "Directions" and "OK"; "Meet at …" stays at the bottom and opens the card again; home or Back asks before leaving until the host has decided |
 | `unavailable` | Why nothing can be recommended today; with allergies saved, that no dish is known to be free of them and that Settings can change them | ‹ returns to the start screen |
 
 The five circles send `no`, `probably_no`, `any`, `probably_yes` and `yes`, left
@@ -258,31 +238,27 @@ dish; a network failure leaves the reason out.
 "Find another" is `feedback` with `accepted: false`: the result screen shows a
 `guess`, and the app never accepts one. Leaving with "Start over" simply drops
 the session; home keeps a session with an answer or a dish in it so the start
-screen can offer to resume it until a new one starts. The server cuts no distance by default (`METCHU_MAX_DISTANCE_M`), so
-"nearby" is applied to the result's cafeteria list on the phone: cafeterias
-within 800 m (a 10-minute walk at 80 m/min, straight line). Distances come from
-the phone's current position, or the server's `distance_m` until the phone has
-one. If none is that close, all are listed with a note; if no distance is known,
-all are listed under a note that the location is unknown. The selected cafeteria
-is kept by name, so it stays put when the list re-sorts as the user moves.
+screen can offer to resume it until a new one starts. The result's cafeteria list
+is in the server's order; the session already holds only the picked area. The
+selected cafeteria is kept by name.
 
 The meal starts at the next one the cafeterias serve (breakfast before 10,
-lunch before 15, dinner after); one the user picks is kept until the app closes. The distance (anywhere until one is picked), price range, round time, engine and allergies are kept on
+lunch before 15, dinner after); one the user picks is kept until the app closes. The area (anywhere until one is picked), price range, round time, engine and allergies are kept on
 the phone (`SettingsStore`, `AllergyStore`, SharedPreferences). The language
 follows the phone until the globe picks one (`AppCompatDelegate` per-app
 locales). A new session asks the server for the app's language (`en` or `ko`), so
 questions come in that language too. Food and cafeteria names are shown as the
 server sends them, in Korean.
 
-While nothing else is open (no sheet, tip, language menu or location notice), a
+While nothing else is open (no sheet, tip or language menu), a
 soft circle spreads from the start button three times to invite a tap. While a
 session starts, the start screen searches: the sentence gives way to "Finding
-your menu", which TalkBack reads out, the start button shrinks into the user's
-dot with ripples spreading from it, and the map fills the screen, zoomed out to
+your menu", which TalkBack reads out, the start button shrinks into a dot over
+the picked area with ripples spreading from it, and the map fills the screen, zoomed out to
 the campus; the faded settings and language buttons cannot be reached meanwhile.
 The search shows for at least 0.7 s, so a quick reply does not cut it short.
 The pins on the result map have a thinner white ring (1.5 dp), to match the
-user's dot on the start map.
+dot on the start map.
 
 A tapped answer stays filled while its request runs; other taps are ignored. A
 request that takes more than 0.3 s shows a spinner, in the start button while a
@@ -305,22 +281,21 @@ data/model/SessionState.kt          JSON shapes returned by the server, and the 
 data/model/Allergen.kt              the allergens the server accepts (backend/menus/allergens.py)
 data/network/ApiService.kt          Retrofit endpoints and request bodies
 data/network/RetrofitInstance.kt    server address and HTTP client
-data/location/LocationSource.kt     where the device is when a session starts
 data/model/RoomState.kt             a group room as one member sees it
 data/network/RoomApi.kt             Retrofit endpoints of the group rooms
 data/repository/RecommendRepository.kt   the session requests; with RoomRepository the only classes that call Retrofit
 data/repository/RoomRepository.kt   the room requests, with the member token
 data/repository/AllergyStore.kt     the user's allergies, on this device
-data/repository/SettingsStore.kt    the engine, distance, price range and round time choices, on this device
+data/repository/SettingsStore.kt    the engine, area, price range and round time choices, on this device
 ui/main/MainActivity.kt             hosts the Compose app
 ui/main/MetchuApp.kt                picks the screen for the session's step; the error banner
 ui/main/RecommendViewModel.kt       session state, question history, loading and error LiveData
 ui/start/                           start screen and the meal choice
 ui/settings/                        allergies and engine
 ui/question/                        question history, five-step scale, progress
-ui/result/                          result map and sheet, cafeteria distances, nothing to recommend
+ui/result/                          result map and sheet, walking directions, nothing to recommend
 ui/group/                           group mode: join, lobby, shared question, restaurants; GroupViewModel polls the room
-ui/common/                          shared buttons, pills, bottom and picker sheets, location
+ui/common/                          shared buttons, pills, bottom and picker sheets
 ui/theme/Theme.kt                   colors, font and text sizes of the design foundation board
 ```
 
@@ -333,8 +308,8 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 
 | Request | Body | Effect |
 | --- | --- | --- |
-| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "language"?, "source"?, "distance_scope"?, "price_level"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), and the app language (`en` or `ko`). Both distance choices send `source: "all"` to combine cafeteria and restaurant menus for DT or RL. `distance_scope: "near"` filters offers within 800 m straight-line distance before recommendation when location is known; without location it includes all. `distance_scope: "any"` applies no cutoff. `price_level` (1 to 3, sent only when a price range is picked) keeps only dishes in that band (backend/README.md, "Price range"). General and all sources reject the LLM engine. `location` is the user's `{"lat", "lng"}`. With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
-| `POST /api/sessions/prewarm/` | `{"meal"?, "source"?, "allergies"?}` | 204. The start screen sends it when it opens and when the meal or allergies change, outside group mode, so the server has built the restaurant catalogue before Start. It creates no session |
+| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "allergies"?, "language"?, "area"?, "price_level"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), the app language (`en` or `ko`) and the picked `area`: `campus` (the cafeterias), `snu_station` or `nakseongdae` (the restaurants around that station) or `all`. No location is sent. `price_level` (1 to 3, sent only when a price range is picked) keeps only dishes in that band (backend/README.md, "Price range"). Areas other than `campus` reject the LLM engine (400 `area_llm_unsupported`). With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
+| `POST /api/sessions/prewarm/` | `{"meal"?, "area"?, "allergies"?}` | 204. The start screen sends it when it opens and when the meal, area or allergies change, outside group mode, so the server has built the restaurant catalogue before Start. It creates no session |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |
@@ -342,7 +317,7 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | `POST /api/sessions/<id>/undo/` | | Go back one step |
 | `POST /api/sessions/<id>/ban/` | `{"food_id" or "food_group", "banned"}` | Keep one dish, or every dish of a `food_group`, out of the rest of the session (`banned: false` lets it back). The step on screen stays; the next action that would show the dish turns it down, and an undo that would goes back further. Bans end with the session. The phone no longer calls it (i4-A10, i4-A22) |
 | `GET /api/sessions/<id>/reason/` | | `{"food_id", "reason", "source"}`: why the dish on screen suits the user, in the session's language. `source` is `llm`, or `template` when the server has no key or the LLM failed. With no dish on screen, a 409 `stale_step` |
-| `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy, by distance or by price are not listed. An unknown restaurant has no dishes |
+| `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy, outside the area or by price are not listed. An unknown restaurant has no dishes |
 
 The group room requests (backend/README.md "Group rooms") go through `RoomApi` and
 `RoomRepository`, on a client that hides `Authorization` and `X-Member-Token` in the debug log.
@@ -404,16 +379,16 @@ change: a group's `food_ids` is replaced by `members`, a list of
 `{"food_id", "display_name"}`. The
 [LLM engine](../backend/question_engines/llm/README.md) returns the same step
 shapes; its `question_id` is `q:llm-<n>` and it never sends a `group`.
-Each of a food's `offers` is `{"restaurant", "meal", "price", "lat", "lng", "distance_m"}`;
-`price` is null when the menu lists none, `lat` or `lng` is null when the cafeteria's
-location is not known (the app then leaves it off the map), and `distance_m` is the straight-line distance in meters
-from the session's `location`, null when either is unknown.
+Each of a food's `offers` is `{"restaurant", "meal", "price", "lat", "lng"}`;
+`price` is null when the menu lists none, and `lat` or `lng` is null when the cafeteria's
+location is not known (the app then leaves it off the map).
 
 Errors are `{"error": {"code", "message"}}`:
 
 | Status | `code` | Meaning |
 | --- | --- | --- |
 | 400 | `invalid_request` | Invalid request fields. A rejected start request stays on the start screen so the user can change settings, including when an older server does not recognize RL. |
+| 400 | `area_llm_unsupported` | The LLM engine with an area other than campus. The app says to change the engine in Settings and offers no retry |
 | 404 | `session_not_found` | Unknown session; the app returns to the start screen |
 | 409 | `stale_step` | The question or guess is no longer current. The body also carries `state`, and the app redraws from it |
 | 503 | `engine_unavailable` | The selected engine is unavailable (for example missing LLM configuration or invalid stored features for RL). The app stays on the start screen and offers no retry |
@@ -425,11 +400,9 @@ Server behavior to know about:
   asks until it is ready to guess, and the user can tap "Just recommend
   something" at any time. `METCHU_MAX_QUESTIONS=N` makes the selected engine guess
   after N answers.
-- There is no distance cutoff by default. `METCHU_MAX_DISTANCE_M=N` leaves out
-  cafeterias more than N meters from the session's `location`, and dishes served
-  nowhere closer, before the engine starts; `candidate_count` counts what is
-  left. Sessions without a location and cafeterias without coordinates are not
-  cut. If everything is cut, the session is `unavailable` with `empty_candidates`.
+- A station area keeps only the restaurants inside that station's circle before the
+  engine starts; `candidate_count` counts what is left. If nothing is left, the
+  session is `unavailable` with `empty_candidates`.
 - Requests for one session run one at a time. A request repeated while an LLM
   step is still running waits for it and then gets `stale_step` with the
   current state, so a retry after a timeout never answers twice.
@@ -470,6 +443,9 @@ and the questions have no result yet, and `room_done.json` is after the host's d
 `batch` (i5-P2) is 0 in `room_done.json`, as the server sends for a room that has not asked for other
 places; replaying the capture on the server after i5-P2 gave the same field at the same place. Its
 picks and dishes have since changed with the engine, so the rest was kept as captured.
+On 2026-11-28 (i5-A1) `distance_m` was removed from every captured offer and pick, as the
+server no longer sends it (`recommend/tests/helpers.py` `check_state` and the room pick keys in
+`test_rooms.py` check the server's side); the files were not recaptured, so the rest is as captured.
 `FakeRoomApi` stands in for the room server; `hold()` keeps a reply back to deliver replies out
 of order.
 The client tests decode those files, so they are the client's

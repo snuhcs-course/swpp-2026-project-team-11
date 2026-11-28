@@ -37,7 +37,7 @@ stripping first can collapse conflicting source entries. At serving time lookup 
 Branch identity remains in `restaurant_code` and coordinates on every actual offer.
 
 A canonical type enters once when at least one offer survives meal, allergy and
-location filtering. More restaurants/variants do not multiply its neural prior.
+area filtering. More restaurants/variants do not multiply its neural prior.
 Offers retain `menu_name`, `restaurant_code`, original price and coordinates, so
 results and the restaurant-menu sheet can show what is actually sold. Offer-level
 allergen tags are independent of sensory features. Group recommendation also
