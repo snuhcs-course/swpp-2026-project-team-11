@@ -384,7 +384,7 @@ history above; group rooms use it to name members.
 
 > **Note:** `accounts/migrations/0002_bookmarks_history.py` creates the tables `accounts_bookmark` and `accounts_historyentry`. After the merge, once `migrate` has run on the shared DB, run the RLS SQL again.
 
-> **Note (i5-A4):** `0003_one_bookmark_per_restaurant` keeps one bookmark per user and restaurant, the earliest saved (by `created_at`, then `id`), and deletes the other dish bookmarks of that restaurant; `0004_bookmark_per_restaurant` then drops `food_id` and `display_name`. Going back restores the columns empty, not the deleted rows. No table is new, so the RLS SQL need not run again. An APK from before i5-A4 still saves (the restaurant of the dish), but its Bookmarks list expects dish names and cannot show the new replies, so hand out the new APK with this server.
+> **Note (i5-A4):** `0003_one_bookmark_per_restaurant` keeps one bookmark per user and restaurant, the earliest saved (by `created_at`, then `id`), and deletes the other dish bookmarks of that restaurant; `0004_bookmark_per_restaurant` then drops `food_id` and `display_name`. There is no way back once a bookmark exists: unapplying 0004 then stops with `IrreversibleError` and changes nothing, so take a database backup before `migrate` and restore it to go back. No table is new, so the RLS SQL need not run again. An APK from before i5-A4 still saves (the restaurant of the dish), but its Bookmarks list expects dish names and cannot show the new replies, so hand out the new APK with this server.
 
 ## Group rooms (i4-P9)
 
