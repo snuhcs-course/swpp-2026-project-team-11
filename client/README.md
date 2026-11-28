@@ -185,10 +185,10 @@ image works once you sign in to Google on it). Google shows its own account pick
 it changes nothing.
 
 The app has no location permission and never reads or sends the phone's position
-(i5-A1). The start sentence picks where to eat instead: on campus (the cafeterias), near
-서울대입구역, near 낙성대역 or anywhere, and the server keeps only the restaurants of that
-area (backend/README.md, "Areas", which also gives the rollout order: the server before the
-APK). The start map centers on the campus or the picked
+(i5-A1). The start sentence picks where to eat instead, one or more of: on campus (the
+cafeterias), near 서울대입구역 and near 낙성대역 (i5-A7); the server keeps only the restaurants
+of those areas (backend/README.md, "Areas", which also gives the rollout order: the server
+before the APK). The start map centers on the first picked area: the campus or the
 station. The result and group maps show the restaurants only: no user dot, distances,
 walking times or locate button. Walking directions pass only the destination, and the
 map app picks the start itself.
@@ -198,7 +198,7 @@ map app picks the start itself.
 | When | Screen | Actions |
 | --- | --- | --- |
 | first launch | Language (asked in both), then Account (log in or sign up, optional), then Allergies (the Settings chips and a Next button), then Start dimmed but for the globe and the gear (bottom-left), with a tip that both change there anytime | a language goes on at once; on Account, "Not now" goes on as a guest and signing in goes on by itself; ‹ on Allergies returns to Account (to Language once signed in); on the tip a tap anywhere, Back or "Got it" closes it for good, and the gear also opens Settings |
-| no session | Start: "Today I'll have [lunch] [anywhere] [at a fair price] [for me]", a round start button, a faded map around the picked area (the SNU administration building for campus and anywhere, else the station) | the meal, the area (campus, 서울대입구역, 낙성대역 or anywhere) and the price range open a small menu under them, without dimming the screen; the price range is picked as "any price" or one to three ₩ signs and read in words ("on a budget", "at a fair price", "for a treat"), and the small "?" beside it shows the won each covers; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home; "for me" / "with friends" switches to group mode, where the button creates a room (a guest names themselves first), chips under the sentence pick how long each question waits (10, 15, 30 or 60 s; 15 at first) and "Join with a code" (top-right) opens Join |
+| no session | Start: "Today I'll have [lunch] [anywhere] [at any price] [for me]", a round start button, a faded map around the first picked area (the SNU administration building for campus, else the station) | the meal, the areas (장소 in Korean) and the price ranges open a small menu under them, without dimming the screen; the meal's menu closes on a pick, while areas (campus, 서울대입구역, 낙성대역) and price ranges (one to three ₩ signs) take one or more, each tap turning one on or off, and close on a tap elsewhere or Back; the sentence reads one area by name, two as "in two places" and all three as "anywhere", and one price range in words ("on a budget", "at a fair price", "for a treat"), two as their ₩ signs and all three as "at any price"; with no area or no price range the button turns grey, does not start and reads "Pick a place" or "Pick a price range" (장소를 선택해주세요, 가격을 선택해주세요); the small "?" beside the price shows the won each range covers; the globe (bottom-left) grows into the language menu; the gear beside it opens Settings; "Resume" (top-right) returns to a session left with home; "for me" / "with friends" switches to group mode, where the button creates a room (a guest names themselves first), chips under the sentence pick how long each question waits (10, 15, 30 or 60 s; 15 at first) and "Join with a code" (top-right) opens Join |
 | gear | Settings: the account (signed out: "Log in or sign up"; signed in: the username, whether Google is linked, "Bookmarks", "History", "Link Google" and "Log out"), one chip per allergen (a picked one changes only its fill, so the chips never move), a note that the tags are AI estimates, the engine (decision tree, RL or LLM) | Back keeps the choices; there is no save button; "Log in or sign up" opens the Account screen, which returns here once signed in; "Bookmarks" and "History" open the account's lists |
 | Bookmarks, History | The account's saved dishes (name and restaurant) or the dishes it was recommended (name, restaurant, date and meal), newest first | ‹ returns to Settings; a failed load offers "Try again"; the rows do nothing when tapped |
 | Account | Log in or Create an account: username, password (twice to create one), the rules, "Continue with Google" in a build with a Google client ID | the line under the button switches between the two; errors show under the fields; the token is kept in its own preferences file, which backup leaves out |
@@ -240,11 +240,11 @@ dish; a network failure leaves the reason out.
 `guess`, and the app never accepts one. Leaving with "Start over" simply drops
 the session; home keeps a session with an answer or a dish in it so the start
 screen can offer to resume it until a new one starts. The result's cafeteria list
-is in the server's order; the session already holds only the picked area. The
+is in the server's order; the session already holds only the picked areas. The
 selected cafeteria is kept by name.
 
 The meal starts at the next one the cafeterias serve (breakfast before 10,
-lunch before 15, dinner after); one the user picks is kept until the app closes. The area (anywhere until one is picked), price range, round time, engine and allergies are kept on
+lunch before 15, dinner after); one the user picks is kept until the app closes. The areas and price ranges (every one until the user changes them; the single area or price an app from before i5-A7 kept becomes its set), round time, engine and allergies are kept on
 the phone (`SettingsStore`, `AllergyStore`, SharedPreferences). The language
 follows the phone until the globe picks one (`AppCompatDelegate` per-app
 locales). A new session asks the server for the app's language (`en` or `ko`), so
@@ -255,7 +255,7 @@ While nothing else is open (no sheet, tip or language menu), a
 soft circle spreads from the start button three times to invite a tap. While a
 session starts, the start screen searches: the sentence gives way to "Finding
 your menu", which TalkBack reads out, the start button shrinks into a dot over
-the picked area with ripples spreading from it, and the map fills the screen, zoomed out to
+the first picked area with ripples spreading from it, and the map fills the screen, zoomed out to
 the campus; the faded settings and language buttons cannot be reached meanwhile.
 The search shows for at least 0.7 s, so a quick reply does not cut it short.
 The pins on the result map have a thinner white ring (1.5 dp), to match the
@@ -287,7 +287,7 @@ data/network/RoomApi.kt             Retrofit endpoints of the group rooms
 data/repository/RecommendRepository.kt   the session requests; with RoomRepository the only classes that call Retrofit
 data/repository/RoomRepository.kt   the room requests, with the member token
 data/repository/AllergyStore.kt     the user's allergies, on this device
-data/repository/SettingsStore.kt    the engine, area, price range and round time choices, on this device
+data/repository/SettingsStore.kt    the engine, areas, price ranges and round time choices, on this device
 ui/main/MainActivity.kt             hosts the Compose app
 ui/main/MetchuApp.kt                picks the screen for the session's step; the error banner
 ui/main/RecommendViewModel.kt       session state, question history, loading and error LiveData
@@ -309,8 +309,8 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 
 | Request | Body | Effect |
 | --- | --- | --- |
-| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "allergies"?, "language"?, "area"?, "price_level"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), the app language (`en` or `ko`) and the picked `area`: `campus` (the cafeterias), `snu_station` or `nakseongdae` (the restaurants around that station) or `all`. No location is sent. `price_level` (1 to 3, sent only when a price range is picked) keeps only dishes in that band (backend/README.md, "Price range"). Areas other than `campus` reject the LLM engine (400 `area_llm_unsupported`). With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
-| `POST /api/sessions/prewarm/` | `{"meal"?, "area"?, "allergies"?}` | 204. The start screen sends it when it opens and when the meal, area or allergies change, outside group mode, so the server has built the restaurant catalogue before Start. It creates no session |
+| `POST /api/sessions/` | `{"date"?, "meal"?, "engine"?, "allergies"?, "language"?, "areas"?, "price_levels"?}` | Android sends the engine selected in Settings (`decision_tree`, `rl` or `llm`), the meal (`BR`, `LU`, `DN` or the whole day), the app language (`en` or `ko`) and the picked `areas`, always and at least one: `campus` (the cafeterias), `snu_station` and `nakseongdae` (the restaurants around that station). No location is sent. `price_levels` (one or more of 1 to 3, always sent) keeps only dishes in one of those bands; all three is any price (backend/README.md, "Price range"). Apps from before i5-A7 send one `area` and `price_level`, which the server still reads. Any area besides `campus` rejects the LLM engine (400 `area_llm_unsupported`). With `allergies`, dishes whose tags are missing or contain an excluded allergen are withheld. |
+| `POST /api/sessions/prewarm/` | `{"meal"?, "areas"?, "allergies"?}` | 204. The start screen sends it when it opens and when the meal, areas or allergies change, outside group mode and while an area is picked, so the server has built the restaurant catalogue before Start. It creates no session |
 | `GET /api/sessions/<id>/` | | Current state |
 | `POST /api/sessions/<id>/answer/` | `{"question_id", "answer_id"}` | Answer the current question |
 | `POST /api/sessions/<id>/feedback/` | `{"guess_id", "accepted"}` | Accept or reject the current guess |
@@ -318,12 +318,12 @@ is in `app/src/main/assets/licenses/pretendard-OFL.txt`.
 | `POST /api/sessions/<id>/undo/` | | Go back one step |
 | `POST /api/sessions/<id>/ban/` | `{"food_id" or "food_group", "banned"}` | Keep one dish, or every dish of a `food_group`, out of the rest of the session (`banned: false` lets it back). The step on screen stays; the next action that would show the dish turns it down, and an undo that would goes back further. Bans end with the session. The phone no longer calls it (i4-A10, i4-A22) |
 | `GET /api/sessions/<id>/reason/` | | `{"food_id", "reason", "source"}`: why the dish on screen suits the user, in the session's language. `source` is `llm`, or `template` when the server has no key or the LLM failed. With no dish on screen, a 409 `stale_step` |
-| `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy, outside the area or by price are not listed. An unknown restaurant has no dishes |
+| `GET /api/sessions/<id>/menu/?restaurant=<name>` | | `{"restaurant", "dishes"}`: the session's dishes that restaurant serves, each `{"food_id", "display_name", "meal", "price"}`, breakfast first and by name within a meal. Dishes withheld for an allergy, outside the areas or by price are not listed. An unknown restaurant has no dishes |
 
 The group room requests (backend/README.md "Group rooms") go through `RoomApi` and
 `RoomRepository`, on a client that hides `Authorization` and `X-Member-Token` in the debug log.
 Creating or joining sends the account token when signed in and a name otherwise; creating also
-sends the host's `round_seconds` (`RoomApi.ROUND_SECONDS`, matching the server's choices). Every later
+sends the host's `areas`, `price_levels` and `round_seconds` (`RoomApi.ROUND_SECONDS`, matching the server's choices). Every later
 request sends the member token the reply returned. `GroupViewModel` polls `GET /api/rooms/<code>/`
 every second until the host has decided, and counts the seconds left down between replies. A
 409 `stale_step` (the round moved on) waits for the next poll; `room_not_found` or `not_member`
@@ -389,7 +389,7 @@ Errors are `{"error": {"code", "message"}}`:
 | Status | `code` | Meaning |
 | --- | --- | --- |
 | 400 | `invalid_request` | Invalid request fields. A rejected start request stays on the start screen so the user can change settings, including when an older server does not recognize RL. |
-| 400 | `area_llm_unsupported` | The LLM engine with an area other than campus. The app says to change the engine in Settings and offers no retry |
+| 400 | `area_llm_unsupported` | The LLM engine with any area besides campus. The app says to change the engine in Settings and offers no retry |
 | 404 | `session_not_found` | Unknown session; the app returns to the start screen |
 | 409 | `stale_step` | The question or guess is no longer current. The body also carries `state`, and the app redraws from it |
 | 503 | `engine_unavailable` | The selected engine is unavailable (for example missing LLM configuration or invalid stored features for RL). The app stays on the start screen and offers no retry |
@@ -401,7 +401,7 @@ Server behavior to know about:
   asks until it is ready to guess, and the user can tap "Just recommend
   something" at any time. `METCHU_MAX_QUESTIONS=N` makes the selected engine guess
   after N answers.
-- A station area keeps only the restaurants inside that station's circle before the
+- Station areas keep only the restaurants inside those stations' circles before the
   engine starts; `candidate_count` counts what is left. If nothing is left, the
   session is `unavailable` with `empty_candidates`.
 - Requests for one session run one at a time. A request repeated while an LLM
