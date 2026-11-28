@@ -256,8 +256,15 @@ cafeteria and restaurant. The circles are `STATIONS`, which the crawl reads too.
 the circles overlap by about 20 m; a restaurant without coordinates is in neither. The cut
 runs before the engine starts, so every question, proposal and menu stays in the area. Offers
 and room picks carry no distance. Only `campus` supports the LLM engine; any other area asking
-for it is a 400 `area_llm_unsupported`. The old `location`, `source` and `distance_scope` fields
-are ignored (an `area` they do not set defaults to campus), and `METCHU_MAX_DISTANCE_M` is gone.
+for it is a 400 `area_llm_unsupported`. A missing or null `area` is campus, except that an APK
+from before areas, which sends `source` `"all"` (or `"general"`), gets `all`, so installed apps
+keep every restaurant until they update; their `location` and `distance_scope` are ignored.
+`METCHU_MAX_DISTANCE_M` is gone.
+
+**Rollout: the server first, then the APK.** A server from before areas ignores `area` and
+answers 201 with the cafeterias only, so a new APK on an old server shows campus meals under any
+area without an error. Deploy the server, check a station area against it (a `snu_station`
+session whose dishes are all from restaurants near 서울대입구역), then hand out the APK.
 
 ## General restaurants near the stations (i3-P9)
 
