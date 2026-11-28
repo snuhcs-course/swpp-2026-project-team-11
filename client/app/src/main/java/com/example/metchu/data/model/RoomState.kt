@@ -63,7 +63,6 @@ data class RoomPick(
     val kind: String,
     val lat: Double?,
     val lng: Double?,
-    @SerializedName("distance_m") val distanceM: Int?,
     val menus: List<RoomDish>,
     val others: List<MenuDish>,
     val votes: Int,

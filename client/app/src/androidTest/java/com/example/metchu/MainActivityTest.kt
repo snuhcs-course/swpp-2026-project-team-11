@@ -1,6 +1,5 @@
 package com.example.metchu
 
-import android.Manifest
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assert
@@ -27,13 +26,12 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Reason
 import com.example.metchu.data.model.SessionState
-import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.AppContainer
+import com.example.metchu.data.repository.Area
 import com.example.metchu.data.repository.AuthRepository
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.data.model.Engine
@@ -67,7 +65,6 @@ class MainActivityTest {
 
     private val api = FakeApi()
     private val authApi = FakeAuthApi()
-    private var location: UserLocation? = null
     private lateinit var scenario: ActivityScenario<MainActivity>
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -80,13 +77,7 @@ class MainActivityTest {
     @Before
     fun setUp() {
         AppContainer.repository = RecommendRepository(api)
-        AppContainer.locationSource = LocationSource { location }
         AppContainer.authRepository = AuthRepository(MemoryAccountStore(), authApi)
-        // The start screen asks for location; a system dialog would cover the screen.
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        for (permission in listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) {
-            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, permission)
-        }
         clearPrefs()
         SettingsStore(context).setup = Setup.DONE
         scenario = ActivityScenario.launch(MainActivity::class.java)
@@ -143,21 +134,21 @@ class MainActivityTest {
     // --- start ---
 
     @Test
-    fun anywhereIsTheDefaultAndRequestsBothSources() {
+    fun anywhereIsTheDefaultArea() {
         api.reply(question)
         tap("start")
-        assertEquals("all", api.lastCreateRequest?.source)
-        assertEquals("any", api.lastCreateRequest?.distanceScope)
+        assertEquals("all", api.lastCreateRequest?.area)
     }
 
     @Test
-    fun nearbyRequestsBothSourcesWithDistanceLimit() {
+    fun thePickedAreaIsSentAndKeptForTheNextLaunch() {
         tap("placeToken")
-        tapText(R.string.place_near_option)
+        tapText(R.string.area_snu_station_option)
+        compose.onNodeWithTag("placeToken").assert(hasText(text(R.string.area_snu_station), ignoreCase = true))
         api.reply(question)
         tap("start")
-        assertEquals("all", api.lastCreateRequest?.source)
-        assertEquals("near", api.lastCreateRequest?.distanceScope)
+        assertEquals("snu_station", api.lastCreateRequest?.area)
+        assertEquals(Area.SNU_STATION, SettingsStore(context).area)
     }
 
     @Test
@@ -288,14 +279,13 @@ class MainActivityTest {
     }
 
     @Test
-    fun startSendsWhereTheUserIsWithTheAllergies() {
+    fun startSendsTheAreaWithTheAllergies() {
         AllergyStore(context).allergies = listOf(Allergen.MILK)
         relaunch()
-        location = UserLocation(37.45932, 126.95058)
         pickMeal(R.string.meal_lunch)
         api.reply(question)
         tap("start")
-        assertEquals("create LU rl @37.45932,126.95058 milk en", api.calls.last())
+        assertEquals("create LU rl @all milk en", api.calls.last())
     }
 
     @Test

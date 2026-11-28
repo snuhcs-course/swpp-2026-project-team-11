@@ -114,14 +114,14 @@ class MergedOfferPriceTests(TestCase):
                                      price=price, allergens=tags, allergen_version=ALLERGEN_VERSION)
 
     def test_a_session_keeps_only_the_offers_in_the_band(self):
-        state = post(self.client, "/api/sessions/", {"source": "general", "price_level": 2}).json()
+        state = post(self.client, "/api/sessions/", {"area": "snu_station", "price_level": 2}).json()
         self.assertEqual(state["candidate_count"], 1)
         guess = post(self.client, f"/api/sessions/{state['session_id']}/recommend-now/").json()["step"]
         self.assertCountEqual([(o["restaurant"], o["price"]) for o in guess["food"]["offers"]],
                               [("가게 B", 9000), ("가게 C", 12000)])
 
     def test_an_allergic_member_in_a_room_sees_only_safe_offers_in_the_band(self):
-        response = post(self.client, "/api/rooms/", {"name": "Jimin", "source": "general", "price_level": 2})
+        response = post(self.client, "/api/rooms/", {"name": "Jimin", "area": "snu_station", "price_level": 2})
         code, host = response.json()["state"]["code"], response.json()["token"]
         post(self.client, "/api/rooms/join/", {"code": code, "name": "Seoyeon", "allergies": ["pork"]})
         done = self.client.post(f"/api/rooms/{code}/start/", content_type="application/json",

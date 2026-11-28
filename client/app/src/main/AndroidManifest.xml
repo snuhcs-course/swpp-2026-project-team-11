@@ -2,10 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Sent when a session starts, for the distance to each cafeteria, and shown
-         next to the recommended cafeteria on the map. -->
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- usesCleartextTraffic: the development server is plain http on the LAN.
          A Cloudflare Tunnel address (manage.py serve_public) is https. -->

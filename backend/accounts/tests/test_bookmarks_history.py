@@ -187,15 +187,14 @@ class HistoryRecordTests(SignedInTestCase):
 
     def step(self, food_id=1, offers=None):
         return {"type": "guess", "food": {"food_id": food_id, "display_name": "짜장면",
-                                          "offers": offers or [{"restaurant": "홍콩반점 낙성대점", "distance_m": None}]}}
+                                          "offers": offers or [{"restaurant": "홍콩반점 낙성대점"}]}}
 
-    def test_the_nearest_restaurant_is_recorded(self):
+    def test_the_first_restaurant_is_recorded(self):
         user_id = self.user_id()
-        offers = [{"restaurant": "먼 곳", "distance_m": 900}, {"restaurant": "모르는 곳", "distance_m": None},
-                  {"restaurant": "가까운 곳", "distance_m": 120}]
+        offers = [{"restaurant": "첫 곳"}, {"restaurant": "다음 곳"}]
         history.record(self.session(user_id), self.step(offers=offers))
         entry = HistoryEntry.objects.get()
-        self.assertEqual((entry.restaurant, entry.meal), ("가까운 곳", None))
+        self.assertEqual((entry.restaurant, entry.meal), ("첫 곳", None))
 
     def test_a_menu_long_name_and_no_offers_are_recorded(self):
         user_id = self.user_id()

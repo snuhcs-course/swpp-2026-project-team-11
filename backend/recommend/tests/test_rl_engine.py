@@ -25,7 +25,7 @@ class RLSessions(TestCase):
             f = Food.objects.create(name=f"Test {i}", is_food=True, feature_version="v3",
                                     features=features, feature_std=dict.fromkeys(FEATURE_KEYS, 0.))
             StoreMenu.objects.create(food=f, restaurant=store, raw_name=f.name, price=7000+i)
-        response = post(self.client, "/api/sessions/", {"source":"general", "engine":"rl", "meal":"LU", "language":"ko"})
+        response = post(self.client, "/api/sessions/", {"area":"snu_station", "engine":"rl", "meal":"LU", "language":"ko"})
         self.assertEqual(response.status_code, 201)
         state = response.json()
         self.assertEqual(state["engine"], "rl")

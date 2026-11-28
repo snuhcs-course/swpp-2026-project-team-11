@@ -99,18 +99,13 @@ data class Food(
     val offers: List<Offer>
 )
 
-/**
- * [lat] and [lng] locate the cafeteria; both are null when the menu source has no location.
- * [distanceM] is its straight-line distance from the user, null unless the session was
- * started with a location.
- */
+/** [lat] and [lng] locate the cafeteria; both are null when the menu source has no location. */
 data class Offer(
     val restaurant: String,
     val meal: String,
     val price: Int?,
     val lat: Double?,
     val lng: Double?,
-    @SerializedName("distance_m") val distanceM: Int?,
     @SerializedName("menu_name") val menuName: String? = null,
     @SerializedName("restaurant_code") val restaurantCode: String? = null
 )

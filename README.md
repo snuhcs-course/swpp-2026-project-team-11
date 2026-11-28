@@ -183,7 +183,8 @@ cd client && ./gradlew connectedDebugAndroidTest                    # 14 UI test
 - **REST session API.** One API runs either engine: start a session, answer,
   accept or reject a proposal, ask for a recommendation now, and undo.
 - **Android app.** Start, settings, question and result screens that follow the
-  session. The start screen chooses the meal, the distance and the price range; settings hold the
+  session. The start screen chooses the meal, the area (campus, near a station or anywhere; the app
+  uses no location) and the price range; settings hold the
   allergies and the engine.
 
 ### Goals of the prototype

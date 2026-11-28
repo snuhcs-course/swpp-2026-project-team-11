@@ -3,20 +3,16 @@ package com.example.metchu.ui
 import com.example.metchu.Fixtures
 import com.example.metchu.R
 import com.example.metchu.data.model.Offer
-import com.example.metchu.data.repository.Place
+import com.example.metchu.data.repository.Area
 import com.example.metchu.ui.question.phaseText
 import com.example.metchu.ui.question.progressFill
-import com.example.metchu.ui.result.AllListed
-import com.example.metchu.ui.result.Cafeteria
-import com.example.metchu.ui.result.NEAR_METERS
 import com.example.metchu.ui.result.Point
 import com.example.metchu.ui.result.cafeteriaList
 import com.example.metchu.ui.result.directionsLinks
-import com.example.metchu.ui.result.distanceMeters
-import com.example.metchu.ui.result.framedPoints
+import com.example.metchu.ui.start.CampusCenter
 import com.example.metchu.ui.start.Meal
+import com.example.metchu.ui.start.center
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -67,105 +63,57 @@ class MealTest {
 class CafeteriasTest {
 
     private val food = Fixtures.state("recommendation").step.food!!
-    private val near = Offer("220동식당", "LU", 5900, 37.46451, 126.95424, null)
-    private val far = Offer("301동식당", "LU", 6000, 37.44951, 126.95224, null)
-    private val unlocated = Offer("기숙사식당", "LU", null, null, null, null)
-    private val user = Point(37.46400, 126.95400)
+    private val hall = Offer("220동식당", "LU", 5900, 37.46451, 126.95424)
+    private val unlocated = Offer("기숙사식당", "LU", null, null, null)
 
     @Test
-    fun distanceIsMetersOnTheGround() {
-        val meters = distanceMeters(Point(37.4600, 126.9520), Point(37.4690, 126.9520))
-        assertEquals(1001.0, meters.toDouble(), 2.0)
-    }
-
-    @Test
-    fun cafeteriasAreListedNearestFirstAndUnlocatedLast() {
-        val list = cafeteriaList(food.copy(offers = listOf(unlocated, far, near)), user, Place.ANY)
-        assertEquals(listOf(near, far, unlocated), list.cafeterias.map { it.offer })
-        assertEquals(1, list.cafeterias.first().walkMinutes)
-        assertNull(list.allListed)
-    }
-
-    @Test
-    fun nearbyKeepsTheCafeteriasWithinATenMinuteWalk() {
-        val list = cafeteriaList(food.copy(offers = listOf(far, near)), user, Place.NEAR)
-        assertEquals(listOf(near), list.cafeterias.map { it.offer })
-        assertTrue(list.cafeterias.all { it.meters!! <= NEAR_METERS })
-    }
-
-    @Test
-    fun nearbyWithNothingCloseListsEveryCafeteriaAndSaysSo() {
-        val list = cafeteriaList(food.copy(offers = listOf(far)), user, Place.NEAR)
-        assertEquals(listOf(far), list.cafeterias.map { it.offer })
-        assertEquals(AllListed.NONE_NEAR, list.allListed)
-    }
-
-    @Test
-    fun withoutAnyDistanceNearbyListsEveryCafeteriaAndSaysTheLocationIsUnknown() {
-        val list = cafeteriaList(food.copy(offers = listOf(far, near)), null, Place.NEAR)
-        assertEquals(listOf(far, near), list.cafeterias.map { it.offer })
-        assertTrue(list.cafeterias.all { it.meters == null })
-        assertEquals(AllListed.NO_LOCATION, list.allListed)
-        assertNull(cafeteriaList(food.copy(offers = listOf(far, near)), null, Place.ANY).allListed)
-    }
-
-    @Test
-    fun theServersDistanceStandsInUntilThePhoneHasAPosition() {
-        val offers = listOf(far.copy(distanceM = 1500), near.copy(distanceM = 120))
-        val list = cafeteriaList(food.copy(offers = offers), null, Place.NEAR)
-        assertEquals(listOf(120), list.cafeterias.map { it.meters })
-        assertEquals(listOf(near.restaurant, far.restaurant), cafeteriaList(food.copy(offers = offers), user, Place.ANY).cafeterias.map { it.offer.restaurant })
-    }
-
-    @Test
-    fun theMapFramesTheUserWithTheCafeteriasOnlyWhenNearOne() {
-        val cafeterias = listOf(Cafeteria(near, null), Cafeteria(far, null), Cafeteria(unlocated, null))
-        val points = listOf(Point(near.lat!!, near.lng!!), Point(far.lat!!, far.lng!!))
-        assertEquals(points + user, framedPoints(cafeterias, user))
-        assertEquals(points, framedPoints(cafeterias, Point(37.3861, -122.0839)))
-        assertEquals(points, framedPoints(cafeterias, null))
+    fun cafeteriasKeepTheServersOrderAndAnUnlocatedOneHasNoPoint() {
+        val list = cafeteriaList(food.copy(offers = listOf(unlocated, hall)))
+        assertEquals(listOf(unlocated, hall), list.map { it.offer })
+        assertEquals(listOf(null, Point(37.46451, 126.95424)), list.map { it.point })
     }
 
     @Test
     fun aCafeteriaServingSeveralMealsGetsALineForEach() {
-        val dinner = near.copy(meal = "DN", price = 6500)
-        val list = cafeteriaList(food.copy(offers = listOf(near, dinner, near)), user, Place.ANY)
-        assertEquals(listOf(near, dinner), list.cafeterias.map { it.offer })
+        val dinner = hall.copy(meal = "DN", price = 6500)
+        assertEquals(listOf(hall, dinner), cafeteriaList(food.copy(offers = listOf(hall, dinner, hall))).map { it.offer })
     }
 
     @Test
     fun aRestaurantSellingSeveralVariantsGetsALineForEach() {
-        val variants = listOf(near.copy(menuName = "치즈피자"), near.copy(menuName = "페퍼로니피자", price = 7000))
-        assertEquals(variants, cafeteriaList(food.copy(offers = variants), user, Place.ANY).cafeterias.map { it.offer })
+        val variants = listOf(hall.copy(menuName = "치즈피자"), hall.copy(menuName = "페퍼로니피자", price = 7000))
+        assertEquals(variants, cafeteriaList(food.copy(offers = variants)).map { it.offer })
+    }
+}
+
+class AreaTest {
+
+    @Test
+    fun areaIdsAreTheServers() {
+        assertEquals(listOf("campus", "snu_station", "nakseongdae", "all"), Area.entries.map { it.id })
+    }
+
+    @Test
+    fun theStartMapCentersOnTheCampusOrTheStation() {
+        assertEquals(CampusCenter, Area.CAMPUS.center())
+        assertEquals(CampusCenter, Area.ALL.center())
+        assertEquals(Point(37.481247, 126.952739), Area.SNU_STATION.center())
+        assertEquals(Point(37.476930, 126.963693), Area.NAKSEONGDAE.center())
     }
 }
 
 class DirectionsTest {
 
-    private val cafeteria = Point(37.4592, 126.9504)
-
     @Test
-    fun naverMapIsTriedFirstThenKakaoMapThenTheWeb() {
-        val links = directionsLinks("학생회관식당 2층", cafeteria, null, "내 위치", "com.example.metchu")
+    fun naverMapIsTriedFirstThenKakaoMapsWebLinkWithOnlyTheDestination() {
+        val links = directionsLinks("학생회관식당 2층", Point(37.4592, 126.9504), "com.example.metchu")
         val name = "%ED%95%99%EC%83%9D%ED%9A%8C%EA%B4%80%EC%8B%9D%EB%8B%B9%202%EC%B8%B5"
         assertEquals(
             listOf(
                 "nmap://route/walk?dlat=37.4592&dlng=126.9504&dname=$name&appname=com.example.metchu",
-                "kakaomap://route?ep=37.4592,126.9504&by=FOOT",
                 "https://map.kakao.com/link/to/$name,37.4592,126.9504"
             ),
             links
         )
-    }
-
-    @Test
-    fun kakaoMapAndItsWebPageStartFromTheUserWhenThePositionIsKnown() {
-        val links = directionsLinks("301동식당", cafeteria, Point(37.4481, 126.9527), "내 위치", "com.example.metchu")
-        assertEquals("kakaomap://route?sp=37.4481,126.9527&ep=37.4592,126.9504&by=FOOT", links[1])
-        assertEquals(
-            "https://map.kakao.com/link/by/walk/%EB%82%B4%20%EC%9C%84%EC%B9%98,37.4481,126.9527/301%EB%8F%99%EC%8B%9D%EB%8B%B9,37.4592,126.9504",
-            links[2]
-        )
-        assertTrue(links[0].startsWith("nmap://route/walk?dlat="))
     }
 }

@@ -133,30 +133,13 @@ class GroupScreensTest {
     }
 
     @Test
-    fun theAgreeButtonStaysClearOfTheDistanceAndTakes48dpTaps() {
-        // A one-letter name leaves the distance as the widest line under it.
-        val done = Fixtures.room("room_done").copy(decided = null)
-        val short = done.copy(picks = listOf(done.picks!![0].copy(restaurant = "곰"), done.picks!![1]))
-        compose.setContent { GroupResultScreen(short, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
-
-        val distance = compose.onNodeWithTag("distance").assertIsDisplayed().getBoundsInRoot()
-        for (tag in listOf("agree", "agree_count")) {
-            val node = compose.onNodeWithTag(tag).assertIsDisplayed().getBoundsInRoot()
-            assertTrue(tag, node.left >= distance.right || node.top >= distance.bottom || node.bottom <= distance.top)
-        }
-        val agree = compose.onNodeWithTag("agree").getBoundsInRoot()
-        assertTrue(agree.width >= 48.dp && agree.height >= 48.dp)
-    }
-
-    @Test
-    fun directionsFollowTheDistanceAndStayClearOfTheAgreeButton() {
+    fun theAgreeButtonTakes48dpTapsAndDirectionsStayClearOfIt() {
         val done = Fixtures.room("room_done").copy(decided = null)
         compose.setContent { GroupResultScreen(done, busy = false, onVote = { _, _ -> }, onDecide = {}, onAnother = {}, onHome = {}) }
 
-        val distance = compose.onNodeWithTag("distance").getBoundsInRoot()
         val directions = compose.onNodeWithTag("directionsButton").assertIsDisplayed().assertHasClickAction().getBoundsInRoot()
-        val agree = compose.onNodeWithTag("agree").getBoundsInRoot()
-        assertTrue(directions.left >= distance.right)
+        val agree = compose.onNodeWithTag("agree").assertIsDisplayed().getBoundsInRoot()
+        assertTrue(agree.width >= 48.dp && agree.height >= 48.dp)
         assertTrue(directions.right <= agree.left)
     }
 
@@ -179,7 +162,6 @@ class GroupScreensTest {
 
         compose.onNodeWithTag("decidedDialog").assertIsDisplayed()
         compose.onNodeWithTag("decidedRestaurant").assertTextEquals(done.picks!![done.decided!!].restaurant.replace('>', ' '))
-        compose.onNodeWithTag("decidedDistance").assertIsDisplayed()
         compose.onNodeWithTag("decidedDirections").assertHasClickAction()
         val others = done.members.map { it.id }.filter { it != done.me }
         val mine = compose.onNodeWithTag("decidedDish_${done.me}").assertIsDisplayed().getBoundsInRoot()

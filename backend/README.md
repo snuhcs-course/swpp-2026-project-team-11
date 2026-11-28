@@ -168,10 +168,11 @@ Set `METCHU_INTERACTION_LOG_DIR` to a private directory to collect server-side
 interaction events. It is disabled when unset. The server appends one JSON line
 for each session start, answer, recommendation request, feedback, undo or ban.
 Events include a random session-specific logging ID, UTC time, engine, meal,
-menu date, source, distance scope and price level, candidate counts before the distance filter and after every filter,
-and the server-generated question or recommendation step. Recommendations include
-the dish ID, display name and up to ten restaurant names. Validated user location
-and allergy choices are recorded once at session start. No IP, device identifier,
+menu date, area and price level, candidate counts before the area filter and after every filter,
+and the server-generated question or recommendation step (`"version": 2`; version 1 lines,
+before i5-A1, had the source, distance scope and location instead of the area). Recommendations
+include the dish ID, display name and up to ten restaurant names. Validated allergy
+choices are recorded once at session start. No IP, device identifier,
 API session token, question text, explanation text or raw request body is recorded.
 
 Files use UTC dates (`interactions-YYYY-MM-DD.jsonl`). The current day and previous
@@ -179,8 +180,8 @@ Files use UTC dates (`interactions-YYYY-MM-DD.jsonl`). The current day and previ
 startup and hourly, even when no sessions occur. Logs are outside the recommendation
 DB, which can stay read-only. A file error is reported to the operational log and
 never fails a recommendation request. The current writer is thread-safe within one
-server process. Keep the directory private; these records include sensitive location
-and allergy selections.
+server process. Keep the directory private; these records include sensitive allergy
+selections.
 
 Only server requests and resulting steps are captured: app-only navigation, a
 request that never reaches the server, and a confirmed session end are not tracked.
@@ -244,6 +245,27 @@ Mark wrong rows `N` and write the fix, then put it in `overrides.json`
 
 > **주의:** 이 파일들은 사람이 검토한 결과라 git으로 공유합니다. 고칠 때는 PR로 남겨 주세요.
 
+## Areas (i5-A1)
+
+The server never learns where the user is. A session or a room picks an `area` instead
+(`recommend/areas.py`): `campus` (the default), the day's cafeteria menu; `snu_station` or
+`nakseongdae`, the restaurants inside the circle `fetch_naver_menus` crawled around that
+station (600 m around 서울대입구역, 500 m around 낙성대역, straight line); or `all`, every
+cafeteria and restaurant. The circles are `STATIONS`, which the crawl reads too. On the
+2026-11-02 crawl the circles hold 467 and 193 restaurants and none falls in both, although
+the circles overlap by about 20 m; a restaurant without coordinates is in neither. The cut
+runs before the engine starts, so every question, proposal and menu stays in the area. Offers
+and room picks carry no distance. Only `campus` supports the LLM engine; any other area asking
+for it is a 400 `area_llm_unsupported`. A missing or null `area` is campus, except that an APK
+from before areas, which sends `source` `"all"` (or `"general"`), gets `all`, so installed apps
+keep every restaurant until they update; their `location` and `distance_scope` are ignored.
+`METCHU_MAX_DISTANCE_M` is gone.
+
+**Rollout: the server first, then the APK.** A server from before areas ignores `area` and
+answers 201 with the cafeterias only, so a new APK on an old server shows campus meals under any
+area without an error. Deploy the server, check a station area against it (a `snu_station`
+session whose dishes are all from restaurants near 서울대입구역), then hand out the APK.
+
 ## General restaurants near the stations (i3-P9)
 
 General menu mode recommends from the restaurants near 서울대입구역 and 낙성대역 instead of the
@@ -282,7 +304,7 @@ python manage.py run_store_pipeline --file $S --mapping mapping.csv --review rev
 - **Review.** `--review` adds `rule_notice` / `rule_drink` (dropped by a rule) and `unnamed` rows to
   the usual ones. Corrections go into `overrides.json`; a vague line is written with its restaurant,
   as the CSV shows it: `{"lines": {"A세트 @홍콩반점 낙성대점": ["짜장면", "탕수육"]}}`.
-- **Sessions.** `POST /api/sessions/` with `"source": "general"` serves these dishes
+- **Sessions.** `POST /api/sessions/` with `"area": "snu_station"` or `"nakseongdae"` serves these dishes
   (`services.get_store_catalog`). Offers keep the cafeteria shape, with the session's meal (the
   current one in Seoul when the session has none). The menus are read from the database at most
   every `RECOMMEND_STORE_MENU_CACHE_S` seconds (5 minutes), so an import shows within that time.
@@ -291,17 +313,15 @@ python manage.py run_store_pipeline --file $S --mapping mapping.csv --review rev
   during a prewarm waits for it. `POST /api/sessions/prewarm/` builds it before Start, and a created
   session's `Server-Timing` header gives the milliseconds for `candidates` and `engine`.
   The default general engine is the decision tree. Use `"engine": "rl"` for feature-only
-  RL, or set `METCHU_ENGINE=rl` for clients that omit the engine. General sessions reject
+  RL, or set `METCHU_ENGINE=rl` for clients that omit the engine. Station sessions reject
   the LLM option. DT setup takes about 0.1 s with 500, 1 s with 2,000 and 5 s with 4,000
-  candidates. `"source": "all"` combines cafeteria and restaurant menus, preserves both
-  sources' allergy filters. `distance_scope=near` filters offers to 800 m straight-line
-  distance before recommendation when location is known; without it, all remain.
-  `distance_scope=any` has no distance cutoff. Like `general`, this supports DT and RL;
-  an explicit LLM request is rejected.
+  candidates. `"area": "all"` combines cafeteria and restaurant menus and preserves both
+  sources' allergy filters. Like the stations, it supports DT and RL; an explicit LLM request
+  is rejected.
 - **Price range.** `"price_level"` 1, 2 or 3 (the number of ₩ signs on the start screen) keeps
   only offers under 8,000원, from 8,000원 to under 15,000원, or 15,000원 and up
   (`recommend/prices.py`); an offer without a price is left out. It applies to every source and
-  engine and to rooms, after the distance filter, so every proposal, "find another" and a
+  engine and to rooms, after the area filter, so every proposal, "find another" and a
   restaurant's menu stay in the band. Omitted or null is any price. The phone's price guide
   repeats the bands, so a change goes in both.
 - **Pipeline.** If `import_stores` fails (a quota error), `run_store_pipeline` stops before tagging:
@@ -346,8 +366,8 @@ that `food_id` updated; it is removed by its own `id`, and only the owner's. It 
 at the menu tables, so it survives a new snapshot. History (`HistoryEntry`) is recorded by the server: a solo session created with the
 token (`POST /api/sessions/`) belongs to that user, and each dish it proposes, a guess or the
 recommendation, is kept once per session as `{"date", "meal", "food_id", "display_name",
-"restaurant", "created_at"}` (`accounts/history.py`). The restaurant is the offer nearest the
-session's location, else the first; `meal` is null for a whole-day session. Only a user's
+"restaurant", "created_at"}` (`accounts/history.py`). The restaurant is the dish's first
+offer; `meal` is null for a whole-day session. Only a user's
 newest 100 entries are kept. A history write that fails is logged and never fails the session
 request. Group rooms record no history. Without a valid token, all four
 requests are 401 `not_authenticated`, and every list holds the signed-in user's rows only.
@@ -369,7 +389,7 @@ in server memory, like sessions; the API is commented at the end of `recommend/v
 
 | Request | Body | Reply |
 | --- | --- | --- |
-| `POST /api/rooms/` | `{"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?, "distance_scope"?, "price_level"?, "location"?, "round_seconds"?}` | 201 `{"token", "state"}` |
+| `POST /api/rooms/` | `{"name"?, "allergies"?, "language"?, "date"?, "meal"?, "area"?, "price_level"?, "round_seconds"?}` | 201 `{"token", "state"}` |
 | `POST /api/rooms/join/` | `{"code", "name"?, "allergies"?, "language"?}` | 201 `{"token", "state"}` |
 | `GET /api/rooms/<code>/` | | `state` |
 | `POST /api/rooms/<code>/start/` | host | `state` |
@@ -386,7 +406,7 @@ signed-in member (`Authorization: Token ...`) is shown by username; anyone else 
 "members", "round", "max_rounds", "question", "my_answer", "seconds_left", "round_seconds", "picks",
 "more", "decided"}`;
 `members` are `{"id", "name", "allergies", "left", "answered"}` and each pick is `{"restaurant",
-"kind", "batch", "lat", "lng", "distance_m", "menus": [{"member_id", "food", "fit"}], "others", "votes", "voted"}`; `others` are the
+"kind", "batch", "lat", "lng", "menus": [{"member_id", "food", "fit"}], "others", "votes", "voted"}`; `others` are the
 restaurant's other dishes, shaped like a session's `menu` dishes. `fit` is `great` when
 the restaurant is among that member's best tenth of the places they can eat at, otherwise `good`.
 `votes` counts the members who agree with the pick and `voted` says whether the caller does.
@@ -394,7 +414,7 @@ the restaurant is among that member's best tenth of the places they can eat at, 
 
 - The creator hosts. A room has a four-digit code and 2 to 8 members; nobody joins after the start
   (409 `room_started`). A caller who tries 10 unknown codes within a minute waits out the minute
-  (429 `too_many_attempts`); behind the tunnel the caller is its `CF-Connecting-IP`. The host's meal, source, distance, price range, location and round time apply to everyone.
+  (429 `too_many_attempts`); behind the tunnel the caller is its `CF-Connecting-IP`. The host's meal, area ([Areas](#areas-i5-a1)), price range and round time apply to everyone.
 - Each member reads the question in their own language. An answer cannot be changed. A member
   silent for the room's `round_seconds` answers "unknown". The host picks it at create from
   `ROUND_CHOICES` (10, 15, 30 or 60; 15 when left out, i5-P11); any other value, a string included,
@@ -424,7 +444,7 @@ the restaurant is among that member's best tenth of the places they can eat at, 
   has left. A pick that fails to build leaves the picks and their votes as they were; after the
   decision every vote is a 409 `stale_step`, and a member who leaves no longer takes votes along.
   Rooms end with the process and
-  are not in the interaction log. With `source=all` and no distance cut, starting a room and each
+  are not in the interaction log. With `area=all`, starting a room and each
   round take seconds (the engine's tables over thousands of menus).
 
 ## Shared database: Supabase (P8)

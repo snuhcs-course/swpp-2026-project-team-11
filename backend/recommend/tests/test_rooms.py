@@ -282,7 +282,7 @@ class ResultTests(RoomTestCase):
         picks = done["picks"]
         self.assertTrue(1 <= len(picks) <= 2)
         for pick in picks:
-            self.assertEqual(set(pick), {"restaurant", "kind", "batch", "lat", "lng", "distance_m", "menus", "others", "votes", "voted"})
+            self.assertEqual(set(pick), {"restaurant", "kind", "batch", "lat", "lng", "menus", "others", "votes", "voted"})
             self.assertEqual((pick["batch"], pick["votes"], pick["voted"]), (0, 0, False))
             suggested = {menu["food"]["food_id"] for menu in pick["menus"]}
             served = {name for name, restaurant, _, _ in MENUS if restaurant == pick["restaurant"]}
@@ -512,7 +512,7 @@ class MergedOfferTests(TestCase):
                                      price=8000, allergens=tags, allergen_version=ALLERGEN_VERSION)
 
     def test_an_allergic_member_keeps_the_safe_offers_of_a_merged_menu(self):
-        response = post(self.client, "/api/rooms/", {"name": "Jimin", "source": "general"})
+        response = post(self.client, "/api/rooms/", {"name": "Jimin", "area": "snu_station"})
         code, host = response.json()["state"]["code"], response.json()["token"]
         post(self.client, "/api/rooms/join/", {"code": code, "name": "Seoyeon", "allergies": ["pork"]})
         started = self.client.post(f"/api/rooms/{code}/start/", content_type="application/json",
@@ -521,3 +521,11 @@ class MergedOfferTests(TestCase):
         done = started.json()  # one menu: nothing to ask
         self.assertEqual(done["status"], "done")
         self.assertEqual([pick["restaurant"] for pick in done["picks"]], ["가게 B"])
+
+    def test_the_host_area_leaves_out_restaurants_near_the_other_station(self):
+        response = post(self.client, "/api/rooms/", {"name": "Jimin", "area": "nakseongdae"})
+        code, host = response.json()["state"]["code"], response.json()["token"]
+        post(self.client, "/api/rooms/join/", {"code": code, "name": "Seoyeon"})
+        started = self.client.post(f"/api/rooms/{code}/start/", content_type="application/json",
+                                   HTTP_X_MEMBER_TOKEN=host)
+        self.assertEqual(started.json()["error"]["code"], "group_unavailable")

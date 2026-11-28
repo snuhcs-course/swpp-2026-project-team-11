@@ -57,13 +57,12 @@ class InteractionLogTests(TestCase):
         self.assertTrue(events[2]["after"]["restaurants"])
         self.assertIs(events[3]["accepted"], False)
         self.assertTrue(all(e["engine"] == "rl" and e["outcome"] == "ok" for e in events))
-        self.assertTrue(all("allergies" not in e and "location" not in e for e in events[1:]))
+        self.assertTrue(all("allergies" not in e for e in events[1:]))
 
-    def test_location_and_allergies_are_logged_without_api_session_token(self):
-        location = {"lat": 37.481247, "lng": 126.952739}
+    def test_area_and_allergies_are_logged_without_api_session_token(self):
         response = self.client.post("/api/sessions/", data=json.dumps({
-            "date": DAY, "meal": "LU", "engine": "rl", "source": "all", "distance_scope": "near",
-            "price_level": 2, "location": location, "allergies": ["egg"]}), content_type="application/json",
+            "date": DAY, "meal": "LU", "engine": "decision_tree", "area": "all",
+            "price_level": 2, "allergies": ["egg"]}), content_type="application/json",
             HTTP_X_FORWARDED_FOR="203.0.113.88", HTTP_USER_AGENT="device-secret-marker")
         self.assertEqual(response.status_code, 201)
         state = response.json()
@@ -73,12 +72,10 @@ class InteractionLogTests(TestCase):
         self.assertNotIn("device-secret-marker", text)
         event = self.events()[0]
         self.assertEqual(event["allergies"], ["egg"])
-        self.assertEqual(event["location"], location)
-        self.assertIs(event["location_available"], True)
-        self.assertEqual(event["source"], "all")
-        self.assertEqual(event["distance_scope"], "near")
+        self.assertEqual(event["area"], "all")
         self.assertEqual(event["price_level"], 2)
-        self.assertGreaterEqual(event["candidates_before_distance"], event["candidate_count"])
+        self.assertGreaterEqual(event["candidates_before_area"], event["candidate_count"])
+        self.assertTrue({"location", "location_available", "source", "distance_scope"}.isdisjoint(event))
 
     def test_invalid_and_stale_events_never_store_untrusted_body(self):
         state = self.start()
@@ -112,9 +109,8 @@ class InteractionLogTests(TestCase):
         self.assertTrue((self.root / "interactions-bad.jsonl").exists())
 
     def test_concurrent_requests_do_not_interleave_json(self):
-        session = SimpleNamespace(interaction_id="independent-id", engine_name="rl", meal="LU", date=datetime.date(2026, 11, 2), source="all",
-                                  distance_scope="near", price_level=None, location_available=True,
-                                  candidates_before_distance=12, candidate_count=3)
+        session = SimpleNamespace(interaction_id="independent-id", engine_name="rl", meal="LU", date=datetime.date(2026, 11, 2), area="all",
+                                  price_level=None, candidates_before_area=12, candidate_count=3)
         with ThreadPoolExecutor(max_workers=8) as pool:
             list(pool.map(lambda _: interaction_log.record(session, "answer", answer_id="yes"), range(50)))
         events = self.events()

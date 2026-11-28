@@ -17,31 +17,27 @@ import retrofit2.http.Query
  *
  * [CreateSessionRequest.meal] is "BR", "LU", "DN" or null for the whole day.
  * [CreateSessionRequest.engine] is one of the [Engine] IDs, or null for the server's
- * default. [CreateSessionRequest.location] is where the user is, if known; the server
- * then adds each cafeteria's distance. [CreateSessionRequest.allergies] lists Allergen
+ * default. [CreateSessionRequest.allergies] lists Allergen
  * IDs the server must never propose, or is null for none. [CreateSessionRequest.language]
  * is "en" or "ko", the language of every text the server sends, or null for English.
+ * [CreateSessionRequest.area] is an [com.example.metchu.data.repository.Area] ID; the phone sends no location.
  * [CreateSessionRequest.priceLevel] is the number of ₩ signs picked (1 to 3), or null for any price.
  * Gson leaves a null field out of the body. The menu date is the server's decision, so
- * the phone does not send one. `source=all` combines cafeteria and restaurant menus.
+ * the phone does not send one.
  * A signed-in phone sends its "Token <token>" with the request, so the server records the
  * session's dishes in the account's history; a null header is left out.
  */
 data class CreateSessionRequest(
     val meal: String?,
     val engine: String? = null,
-    val location: UserLocation?,
     val allergies: List<String>?,
     val language: String? = null,
-    val source: String? = null,
-    @SerializedName("distance_scope") val distanceScope: String? = null,
+    val area: String? = null,
     @SerializedName("price_level") val priceLevel: Int? = null
 )
 
 /** What a session with these fields reads, so the server builds it before Start. */
-data class PrewarmRequest(val meal: String?, val allergies: List<String>?, val source: String?)
-
-data class UserLocation(val lat: Double, val lng: Double)
+data class PrewarmRequest(val meal: String?, val allergies: List<String>?, val area: String?)
 
 data class AnswerRequest(
     @SerializedName("question_id") val questionId: String,
@@ -62,7 +58,8 @@ data class ApiError(val code: String, val message: String) {
         const val ENGINE_UNAVAILABLE = "engine_unavailable"
         /** 400: the server rejected a request field, such as an unsupported engine ID. */
         const val INVALID_REQUEST = "invalid_request"
-        const val ALL_SOURCE_LLM_UNSUPPORTED = "all_source_llm_unsupported"
+        /** 400: the LLM engine is offered only for the campus area. */
+        const val AREA_LLM_UNSUPPORTED = "area_llm_unsupported"
     }
 }
 

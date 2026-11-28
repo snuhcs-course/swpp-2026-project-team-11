@@ -4,8 +4,11 @@ import android.content.Context
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.network.RoomApi
 
-/** How far the user will walk. The server has no distance filter, so the result screen applies it. */
-enum class Place { NEAR, ANY }
+/**
+ * Where the user picked to eat, instead of the phone's location; [id] is the server's `area`
+ * (backend/recommend/areas.py): the campus cafeterias, the restaurants near one station, or all.
+ */
+enum class Area(val id: String) { CAMPUS("campus"), SNU_STATION("snu_station"), NAKSEONGDAE("nakseongdae"), ALL("all") }
 
 /**
  * The price range, picked as one to three ₩ signs; [level] is what the server filters by
@@ -31,18 +34,13 @@ class SettingsStore(context: Context) {
         get() = usableEngine(prefs.getString(ENGINE, null))
         set(value) = prefs.edit().putString(ENGINE, value).apply()
 
-    var place: Place
-        get() = runCatching { Place.valueOf(prefs.getString(PLACE, null).orEmpty()) }.getOrDefault(Place.ANY)
-        set(value) = prefs.edit().putString(PLACE, value.name).apply()
+    var area: Area
+        get() = runCatching { Area.valueOf(prefs.getString(AREA, null).orEmpty()) }.getOrDefault(Area.ALL)
+        set(value) = prefs.edit().putString(AREA, value.name).apply()
 
     var price: Price
         get() = runCatching { Price.valueOf(prefs.getString(PRICE, null).orEmpty()) }.getOrDefault(Price.ANY)
         set(value) = prefs.edit().putString(PRICE, value.name).apply()
-
-    /** Whether the last request for location ended without it, its dialog closed unanswered included; see locationAnswer. */
-    var locationRefused: Boolean
-        get() = prefs.getBoolean(LOCATION_REFUSED, false)
-        set(value) = prefs.edit().putBoolean(LOCATION_REFUSED, value).apply()
 
     /** How long each question of a room this phone creates waits: one of [RoomApi.ROUND_SECONDS]. */
     var roundSeconds: Int
@@ -56,10 +54,9 @@ class SettingsStore(context: Context) {
     private companion object {
         const val FILE = "settings"
         const val ENGINE = "engine"
-        const val PLACE = "place"
+        const val AREA = "area"
         const val PRICE = "price"
         const val ROUND_SECONDS = "round_seconds"
         const val SETUP = "setup"
-        const val LOCATION_REFUSED = "location_refused"
     }
 }

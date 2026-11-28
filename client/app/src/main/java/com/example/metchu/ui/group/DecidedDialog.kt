@@ -31,12 +31,11 @@ import com.example.metchu.ui.theme.MetchuColors
 import com.example.metchu.ui.theme.MetchuType
 
 /**
- * Where the group meets, on every phone once the host decides: the restaurant, how far it is
- * and each member's dish there, this phone's member first. Directions start from this phone's
- * position [user]; "Start over" leaves the room.
+ * Where the group meets, on every phone once the host decides: the restaurant and each
+ * member's dish there, this phone's member first. "Start over" leaves the room.
  */
 @Composable
-fun DecidedDialog(room: RoomState, pick: RoomPick, user: Point?, onClose: () -> Unit, onHome: () -> Unit) {
+fun DecidedDialog(room: RoomState, pick: RoomPick, onClose: () -> Unit, onHome: () -> Unit) {
     val context = LocalContext.current
     val name = placeName(pick.restaurant)
     Dialog(onDismissRequest = onClose) {
@@ -51,9 +50,6 @@ fun DecidedDialog(room: RoomState, pick: RoomPick, user: Point?, onClose: () -> 
             Column(Modifier.padding(horizontal = 24.dp)) {
                 Text(stringResource(R.string.group_decided_title), style = MetchuType.Caption)
                 Text(name, Modifier.padding(top = 2.dp).testTag("decidedRestaurant"), style = MetchuType.Item)
-                pick.distanceM?.let { meters ->
-                    Text(walkLine(meters), Modifier.padding(top = 2.dp).testTag("decidedDistance"), style = MetchuType.Body)
-                }
             }
             // Eight members fit by scrolling; the buttons stay below.
             Column(Modifier.padding(top = 8.dp).heightIn(max = 288.dp).verticalScroll(rememberScrollState())) {
@@ -67,7 +63,7 @@ fun DecidedDialog(room: RoomState, pick: RoomPick, user: Point?, onClose: () -> 
                 }
                 Spacer(Modifier.weight(1f))
                 if (pick.lat != null && pick.lng != null) {
-                    TextButton({ context.openDirections(name, Point(pick.lat, pick.lng), user) }, Modifier.testTag("decidedDirections")) {
+                    TextButton({ context.openDirections(name, Point(pick.lat, pick.lng)) }, Modifier.testTag("decidedDirections")) {
                         Text(stringResource(R.string.group_decided_directions), style = MetchuType.Button, color = MetchuColors.Primary)
                     }
                 }

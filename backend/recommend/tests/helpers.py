@@ -56,12 +56,11 @@ def check_state(test, state):
         test.assertTrue(food["display_name"])
         test.assertTrue(food["offers"])
         for offer in food["offers"]:
-            test.assertTrue({"restaurant", "meal", "price", "lat", "lng", "distance_m"} <= set(offer))
-            test.assertTrue(set(offer) <= {"restaurant", "meal", "price", "lat", "lng", "distance_m", "menu_name", "restaurant_code"})
+            test.assertTrue({"restaurant", "meal", "price", "lat", "lng"} <= set(offer))
+            test.assertTrue(set(offer) <= {"restaurant", "meal", "price", "lat", "lng", "menu_name", "restaurant_code"})
             test.assertIn(offer["meal"], ("BR", "LU", "DN"))
             test.assertTrue(offer["price"] is None or isinstance(offer["price"], int))
             test.assertEqual(offer["lat"] is None, offer["lng"] is None)
-            test.assertTrue(offer["distance_m"] is None or isinstance(offer["distance_m"], int))
         test.assertEqual("group" in step, step["target_kind"] == "group")
         if "group" in step:
             group = step["group"]

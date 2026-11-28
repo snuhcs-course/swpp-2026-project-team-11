@@ -4,7 +4,6 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.example.metchu.FakeApi
 import com.example.metchu.Fixtures
 import com.example.metchu.R
-import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Reason
@@ -14,7 +13,6 @@ import com.example.metchu.data.model.Step
 import com.example.metchu.data.network.ApiError
 import com.example.metchu.data.network.ApiErrorResponse
 import com.example.metchu.data.network.RetrofitInstance
-import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.RecommendRepository
 import com.example.metchu.ui.main.AnsweredQuestion
 import com.example.metchu.ui.main.RecommendViewModel
@@ -136,31 +134,10 @@ class RecommendViewModelTest {
     }
 
     @Test
-    fun startSendsTheUsersLocationWhenThereIsOne() {
+    fun startSendsThePickedAreaAndTheAllergiesTogether() {
         api.reply(question)
-        viewModel.start("LU", Engine.DECISION_TREE, LocationSource { UserLocation(37.45932, 126.95058) })
-        assertEquals(listOf("create LU decision_tree @37.45932,126.95058"), api.calls)
-    }
-
-    @Test
-    fun startSendsTheLocationAndTheAllergiesTogether() {
-        api.reply(question)
-        viewModel.start("LU", Engine.LLM, LocationSource { UserLocation(37.45932, 126.95058) }, listOf(Allergen.EGG))
-        assertEquals(listOf("create LU llm @37.45932,126.95058 egg"), api.calls)
-    }
-
-    @Test
-    fun findingTheLocationIsPartOfTheStartRequest() {
-        val fix = CompletableDeferred<UserLocation?>()
-        api.reply(question)
-        viewModel.start("LU", Engine.DECISION_TREE, LocationSource { fix.await() })
-        assertEquals(true, viewModel.loading.value)
-        viewModel.start("LU", Engine.DECISION_TREE)
-        assertEquals("A second tap while locating is ignored", emptyList<String>(), api.calls.toList())
-
-        fix.complete(null)
-        assertEquals(listOf("create LU decision_tree"), api.calls)
-        assertIdle(question)
+        viewModel.start("LU", Engine.DECISION_TREE, listOf(Allergen.EGG), area = "nakseongdae")
+        assertEquals(listOf("create LU decision_tree @nakseongdae egg"), api.calls)
     }
 
     @Test
@@ -465,10 +442,10 @@ class RecommendViewModelTest {
     }
 
     @Test
-    fun allRestaurantsWithLlmExplainsWhichEnginesWork() {
-        api.fail(Fixtures.httpError(400, """{"error":{"code":"all_source_llm_unsupported","message":"unsupported"}}"""))
-        viewModel.start("LU", Engine.LLM, source = "all", distanceScope = "any")
-        assertIdle(null, UiError(R.string.error_all_source_llm, canRetry = false))
+    fun anAreaOffCampusWithLlmExplainsWhichEnginesWork() {
+        api.fail(Fixtures.httpError(400, """{"error":{"code":"area_llm_unsupported","message":"unsupported"}}"""))
+        viewModel.start("LU", Engine.LLM, area = "snu_station")
+        assertIdle(null, UiError(R.string.error_area_llm, canRetry = false))
     }
 
     @Test
