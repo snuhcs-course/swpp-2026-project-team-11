@@ -5,16 +5,41 @@ import com.example.metchu.data.model.Engine
 import com.example.metchu.data.network.RoomApi
 
 /**
- * Where the user picked to eat, instead of the phone's location; [id] is the server's `area`
- * (backend/recommend/areas.py): the campus cafeterias, the restaurants near one station, or all.
+ * A place the user picked to eat, instead of the phone's location; [id] is one of the server's
+ * `areas` (backend/recommend/areas.py): the campus cafeterias or the restaurants near one station.
+ * The user picks one or more; all three keep every restaurant.
  */
-enum class Area(val id: String) { CAMPUS("campus"), SNU_STATION("snu_station"), NAKSEONGDAE("nakseongdae"), ALL("all") }
+enum class Area(val id: String) { CAMPUS("campus"), SNU_STATION("snu_station"), NAKSEONGDAE("nakseongdae") }
 
 /**
- * The price range, picked as one to three ₩ signs; [level] is what the server filters by
- * (backend/recommend/prices.py), null for any price. The price guide shows each band.
+ * A price range, picked as one to three ₩ signs; [level] is one of the server's `price_levels`
+ * (backend/recommend/prices.py). The user picks one or more; all three are any price. The price
+ * guide shows each band.
  */
-enum class Price(val level: Int?) { ANY(null), LOW(1), MID(2), HIGH(3) }
+enum class Price(val level: Int) { LOW(1), MID(2), HIGH(3) }
+
+/** The picked areas' IDs in the server's order. */
+fun Set<Area>.ids(): List<String> = Area.entries.filter { it in this }.map { it.id }
+
+/** The picked price levels in order. */
+fun Set<Price>.levels(): List<Int> = Price.entries.filter { it in this }.map { it.level }
+
+/**
+ * The areas kept by names joined with commas ([stored], "" for none), or else the single area
+ * an app from before i5-A7 kept ([legacy]): "ALL" or nothing is every area.
+ */
+fun storedAreas(stored: String?, legacy: String?): Set<Area> = picks(stored, legacy, Area.entries)
+
+/** As [storedAreas], for the price ranges: "ANY" or nothing is every one. */
+fun storedPrices(stored: String?, legacy: String?): Set<Price> = picks(stored, legacy, Price.entries)
+
+private fun <T : Enum<T>> picks(stored: String?, legacy: String?, entries: List<T>): Set<T> =
+    stored?.split(",")?.mapNotNull { name -> entries.firstOrNull { it.name == name } }?.toSet()
+        ?: entries.firstOrNull { it.name == legacy }?.let { setOf(it) }
+        ?: entries.toSet()
+
+/** Names joined with commas, as [storedAreas] and [storedPrices] read them. */
+private fun Set<Enum<*>>.joined(): String = sortedBy { it.ordinal }.joinToString(",") { it.name }
 
 /**
  * How far the first launch has got: the language, an optional account, the allergies, then a
@@ -34,13 +59,15 @@ class SettingsStore(context: Context) {
         get() = usableEngine(prefs.getString(ENGINE, null))
         set(value) = prefs.edit().putString(ENGINE, value).apply()
 
-    var area: Area
-        get() = runCatching { Area.valueOf(prefs.getString(AREA, null).orEmpty()) }.getOrDefault(Area.ALL)
-        set(value) = prefs.edit().putString(AREA, value.name).apply()
+    /** Every area at first; possibly none, which the start screen asks to change. */
+    var areas: Set<Area>
+        get() = storedAreas(prefs.getString(AREAS, null), prefs.getString(LEGACY_AREA, null))
+        set(value) = prefs.edit().putString(AREAS, value.joined()).apply()
 
-    var price: Price
-        get() = runCatching { Price.valueOf(prefs.getString(PRICE, null).orEmpty()) }.getOrDefault(Price.ANY)
-        set(value) = prefs.edit().putString(PRICE, value.name).apply()
+    /** Every price range at first; possibly none, which the start screen asks to change. */
+    var prices: Set<Price>
+        get() = storedPrices(prefs.getString(PRICES, null), prefs.getString(LEGACY_PRICE, null))
+        set(value) = prefs.edit().putString(PRICES, value.joined()).apply()
 
     /** How long each question of a room this phone creates waits: one of [RoomApi.ROUND_SECONDS]. */
     var roundSeconds: Int
@@ -54,8 +81,11 @@ class SettingsStore(context: Context) {
     private companion object {
         const val FILE = "settings"
         const val ENGINE = "engine"
-        const val AREA = "area"
-        const val PRICE = "price"
+        const val AREAS = "areas"
+        const val PRICES = "prices"
+        /** The single choice an app from before i5-A7 kept, read until a new one is stored. */
+        const val LEGACY_AREA = "area"
+        const val LEGACY_PRICE = "price"
         const val ROUND_SECONDS = "round_seconds"
         const val SETUP = "setup"
     }

@@ -134,10 +134,11 @@ class RecommendViewModelTest {
     }
 
     @Test
-    fun startSendsThePickedAreaAndTheAllergiesTogether() {
+    fun startSendsThePickedAreasAndPricesAndTheAllergiesTogether() {
         api.reply(question)
-        viewModel.start("LU", Engine.DECISION_TREE, listOf(Allergen.EGG), area = "nakseongdae")
-        assertEquals(listOf("create LU decision_tree @nakseongdae egg"), api.calls)
+        viewModel.start("LU", Engine.DECISION_TREE, listOf(Allergen.EGG), areas = listOf("campus", "nakseongdae"), priceLevels = listOf(2))
+        assertEquals(listOf("create LU decision_tree @campus,nakseongdae egg"), api.calls)
+        assertEquals(listOf(2), api.lastCreateRequest?.priceLevels)
     }
 
     @Test
@@ -444,7 +445,7 @@ class RecommendViewModelTest {
     @Test
     fun anAreaOffCampusWithLlmExplainsWhichEnginesWork() {
         api.fail(Fixtures.httpError(400, """{"error":{"code":"area_llm_unsupported","message":"unsupported"}}"""))
-        viewModel.start("LU", Engine.LLM, area = "snu_station")
+        viewModel.start("LU", Engine.LLM, areas = listOf("snu_station"))
         assertIdle(null, UiError(R.string.error_area_llm, canRetry = false))
     }
 

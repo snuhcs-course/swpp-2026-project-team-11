@@ -55,6 +55,8 @@ import com.example.metchu.data.repository.AllergyStore
 import com.example.metchu.data.repository.Price
 import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.data.repository.Setup
+import com.example.metchu.data.repository.ids
+import com.example.metchu.data.repository.levels
 import com.example.metchu.ui.account.AccountScreen
 import com.example.metchu.ui.account.AccountViewModel
 import com.example.metchu.ui.account.SavedList
@@ -165,8 +167,8 @@ fun MetchuApp(
     val googleToken: suspend () -> String? = { google.idToken(context) }
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
     var engine by remember { mutableStateOf(settings.engine) }
-    var area by remember { mutableStateOf(settings.area) }
-    var price by remember { mutableStateOf(settings.price) }
+    var areas by remember { mutableStateOf(settings.areas) }
+    var prices by remember { mutableStateOf(settings.prices) }
     var roundSeconds by remember { mutableIntStateOf(settings.roundSeconds) }
     // Kept while the app runs, so coming back from a session keeps the meal the user picked.
     var meal by rememberSaveable { mutableStateOf(Meal.now()) }
@@ -182,7 +184,7 @@ fun MetchuApp(
     var confirmLeave by rememberSaveable { mutableStateOf(false) }
     val askToLeave = { if (room?.decided != null) group.leave() else confirmLeave = true }
     val createRoom = { name: String? ->
-        group.create(account?.token, name, allergies, language, meal.code, area.id, price.level, roundSeconds)
+        group.create(account?.token, name, allergies, language, meal.code, areas.ids(), prices.levels(), roundSeconds)
     }
     LaunchedEffect(room != null) { if (room != null) joinOpen = false }
 
@@ -280,18 +282,20 @@ fun MetchuApp(
                     )
                 }
                 Screen.START -> {
-                    LaunchedEffect(meal, allergies, together, area) { if (!together) viewModel.prewarm(meal.code, allergies, area.id) }
+                    LaunchedEffect(meal, allergies, together, areas) {
+                        if (!together && areas.isNotEmpty()) viewModel.prewarm(meal.code, allergies, areas.ids())
+                    }
                     StartScreen(
                         meal = meal,
-                        area = area,
+                        areas = areas,
                         // Still searching while it whitens for the question.
                         loading = loading || roomBusy || held || whitened > 0f,
                         whitened = whitened,
                         tip = setup == Setup.TIP,
                         onMeal = { meal = it },
-                        onArea = { area = it; settings.area = it },
-                        price = price,
-                        onPrice = { price = it; settings.price = it },
+                        onAreas = { areas = it; settings.areas = it },
+                        prices = prices,
+                        onPrices = { prices = it; settings.prices = it },
                         onSettings = { settingsOpen = true },
                         group = together,
                         onGroup = { together = it },
@@ -304,7 +308,7 @@ fun MetchuApp(
                             when {
                                 !together -> {
                                     searches++
-                                    viewModel.start(meal.code, engine, allergies, language, area.id, price.level, account?.token)
+                                    viewModel.start(meal.code, engine, allergies, language, areas.ids(), prices.levels(), account?.token)
                                 }
                                 account == null -> askName = true
                                 else -> createRoom(null)
@@ -407,7 +411,7 @@ fun MetchuApp(
                 }
                 Screen.UNAVAILABLE -> if (current != null) {
                     BackHandler { viewModel.startOver() }
-                    UnavailableScreen(current, hasAllergies = allergies.isNotEmpty(), priced = price != Price.ANY, onBack = viewModel::startOver)
+                    UnavailableScreen(current, hasAllergies = allergies.isNotEmpty(), priced = prices.size < Price.entries.size, onBack = viewModel::startOver)
                 }
             }
         }

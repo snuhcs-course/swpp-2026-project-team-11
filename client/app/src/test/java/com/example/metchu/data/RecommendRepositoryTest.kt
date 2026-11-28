@@ -69,26 +69,26 @@ class RecommendRepositoryTest {
     }
 
     @Test
-    fun thePickedAreaIsSentAndNoLocation() = runTest {
+    fun thePickedAreasAreSentAndNoLocation() = runTest {
         reply("question", 201)
-        repository.createSession("LU", area = "snu_station")
-        assertEquals("""{"meal":"LU","area":"snu_station"}""", server.takeRequest().json().toString())
+        repository.createSession("LU", areas = listOf("campus", "snu_station"))
+        assertEquals("""{"meal":"LU","areas":["campus","snu_station"]}""", server.takeRequest().json().toString())
     }
 
     @Test
-    fun thePriceRangeIsSentOnlyWhenPicked() = runTest {
+    fun thePriceRangesAreSentUnderTheServerName() = runTest {
         reply("question", 201)
-        repository.createSession("LU", area = "all", priceLevel = 1)
-        assertEquals("""{"meal":"LU","area":"all","price_level":1}""", server.takeRequest().json().toString())
+        repository.createSession("LU", areas = listOf("nakseongdae"), priceLevels = listOf(1, 3))
+        assertEquals("""{"meal":"LU","areas":["nakseongdae"],"price_levels":[1,3]}""", server.takeRequest().json().toString())
     }
 
     @Test
     fun prewarmSendsWhatTheSessionWillRead() = runTest {
         server.enqueue(MockResponse().setResponseCode(204))
-        repository.prewarm("DN", listOf(Allergen.EGG), "all")
+        repository.prewarm("DN", listOf(Allergen.EGG), listOf("campus", "snu_station", "nakseongdae"))
         val request = server.takeRequest()
         assertEquals("/api/sessions/prewarm/", request.path)
-        assertEquals("""{"meal":"DN","allergies":["egg"],"area":"all"}""", request.json().toString())
+        assertEquals("""{"meal":"DN","allergies":["egg"],"areas":["campus","snu_station","nakseongdae"]}""", request.json().toString())
     }
 
     @Test

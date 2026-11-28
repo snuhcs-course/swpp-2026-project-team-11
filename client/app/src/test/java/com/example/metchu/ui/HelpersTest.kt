@@ -4,6 +4,7 @@ import com.example.metchu.Fixtures
 import com.example.metchu.R
 import com.example.metchu.data.model.Offer
 import com.example.metchu.data.repository.Area
+import com.example.metchu.data.repository.Price
 import com.example.metchu.ui.question.phaseText
 import com.example.metchu.ui.question.progressFill
 import com.example.metchu.ui.result.Point
@@ -12,7 +13,10 @@ import com.example.metchu.ui.result.directionsLinks
 import com.example.metchu.ui.start.CampusCenter
 import com.example.metchu.ui.start.Meal
 import com.example.metchu.ui.start.center
+import com.example.metchu.ui.start.mapCenter
+import com.example.metchu.ui.start.startBlocker
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -90,15 +94,34 @@ class AreaTest {
 
     @Test
     fun areaIdsAreTheServers() {
-        assertEquals(listOf("campus", "snu_station", "nakseongdae", "all"), Area.entries.map { it.id })
+        assertEquals(listOf("campus", "snu_station", "nakseongdae"), Area.entries.map { it.id })
     }
 
     @Test
     fun theStartMapCentersOnTheCampusOrTheStation() {
         assertEquals(CampusCenter, Area.CAMPUS.center())
-        assertEquals(CampusCenter, Area.ALL.center())
         assertEquals(Point(37.481247, 126.952739), Area.SNU_STATION.center())
         assertEquals(Point(37.476930, 126.963693), Area.NAKSEONGDAE.center())
+    }
+
+    @Test
+    fun theStartMapCentersOnTheFirstPickedArea() {
+        assertEquals(CampusCenter, mapCenter(Area.entries.toSet()))
+        assertEquals(Area.SNU_STATION.center(), mapCenter(setOf(Area.NAKSEONGDAE, Area.SNU_STATION)))
+        assertEquals(CampusCenter, mapCenter(emptySet()))
+    }
+}
+
+class StartBlockerTest {
+
+    @Test
+    fun startWaitsForAnAreaThenAPriceRange() {
+        val areas = setOf(Area.CAMPUS)
+        val prices = setOf(Price.MID)
+        assertEquals(R.string.start_pick_area, startBlocker(emptySet(), emptySet()))
+        assertEquals(R.string.start_pick_area, startBlocker(emptySet(), prices))
+        assertEquals(R.string.start_pick_price, startBlocker(areas, emptySet()))
+        assertNull(startBlocker(areas, prices))
     }
 }
 

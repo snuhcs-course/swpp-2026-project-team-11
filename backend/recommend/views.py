@@ -1,9 +1,9 @@
 """HTTP glue between the Android client and the question engine.
 
-    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "allergies"?, "area"?, "price_level"?,
+    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "allergies"?, "areas"?, "price_levels"?,
                           "language"?}                                     -> 201 state
     GET  /api/sessions/<id>/                                               -> state
-    POST /api/sessions/prewarm/  {"meal"?, "area"?, "allergies"?}              -> 204
+    POST /api/sessions/prewarm/  {"meal"?, "areas"?, "allergies"?}             -> 204
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
     POST /api/sessions/<id>/recommend-now/                                 -> state
@@ -52,19 +52,23 @@ be reached, for example through the tunnel of `manage.py serve_public`.
 catalogue. Missing RL features or unavailable LLM configuration return 503
 `engine_unavailable`.
 
-`price_level` is 1, 2 or 3, the number of ₩ signs the user picked (recommend/prices.py
-PRICE_BANDS); only dishes priced in that band are proposed. Null or missing is any price.
+`price_levels` lists the price ranges the user picked, at least one of 1, 2 and 3, the number of
+₩ signs (recommend/prices.py PRICE_BANDS); only dishes priced in one of those bands are proposed.
+All three, null or missing is any price, dishes of unknown price included. An APK from before
+i5-A7 sends one `price_level` instead (null for any price), which is read as a list of it.
 
 `allergies` lists keys of menus/allergens.py ALLERGEN_KEYS, as the phone stores
 them; no dish that may contain one is proposed. `language` is "en" (default) or "ko":
 every text the session sends is in it, except dish and cafeteria names, which stay Korean.
 
-`area` is where the user picked to eat (recommend/areas.py): "campus" (default), the
-day's SNU cafeteria menu, "snu_station" or "nakseongdae", the restaurants near that
-station, or "all" for every one of them; null or missing is campus, or "all" for an APK
-from before areas that sends `source` "all" or "general". The phone sends no location. Only campus
-sessions support "llm"; asking for it elsewhere is a 400 `area_llm_unsupported`. An omitted engine uses the
-server default, falling back to the decision tree outside campus if that default is "llm".
+`areas` lists where the user picked to eat (recommend/areas.py), at least one of "campus", the
+day's SNU cafeteria menu, and "snu_station" and "nakseongdae", the restaurants near that
+station; the session serves all of them. Null or missing reads the single `area` of an APK
+from before i5-A7: one of those or "all" for every one; null or missing is campus, or every
+area for an APK from before areas that sends `source` "all" or "general". The phone sends no
+location. Only campus-only sessions support "llm"; asking for it with any other area is a 400
+`area_llm_unsupported`. An omitted engine uses the server default, falling back to the decision
+tree beyond campus if that default is "llm".
 """
 
 from __future__ import annotations
@@ -104,31 +108,50 @@ def _body(request) -> dict:
     return payload
 
 
-def _price_level(value) -> int | None:
-    if value is not None and (type(value) is not int or value not in PRICE_BANDS):
-        raise ValueError(f"price_level must be one of {', '.join(map(str, PRICE_BANDS))}.")
-    return value
+def _price_levels(payload: dict) -> tuple[int, ...]:
+    """The picked bands in order. Without `price_levels`, an APK from before i5-A7 sends one
+    `price_level`, or none for any price."""
+    levels = payload.get("price_levels")
+    if levels is None:
+        level = payload.get("price_level")
+        if level is None:
+            return tuple(PRICE_BANDS)
+        if type(level) is not int or level not in PRICE_BANDS:
+            raise ValueError(f"price_level must be one of {', '.join(map(str, PRICE_BANDS))}.")
+        return (level,)
+    if (not isinstance(levels, list) or not levels
+            or any(type(level) is not int or level not in PRICE_BANDS for level in levels)):
+        raise ValueError(f"price_levels must be a non-empty list of {', '.join(map(str, PRICE_BANDS))}.")
+    return tuple(level for level in PRICE_BANDS if level in levels)
 
 
-def _area(payload: dict) -> str:
-    """Null or missing is campus, except for an APK from before areas, which sends `source`
-    "all" and keeps every restaurant until it updates."""
-    area = payload.get("area") or ("all" if payload.get("source") in ("general", "all") else "campus")
-    if area not in AREAS:
-        raise ValueError(f"area must be one of {', '.join(AREAS)}.")
-    return area
+def _areas(payload: dict) -> tuple[str, ...]:
+    """The picked areas in AREAS order. Without `areas`, an APK from before i5-A7 sends one
+    `area` ("all" is every one), and null or missing is campus, except for an APK from before
+    areas, which sends `source` "all" and keeps every restaurant until it updates."""
+    areas = payload.get("areas")
+    if areas is None:
+        area = payload.get("area") or ("all" if payload.get("source") in ("general", "all") else "campus")
+        if area == "all":
+            return AREAS
+        if area not in AREAS:
+            raise ValueError(f"area must be one of {', '.join(AREAS)}, all.")
+        return (area,)
+    if not isinstance(areas, list) or not areas or any(area not in AREAS for area in areas):
+        raise ValueError(f"areas must be a non-empty list of {', '.join(AREAS)}.")
+    return tuple(area for area in AREAS if area in areas)
 
 
-def _catalogue_fields(payload: dict) -> tuple[str | None, str, frozenset[str]]:
+def _catalogue_fields(payload: dict) -> tuple[str | None, tuple[str, ...], frozenset[str]]:
     meal = payload.get("meal")
     if meal is not None and meal not in MEALS:
         raise ValueError("meal must be one of BR, LU, DN.")
-    area = _area(payload)
+    areas = _areas(payload)
     allergies = payload.get("allergies")
     if allergies is not None and (not isinstance(allergies, list)
                                   or any(key not in ALLERGEN_KEYS for key in allergies)):
         raise ValueError(f"allergies must be a list of {', '.join(ALLERGEN_KEYS)}.")
-    return meal, area, frozenset(allergies or ())
+    return meal, areas, frozenset(allergies or ())
 
 
 @require_GET
@@ -146,21 +169,22 @@ def create_session(request):
             if not isinstance(date, str):
                 raise ValueError("date must be an ISO date string such as 2026-11-02.")
             date = datetime.date.fromisoformat(date)
-        meal, area, allergies = _catalogue_fields(payload)
+        meal, areas, allergies = _catalogue_fields(payload)
         engine = payload.get("engine")
         if engine is not None and engine not in sessions.ENGINES:
             raise ValueError(f"engine must be one of {', '.join(sessions.ENGINES)}.")
-        price_level = _price_level(payload.get("price_level"))
+        price_levels = _price_levels(payload)
         language = payload.get("language", "en")
         if language not in LANGUAGES:
             raise ValueError(f"language must be one of {', '.join(LANGUAGES)}.")
     except ValueError as error:  # includes json.JSONDecodeError
         return _error(400, "invalid_request", str(error))
-    if area != "campus" and engine == "llm":
+    if areas != ("campus",) and engine == "llm":
         return _error(400, "area_llm_unsupported", "Outside campus, the decision tree and RL engines are supported.")
     user = user_for(request)
     try:
-        session = sessions.create(date, meal, engine, allergies, area, language, price_level, user.pk if user else None)
+        session = sessions.create(date, meal, engine, allergies, areas, language, price_levels,
+                                  user.pk if user else None)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     state = session.public_state()
@@ -175,10 +199,10 @@ def create_session(request):
 @require_POST
 def prewarm(request):
     try:
-        meal, area, allergies = _catalogue_fields(_body(request))
+        meal, areas, allergies = _catalogue_fields(_body(request))
     except ValueError as error:
         return _error(400, "invalid_request", str(error))
-    sessions.prewarm(meal, allergies, area)
+    sessions.prewarm(meal, allergies, areas)
     return HttpResponse(status=204)
 
 
@@ -281,8 +305,8 @@ def ban(request, session_id: str):
 # Group rooms (recommend/rooms.py). Every room request but create and join sends the
 # member's token from those replies as `X-Member-Token`.
 #
-#   POST /api/rooms/        {"name"?, "allergies"?, "language"?, "date"?, "meal"?, "area"?,
-#                            "price_level"?, "round_seconds"?}         -> 201 {"token", "state"}
+#   POST /api/rooms/        {"name"?, "allergies"?, "language"?, "date"?, "meal"?, "areas"?,
+#                            "price_levels"?, "round_seconds"?}        -> 201 {"token", "state"}
 #   POST /api/rooms/join/   {"code", "name"?, "allergies"?, "language"?} -> 201 {"token", "state"}
 #   GET  /api/rooms/<code>/                                             -> state
 #   POST /api/rooms/<code>/start/                         (host)        -> state
@@ -293,7 +317,8 @@ def ban(request, session_id: str):
 #   POST /api/rooms/<code>/decide/  {"pick"}              (host)        -> state
 #   POST /api/rooms/<code>/leave/                                       -> 204
 #
-# A signed-in member (`Authorization: Token ...`) is shown by username; anyone else sends
+# `areas` and `price_levels`, and the single `area` and `price_level` of older APKs, are read as for
+# sessions. A signed-in member (`Authorization: Token ...`) is shown by username; anyone else sends
 # a `name`. Errors: 404 room_not_found, 429 too_many_attempts (wrong codes), 403 not_member or not_host,
 # 409 room_started, room_full, too_few_members, group_unavailable or stale_step (with the state).
 
@@ -333,15 +358,15 @@ def create_room(request):
         meal = payload.get("meal")
         if meal is not None and meal not in MEALS:
             raise ValueError("meal must be one of BR, LU, DN.")
-        area = _area(payload)
-        price_level = _price_level(payload.get("price_level"))
+        areas = _areas(payload)
+        price_levels = _price_levels(payload)
         round_seconds = payload.get("round_seconds", rooms.ROUND_SECONDS)
         if type(round_seconds) is not int or round_seconds not in rooms.ROUND_CHOICES:
             raise ValueError(f"round_seconds must be one of {', '.join(map(str, rooms.ROUND_CHOICES))}.")
     except ValueError as error:
         return _error(400, "invalid_request", str(error))
     room_settings = rooms.RoomSettings(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                                       meal, area, price_level, round_seconds)
+                                       meal, areas, price_levels, round_seconds)
     return _joined(*rooms.create(name, allergies, language, room_settings))
 
 

@@ -1,4 +1,4 @@
-"""price_level: only dishes priced inside the picked band reach the engine, in sessions and rooms."""
+"""price_levels: only dishes priced inside a picked band reach the engine, in sessions and rooms."""
 import json
 from unittest import mock
 
@@ -30,13 +30,18 @@ def priced(*prices):
 class WithinPriceTests(TestCase):
     def test_bands_include_their_lower_bound_and_exclude_their_upper_bound(self):
         prices = [0, 7999, 8000, 14999, 15000, 90000]
-        kept = {level: [c["offers"][0]["price"] for c in within_price(priced(*prices), level)] for level in PRICE_BANDS}
+        kept = {level: [c["offers"][0]["price"] for c in within_price(priced(*prices), [level])] for level in PRICE_BANDS}
         self.assertEqual(kept, {1: [0, 7999], 2: [8000, 14999], 3: [15000, 90000]})
+
+    def test_several_bands_keep_the_offers_in_any_of_them(self):
+        prices = [0, 7999, 8000, 14999, 15000, 90000, None]
+        kept = [c["offers"][0]["price"] for c in within_price(priced(*prices), [1, 3])]
+        self.assertEqual(kept, [0, 7999, 15000, 90000])
 
     def test_unknown_prices_and_out_of_band_offers_are_dropped(self):
         candidate = {"food_id": 1, "offers": [{"restaurant": "A", "price": 6000}, {"restaurant": "B", "price": 9000},
                                               {"restaurant": "C", "price": None}]}
-        kept = within_price([candidate, *priced(None)], 2)
+        kept = within_price([candidate, *priced(None)], [2])
         self.assertEqual([offer["restaurant"] for c in kept for offer in c["offers"]], ["B"])
 
 
@@ -74,13 +79,26 @@ class PriceFilterApiTests(TestCase):
     def test_any_price_keeps_every_dish_including_unknown_prices(self):
         self.assertEqual(self.start()["candidate_count"], 6)
         self.assertEqual(self.start(price_level=None)["candidate_count"], 6)
+        self.assertEqual(self.start(price_levels=[3, 1, 2])["candidate_count"], 6)
         self.assertEqual(self.start(price_level=3)["candidate_count"], 1)
+
+    def test_several_levels_keep_the_dishes_of_each_band(self):
+        state = self.start(price_levels=[3, 1])
+        self.assertEqual(state["candidate_count"], 3)
+        self.assertEqual(sessions.get(state["session_id"]).price_levels, (1, 3))
+        self.assertEqual(sessions.get(state["session_id"]).menus.keys(), {"North hall", "West hall"})
+        # The list wins over the single level of an older APK.
+        self.assertEqual(self.start(price_levels=[2], price_level=1)["candidate_count"], 2)
 
     def test_a_level_outside_one_to_three_is_rejected(self):
         for level in (0, 4, "2", True, 2.0):
             response = post(self.client, "/api/sessions/", {"date": DAY, "price_level": level})
             self.assertEqual(response.status_code, 400, level)
             self.assertIn("price_level", response.json()["error"]["message"])
+        for levels in ([], [0], [1, 4], ["2"], [True], 2):
+            response = post(self.client, "/api/sessions/", {"date": DAY, "price_levels": levels})
+            self.assertEqual(response.status_code, 400, levels)
+            self.assertIn("price_levels", response.json()["error"]["message"])
 
     def test_a_room_proposes_only_restaurant_dishes_in_the_band(self):
         response = post(self.client, "/api/rooms/", {"name": "Jimin", "date": DAY, "meal": "LU", "price_level": 1})
@@ -97,6 +115,16 @@ class PriceFilterApiTests(TestCase):
         self.assertTrue({dish["display_name"] for dish in dishes} <= {"Kimbap", "Rice bowl"}, dishes)
         rejected = post(self.client, "/api/rooms/", {"name": "Jimin", "price_level": 0})
         self.assertEqual(rejected.status_code, 400)
+
+    def test_a_room_takes_several_levels(self):
+        response = post(self.client, "/api/rooms/", {"name": "Jimin", "date": DAY, "meal": "LU", "price_levels": [3]})
+        code, host = response.json()["state"]["code"], response.json()["token"]
+        post(self.client, "/api/rooms/join/", {"code": code, "name": "Seoyeon"})
+        picks = self.client.post(f"/api/rooms/{code}/start/", content_type="application/json",
+                                 HTTP_X_MEMBER_TOKEN=host).json()["picks"]
+        self.assertEqual([pick["restaurant"] for pick in picks], ["West hall"])
+        for levels in ([], [4]):
+            self.assertEqual(post(self.client, "/api/rooms/", {"name": "Jimin", "price_levels": levels}).status_code, 400)
 
 
 class MergedOfferPriceTests(TestCase):

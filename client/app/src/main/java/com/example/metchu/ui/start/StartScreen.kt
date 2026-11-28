@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -131,21 +132,33 @@ val CampusCenter = Point(37.4600, 126.9520)
 
 /** Where the start map centers for [Area]: the campus, or the station (backend/recommend/areas.py STATIONS). */
 fun Area.center(): Point = when (this) {
-    Area.CAMPUS, Area.ALL -> CampusCenter
+    Area.CAMPUS -> CampusCenter
     Area.SNU_STATION -> Point(37.481247, 126.952739)
     Area.NAKSEONGDAE -> Point(37.476930, 126.963693)
+}
+
+/** Where the start map centers for the picked [areas]: the first of them, or the campus for none. */
+fun mapCenter(areas: Set<Area>): Point = Area.entries.firstOrNull { it in areas }?.center() ?: CampusCenter
+
+/** What the start button reads instead of starting while no area or no price range is picked, or null. */
+@StringRes
+fun startBlocker(areas: Set<Area>, prices: Set<Price>): Int? = when {
+    areas.isEmpty() -> R.string.start_pick_area
+    prices.isEmpty() -> R.string.start_pick_price
+    else -> null
 }
 
 /** In the order of the sentence's lines: each picker opens under its own line. */
 private enum class Sheet { MEAL, PLACE, PRICE, WHO }
 
 /**
- * "Today I'll have [lunch] [on campus] [at a fair price] [for me]": the meal, the [area], the [price] range
+ * "Today I'll have [lunch] [on campus] [at a fair price] [for me]": the meal, the [areas], the [prices]
  * and whether friends join ([group]) are picked inside the sentence, and the round button starts a session, or
  * with friends creates a room, whose questions each wait [roundSeconds], picked under the sentence;
  * "Join with a code" (top right) enters someone else's. The price
- * range is picked as one to three ₩ signs and read in words; the small "?" beside it shows what each covers. The map behind the button fades in
- * from the background; the button stands over the picked area. With [tip], a tip over the
+ * ranges are picked as one to three ₩ signs and read in words; the small "?" beside it shows what each covers. The map behind the button fades in
+ * from the background; the button stands over the first picked area. Areas and price ranges take one or
+ * more each; while either has none, the button reads which to pick ([startBlocker]) and does not start. With [tip], a tip over the
  * screen points to the globe and the gear, where the language and the allergies change.
  * The phone's location is never used.
  *
@@ -158,14 +171,14 @@ private enum class Sheet { MEAL, PLACE, PRICE, WHO }
 @Composable
 fun StartScreen(
     meal: Meal,
-    area: Area,
+    areas: Set<Area>,
     loading: Boolean,
     whitened: Float,
     tip: Boolean,
     onMeal: (Meal) -> Unit,
-    onArea: (Area) -> Unit,
-    price: Price,
-    onPrice: (Price) -> Unit,
+    onAreas: (Set<Area>) -> Unit,
+    prices: Set<Price>,
+    onPrices: (Set<Price>) -> Unit,
     onSettings: () -> Unit,
     group: Boolean,
     onGroup: (Boolean) -> Unit,
@@ -201,7 +214,7 @@ fun StartScreen(
     LaunchedEffect(language) { switching = false }
 
     Box(Modifier.fillMaxSize().screenBackground()) {
-        if (BuildConfig.HAS_MAPS_KEY) StartMap(area.center(), search, zoomedOut = searching)
+        if (BuildConfig.HAS_MAPS_KEY) StartMap(mapCenter(areas), search, zoomedOut = searching)
 
         Column(
             Modifier.statusBarsPadding().graphicsLayer {
@@ -226,13 +239,13 @@ fun StartScreen(
                 }
                 Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
                     Token(
-                        stringResource(areaWords(area)).let { if (english) it.uppercase() else it },
+                        areaWords(areas).let { if (english) it.uppercase() else it },
                         stringResource(R.string.start_place_change), "placeToken"
                     ) { sheet = Sheet.PLACE }
                 }
                 Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
                     Token(
-                        stringResource(priceWords(price)).let { if (english) it.uppercase() else it },
+                        priceWords(prices).let { if (english) it.uppercase() else it },
                         stringResource(R.string.start_price_change), "priceToken"
                     ) { sheet = Sheet.PRICE }
                     PriceGuideButton { priceGuideOpen = true }
@@ -254,12 +267,14 @@ fun StartScreen(
             Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = TopRowHeight + 10.dp)
         )
 
+        val blocker = startBlocker(areas, prices)
         StartButton(
-            label = stringResource(if (group) R.string.group_create else R.string.start_button),
+            label = stringResource(blocker ?: if (group) R.string.group_create else R.string.start_button),
+            enabled = blocker == null,
             loading = loading,
             searching = searching,
             // Nothing else on screen asks for attention.
-            nudging = !group && sheet == null && !priceGuideOpen && !tip && !languageOpen,
+            nudging = !group && blocker == null && sheet == null && !priceGuideOpen && !tip && !languageOpen,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).fade { words }
@@ -297,7 +312,7 @@ fun StartScreen(
             width = when (shownSheet) {
                 Sheet.MEAL -> 168.dp
                 Sheet.PLACE -> 248.dp
-                Sheet.PRICE -> 220.dp
+                Sheet.PRICE -> 248.dp
                 Sheet.WHO -> 272.dp
             },
             modifier = Modifier.statusBarsPadding()
@@ -312,16 +327,16 @@ fun StartScreen(
                 }
             } else if (shownSheet == Sheet.PRICE) {
                 Price.entries.map {
-                    PickerOption(
-                        if (it == Price.ANY) stringResource(R.string.price_any_option) else priceSigns(it),
-                        stringResource(if (it == Price.ANY) R.string.price_any_note else priceWords(it)),
-                        selected = it == price
-                    ) { onPrice(it); sheet = null }
+                    PickerOption(priceSigns(it), stringResource(priceWords(it)), selected = it in prices) {
+                        onPrices(if (it in prices) prices - it else prices + it)
+                    }
                 }
             } else if (shownSheet == Sheet.PLACE) {
                 Area.entries.map {
                     val (option, note) = areaOption(it)
-                    PickerOption(stringResource(option), stringResource(note), selected = it == area) { onArea(it); sheet = null }
+                    PickerOption(stringResource(option), stringResource(note), selected = it in areas) {
+                        onAreas(if (it in areas) areas - it else areas + it)
+                    }
                 }
             } else {
                 Meal.entries.map {
@@ -332,6 +347,7 @@ fun StartScreen(
                     ) { onMeal(it); sheet = null }
                 }
             },
+            multiple = shownSheet == Sheet.PLACE || shownSheet == Sheet.PRICE,
             onDismiss = { sheet = null }
         )
         PriceGuide(
@@ -412,30 +428,44 @@ private fun SetupTip(onDone: () -> Unit, onSettings: () -> Unit) {
     }
 }
 
-/** The area as it reads inside the sentence. */
-@StringRes
-private fun areaWords(area: Area): Int = when (area) {
-    Area.CAMPUS -> R.string.area_campus
-    Area.SNU_STATION -> R.string.area_snu_station
-    Area.NAKSEONGDAE -> R.string.area_nakseongdae
-    Area.ALL -> R.string.area_all
-}
+/** The picked areas as they read inside the sentence: one by name, all three as anywhere. */
+@Composable
+private fun areaWords(areas: Set<Area>): String = stringResource(
+    when (areas.size) {
+        0 -> R.string.area_none
+        1 -> when (areas.single()) {
+            Area.CAMPUS -> R.string.area_campus
+            Area.SNU_STATION -> R.string.area_snu_station
+            Area.NAKSEONGDAE -> R.string.area_nakseongdae
+        }
+        Area.entries.size -> R.string.area_all
+        else -> R.string.area_two
+    }
+)
 
 /** The area's name in the picker, over what it covers. */
 private fun areaOption(area: Area): Pair<Int, Int> = when (area) {
     Area.CAMPUS -> R.string.area_campus_option to R.string.area_campus_note
     Area.SNU_STATION -> R.string.area_snu_station_option to R.string.area_station_note
     Area.NAKSEONGDAE -> R.string.area_nakseongdae_option to R.string.area_station_note
-    Area.ALL -> R.string.area_all_option to R.string.area_all_note
 }
 
 /**
  * A small menu that grows from its top-left corner, under the word it changes, without
  * dimming the screen; it shrinks back and fades when a choice is picked or the user taps
- * elsewhere. Built like the language menu.
+ * elsewhere. Built like the language menu. With [multiple] each option turns on and off and
+ * the menu stays open until the user taps elsewhere.
  */
 @Composable
-private fun ChoicePopup(visible: Boolean, title: String, options: List<PickerOption>, width: Dp, modifier: Modifier, onDismiss: () -> Unit) {
+private fun ChoicePopup(
+    visible: Boolean,
+    title: String,
+    options: List<PickerOption>,
+    width: Dp,
+    modifier: Modifier,
+    multiple: Boolean,
+    onDismiss: () -> Unit
+) {
     PopupCard(visible, title, width, modifier, onDismiss) {
         options.forEach { option ->
             Row(
@@ -444,7 +474,10 @@ private fun ChoicePopup(visible: Boolean, title: String, options: List<PickerOpt
                     .height(48.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (option.selected) MetchuColors.Grey100 else Color.White)
-                    .selectable(option.selected, enabled = visible, role = Role.RadioButton, onClick = option.onPick)
+                    .then(
+                        if (multiple) Modifier.toggleable(option.selected, enabled = visible, role = Role.Checkbox) { option.onPick() }
+                        else Modifier.selectable(option.selected, enabled = visible, role = Role.RadioButton, onClick = option.onPick)
+                    )
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -456,11 +489,20 @@ private fun ChoicePopup(visible: Boolean, title: String, options: List<PickerOpt
 }
 
 /** The ₩ signs of a price range: one to three. */
-private fun priceSigns(price: Price): String = "₩".repeat(price.level ?: 0)
+private fun priceSigns(price: Price): String = "₩".repeat(price.level)
 
-/** How the sentence reads a price range; the picker shows it under the ₩ signs. */
+/** How the sentence reads the picked price ranges: one in words, two as their ₩ signs, all three as any price. */
+@Composable
+private fun priceWords(prices: Set<Price>): String = when (prices.size) {
+    0 -> stringResource(R.string.price_none)
+    1 -> stringResource(priceWords(prices.single()))
+    Price.entries.size -> stringResource(R.string.price_any)
+    else -> Price.entries.filter { it in prices }.joinToString(" · ") { priceSigns(it) }
+}
+
+/** How the sentence reads a price range; the picker shows it beside the ₩ signs. */
+@StringRes
 private fun priceWords(price: Price): Int = when (price) {
-    Price.ANY -> R.string.price_any
     Price.LOW -> R.string.price_low
     Price.MID -> R.string.price_mid
     Price.HIGH -> R.string.price_high
@@ -547,7 +589,7 @@ private val CornerButtonBottom = 18.dp
 private val TitleLine = 39.dp
 
 /**
- * The round button. While [nudging] and idle, a soft circle keeps spreading from it.
+ * The round button, grey and still while not [enabled]. While [nudging] and idle, a soft circle keeps spreading from it.
  * [searching], it shrinks into a dot (ringed in white, with ripples) where it stands, over
  * the picked area. Otherwise a slow [loading],
  * such as creating a room, shows a spinner inside it.
@@ -555,6 +597,7 @@ private val TitleLine = 39.dp
 @Composable
 private fun StartButton(
     label: String,
+    enabled: Boolean,
     loading: Boolean,
     searching: Boolean,
     nudging: Boolean,
@@ -576,16 +619,17 @@ private fun StartButton(
                 .pressScale(interaction)
                 .then(if (searching) Modifier.cssShadow(CircleShape, 2.dp, 8.dp, 0.3f) else Modifier.cssShadow(CircleShape, 6.dp, 20.dp, 0.2f))
                 .clip(CircleShape)
-                .background(MetchuColors.Primary)
+                .background(if (enabled) MetchuColors.Primary else MetchuColors.Grey300)
                 .border(ring, Color.White, CircleShape)
-                .clickable(interaction, indication = null, enabled = !loading, role = Role.Button, onClick = onClick)
+                .clickable(interaction, indication = null, enabled = enabled && !loading, role = Role.Button, onClick = onClick)
                 .testTag("start"),
             contentAlignment = Alignment.Center
         ) {
             if (!searching && rememberSlow(loading)) Spinner(Color.White, 32.dp)
             else Text(
                 label,
-                Modifier.requiredWidth(StartButtonSize).fade { words },
+                // Inside the circle also when a longer label takes two lines.
+                Modifier.requiredWidth(StartButtonSize).padding(horizontal = 16.dp).fade { words },
                 style = MetchuType.Button,
                 color = Color.White,
                 textAlign = TextAlign.Center
