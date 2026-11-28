@@ -11,6 +11,7 @@ import com.example.metchu.data.network.GoogleTokenRequest
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.network.SignedIn
 import retrofit2.HttpException
+import retrofit2.Response
 
 /**
  * Signs in and out with the server and keeps the account in [store]. Like
@@ -61,24 +62,31 @@ class AuthRepository(private val store: AccountStore, private val api: AuthApi =
         return store.account
     }
 
-    /** The account's saved dishes, newest first. */
+    /** The account's saved restaurants, newest first. */
     @Suppress("SENSELESS_COMPARISON")
     suspend fun bookmarks(): List<Bookmark> =
         api.bookmarks(signedIn()).bookmarks.also { check(it != null) { "Bookmarks reply has no list" } }
 
-    /** Saves [bookmark]; saving a dish saved already returns the one kept. */
+    /** Saves [bookmark]; saving a restaurant saved already returns the one kept. */
     suspend fun bookmark(bookmark: Bookmark): Bookmark = api.bookmark(signedIn(), bookmark).bookmark
 
     /** Removes the bookmark [id]; one that is gone already is no error. */
-    suspend fun unbookmark(id: Int) {
-        val reply = api.unbookmark(signedIn(), id)
-        if (!reply.isSuccessful) throw HttpException(reply)
-    }
+    suspend fun unbookmark(id: Int) = succeed(api.unbookmark(signedIn(), id))
+
+    /** Removes all the account's bookmarks. */
+    suspend fun clearBookmarks() = succeed(api.clearBookmarks(signedIn()))
 
     /** The dishes the account was recommended, newest first. */
     @Suppress("SENSELESS_COMPARISON")
     suspend fun history(): List<HistoryEntry> =
         api.history(signedIn()).history.also { check(it != null) { "History reply has no list" } }
+
+    /** Removes all the account's history. */
+    suspend fun clearHistory() = succeed(api.clearHistory(signedIn()))
+
+    private fun succeed(reply: Response<Unit>) {
+        if (!reply.isSuccessful) throw HttpException(reply)
+    }
 
     private fun signedIn(): String = checkNotNull(store.account) { "Not signed in" }.authorization
 

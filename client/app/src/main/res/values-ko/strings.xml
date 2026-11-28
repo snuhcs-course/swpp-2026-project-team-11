@@ -72,10 +72,10 @@
     <string name="account_log_out">로그아웃</string>
     <string name="account_bookmarks">북마크</string>
     <string name="account_history">추천 기록</string>
-    <string name="bookmarks_empty">아직 북마크한 메뉴가 없어요. 추천 결과에서 북마크 버튼으로 메뉴를 저장해 보세요.</string>
+    <string name="bookmarks_empty">아직 북마크한 식당이 없어요. 추천 결과에서 북마크 버튼으로 식당을 저장해 보세요.</string>
     <string name="history_empty">로그인한 상태에서 추천받은 메뉴가 여기에 보여요.</string>
     <string name="saved_failed">목록을 불러오지 못했어요.</string>
-    <string name="result_bookmark">이 메뉴 북마크하기</string>
+    <string name="result_bookmark">이 식당 북마크하기</string>
     <string name="result_unbookmark">북마크 해제하기</string>
     <string name="account_error_empty">아이디와 비밀번호를 입력해 주세요.</string>
     <string name="account_error_mismatch">두 비밀번호가 달라요.</string>

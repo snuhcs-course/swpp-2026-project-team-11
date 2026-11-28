@@ -129,9 +129,9 @@ import kotlin.math.abs
  * them and always turns down the server's current guess. "Menu" on a cafeteria lists
  * what else it serves at that meal; [menus] holds those lists, null while one loads.
  * There is no ban: the engines never propose a turned-down dish again in the session, so
- * "Find another" already leaves it behind. [bookmarked] holds the dishes the signed-in
+ * "Find another" already leaves it behind. [bookmarked] holds the restaurants the signed-in
  * account saved, null for a guest, who has no bookmark button; [onBookmark] saves or removes
- * the dish on view with the cafeteria chosen, which is what the button shows.
+ * the cafeteria chosen, which is what the button shows.
  */
 @Composable
 fun ResultScreen(
@@ -145,7 +145,7 @@ fun ResultScreen(
     onMore: () -> Unit,
     onMenu: (restaurant: String) -> Unit,
     bookmarked: List<Bookmark>?,
-    onBookmark: (foodId: Int, displayName: String, restaurant: String) -> Unit
+    onBookmark: (restaurant: String) -> Unit
 ) {
     val current = session.step
     var viewing by remember(shown.size, current.guessId) { mutableIntStateOf(shown.indexOfFirst { it.guessId == current.guessId }) }
@@ -216,11 +216,11 @@ fun ResultScreen(
                     val restaurant = cafeterias.firstOrNull { it.offer.restaurant == selected }?.offer?.restaurant
                         ?: food.offers.firstOrNull()?.restaurant
                     if (bookmarked != null && restaurant != null) {
-                        val on = bookmarked.any { it.isOf(food.displayName, restaurant) }
+                        val on = bookmarked.any { it.restaurant == restaurant }
                         CircleIconButton(
                             if (on) Icons.BookmarkFilled else Icons.Bookmark,
                             stringResource(if (on) R.string.result_unbookmark else R.string.result_bookmark),
-                            { onBookmark(food.foodId, food.displayName, restaurant) },
+                            { onBookmark(restaurant) },
                             Modifier.testTag("bookmark")
                         )
                     }

@@ -45,9 +45,11 @@ class FakeAuthApi : AuthApi {
     override suspend fun logOut(authorization: String): Response<Unit> = next("logout $authorization")
     override suspend fun bookmarks(authorization: String): BookmarksReply = next("bookmarks $authorization")
     override suspend fun bookmark(authorization: String, bookmark: Bookmark): BookmarkReply =
-        next("bookmark $authorization ${bookmark.foodId}")
+        next("bookmark $authorization ${bookmark.restaurant}")
     override suspend fun unbookmark(authorization: String, id: Int): Response<Unit> = next("unbookmark $authorization $id")
+    override suspend fun clearBookmarks(authorization: String): Response<Unit> = next("clear bookmarks $authorization")
     override suspend fun history(authorization: String): HistoryReply = next("history $authorization")
+    override suspend fun clearHistory(authorization: String): Response<Unit> = next("clear history $authorization")
 }
 
 /** An [AccountStore] in memory, for tests that have no Android preferences. */

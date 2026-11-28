@@ -62,6 +62,15 @@ class BookmarkTests(SignedInTestCase):
         self.assertNotEqual(other.json()["bookmark"]["id"], first["id"])
         self.assertEqual(Bookmark.objects.count(), 2)
 
+    def test_clearing_removes_only_my_bookmarks(self):
+        mine, theirs = self.sign_up("first_user"), self.sign_up("second_user")
+        self.save(mine)
+        self.save(mine, {**DISH, "restaurant": "다른 곳"})
+        self.save(theirs)
+        self.assertEqual(delete(self.client, "/api/auth/bookmarks/", mine).status_code, 204)
+        self.assertEqual(get(self.client, "/api/auth/bookmarks/", mine).json(), {"bookmarks": []})
+        self.assertEqual(len(get(self.client, "/api/auth/bookmarks/", theirs).json()["bookmarks"]), 1)
+
     def test_removing_twice_is_fine(self):
         token = self.sign_up()
         bookmark_id = self.save(token).json()["bookmark"]["id"]
@@ -101,13 +110,14 @@ class SignedOutTests(SignedInTestCase):
             for response in (get(self.client, "/api/auth/bookmarks/", token),
                              post(self.client, "/api/auth/bookmarks/", DISH, token),
                              delete(self.client, "/api/auth/bookmarks/1/", token),
-                             get(self.client, "/api/auth/history/", token)):
+                             delete(self.client, "/api/auth/bookmarks/", token),
+                             get(self.client, "/api/auth/history/", token),
+                             delete(self.client, "/api/auth/history/", token)):
                 with self.subTest(token=token, path=response.request["PATH_INFO"]):
                     self.assertEqual((response.status_code, error_code(response)), (401, "not_authenticated"))
 
     def test_wrong_methods_are_405(self):
         token = self.sign_up()
-        self.assertEqual(delete(self.client, "/api/auth/bookmarks/", token).status_code, 405)
         self.assertEqual(get(self.client, "/api/auth/bookmarks/1/", token).status_code, 405)
         self.assertEqual(post(self.client, "/api/auth/history/", {}, token).status_code, 405)
 
@@ -160,6 +170,14 @@ class HistoryApiTests(SignedInTestCase):
         post(self.client, self.start(mine) + "recommend-now/")
         self.assertEqual(len(self.history(mine)), 1)
         self.assertEqual(self.history(theirs), [])
+
+    def test_clearing_removes_only_my_history(self):
+        mine, theirs = self.sign_up("first_user"), self.sign_up("second_user")
+        post(self.client, self.start(mine) + "recommend-now/")
+        post(self.client, self.start(theirs) + "recommend-now/")
+        self.assertEqual(delete(self.client, "/api/auth/history/", mine).status_code, 204)
+        self.assertEqual(self.history(mine), [])
+        self.assertEqual(len(self.history(theirs)), 1)
 
     def test_a_failed_write_does_not_fail_the_session(self):
         token = self.sign_up()
