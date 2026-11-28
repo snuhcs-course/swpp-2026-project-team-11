@@ -22,18 +22,15 @@ class GoogleIdentity(models.Model):
 
 
 class Bookmark(models.Model):
-    """A dish a user saved, by the restaurant and dish name the phone showed. `food_id` is the
-    result's ID when last saved; it is not the key, since it can change from day to day."""
+    """A restaurant a user saved, by the name a result showed (an offer's `restaurant`). It does
+    not point at the menu tables, so it survives a new snapshot."""
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bookmarks")
-    food_id = models.BigIntegerField()
-    display_name = models.CharField(max_length=500)  # as long as a menu name
-    restaurant = models.CharField(max_length=100)
+    restaurant = models.CharField(max_length=100)  # as long as Restaurant.name
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["user", "restaurant", "display_name"],
-                                               name="unique_bookmark_per_user")]
+        constraints = [models.UniqueConstraint(fields=["user", "restaurant"], name="unique_bookmark_per_restaurant")]
 
 
 class HistoryEntry(models.Model):

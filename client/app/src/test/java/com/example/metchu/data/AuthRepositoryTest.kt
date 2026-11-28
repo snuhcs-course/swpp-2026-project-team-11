@@ -201,7 +201,7 @@ class AuthRepositoryTest {
         store.account = signedIn
         reply("bookmarks")
         reply("history")
-        assertEquals(listOf(5, 6), repository.bookmarks().map { it.foodId })
+        assertEquals(listOf("홍콩반점 낙성대점", "버거운버거"), repository.bookmarks().map { it.restaurant })
         assertEquals(listOf(6, 5), repository.history().map { it.foodId })
         for (path in listOf("/api/auth/bookmarks/", "/api/auth/history/")) {
             val request = server.takeRequest()
@@ -211,18 +211,43 @@ class AuthRepositoryTest {
     }
 
     @Test
-    fun savingSendsTheDishAsShownAndRemovingUsesTheBookmarkId() = runTest {
+    fun savingSendsTheRestaurantOnlyAndRemovingUsesTheBookmarkId() = runTest {
         store.account = signedIn
         reply("bookmark_saved", 201)
         server.enqueue(MockResponse().setResponseCode(204))
-        val kept = repository.bookmark(Bookmark(6, "한입떡말이", "버거운버거"))
-        assertEquals("2026-11-25T06:28:09.246Z", kept.createdAt)
+        val kept = repository.bookmark(Bookmark("버거운버거"))
+        assertEquals("2026-11-28T11:24:13.751Z", kept.createdAt)
         repository.unbookmark(kept.id!!)
 
-        assertEquals("/api/auth/bookmarks/" to """{"food_id":6,"display_name":"한입떡말이","restaurant":"버거운버거"}""", sentJson())
+        assertEquals("/api/auth/bookmarks/" to """{"restaurant":"버거운버거"}""", sentJson())
         val removed = server.takeRequest()
         assertEquals("DELETE" to "/api/auth/bookmarks/1/", removed.method to removed.path)
         assertEquals("Token device-token", removed.getHeader("Authorization"))
+    }
+
+    @Test
+    fun clearingDeletesEachWholeList() = runTest {
+        store.account = signedIn
+        repeat(2) { server.enqueue(MockResponse().setResponseCode(204)) }
+        repository.clearBookmarks()
+        repository.clearHistory()
+        for (path in listOf("/api/auth/bookmarks/", "/api/auth/history/")) {
+            val request = server.takeRequest()
+            assertEquals("DELETE" to path, request.method to request.path)
+            assertEquals("Token device-token", request.getHeader("Authorization"))
+        }
+    }
+
+    @Test
+    fun aRefusedClearThrows() = runTest {
+        store.account = signedIn
+        reply("error_not_authenticated", 401)
+        try {
+            repository.clearHistory()
+            fail("expected HttpException")
+        } catch (e: HttpException) {
+            assertEquals("not_authenticated", repository.errorCode(e))
+        }
     }
 
     @Test

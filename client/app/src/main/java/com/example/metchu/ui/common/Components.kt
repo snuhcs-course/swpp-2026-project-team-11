@@ -346,7 +346,7 @@ object Icons {
         fill = SolidColor(Color.Black),
         pathFillType = PathFillType.EvenOdd
     ).build()
-    /** Bookmark: a ribbon, outlined; [BookmarkFilled] once the dish is saved. */
+    /** Bookmark: a ribbon, outlined; [BookmarkFilled] once the restaurant is saved. */
     val Bookmark = line("bookmark", BOOKMARK, 2f)
     val BookmarkFilled = ImageVector.Builder("bookmarkFilled", 24.dp, 24.dp, 24f, 24f).addPath(
         pathData = addPathNodes(BOOKMARK),

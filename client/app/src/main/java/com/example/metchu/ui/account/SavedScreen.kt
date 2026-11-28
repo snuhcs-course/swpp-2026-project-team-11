@@ -36,12 +36,13 @@ import com.example.metchu.ui.theme.screenBackground
 /** The account's lists, opened from the settings. */
 enum class SavedList { BOOKMARKS, HISTORY }
 
-/** One line of a list: the dish, and where (and for history, when) it was. */
-private data class SavedRow(val dish: String, val detail: String)
+/** One line of a list: a bookmark's restaurant and address, or a dish and where and when it was. */
+private data class SavedRow(val title: String, val detail: String?)
 
 /**
  * The signed-in account's bookmarks or history, newest first. The list is null while it
- * loads; [failed] offers [onRetry] instead. Dish and restaurant names stay as the server sent them.
+ * loads; [failed] offers [onRetry] instead. Dish and restaurant names stay as the server sent them;
+ * a bookmark without an address (the campus cafeterias) shows its name alone.
  */
 @Composable
 fun SavedScreen(
@@ -53,7 +54,7 @@ fun SavedScreen(
     onBack: () -> Unit
 ) {
     val rows = when (list) {
-        SavedList.BOOKMARKS -> bookmarks?.map { SavedRow(it.displayName, it.restaurant) }
+        SavedList.BOOKMARKS -> bookmarks?.map { SavedRow(it.restaurant, it.address) }
         SavedList.HISTORY -> history?.map {
             SavedRow(it.displayName, "${it.restaurant} · ${it.date} · ${mealName(it.meal)}")
         }
@@ -76,8 +77,8 @@ fun SavedScreen(
                     )
                     rows != null -> rows.forEach { row ->
                         Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("savedRow")) {
-                            Text(row.dish, style = MetchuType.Item)
-                            Text(row.detail, style = MetchuType.Caption)
+                            Text(row.title, style = MetchuType.Item)
+                            row.detail?.let { Text(it, style = MetchuType.Caption) }
                         }
                     }
                     failed -> {

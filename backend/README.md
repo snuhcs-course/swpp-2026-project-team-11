@@ -349,27 +349,30 @@ the docstring of `accounts/views.py`:
 | `GET /api/auth/me/` | signed in | `{"user"}` |
 | `POST /api/auth/logout/` | signed in | 204, ends this device's token only |
 | `GET /api/auth/bookmarks/` | signed in | `{"bookmarks"}`, newest first |
-| `POST /api/auth/bookmarks/` | `{"food_id", "display_name", "restaurant"}`, signed in | 201 `{"bookmark"}`, 200 if saved already |
+| `POST /api/auth/bookmarks/` | `{"restaurant"}`, signed in | 201 `{"bookmark"}`, 200 if saved already |
+| `DELETE /api/auth/bookmarks/` | signed in | 204, removes all the user's bookmarks |
 | `DELETE /api/auth/bookmarks/<id>/` | signed in | 204, also when gone already |
 | `GET /api/auth/history/` | signed in | `{"history"}`, the newest 100, newest first |
+| `DELETE /api/auth/history/` | signed in | 204, removes all the user's history |
 
 `user` is `{"username", "google_email", "has_password"}`. Usernames are 3–30 letters, digits or
 `. @ + - _`, unique ignoring case; passwords must pass `AUTH_PASSWORD_VALIDATORS`. A wrong
 username and a wrong password get the same 401. Google sign-in makes an account named after the
 address, without a password, the first time; linking lets an existing account sign in either way.
 
-A bookmark (`Bookmark`) is one per user, restaurant and dish name, as the phone showed them:
-`{"id", "food_id", "display_name", "restaurant", "created_at"}`. A result's `food_id` is not the
-key, since the same dish can carry another ID on another day's menu; the bookmark keeps the one
-it was last saved with, for information. Saving a dish saved already returns it with 200 and
-that `food_id` updated; it is removed by its own `id`, and only the owner's. It does not point
-at the menu tables, so it survives a new snapshot. History (`HistoryEntry`) is recorded by the server: a solo session created with the
+A bookmark (`Bookmark`) is one per user and restaurant (i5-A4), by the name a result's offer
+showed: `{"id", "restaurant", "address", "created_at"}`. `address` comes from the menu tables
+when one `Restaurant` of that name has one (the restaurants near the stations); it is null for the
+campus cafeterias, for a name no restaurant has, and for a name two addresses share. Saving a
+restaurant saved already returns it unchanged with 200; extra fields, such as the dish an APK
+from before i5-A4 sends, are ignored. A bookmark is removed by its own `id`, and only the
+owner's. It does not point at the menu tables, so it survives a new snapshot. History (`HistoryEntry`) is recorded by the server: a solo session created with the
 token (`POST /api/sessions/`) belongs to that user, and each dish it proposes, a guess or the
 recommendation, is kept once per session as `{"date", "meal", "food_id", "display_name",
 "restaurant", "created_at"}` (`accounts/history.py`). The restaurant is the dish's first
 offer; `meal` is null for a whole-day session. Only a user's
 newest 100 entries are kept. A history write that fails is logged and never fails the session
-request. Group rooms record no history. Without a valid token, all four
+request. Group rooms record no history. Without a valid token, all six
 requests are 401 `not_authenticated`, and every list holds the signed-in user's rows only.
 
 Google sign-in needs `METCHU_GOOGLE_CLIENT_ID`, the client ID of the team's **web** OAuth client
@@ -380,6 +383,8 @@ network. Tests patch the check and need neither. Creating a solo session reads t
 history above; group rooms use it to name members.
 
 > **Note:** `accounts/migrations/0002_bookmarks_history.py` creates the tables `accounts_bookmark` and `accounts_historyentry`. After the merge, once `migrate` has run on the shared DB, run the RLS SQL again.
+
+> **Note (i5-A4):** `0003_one_bookmark_per_restaurant` keeps one bookmark per user and restaurant, the earliest saved (by `created_at`, then `id`), and deletes the other dish bookmarks of that restaurant; `0004_bookmark_per_restaurant` then drops `food_id` and `display_name`. There is no way back once a bookmark exists: unapplying 0004 then stops with `IrreversibleError` and changes nothing, so take a database backup before `migrate` and restore it to go back. No table is new, so the RLS SQL need not run again. An APK from before i5-A4 still saves (the restaurant of the dish), but its Bookmarks list expects dish names and cannot show the new replies, so hand out the new APK with this server.
 
 ## Group rooms (i4-P9)
 

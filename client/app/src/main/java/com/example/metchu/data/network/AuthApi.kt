@@ -26,19 +26,16 @@ data class SignedIn(val token: String, val user: AccountUser, val created: Boole
 data class AccountReply(val user: AccountUser)
 
 /**
- * A dish the account saved, one per [restaurant] and [displayName] as shown; [foodId] is the
- * result's ID when last saved, which can differ from day to day. [createdAt] (the server's ISO
- * time) and [id] (removes it) come from the server; the phone leaves them out when saving.
+ * A restaurant the account saved, by the name a result showed. [address] (null when the server
+ * knows none, as for the campus cafeterias), [createdAt] (the server's ISO time) and [id] (removes
+ * it) come from the server; the phone sends only [restaurant].
  */
 data class Bookmark(
-    @SerializedName("food_id") val foodId: Int,
-    @SerializedName("display_name") val displayName: String,
     val restaurant: String,
+    val address: String? = null,
     @SerializedName("created_at") val createdAt: String? = null,
     val id: Int? = null
-) {
-    fun isOf(displayName: String, restaurant: String) = this.displayName == displayName && this.restaurant == restaurant
-}
+)
 
 data class BookmarkReply(val bookmark: Bookmark)
 
@@ -86,8 +83,14 @@ interface AuthApi {
     @DELETE("api/auth/bookmarks/{id}/")
     suspend fun unbookmark(@Header("Authorization") authorization: String, @Path("id") id: Int): Response<Unit>
 
+    @DELETE("api/auth/bookmarks/")
+    suspend fun clearBookmarks(@Header("Authorization") authorization: String): Response<Unit>
+
     @GET("api/auth/history/")
     suspend fun history(@Header("Authorization") authorization: String): HistoryReply
+
+    @DELETE("api/auth/history/")
+    suspend fun clearHistory(@Header("Authorization") authorization: String): Response<Unit>
 }
 
 /** Error codes of the account endpoints, in `{"error": {"code", "message"}}`. */
