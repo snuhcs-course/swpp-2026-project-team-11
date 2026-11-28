@@ -11,6 +11,7 @@
     POST /api/sessions/<id>/ban/  {"food_id" | "food_group", "banned"}     -> state
     GET  /api/sessions/<id>/reason/              -> {"food_id", "reason", "source"}
     GET  /api/sessions/<id>/menu/?restaurant=<name>  -> {"restaurant", "dishes"}
+    POST /api/sessions/<id>/event/  {"event", "restaurant"?}               -> 204
     GET  /api/health/                                                      -> {"status": "ok"}
 
 Every success returns the same session state (see `RecommendSession.public_state`),
@@ -28,6 +29,11 @@ it is a 409 `stale_step` with the state.
 screen: each dish is {"food_id", "display_name", "meal", "price"}, breakfast first and
 by name within a meal. A restaurant the session does not know has no dishes; a
 missing `restaurant` is a 400.
+
+`event` tells the interaction log what the user did in the app with the step on screen,
+which no other request shows: one of SESSION_EVENTS, such as leaving for the start screen
+(`home`) or opening directions to a `restaurant`. It changes nothing in the session and is a
+204 even when the log is off; an unknown event is a 400.
 
 `ban` keeps one dish (`food_id`) or every dish of a `food_group` out of the rest of the
 session (`banned` true), or lets it back (false). The step on screen does not change;
@@ -263,7 +269,36 @@ def menu(request, session_id: str):
     restaurant = request.GET.get("restaurant")
     if not restaurant:
         return _error(400, "invalid_request", "Missing parameter: restaurant")
+    with session.lock:
+        interaction_log.record(session, "menu", before=session.engine.next_step(), restaurant=restaurant[:MAX_RESTAURANT])
     return JsonResponse(session.menu(restaurant))
+
+
+# What the app reports with POST /api/sessions/<id>/event/: back to the start screen, back to a
+# session left that way, directions or a bookmark for a restaurant, the app going to the background.
+SESSION_EVENTS = ("home", "resume", "directions", "bookmark", "background")
+MAX_RESTAURANT = 100
+
+
+@csrf_exempt
+@require_POST
+def session_event(request, session_id: str):
+    session = sessions.get(session_id)
+    if session is None:
+        return _error(404, "session_not_found", "No such session. Start a new one.")
+    try:
+        body = _body(request)
+        event = body.get("event")
+        if event not in SESSION_EVENTS:
+            raise ValueError(f"event must be one of {', '.join(SESSION_EVENTS)}.")
+        restaurant = body.get("restaurant")
+        if restaurant is not None and not (isinstance(restaurant, str) and 0 < len(restaurant) <= MAX_RESTAURANT):
+            raise ValueError(f"restaurant must be a name of at most {MAX_RESTAURANT} characters.")
+    except ValueError as error:  # includes json.JSONDecodeError
+        return _error(400, "invalid_request", str(error))
+    with session.lock:
+        interaction_log.record(session, event, before=session.engine.next_step(), restaurant=restaurant)
+    return HttpResponse(status=204)
 
 
 @csrf_exempt
