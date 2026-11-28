@@ -54,7 +54,7 @@ class GroupViewModelTest {
 
     private fun create() {
         api.reply(created)
-        viewModel.create(null, "지민", listOf(Allergen.EGG), "ko", "LU", "all")
+        viewModel.create(null, "지민", listOf(Allergen.EGG), "ko", "LU", listOf("campus"))
     }
 
     @Test
@@ -65,26 +65,26 @@ class GroupViewModelTest {
     }
 
     @Test
-    fun theRoomCarriesTheHostsAreaAndNoLocation() {
+    fun theRoomCarriesTheHostsAreasAndNoLocation() {
         api.reply(created)
-        viewModel.create(null, "지민", emptyList(), "ko", "LU", "snu_station")
-        assertEquals("snu_station", api.lastCreateRequest?.area)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", listOf("campus", "snu_station"))
+        assertEquals(listOf("campus", "snu_station"), api.lastCreateRequest?.areas)
         assertFalse(Gson().toJson(api.lastCreateRequest).contains("location"))
     }
 
     @Test
-    fun theRoomCarriesThePriceRange() {
+    fun theRoomCarriesThePriceRanges() {
         api.reply(created)
-        viewModel.create(null, "지민", emptyList(), "ko", "LU", "campus", priceLevel = 2)
-        assertEquals(2, api.lastCreateRequest?.priceLevel)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", listOf("campus"), priceLevels = listOf(1, 3))
+        assertEquals(listOf(1, 3), api.lastCreateRequest?.priceLevels)
         create()
-        assertNull(api.lastCreateRequest?.priceLevel)
+        assertNull(api.lastCreateRequest?.priceLevels)
     }
 
     @Test
     fun theRoomCarriesTheRoundTime() {
         api.reply(created)
-        viewModel.create(null, "지민", emptyList(), "ko", "LU", "all", roundSeconds = 30)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", listOf("campus"), roundSeconds = 30)
         assertEquals(30, api.lastCreateRequest?.roundSeconds)
         create()
         assertEquals(15, api.lastCreateRequest?.roundSeconds)

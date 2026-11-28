@@ -134,21 +134,36 @@ class MainActivityTest {
     // --- start ---
 
     @Test
-    fun anywhereIsTheDefaultArea() {
+    fun everyAreaAndEveryPriceRangeIsTheDefault() {
+        compose.onNodeWithTag("placeToken").assert(hasText(text(R.string.area_all), ignoreCase = true))
         api.reply(question)
         tap("start")
-        assertEquals("all", api.lastCreateRequest?.area)
+        assertEquals(listOf("campus", "snu_station", "nakseongdae"), api.lastCreateRequest?.areas)
+        assertEquals(listOf(1, 2, 3), api.lastCreateRequest?.priceLevels)
     }
 
     @Test
-    fun thePickedAreaIsSentAndKeptForTheNextLaunch() {
+    fun thePickedAreasAreSentAndKeptForTheNextLaunch() {
         tap("placeToken")
-        tapText(R.string.area_snu_station_option)
+        // Each tap turns one off, and the picker stays open until Back.
+        tapText(R.string.area_campus_option)
+        tapText(R.string.area_nakseongdae_option)
+        Espresso.pressBack()
         compose.onNodeWithTag("placeToken").assert(hasText(text(R.string.area_snu_station), ignoreCase = true))
         api.reply(question)
         tap("start")
-        assertEquals("snu_station", api.lastCreateRequest?.area)
-        assertEquals(Area.SNU_STATION, SettingsStore(context).area)
+        assertEquals(listOf("snu_station"), api.lastCreateRequest?.areas)
+        assertEquals(setOf(Area.SNU_STATION), SettingsStore(context).areas)
+    }
+
+    @Test
+    fun withNoAreaPickedStartAsksForOne() {
+        tap("placeToken")
+        listOf(R.string.area_campus_option, R.string.area_snu_station_option, R.string.area_nakseongdae_option).forEach { tapText(it) }
+        Espresso.pressBack()
+        compose.onNodeWithTag("start").assert(hasText(text(R.string.start_pick_area))).assertIsNotEnabled()
+        tap("start")
+        assertTrue(api.calls.none { it.startsWith("create") })
     }
 
     @Test
@@ -159,12 +174,14 @@ class MainActivityTest {
         tap("priceGuide")
         compose.waitForIdle()
         tap("priceToken")
-        compose.onNodeWithText("₩₩").performClick()
+        compose.onNodeWithText("₩").performClick()
+        compose.onNodeWithText("₩₩₩").performClick()
+        Espresso.pressBack()
         // The sentence reads the range in words, not signs.
         compose.onNodeWithTag("priceToken").assert(hasText(text(R.string.price_mid), ignoreCase = true))
         api.reply(question)
         tap("start")
-        assertEquals(2, api.lastCreateRequest?.priceLevel)
+        assertEquals(listOf(2), api.lastCreateRequest?.priceLevels)
     }
 
     @Test
@@ -279,13 +296,13 @@ class MainActivityTest {
     }
 
     @Test
-    fun startSendsTheAreaWithTheAllergies() {
+    fun startSendsTheAreasWithTheAllergies() {
         AllergyStore(context).allergies = listOf(Allergen.MILK)
         relaunch()
         pickMeal(R.string.meal_lunch)
         api.reply(question)
         tap("start")
-        assertEquals("create LU rl @all milk en", api.calls.last())
+        assertEquals("create LU rl @campus,snu_station,nakseongdae milk en", api.calls.last())
     }
 
     @Test
