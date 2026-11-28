@@ -105,13 +105,12 @@ class AreaTest {
 class DirectionsTest {
 
     @Test
-    fun naverMapIsTriedFirstThenKakaoMapThenTheWebWithOnlyTheDestination() {
+    fun naverMapIsTriedFirstThenKakaoMapsWebLinkWithOnlyTheDestination() {
         val links = directionsLinks("학생회관식당 2층", Point(37.4592, 126.9504), "com.example.metchu")
         val name = "%ED%95%99%EC%83%9D%ED%9A%8C%EA%B4%80%EC%8B%9D%EB%8B%B9%202%EC%B8%B5"
         assertEquals(
             listOf(
                 "nmap://route/walk?dlat=37.4592&dlng=126.9504&dname=$name&appname=com.example.metchu",
-                "kakaomap://route?ep=37.4592,126.9504&by=FOOT",
                 "https://map.kakao.com/link/to/$name,37.4592,126.9504"
             ),
             links

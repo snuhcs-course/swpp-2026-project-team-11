@@ -52,8 +52,15 @@ class SessionAreaTests(TestCase):
         state = self.start(area="campus", location={"lat": 37.0, "lng": 127.0}).json()
         self.assertEqual(state["candidate_count"], 103)
 
+    def test_an_apk_from_before_areas_keeps_every_restaurant(self):
+        for body, area in (({"source": "all", "distance_scope": "near"}, "all"), ({"source": "general"}, "all"),
+                           ({"source": "cafeteria"}, "campus"), ({"area": None}, "campus"),
+                           ({"area": "snu_station", "source": "all"}, "snu_station")):
+            state = self.start(**body).json()
+            self.assertEqual(sessions.get(state["session_id"]).area, area, body)
+
     def test_an_unknown_area_is_400(self):
-        for area in ("near", "any", "general", None, 1):
+        for area in ("near", "any", "general", 1):
             response = self.start(area=area)
             self.assertEqual(response.status_code, 400, area)
             self.assertEqual(response.json()["error"]["code"], "invalid_request")
