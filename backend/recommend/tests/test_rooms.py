@@ -522,6 +522,15 @@ class MergedOfferTests(TestCase):
         self.assertEqual(done["status"], "done")
         self.assertEqual([pick["restaurant"] for pick in done["picks"]], ["가게 B"])
 
+    def test_the_host_areas_reach_both_stations(self):
+        response = post(self.client, "/api/rooms/", {"name": "Jimin", "areas": ["snu_station", "nakseongdae"]})
+        code, host = response.json()["state"]["code"], response.json()["token"]
+        post(self.client, "/api/rooms/join/", {"code": code, "name": "Seoyeon"})
+        done = self.client.post(f"/api/rooms/{code}/start/", content_type="application/json",
+                                HTTP_X_MEMBER_TOKEN=host).json()
+        self.assertEqual(done["status"], "done")
+        self.assertEqual(post(self.client, "/api/rooms/", {"name": "Jimin", "areas": []}).status_code, 400)
+
     def test_the_host_area_leaves_out_restaurants_near_the_other_station(self):
         response = post(self.client, "/api/rooms/", {"name": "Jimin", "area": "nakseongdae"})
         code, host = response.json()["state"]["code"], response.json()["token"]
