@@ -43,7 +43,7 @@ class FakeApi : ApiService {
 
     /**
      * Recorded as "create LU" with the server's default engine, or "create LU llm",
-     * followed by any location, allergies and language: "create LU llm @37.4,126.9 egg,milk ko",
+     * followed by any area, allergies and language: "create LU llm @campus egg,milk ko",
      * and by the account's "Token <token>" when signed in.
      */
     var lastCreateRequest: CreateSessionRequest? = null
@@ -52,7 +52,7 @@ class FakeApi : ApiService {
         return next(
             listOfNotNull(
                 "create", request.meal ?: "null", request.engine,
-                request.location?.let { "@${it.lat},${it.lng}" }, request.allergies?.joinToString(","),
+                request.area?.let { "@$it" }, request.allergies?.joinToString(","),
                 request.language, authorization
             ).joinToString(" ")
         )

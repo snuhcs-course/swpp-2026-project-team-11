@@ -164,7 +164,7 @@ class GroupSalesVariantTests(TestCase):
         def post(path,body=None,token=None):
             return self.client.post(path,data=json.dumps(body or {}),content_type='application/json',**({'HTTP_X_MEMBER_TOKEN':token} if token else {}))
         with mock.patch.object(offers,'resolve',return_value='food_003'):
-            created=post('/api/rooms/',{'name':'Host','source':'general'}).json()
+            created=post('/api/rooms/',{'name':'Host','area':'snu_station'}).json()
             code=created['state']['code'];host=created['token']
             joined=post('/api/rooms/join/',{'code':code,'name':'Member','allergies':['milk']}).json()
             response=post(f'/api/rooms/{code}/start/',token=host)

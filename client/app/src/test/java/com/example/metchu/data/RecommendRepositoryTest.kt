@@ -69,17 +69,17 @@ class RecommendRepositoryTest {
     }
 
     @Test
-    fun allRestaurantsIsSentToTheServer() = runTest {
+    fun thePickedAreaIsSentAndNoLocation() = runTest {
         reply("question", 201)
-        repository.createSession("LU", source = "all", distanceScope = "near")
-        assertEquals("""{"meal":"LU","source":"all","distance_scope":"near"}""", server.takeRequest().json().toString())
+        repository.createSession("LU", area = "snu_station")
+        assertEquals("""{"meal":"LU","area":"snu_station"}""", server.takeRequest().json().toString())
     }
 
     @Test
     fun thePriceRangeIsSentOnlyWhenPicked() = runTest {
         reply("question", 201)
-        repository.createSession("LU", source = "all", priceLevel = 1)
-        assertEquals("""{"meal":"LU","source":"all","price_level":1}""", server.takeRequest().json().toString())
+        repository.createSession("LU", area = "all", priceLevel = 1)
+        assertEquals("""{"meal":"LU","area":"all","price_level":1}""", server.takeRequest().json().toString())
     }
 
     @Test
@@ -88,7 +88,7 @@ class RecommendRepositoryTest {
         repository.prewarm("DN", listOf(Allergen.EGG), "all")
         val request = server.takeRequest()
         assertEquals("/api/sessions/prewarm/", request.path)
-        assertEquals("""{"meal":"DN","allergies":["egg"],"source":"all"}""", request.json().toString())
+        assertEquals("""{"meal":"DN","allergies":["egg"],"area":"all"}""", request.json().toString())
     }
 
     @Test

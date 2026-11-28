@@ -28,7 +28,7 @@ class GeneralSourceTests(TestCase):
         MenuItem.objects.create(date=datetime.date(2026,11,2),meal='LU',restaurant=self.campus,raw_name='Campus',food=f,price=5000)
 
     def start(self,**extra):
-        response=post(self.client,'/api/sessions/',{'date':'2026-11-02','meal':'LU','source':'general'}|extra)
+        response=post(self.client,'/api/sessions/',{'date':'2026-11-02','meal':'LU','area':'snu_station'}|extra)
         self.assertEqual(response.status_code,201,response.content);return response.json()
 
     def test_one_candidate_per_type_and_unknown_mapping_excluded(self):
@@ -38,6 +38,7 @@ class GeneralSourceTests(TestCase):
         self.assertEqual(len(pizza['offers']),2)
         self.assertEqual({r['menu_name'] for r in pizza['offers']},{'Pizza A','Pizza B'})
         self.assertEqual(self.start()['candidate_count'],2)
+        self.assertEqual(self.start(area='nakseongdae')['candidate_count'],0)
 
     def test_allergy_filter_precedes_grouping(self):
         rows,_=services.get_store_catalog('LU',frozenset({'milk'}))
@@ -49,13 +50,13 @@ class GeneralSourceTests(TestCase):
 
     def test_both_sources_compete_in_DT_and_RL_and_ids_do_not_collide(self):
         for engine in ['decision_tree','rl']:
-            state=self.start(source='all',engine=engine)
+            state=self.start(area='all',engine=engine)
             self.assertEqual(state['candidate_count'],3)
             s=sessions.get(state['session_id']);ids=[r for r in s.reason_data]
             self.assertEqual(len(set(ids)),3)
 
-    def test_distance_filter_keeps_only_available_reverse_references(self):
-        state=self.start(source='all',distance_scope='near',location={'lat':37.48,'lng':126.95})
+    def test_station_filter_keeps_only_available_reverse_references(self):
+        state=self.start()
         s=sessions.get(state['session_id']);rows=list(s.engine._foods) if hasattr(s.engine,'_foods') else list(s.engine.catalog.candidates)
         for row in rows:
             os=row['offers'] if isinstance(row,dict) else row.offers
@@ -72,7 +73,7 @@ class GeneralSourceTests(TestCase):
 
     def test_prewarm_has_no_session_side_effect(self):
         before=len(sessions._sessions)
-        response=post(self.client,'/api/sessions/prewarm/',{'meal':'LU','source':'all'})
+        response=post(self.client,'/api/sessions/prewarm/',{'meal':'LU','area':'all'})
         self.assertEqual(response.status_code,204);self.assertEqual(before,len(sessions._sessions))
 
     def test_rejecting_a_type_excludes_all_its_variants_and_undo_restores_it(self):

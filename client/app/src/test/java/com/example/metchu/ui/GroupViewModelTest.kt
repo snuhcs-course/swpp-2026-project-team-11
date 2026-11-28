@@ -10,6 +10,7 @@ import com.example.metchu.data.model.RoomQuestion
 import com.example.metchu.data.repository.RoomRepository
 import com.example.metchu.ui.group.GroupViewModel
 import com.example.metchu.ui.main.AnsweredQuestion
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -53,7 +54,7 @@ class GroupViewModelTest {
 
     private fun create() {
         api.reply(created)
-        viewModel.create(null, "지민", listOf(Allergen.EGG), "ko", "LU", { null }, "any")
+        viewModel.create(null, "지민", listOf(Allergen.EGG), "ko", "LU", "all")
     }
 
     @Test
@@ -64,9 +65,17 @@ class GroupViewModelTest {
     }
 
     @Test
+    fun theRoomCarriesTheHostsAreaAndNoLocation() {
+        api.reply(created)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", "snu_station")
+        assertEquals("snu_station", api.lastCreateRequest?.area)
+        assertFalse(Gson().toJson(api.lastCreateRequest).contains("location"))
+    }
+
+    @Test
     fun theRoomCarriesThePriceRange() {
         api.reply(created)
-        viewModel.create(null, "지민", emptyList(), "ko", "LU", { null }, "near", priceLevel = 2)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", "campus", priceLevel = 2)
         assertEquals(2, api.lastCreateRequest?.priceLevel)
         create()
         assertNull(api.lastCreateRequest?.priceLevel)
@@ -75,7 +84,7 @@ class GroupViewModelTest {
     @Test
     fun theRoomCarriesTheRoundTime() {
         api.reply(created)
-        viewModel.create(null, "지민", emptyList(), "ko", "LU", { null }, "any", roundSeconds = 30)
+        viewModel.create(null, "지민", emptyList(), "ko", "LU", "all", roundSeconds = 30)
         assertEquals(30, api.lastCreateRequest?.roundSeconds)
         create()
         assertEquals(15, api.lastCreateRequest?.roundSeconds)
