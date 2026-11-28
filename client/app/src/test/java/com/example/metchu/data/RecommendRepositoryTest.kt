@@ -4,6 +4,7 @@ import com.example.metchu.Fixtures
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.Engine
 import com.example.metchu.data.model.Step
+import com.example.metchu.data.network.EventRequest
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.repository.RecommendRepository
 import com.google.gson.JsonParser
@@ -254,6 +255,30 @@ class RecommendRepositoryTest {
             fail("Expected IOException")
         } catch (e: IOException) {
             // expected
+        }
+    }
+
+    @Test
+    fun anAppEventSendsItsNameAndAnyRestaurant() = runTest {
+        server.enqueue(MockResponse().setResponseCode(204))
+        server.enqueue(MockResponse().setResponseCode(204))
+        repository.event("s1", EventRequest.DIRECTIONS, "학생회관식당")
+        repository.event("s1", EventRequest.HOME)
+        val directions = server.takeRequest()
+        assertEquals("POST", directions.method)
+        assertEquals("/api/sessions/s1/event/", directions.path)
+        assertEquals("""{"event":"directions","restaurant":"학생회관식당"}""", directions.json().toString())
+        assertEquals("""{"event":"home"}""", server.takeRequest().json().toString())
+    }
+
+    @Test
+    fun anEventTheServerRefusesIsAnError() = runTest {
+        server.enqueue(MockResponse().setResponseCode(404).setBody("""{"error":{"code":"session_not_found","message":"No such session."}}"""))
+        try {
+            repository.event("gone", EventRequest.BACKGROUND)
+            fail("expected HttpException")
+        } catch (e: HttpException) {
+            assertEquals(404, e.code())
         }
     }
 }
