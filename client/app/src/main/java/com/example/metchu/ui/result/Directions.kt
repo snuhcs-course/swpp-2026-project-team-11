@@ -7,15 +7,15 @@ import android.net.Uri
 import java.net.URLEncoder
 
 /**
- * Walking directions to [to], in the order tried: Naver Map, Kakao Map, then Kakao Map's
- * web page. No route API is called and only the destination is sent: the map app picks
- * the start itself, from where the phone is if the user lets it.
+ * Walking directions to [to], in the order tried: Naver Map, then Kakao Map's web link, which
+ * Kakao hands to its app when installed. No route API is called and only the destination is
+ * sent: the map picks the start itself. Kakao Map's own scheme is not used, as it may open
+ * without a route when no start is given, and the web link would then never be tried.
  */
 fun directionsLinks(name: String, to: Point, appName: String): List<String> {
     val label = encode(name)
     return listOf(
         "nmap://route/walk?dlat=${to.lat}&dlng=${to.lng}&dname=$label&appname=$appName",
-        "kakaomap://route?ep=${to.lat},${to.lng}&by=FOOT",
         "https://map.kakao.com/link/to/$label,${to.lat},${to.lng}"
     )
 }

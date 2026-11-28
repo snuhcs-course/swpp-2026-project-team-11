@@ -61,7 +61,8 @@ every text the session sends is in it, except dish and cafeteria names, which st
 
 `area` is where the user picked to eat (recommend/areas.py): "campus" (default), the
 day's SNU cafeteria menu, "snu_station" or "nakseongdae", the restaurants near that
-station, or "all" for every one of them. The phone sends no location. Only campus
+station, or "all" for every one of them; null or missing is campus, or "all" for an APK
+from before areas that sends `source` "all" or "general". The phone sends no location. Only campus
 sessions support "llm"; asking for it elsewhere is a 400 `area_llm_unsupported`. An omitted engine uses the
 server default, falling back to the decision tree outside campus if that default is "llm".
 """
@@ -110,7 +111,9 @@ def _price_level(value) -> int | None:
 
 
 def _area(payload: dict) -> str:
-    area = payload.get("area", "campus")
+    """Null or missing is campus, except for an APK from before areas, which sends `source`
+    "all" and keeps every restaurant until it updates."""
+    area = payload.get("area") or ("all" if payload.get("source") in ("general", "all") else "campus")
     if area not in AREAS:
         raise ValueError(f"area must be one of {', '.join(AREAS)}.")
     return area
