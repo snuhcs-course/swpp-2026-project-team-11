@@ -2,8 +2,8 @@
 
 Only server-generated step data and validated answer IDs are recorded. The log
 uses a random identifier distinct from the session's API bearer and never stores
-client IPs, device identifiers, or question/reason text. Validated location and
-allergy selections are stored once at session start.
+client IPs, device identifiers, or question/reason text. Validated allergy
+selections are stored once at session start.
 """
 from __future__ import annotations
 
@@ -101,7 +101,7 @@ def record(session, event: str, *, before=None, after=None, answer_id=None,
     try:
         now = datetime.datetime.now(datetime.timezone.utc)
         data = {
-            "version": 1,
+            "version": 2,
             "timestamp": now.isoformat().replace("+00:00", "Z"),
             "session": session.interaction_id,
             "event": event,
@@ -109,18 +109,15 @@ def record(session, event: str, *, before=None, after=None, answer_id=None,
             "engine": session.engine_name,
             "meal": session.meal,
             "menu_date": session.date.isoformat(),
-            "source": session.source,
-            "distance_scope": session.distance_scope,
+            "area": session.area,
             "price_level": session.price_level,
-            "location_available": session.location_available,
-            "candidates_before_distance": session.candidates_before_distance,
+            "candidates_before_area": session.candidates_before_area,
             "candidate_count": session.candidate_count,
             "before": _step(before),
             "after": _step(after),
         }
         if event == "start":
             data["allergies"] = session.logged_allergies
-            data["location"] = session.logged_location
         if answer_id is not None:
             data["answer_id"] = answer_id
         if accepted is not None:

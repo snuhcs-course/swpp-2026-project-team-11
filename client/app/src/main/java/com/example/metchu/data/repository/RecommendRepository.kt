@@ -12,7 +12,6 @@ import com.example.metchu.data.network.CreateSessionRequest
 import com.example.metchu.data.network.PrewarmRequest
 import com.example.metchu.data.network.FeedbackRequest
 import com.example.metchu.data.network.RetrofitInstance
-import com.example.metchu.data.network.UserLocation
 import retrofit2.HttpException
 
 /**
@@ -24,21 +23,19 @@ class RecommendRepository(private val api: ApiService = RetrofitInstance.api) {
     suspend fun createSession(
         meal: String?,
         engine: String? = null,
-        location: UserLocation? = null,
         allergies: List<Allergen> = emptyList(),
         language: String? = null,
-        source: String? = null,
-        distanceScope: String? = null,
+        area: String? = null,
         priceLevel: Int? = null,
         token: String? = null
     ): SessionState =
         api.createSession(
             token?.let { "Token $it" },
-            CreateSessionRequest(meal, engine, location, allergies.map { it.id }.ifEmpty { null }, language, source, distanceScope, priceLevel)
+            CreateSessionRequest(meal, engine, allergies.map { it.id }.ifEmpty { null }, language, area, priceLevel)
         ).checked()
 
-    suspend fun prewarm(meal: String?, allergies: List<Allergen>, source: String?) {
-        api.prewarm(PrewarmRequest(meal, allergies.map { it.id }.ifEmpty { null }, source))
+    suspend fun prewarm(meal: String?, allergies: List<Allergen>, area: String?) {
+        api.prewarm(PrewarmRequest(meal, allergies.map { it.id }.ifEmpty { null }, area))
     }
 
     suspend fun answer(sessionId: String, questionId: String, answerId: String): SessionState =

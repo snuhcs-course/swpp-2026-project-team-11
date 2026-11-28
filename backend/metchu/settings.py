@@ -151,10 +151,6 @@ INTERACTION_LOG_DIR = os.environ.get("METCHU_INTERACTION_LOG_DIR", "").strip()
 # it guess after N answers; unset, 0 or less means no limit.
 RECOMMEND_MAX_QUESTIONS = max(int(os.environ.get('METCHU_MAX_QUESTIONS') or 0), 0) or None
 
-# Off by default. METCHU_MAX_DISTANCE_M=N leaves out cafeterias more than N meters
-# from the location the app sends; unset, 0 or less means no cutoff.
-RECOMMEND_MAX_DISTANCE_M = max(int(os.environ.get('METCHU_MAX_DISTANCE_M') or 0), 0) or None
-
 # General mode reads the restaurant menus (menus/services.py) at most this often, in
 # seconds: they change only when a crawl is imported.
 RECOMMEND_STORE_MENU_CACHE_S = 300

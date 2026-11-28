@@ -69,14 +69,10 @@ import com.example.metchu.ui.common.Spinner
 import com.example.metchu.ui.common.TopRow
 import com.example.metchu.ui.common.chipShadow
 import com.example.metchu.ui.common.cssShadow
-import com.example.metchu.ui.common.rememberLocationPermission
-import com.example.metchu.ui.common.rememberUserPoint
 import com.example.metchu.ui.result.MapPin
 import com.example.metchu.ui.result.Point
 import com.example.metchu.ui.result.RowIconButton
-import com.example.metchu.ui.result.WALK_METERS_PER_MINUTE
 import com.example.metchu.ui.result.captionFor
-import com.example.metchu.ui.result.distanceText
 import com.example.metchu.ui.result.openDirections
 import com.example.metchu.ui.result.priceText
 import com.example.metchu.ui.theme.MetchuColors
@@ -90,7 +86,6 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlin.math.ceil
 
 /**
  * Every restaurant the room has been shown, named on chips over the map with the newest find
@@ -121,7 +116,6 @@ fun GroupResultScreen(
     val shownAt = viewing.coerceIn(picks.indices)
     val pick = picks[shownAt]
     val popular = popularPicks(room)
-    val user = rememberUserPoint(rememberLocationPermission().granted)
     // The decision opens the dialog once per room: the host's from the decide reply, the others' from their next poll.
     var decidedOpen by rememberSaveable(room.code) { mutableStateOf(false) }
     var decidedSeen by rememberSaveable(room.code) { mutableStateOf(false) }
@@ -156,7 +150,7 @@ fun GroupResultScreen(
                 .padding(top = 20.dp, bottom = 140.dp)
         ) {
             key(shownAt) {
-                PickDetails(room, pick, user) {
+                PickDetails(room, pick) {
                     AgreeButton(pick, enabled = room.decided == null && !busy, onToggle = { onVote(shownAt, !pick.voted) })
                 }
             }
@@ -186,7 +180,7 @@ fun GroupResultScreen(
     room.decided?.let { decided ->
         if (decidedOpen) {
             DecidedDialog(
-                room, picks[decided.coerceIn(picks.indices)], user,
+                room, picks[decided.coerceIn(picks.indices)],
                 onClose = { decidedOpen = false },
                 onHome = { decidedOpen = false; onHome() }
             )
@@ -194,26 +188,20 @@ fun GroupResultScreen(
     }
 }
 
-/**
- * [vote] sits at the right of the restaurant's name. Directions start from this phone's
- * position [user], not the host's, which the distance is measured from.
- */
+/** [vote] sits at the right of the restaurant's name. */
 @Composable
-private fun PickDetails(room: RoomState, pick: RoomPick, user: Point?, vote: @Composable () -> Unit) {
+private fun PickDetails(room: RoomState, pick: RoomPick, vote: @Composable () -> Unit) {
     Column(Modifier.padding(horizontal = 20.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Column {
                 Text(stringResource(captionFor(room.meal)), style = MetchuType.Caption)
                 Text(placeName(pick.restaurant), Modifier.padding(top = 2.dp, end = 56.dp).testTag("restaurant"), style = MetchuType.Title)
                 Row(Modifier.padding(top = 2.dp, end = 56.dp), verticalAlignment = Alignment.CenterVertically) {
-                    pick.distanceM?.let { meters ->
-                        Text(walkLine(meters), Modifier.padding(end = 8.dp).testTag("distance"), style = MetchuType.Body)
-                    }
                     if (pick.lat != null && pick.lng != null) {
                         val context = LocalContext.current
                         val name = placeName(pick.restaurant)
                         RowIconButton(Icons.Directions, stringResource(R.string.result_directions), "directionsButton") {
-                            context.openDirections(name, Point(pick.lat, pick.lng), user)
+                            context.openDirections(name, Point(pick.lat, pick.lng))
                         }
                     }
                 }
@@ -273,13 +261,6 @@ internal fun MemberDish(room: RoomState, pick: RoomPick, dish: RoomDish, member:
             )
         }
     }
-}
-
-/** "350 m · 5 min walk". */
-@Composable
-internal fun walkLine(meters: Int): String {
-    val minutes = ceil(meters / WALK_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
-    return "${distanceText(meters)} · ${stringResource(R.string.walk_minutes, minutes)}"
 }
 
 /** A round thumb that is orange while this member agrees, over "Agree n". It takes taps 48 dp wide. */

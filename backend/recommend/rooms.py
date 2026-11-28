@@ -8,7 +8,7 @@
     room.public_state(member)                   -> what that member's phone draws
 
 A room has a four-digit code and 2 to 8 members. Each phone holds its member's secret
-token. The host sets the meal, the restaurants, the price range, the location and how long a round
+token. The host sets the meal, the area (recommend/areas.py), the price range and how long a round
 waits (one of ROUND_CHOICES seconds, ROUND_SECONDS unless picked), starts the questions,
 may stop them early ("recommend now"), may ask for other restaurants ("find another")
 and decides on a restaurant, once. Nobody joins after
@@ -74,9 +74,7 @@ class RoomError(Exception):
 class RoomSettings:
     date: datetime.date
     meal: str | None
-    source: str
-    distance_scope: str | None
-    location: tuple[float, float] | None
+    area: str
     price_level: int | None = None
     round_seconds: int = ROUND_SECONDS
 
@@ -141,7 +139,7 @@ class Room:
         self.members = [Member(i, m.name, m.allergies, m.language, m.token) for i, m in enumerate(present)]
         self.host_id = next(m.id for m in self.members if m.token == member.token)
         s = self.settings
-        candidates, schema, _ = load_candidates(s.date, s.meal, frozenset(), s.source, s.location, s.distance_scope, s.price_level)
+        candidates, schema, _ = load_candidates(s.date, s.meal, frozenset(), s.area, s.price_level)
         self.menus = restaurant_menus(candidates, place)
         offers = _offers(candidates)
         excluded = []
@@ -149,7 +147,7 @@ class Room:
         try:
             for m in self.members:
                 if m.allergies:
-                    allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.source, s.location, s.distance_scope, s.price_level)
+                    allowed, _, _ = load_candidates(s.date, s.meal, m.allergies, s.area, s.price_level)
                     excluded.append(offers - safe_offers(candidates, allowed))
                     offer_filters.append({offer_identity(c["food_id"], o) for c in allowed for o in c["offers"]})
                 else:
@@ -223,10 +221,9 @@ class Room:
         for pick in result["picks"]:
             at, r = (pick["restaurant"], pick["lat"], pick["lng"]), pick["index"]
             suggested = {food["food_id"] for food in pick["menus"] if food}
-            offer = next(o for food in pick["menus"] if food for o in food["offers"] if place(o) == at)
             picks.append({
                 "restaurant": pick["restaurant"], "kind": pick["kind"], "batch": batch,
-                "lat": pick["lat"], "lng": pick["lng"], "distance_m": offer.get("distance_m"),
+                "lat": pick["lat"], "lng": pick["lng"],
                 "menus": [{"member_id": m.id, "food": food, "fit": _fit(satisfaction[m.id], r)}
                           for m, food in zip(self.members, pick["menus"])],
                 "others": [dish for dish in self.menus.get(at, []) if dish["food_id"] not in suggested]})

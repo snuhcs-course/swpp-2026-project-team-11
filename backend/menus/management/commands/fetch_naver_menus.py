@@ -1,7 +1,7 @@
 """python manage.py fetch_naver_menus --stores PATH --output PATH
 
 For every food shop of 상가(상권)정보 (menus/sources/stores.py) within a station's
-radius in AREAS, find its Naver Place by name near the shop and fetch that place's
+radius (recommend/areas.py STATIONS), find its Naver Place by name near the shop and fetch that place's
 menu (menus/sources/naver.py), then write all shops to a JSON snapshot. Nothing goes
 into the DB. One search per shop and one menu request per Naver place found, a
 second apart: about 2000 requests, 40 minutes, for the ~1100 shops around
@@ -23,12 +23,9 @@ from django.utils import timezone
 
 from menus.sources import naver
 from menus.sources.stores import read_food_stores
-from recommend.distance import distance_m
+from recommend.areas import STATIONS, distance_m
 
-AREAS = {  # name: (lat, lng, radius in meters)
-    "서울대입구역": (37.481247, 126.952739, 600),
-    "낙성대역": (37.476930, 126.963693, 500),
-}
+AREAS = {name: (lat, lng, radius) for name, lat, lng, radius in STATIONS.values()}
 REQUEST_INTERVAL_SECONDS = 1
 MAX_CONSECUTIVE_FAILURES = 5
 PROGRESS_EVERY = 100

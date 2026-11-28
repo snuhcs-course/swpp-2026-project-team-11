@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.metchu.R
-import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.Allergen
 import com.example.metchu.data.model.MenuDish
 import com.example.metchu.data.model.SessionState
@@ -88,9 +87,8 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
 
     /**
      * [meal] is "BR", "LU", "DN" or null for the whole day. [engine] is one of the
-     * Engine IDs, or null for the server's default. [location] says where the user is; finding
-     * that can take a few seconds, so it is part of the request and shows as [loading]. No dish
-     * with one of [allergies] is proposed. [language] ("en" or "ko") is the language of every
+     * Engine IDs, or null for the server's default. [area] is where the user picked to eat, an
+     * Area ID. No dish with one of [allergies] is proposed. [language] ("en" or "ko") is the language of every
      * text the server sends. With a [priceLevel] (1 to 3 ₩ signs) only dishes in that price
      * range are proposed. With the signed-in account's [token] the server keeps the dishes
      * proposed in the account's history.
@@ -98,28 +96,26 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
     fun start(
         meal: String?,
         engine: String? = null,
-        location: LocationSource? = null,
         allergies: List<Allergen> = emptyList(),
         language: String? = null,
-        source: String? = null,
-        distanceScope: String? = null,
+        area: String? = null,
         priceLevel: Int? = null,
         token: String? = null
     ) {
         if (_loading.value == true) return
         forgetSession()
         park(null)
-        request { repository.createSession(meal, engine, location?.current(), allergies, language, source, distanceScope, priceLevel, token) }
+        request { repository.createSession(meal, engine, allergies, language, area, priceLevel, token) }
     }
 
     /**
      * Lets the server build what a session with these fields reads, so [start] does not wait
      * for it. It runs beside other requests, and a failure only means Start does the work.
      */
-    fun prewarm(meal: String?, allergies: List<Allergen>, source: String?) {
+    fun prewarm(meal: String?, allergies: List<Allergen>, area: String?) {
         viewModelScope.launch {
             try {
-                repository.prewarm(meal, allergies, source)
+                repository.prewarm(meal, allergies, area)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -267,9 +263,9 @@ class RecommendViewModel(private val repository: RecommendRepository) : ViewMode
                 forgetSession()
                 _error.value = UiError(R.string.error_session_lost, canRetry = false)
             }
-            e.code() == 400 && body?.error?.code == ApiError.ALL_SOURCE_LLM_UNSUPPORTED && _session.value == null -> {
+            e.code() == 400 && body?.error?.code == ApiError.AREA_LLM_UNSUPPORTED && _session.value == null -> {
                 lastRequest = null
-                _error.value = UiError(R.string.error_all_source_llm, canRetry = false)
+                _error.value = UiError(R.string.error_area_llm, canRetry = false)
             }
             // An older API can reject a new engine ID at session creation.
             e.code() == 400 && body?.error?.code == ApiError.INVALID_REQUEST && _session.value == null -> {

@@ -19,7 +19,7 @@ from dataclasses import dataclass
 
 import requests
 
-from recommend.distance import distance_m
+from recommend.areas import distance_m
 
 BASE_URL = "https://m.place.naver.com/restaurant"
 USER_AGENT = ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 "

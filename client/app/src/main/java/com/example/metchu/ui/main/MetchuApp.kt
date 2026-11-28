@@ -48,12 +48,10 @@ import androidx.compose.ui.unit.dp
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
 import com.example.metchu.data.auth.GoogleTokenSource
-import com.example.metchu.data.location.LocationSource
 import com.example.metchu.data.model.RoomState
 import com.example.metchu.data.model.SessionState
 import com.example.metchu.data.model.Step
 import com.example.metchu.data.repository.AllergyStore
-import com.example.metchu.data.repository.Place
 import com.example.metchu.data.repository.Price
 import com.example.metchu.data.repository.SettingsStore
 import com.example.metchu.data.repository.Setup
@@ -133,8 +131,7 @@ fun MetchuApp(
     accounts: AccountViewModel,
     google: GoogleTokenSource,
     allergyStore: AllergyStore,
-    settings: SettingsStore,
-    location: LocationSource
+    settings: SettingsStore
 ) {
     val session by viewModel.session.observeAsState()
     val loading by viewModel.loading.observeAsState(false)
@@ -166,11 +163,9 @@ fun MetchuApp(
     // Google's account picker opens over the activity.
     val context = LocalContext.current
     val googleToken: suspend () -> String? = { google.idToken(context) }
-    // Once per launch: kept here, so leaving the start screen does not bring the location notice back.
-    var locationAsked by rememberSaveable { mutableStateOf(false) }
     var allergies by remember { mutableStateOf(allergyStore.allergies) }
     var engine by remember { mutableStateOf(settings.engine) }
-    var place by remember { mutableStateOf(settings.place) }
+    var area by remember { mutableStateOf(settings.area) }
     var price by remember { mutableStateOf(settings.price) }
     var roundSeconds by remember { mutableIntStateOf(settings.roundSeconds) }
     // Kept while the app runs, so coming back from a session keeps the meal the user picked.
@@ -186,9 +181,8 @@ fun MetchuApp(
     // Nobody can come back into a room once its questions have started, so leaving one is confirmed.
     var confirmLeave by rememberSaveable { mutableStateOf(false) }
     val askToLeave = { if (room?.decided != null) group.leave() else confirmLeave = true }
-    val distanceScope = if (place == Place.NEAR) "near" else "any"
     val createRoom = { name: String? ->
-        group.create(account?.token, name, allergies, language, meal.code, { location.current() }, distanceScope, price.level, roundSeconds)
+        group.create(account?.token, name, allergies, language, meal.code, area.id, price.level, roundSeconds)
     }
     LaunchedEffect(room != null) { if (room != null) joinOpen = false }
 
@@ -286,17 +280,16 @@ fun MetchuApp(
                     )
                 }
                 Screen.START -> {
-                    LaunchedEffect(meal, allergies, together) { if (!together) viewModel.prewarm(meal.code, allergies, source = "all") }
+                    LaunchedEffect(meal, allergies, together, area) { if (!together) viewModel.prewarm(meal.code, allergies, area.id) }
                     StartScreen(
                         meal = meal,
-                        place = place,
+                        area = area,
                         // Still searching while it whitens for the question.
                         loading = loading || roomBusy || held || whitened > 0f,
                         whitened = whitened,
                         tip = setup == Setup.TIP,
-                        askForLocation = !locationAsked,
                         onMeal = { meal = it },
-                        onPlace = { place = it; settings.place = it },
+                        onArea = { area = it; settings.area = it },
                         price = price,
                         onPrice = { price = it; settings.price = it },
                         onSettings = { settingsOpen = true },
@@ -307,12 +300,11 @@ fun MetchuApp(
                         onJoin = { group.clearError(); joinOpen = true },
                         onResume = viewModel::resume.takeIf { canResume },
                         onTipDone = { advance(Setup.DONE) },
-                        onLocationAsked = { locationAsked = true },
                         onStart = { meal ->
                             when {
                                 !together -> {
                                     searches++
-                                    viewModel.start(meal.code, engine, location, allergies, language, source = "all", distanceScope = distanceScope, priceLevel = price.level, token = account?.token)
+                                    viewModel.start(meal.code, engine, allergies, language, area.id, price.level, account?.token)
                                 }
                                 account == null -> askName = true
                                 else -> createRoom(null)
@@ -382,7 +374,6 @@ fun MetchuApp(
                         shown = shown,
                         reasons = reasons,
                         menus = menus,
-                        place = place,
                         loading = loading,
                         onBack = viewModel::undo,
                         onHome = viewModel::startOver,

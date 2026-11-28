@@ -9,7 +9,7 @@
     <string name="language_ko" translatable="false">한국어</string>
     <string name="language_en" translatable="false">English</string>
 
-    <!-- start: "Let's find your [LUNCH] [NEARBY] today" -->
+    <!-- start: "Let's find your [LUNCH] [ON CAMPUS] today" -->
     <string name="start_line1">Let’s find your</string>
     <string name="start_meal_particle"></string>
     <string name="start_line4">today</string>
@@ -18,16 +18,21 @@
     <!-- What the start screen says while the first question loads. -->
     <string name="search_finding">Finding your menu</string>
     <string name="start_meal_sheet">Pick a meal</string>
-    <string name="start_place_sheet">Pick how far to go</string>
+    <string name="start_place_sheet">Pick where to eat</string>
     <string name="start_meal_change">Change meal</string>
-    <string name="start_place_change">Change distance</string>
+    <string name="start_place_change">Change place</string>
     <string name="meal_now">Now</string>
-    <string name="place_near">nearby</string>
-    <string name="place_any">anywhere</string>
-    <string name="place_near_option">Nearby</string>
-    <string name="place_any_option">Anywhere</string>
-    <string name="place_near_note">Within a 10-minute walk</string>
-    <string name="place_any_note">All restaurants</string>
+    <string name="area_campus">on campus</string>
+    <string name="area_snu_station">near SNU Stn.</string>
+    <string name="area_nakseongdae">near Nakseongdae</string>
+    <string name="area_all">anywhere</string>
+    <string name="area_campus_option">Campus</string>
+    <string name="area_snu_station_option">Seoul Nat’l Univ. Stn.</string>
+    <string name="area_nakseongdae_option">Nakseongdae Stn.</string>
+    <string name="area_all_option">Anywhere</string>
+    <string name="area_campus_note">SNU cafeterias</string>
+    <string name="area_station_note">Restaurants around the station</string>
+    <string name="area_all_note">All restaurants</string>
     <string name="start_price_sheet">Pick a price range</string>
     <string name="start_price_change">Change price range</string>
     <string name="price_low">On a budget</string>
@@ -43,15 +48,6 @@
     <string name="price_guide_mid">₩8,000 to ₩15,000</string>
     <string name="price_guide_high">₩15,000 and up</string>
     <string name="price_guide_note">Dishes without a listed price are left out.</string>
-    <string name="location_ask_title">Allow location?</string>
-    <string name="location_ask_body">We use your location to show nearby restaurants and how far each one is. Without it, every restaurant is listed.</string>
-    <string name="location_ask_continue">Continue</string>
-    <string name="location_ask_later">Not now</string>
-    <string name="location_refused_title">Location is off</string>
-    <string name="location_refused_body">Without your location, nearby restaurants can’t be found, so every restaurant is listed. You can also allow location in the app’s settings.</string>
-    <string name="location_refused_blocked_body">Without your location, nearby restaurants can’t be found, so every restaurant is listed. To pick nearby ones, allow location in the app’s settings.</string>
-    <string name="location_refused_ok">OK</string>
-    <string name="location_refused_settings">Open settings</string>
     <string name="setup_language_title" translatable="false">언어를 골라 주세요\nChoose your language</string>
     <string name="setup_allergies_title">Any allergies?</string>
     <string name="setup_next">Next</string>
@@ -166,25 +162,17 @@
     <string name="result_home">Start over</string>
     <string name="result_more">Find another</string>
     <string name="result_places">%1$d places · nearest first</string>
-    <string name="result_none_near">None within a 10-minute walk, so all are listed.</string>
-    <string name="result_no_location">Your location is unknown, so every cafeteria is listed.</string>
     <string name="result_group_example">For example %1$s</string>
     <string name="result_group_members">Also %1$s</string>
-    <string name="locate_me">Go to my location</string>
-    <string name="locate_heading">Turn the map to where you face</string>
     <string name="result_sheet_toggle">Show more or fewer cafeterias</string>
     <string name="result_map">Map of the cafeterias</string>
     <string name="result_pick_aria">%1$s, %2$s</string>
     <string name="price_won">%1$s won</string>
     <string name="price_unknown">Price not listed</string>
     <string name="offer_meta">%1$s · %2$s</string>
-    <string name="distance_m">%1$d m</string>
-    <string name="distance_km">%1$.1f km</string>
-    <string name="walk_minutes">%1$d min walk</string>
     <string name="offer_none">No cafeteria listed</string>
     <string name="result_menu">See menu</string>
     <string name="result_directions">Walking directions</string>
-    <string name="directions_from">My location</string>
     <string name="result_menu_caption">%1$s menu</string>
     <string name="sheet_close">Close</string>
     <string name="result_menu_note">Only dishes Metchu can suggest</string>
@@ -206,7 +194,7 @@
     <string name="loading">Loading</string>
     <string name="error_server">The server couldn’t handle that. You can try again.</string>
     <string name="error_engine_unavailable">The selected question engine is unavailable. Choose another in Settings.</string>
-    <string name="error_all_source_llm">All restaurants is available with Decision tree or RL. Change the engine in Settings.</string>
+    <string name="error_area_llm">Away from campus, only Decision tree and RL can recommend. Change the engine in Settings.</string>
     <string name="error_session_settings">The server cannot start a session with these settings. Check your choices before starting again.</string>
     <string name="error_session_lost">The session ended on the server. You can start again.</string>
 
@@ -266,7 +254,7 @@
     <string name="group_error_not_found">No room is open with this code.</string>
     <string name="group_error_started">That room has already started.</string>
     <string name="group_error_full">That room is full (8 people).</string>
-    <string name="group_error_unavailable">No restaurant has a dish for everyone. Try another meal, distance or price range.</string>
+    <string name="group_error_unavailable">No restaurant has a dish for everyone. Try another meal, place or price range.</string>
     <string name="group_error_gone">The room has closed.</string>
     <string name="group_fit_great">Great fit</string>
     <string name="group_fit_good">Good fit</string>

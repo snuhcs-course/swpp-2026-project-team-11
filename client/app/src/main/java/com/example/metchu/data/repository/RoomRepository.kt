@@ -9,7 +9,6 @@ import com.example.metchu.data.network.DecideRequest
 import com.example.metchu.data.network.JoinRoomRequest
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.network.RoomApi
-import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.network.VoteRequest
 
 /** Which room this phone is in, and the secret that proves it is this member. */
@@ -27,13 +26,12 @@ class RoomRepository(private val api: RoomApi = RetrofitInstance.roomApi) {
         allergies: List<Allergen>,
         language: String,
         meal: String?,
-        location: UserLocation?,
-        distanceScope: String,
+        area: String,
         priceLevel: Int? = null,
         roundSeconds: Int = RoomApi.DEFAULT_ROUND_SECONDS
     ): Pair<Membership, RoomState> = joined(api.create(
         account?.let { "Token $it" },
-        CreateRoomRequest(name.takeIf { account == null }, allergies.map { it.id }, language, meal, location, SOURCE, distanceScope, priceLevel, roundSeconds)
+        CreateRoomRequest(name.takeIf { account == null }, allergies.map { it.id }, language, meal, area, priceLevel, roundSeconds)
     ))
 
     suspend fun join(account: String?, code: String, name: String?, allergies: List<Allergen>, language: String): Pair<Membership, RoomState> =
@@ -59,9 +57,4 @@ class RoomRepository(private val api: RoomApi = RetrofitInstance.roomApi) {
     }
 
     private fun joined(reply: RoomReply) = Membership(reply.state.code, reply.token) to reply.state
-
-    private companion object {
-        /** Like solo sessions: the cafeterias and the restaurants near the stations. */
-        const val SOURCE = "all"
-    }
 }

@@ -1,9 +1,7 @@
 package com.example.metchu.ui.start
 
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -51,7 +49,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -78,7 +75,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -94,18 +90,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.metchu.BuildConfig
 import com.example.metchu.R
-import com.example.metchu.data.location.hasLocationPermission
 import com.example.metchu.data.network.RoomApi
-import com.example.metchu.data.repository.Place
+import com.example.metchu.data.repository.Area
 import com.example.metchu.data.repository.Price
 import com.example.metchu.ui.common.CircleIconButton
 import com.example.metchu.ui.common.Icons
 import com.example.metchu.ui.common.Languages
-import com.example.metchu.ui.common.LocationAnswer
 import com.example.metchu.ui.common.PickerOption
 import com.example.metchu.ui.common.SheetEasing
 import com.example.metchu.ui.common.Spinner
@@ -116,9 +108,7 @@ import com.example.metchu.ui.common.cssShadow
 import com.example.metchu.ui.common.fade
 import com.example.metchu.ui.common.floating
 import com.example.metchu.ui.common.pressScale
-import com.example.metchu.ui.common.rememberLocationPermission
 import com.example.metchu.ui.common.rememberSlow
-import com.example.metchu.ui.common.rememberUserPoint
 import com.example.metchu.ui.common.setLanguage
 import com.example.metchu.ui.result.Point
 import com.example.metchu.ui.theme.MetchuColors
@@ -136,39 +126,44 @@ import kotlinx.coroutines.launch
 /** Where the start button's center sits above the bottom, level with the question screen's answer circles. */
 val ActionCenterFromBottom = 202.dp
 
-/** The SNU administration building (Building 60), shown until the user's position is known. */
+/** The SNU administration building (Building 60). */
 val CampusCenter = Point(37.4600, 126.9520)
+
+/** Where the start map centers for [Area]: the campus, or the station (backend/recommend/areas.py STATIONS). */
+fun Area.center(): Point = when (this) {
+    Area.CAMPUS, Area.ALL -> CampusCenter
+    Area.SNU_STATION -> Point(37.481247, 126.952739)
+    Area.NAKSEONGDAE -> Point(37.476930, 126.963693)
+}
 
 /** In the order of the sentence's lines: each picker opens under its own line. */
 private enum class Sheet { MEAL, PLACE, PRICE, WHO }
 
 /**
- * "Today I'll have [lunch] [nearby] [at a fair price] [for me]": the meal, the distance, the [price] range
+ * "Today I'll have [lunch] [on campus] [at a fair price] [for me]": the meal, the [area], the [price] range
  * and whether friends join ([group]) are picked inside the sentence, and the round button starts a session, or
  * with friends creates a room, whose questions each wait [roundSeconds], picked under the sentence;
  * "Join with a code" (top right) enters someone else's. The price
  * range is picked as one to three ₩ signs and read in words; the small "?" beside it shows what each covers. The map behind the button fades in
- * from the background; the button stands where the user is. With [tip], a tip over the
+ * from the background; the button stands over the picked area. With [tip], a tip over the
  * screen points to the globe and the gear, where the language and the allergies change.
- * With [askForLocation] and no permission yet, a notice says why before the system asks,
- * once the tip is closed. Picking "nearby" without permission asks again ([pickPlace]).
+ * The phone's location is never used.
  *
  * [whitened] covers the whole screen in white as the search hands over to the question.
  *
  * While a session starts ([loading] alone, not with friends) the screen searches: the
- * sentence gives way to what is happening, the button shrinks into the user's dot with
+ * sentence gives way to what is happening, the button shrinks into the area's dot with
  * ripples spreading from it, and the map fills the screen, zoomed out to the campus.
  */
 @Composable
 fun StartScreen(
     meal: Meal,
-    place: Place,
+    area: Area,
     loading: Boolean,
     whitened: Float,
     tip: Boolean,
-    askForLocation: Boolean,
     onMeal: (Meal) -> Unit,
-    onPlace: (Place) -> Unit,
+    onArea: (Area) -> Unit,
     price: Price,
     onPrice: (Price) -> Unit,
     onSettings: () -> Unit,
@@ -179,7 +174,6 @@ fun StartScreen(
     onJoin: () -> Unit,
     onResume: (() -> Unit)?,
     onTipDone: () -> Unit,
-    onLocationAsked: () -> Unit,
     onStart: (Meal) -> Unit
 ) {
     val nowMeal = remember { Meal.now() }
@@ -190,22 +184,6 @@ fun StartScreen(
     val english = LocalConfiguration.current.locales[0].language != "ko"
     val scope = rememberCoroutineScope()
 
-    // Nearby asked for and refused: why the distance went back to anywhere.
-    var refused by rememberSaveable { mutableStateOf<LocationAnswer?>(null) }
-    // Nearby picked without location: decided by Android's answer, even after the screen is recreated meanwhile.
-    var nearAsked by rememberSaveable { mutableStateOf(false) }
-    val permission = rememberLocationPermission { answer ->
-        nearAnswered(nearAsked, answer, onPlace) { refused = it }
-        nearAsked = false
-    }
-    val user = rememberUserPoint(permission.granted)
-    val context = LocalContext.current
-    // Sent to the app's settings page for Nearby: picked once location is allowed there.
-    var nearFromSettings by rememberSaveable { mutableStateOf(false) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        if (nearFromSettings && context.hasLocationPermission()) onPlace(Place.NEAR)
-        nearFromSettings = false
-    }
     val searching = loading && !group
     val search by animateFloatAsState(
         if (searching) 1f else 0f,
@@ -214,7 +192,6 @@ fun StartScreen(
     )
     var languageOpen by remember { mutableStateOf(false) }
     var priceGuideOpen by rememberSaveable { mutableStateOf(false) }
-    val locationNotice = askForLocation && !permission.granted && !tip
     // TalkBack must not reach the faded choices either.
     val unreachable = if (searching) Modifier.clearAndSetSemantics {} else Modifier
     // The words fade out, change language and fade back in.
@@ -224,7 +201,7 @@ fun StartScreen(
     LaunchedEffect(language) { switching = false }
 
     Box(Modifier.fillMaxSize().screenBackground()) {
-        if (BuildConfig.HAS_MAPS_KEY) StartMap(user ?: CampusCenter, search, zoomedOut = searching)
+        if (BuildConfig.HAS_MAPS_KEY) StartMap(area.center(), search, zoomedOut = searching)
 
         Column(
             Modifier.statusBarsPadding().graphicsLayer {
@@ -249,7 +226,7 @@ fun StartScreen(
                 }
                 Row(Modifier.height(TitleLine), verticalAlignment = Alignment.CenterVertically) {
                     Token(
-                        stringResource(if (place == Place.NEAR) R.string.place_near else R.string.place_any).let { if (english) it.uppercase() else it },
+                        stringResource(areaWords(area)).let { if (english) it.uppercase() else it },
                         stringResource(R.string.start_place_change), "placeToken"
                     ) { sheet = Sheet.PLACE }
                 }
@@ -281,9 +258,8 @@ fun StartScreen(
             label = stringResource(if (group) R.string.group_create else R.string.start_button),
             loading = loading,
             searching = searching,
-            located = user != null,
             // Nothing else on screen asks for attention.
-            nudging = !group && sheet == null && !priceGuideOpen && !tip && !languageOpen && !locationNotice && refused == null,
+            nudging = !group && sheet == null && !priceGuideOpen && !tip && !languageOpen,
             onClick = { onStart(meal) },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 .padding(bottom = ActionCenterFromBottom - StartButtonSize / 2).fade { words }
@@ -343,15 +319,9 @@ fun StartScreen(
                     ) { onPrice(it); sheet = null }
                 }
             } else if (shownSheet == Sheet.PLACE) {
-                Place.entries.map {
-                    PickerOption(
-                        stringResource(if (it == Place.NEAR) R.string.place_near_option else R.string.place_any_option),
-                        stringResource(if (it == Place.NEAR) R.string.place_near_note else R.string.place_any_note),
-                        selected = it == place
-                    ) {
-                        pickPlace(it, permission.granted, onPlace) { nearAsked = true; permission.request() }
-                        sheet = null
-                    }
+                Area.entries.map {
+                    val (option, note) = areaOption(it)
+                    PickerOption(stringResource(option), stringResource(note), selected = it == area) { onArea(it); sheet = null }
                 }
             } else {
                 Meal.entries.map {
@@ -375,27 +345,6 @@ fun StartScreen(
         if (whitened > 0f) Box(Modifier.fillMaxSize().fade { whitened }.background(Color.White))
 
         if (tip) SetupTip(onDone = onTipDone, onSettings = { onTipDone(); onSettings() })
-
-        if (locationNotice) {
-            LocationNotice(
-                onContinue = { onLocationAsked(); permission.request() },
-                onLater = onLocationAsked
-            )
-        }
-
-        refused?.let { answer ->
-            LocationRefused(
-                blocked = answer == LocationAnswer.BLOCKED,
-                onSettings = {
-                    refused = null
-                    nearFromSettings = true
-                    context.startActivity(
-                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
-                    )
-                },
-                onDismiss = { refused = null }
-            )
-        }
     }
 }
 
@@ -463,83 +412,21 @@ private fun SetupTip(onDone: () -> Unit, onSettings: () -> Unit) {
     }
 }
 
-@Composable
-private fun LocationNotice(onContinue: () -> Unit, onLater: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onLater,
-        confirmButton = {
-            TextButton(onContinue, Modifier.testTag("locationContinue")) {
-                Text(stringResource(R.string.location_ask_continue), style = MetchuType.Button, color = MetchuColors.Primary)
-            }
-        },
-        dismissButton = {
-            TextButton(onLater) {
-                Text(stringResource(R.string.location_ask_later), style = MetchuType.Button, color = MetchuColors.Grey600)
-            }
-        },
-        title = { Text(stringResource(R.string.location_ask_title), style = MetchuType.Item) },
-        text = { Text(stringResource(R.string.location_ask_body), style = MetchuType.Body) },
-        shape = RoundedCornerShape(20.dp),
-        containerColor = Color.White
-    )
+/** The area as it reads inside the sentence. */
+@StringRes
+private fun areaWords(area: Area): Int = when (area) {
+    Area.CAMPUS -> R.string.area_campus
+    Area.SNU_STATION -> R.string.area_snu_station
+    Area.NAKSEONGDAE -> R.string.area_nakseongdae
+    Area.ALL -> R.string.area_all
 }
 
-/** Picks [place]. Nearby needs the location, so without it Android is asked first ([ask]); see [nearAnswered]. */
-fun pickPlace(place: Place, granted: Boolean, onPlace: (Place) -> Unit, ask: () -> Unit) {
-    if (place != Place.NEAR || granted) onPlace(place) else ask()
-}
-
-/**
- * Android's [answer] when Nearby [asked] for it (not the location notice): Nearby is kept only when
- * allowed; otherwise the distance goes back to anywhere, the only other choice, and [onRefused] gets the answer.
- */
-fun nearAnswered(asked: Boolean, answer: LocationAnswer, onPlace: (Place) -> Unit, onRefused: (LocationAnswer) -> Unit) {
-    if (!asked) return
-    if (answer == LocationAnswer.GRANTED) return onPlace(Place.NEAR)
-    onPlace(Place.ANY)
-    onRefused(answer)
-}
-
-/** Says Nearby needs location; when Android no longer asks ([blocked]), offers the app's settings page. */
-@Composable
-private fun LocationRefused(blocked: Boolean, onSettings: () -> Unit, onDismiss: () -> Unit) {
-    // Settings is always offered: a phone blocked before the app could tell reads as a plain refusal.
-    val settings = @Composable {
-        TextButton(onSettings, Modifier.testTag("locationSettings")) {
-            Text(stringResource(R.string.location_refused_settings), style = MetchuType.Button,
-                color = if (blocked) MetchuColors.Primary else MetchuColors.Grey600)
-        }
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            if (blocked) {
-                settings()
-            } else {
-                TextButton(onDismiss, Modifier.testTag("locationRefusedOk")) {
-                    Text(stringResource(R.string.location_refused_ok), style = MetchuType.Button, color = MetchuColors.Primary)
-                }
-            }
-        },
-        dismissButton = {
-            if (blocked) {
-                TextButton(onDismiss) {
-                    Text(stringResource(R.string.location_ask_later), style = MetchuType.Button, color = MetchuColors.Grey600)
-                }
-            } else {
-                settings()
-            }
-        },
-        title = { Text(stringResource(R.string.location_refused_title), style = MetchuType.Item) },
-        text = {
-            Text(
-                stringResource(if (blocked) R.string.location_refused_blocked_body else R.string.location_refused_body),
-                style = MetchuType.Body
-            )
-        },
-        shape = RoundedCornerShape(20.dp),
-        containerColor = Color.White
-    )
+/** The area's name in the picker, over what it covers. */
+private fun areaOption(area: Area): Pair<Int, Int> = when (area) {
+    Area.CAMPUS -> R.string.area_campus_option to R.string.area_campus_note
+    Area.SNU_STATION -> R.string.area_snu_station_option to R.string.area_station_note
+    Area.NAKSEONGDAE -> R.string.area_nakseongdae_option to R.string.area_station_note
+    Area.ALL -> R.string.area_all_option to R.string.area_all_note
 }
 
 /**
@@ -661,8 +548,8 @@ private val TitleLine = 39.dp
 
 /**
  * The round button. While [nudging] and idle, a soft circle keeps spreading from it.
- * [searching], it shrinks into the user's dot (ringed in white, with ripples) where it
- * stands, or away when the user's position is not [located]. Otherwise a slow [loading],
+ * [searching], it shrinks into a dot (ringed in white, with ripples) where it stands, over
+ * the picked area. Otherwise a slow [loading],
  * such as creating a room, shows a spinner inside it.
  */
 @Composable
@@ -670,28 +557,19 @@ private fun StartButton(
     label: String,
     loading: Boolean,
     searching: Boolean,
-    located: Boolean,
     nudging: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val interaction = remember { MutableInteractionSource() }
     val motion = tween<Dp>(420, easing = SheetEasing)
-    val size by animateDpAsState(
-        when {
-            !searching -> StartButtonSize
-            located -> DotSize
-            else -> 0.dp
-        },
-        motion,
-        label = "button"
-    )
+    val size by animateDpAsState(if (searching) DotSize else StartButtonSize, motion, label = "button")
     val ring by animateDpAsState(if (searching) 1.5.dp else 0.dp, tween(300), label = "ring")
     val nudge by animateFloatAsState(if (nudging && !searching) 1f else 0f, tween(200), label = "nudge")
     val words by animateFloatAsState(if (searching) 0f else 1f, tween(120), label = "label")
     Box(modifier.size(StartButtonSize).then(if (searching) Modifier.testTag("loading") else Modifier), contentAlignment = Alignment.Center) {
         if (nudge > 0f) Nudge(Modifier.requiredSize(NudgeSize).fade { nudge })
-        if (searching && located) Ripples(Modifier.requiredSize(RippleSize))
+        if (searching) Ripples(Modifier.requiredSize(RippleSize))
         Box(
             Modifier
                 .size(size)
@@ -738,7 +616,7 @@ private fun Nudge(modifier: Modifier) {
 }
 
 /**
- * Three circles that keep spreading from the user's dot and fading, a third of a beat apart.
+ * Three circles that keep spreading from the dot and fading, a third of a beat apart.
  * They come in once the button has mostly shrunk.
  */
 @Composable
@@ -825,7 +703,7 @@ private fun Token(text: String, description: String, tag: String, onClick: () ->
 }
 
 /**
- * A still map around the user behind the whole screen, hidden under the background in the
+ * A still map around the picked area behind the whole screen, hidden under the background in the
  * upper half and showing through toward the bottom, so it has no edge. As [expanded] goes
  * to 1 the white draws back to the top, and [zoomedOut] shows the whole campus.
  */
@@ -845,7 +723,7 @@ private fun StartMap(center: Point, expanded: Float, zoomedOut: Boolean) {
         camera.animate(CameraUpdateFactory.zoomTo(if (zoomedOut) CampusZoom else MapZoom), 700)
     }
     // Google's logo sits on the 20 dp margin just above the language and settings buttons (the SDK
-    // adds ~6 dp itself). The top padding then puts the user's position under the start button's center.
+    // adds ~6 dp itself). The top padding then puts the area's center under the start button's center.
     val navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottom = navigation + CornerButtonBottom + 44.dp + 4.dp
     BoxWithConstraints(Modifier.fillMaxSize()) {

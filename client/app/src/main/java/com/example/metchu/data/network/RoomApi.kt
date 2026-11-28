@@ -20,9 +20,7 @@ data class CreateRoomRequest(
     val allergies: List<String>,
     val language: String,
     val meal: String?,
-    val location: UserLocation?,
-    val source: String,
-    @SerializedName("distance_scope") val distanceScope: String,
+    val area: String,
     @SerializedName("price_level") val priceLevel: Int? = null,
     @SerializedName("round_seconds") val roundSeconds: Int = RoomApi.DEFAULT_ROUND_SECONDS
 )

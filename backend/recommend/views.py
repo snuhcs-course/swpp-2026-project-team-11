@@ -1,9 +1,9 @@
 """HTTP glue between the Android client and the question engine.
 
-    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "location"?, "allergies"?, "source"?, "distance_scope"?,
-                          "price_level"?, "language"?}                       -> 201 state
+    POST /api/sessions/  {"date"?, "meal"?, "engine"?, "allergies"?, "area"?, "price_level"?,
+                          "language"?}                                     -> 201 state
     GET  /api/sessions/<id>/                                               -> state
-    POST /api/sessions/prewarm/  {"meal"?, "source"?, "allergies"?}            -> 204
+    POST /api/sessions/prewarm/  {"meal"?, "area"?, "allergies"?}              -> 204
     POST /api/sessions/<id>/answer/          {"question_id", "answer_id"}  -> state
     POST /api/sessions/<id>/feedback/        {"guess_id", "accepted"}      -> state
     POST /api/sessions/<id>/recommend-now/                                 -> state
@@ -50,8 +50,7 @@ be reached, for example through the tunnel of `manage.py serve_public`.
 
 `engine` can be "decision_tree", "rl" or "llm". RL requires v2 features for a nonempty
 catalogue. Missing RL features or unavailable LLM configuration return 503
-`engine_unavailable`. `location` is the user's `{"lat", "lng"}`; it
-adds each cafeteria's `distance_m` to the offers (see recommend/distance.py).
+`engine_unavailable`.
 
 `price_level` is 1, 2 or 3, the number of ₩ signs the user picked (recommend/prices.py
 PRICE_BANDS); only dishes priced in that band are proposed. Null or missing is any price.
@@ -60,11 +59,11 @@ PRICE_BANDS); only dishes priced in that band are proposed. Null or missing is a
 them; no dish that may contain one is proposed. `language` is "en" (default) or "ko":
 every text the session sends is in it, except dish and cafeteria names, which stay Korean.
 
-`source` is "cafeteria" (default), the day's SNU cafeteria menu, or "general", the
-restaurants near 서울대입구역 and 낙성대역, or "all" for both. General and all
-sessions support "decision_tree" and "rl"; asking for "llm" is a 400. An omitted engine
-uses the server default, falling back to the decision tree for a general session
-if that default is "llm".
+`area` is where the user picked to eat (recommend/areas.py): "campus" (default), the
+day's SNU cafeteria menu, "snu_station" or "nakseongdae", the restaurants near that
+station, or "all" for every one of them. The phone sends no location. Only campus
+sessions support "llm"; asking for it elsewhere is a 400 `area_llm_unsupported`. An omitted engine uses the
+server default, falling back to the decision tree outside campus if that default is "llm".
 """
 
 from __future__ import annotations
@@ -85,6 +84,7 @@ from accounts import history
 from accounts.tokens import user_for
 
 from . import interaction_log, rooms, sessions
+from .areas import AREAS
 from .prices import PRICE_BANDS
 
 MEALS = ("BR", "LU", "DN")
@@ -103,37 +103,29 @@ def _body(request) -> dict:
     return payload
 
 
-def _location(value) -> tuple[float, float] | None:
-    if value is None:
-        return None
-    try:
-        lat, lng = value["lat"], value["lng"]
-    except (TypeError, KeyError):
-        raise ValueError("location must be {\"lat\": ..., \"lng\": ...}.") from None
-    if not all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in (lat, lng)) \
-            or not (-90 <= lat <= 90 and -180 <= lng <= 180):
-        raise ValueError("location lat and lng must be numbers within -90..90 and -180..180.")
-    return float(lat), float(lng)
-
-
 def _price_level(value) -> int | None:
     if value is not None and (type(value) is not int or value not in PRICE_BANDS):
         raise ValueError(f"price_level must be one of {', '.join(map(str, PRICE_BANDS))}.")
     return value
 
 
-def _catalogue_fields(payload: dict) -> tuple[str | None, str | None, frozenset[str]]:
+def _area(payload: dict) -> str:
+    area = payload.get("area", "campus")
+    if area not in AREAS:
+        raise ValueError(f"area must be one of {', '.join(AREAS)}.")
+    return area
+
+
+def _catalogue_fields(payload: dict) -> tuple[str | None, str, frozenset[str]]:
     meal = payload.get("meal")
     if meal is not None and meal not in MEALS:
         raise ValueError("meal must be one of BR, LU, DN.")
-    source = payload.get("source")
-    if source is not None and source not in sessions.SOURCES:
-        raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
+    area = _area(payload)
     allergies = payload.get("allergies")
     if allergies is not None and (not isinstance(allergies, list)
                                   or any(key not in ALLERGEN_KEYS for key in allergies)):
         raise ValueError(f"allergies must be a list of {', '.join(ALLERGEN_KEYS)}.")
-    return meal, source, frozenset(allergies or ())
+    return meal, area, frozenset(allergies or ())
 
 
 @require_GET
@@ -151,28 +143,21 @@ def create_session(request):
             if not isinstance(date, str):
                 raise ValueError("date must be an ISO date string such as 2026-11-02.")
             date = datetime.date.fromisoformat(date)
-        meal, source, allergies = _catalogue_fields(payload)
+        meal, area, allergies = _catalogue_fields(payload)
         engine = payload.get("engine")
         if engine is not None and engine not in sessions.ENGINES:
             raise ValueError(f"engine must be one of {', '.join(sessions.ENGINES)}.")
-        location = _location(payload.get("location"))
-        if source == "general" and engine == "llm":
-            raise ValueError("The general source supports the decision_tree and rl engines.")
-        distance_scope = payload.get("distance_scope")
-        if distance_scope is not None and distance_scope not in ("near", "any"):
-            raise ValueError("distance_scope must be near or any.")
         price_level = _price_level(payload.get("price_level"))
         language = payload.get("language", "en")
         if language not in LANGUAGES:
             raise ValueError(f"language must be one of {', '.join(LANGUAGES)}.")
     except ValueError as error:  # includes json.JSONDecodeError
         return _error(400, "invalid_request", str(error))
-    if source == "all" and engine == "llm":
-        return _error(400, "all_source_llm_unsupported", "All restaurants supports the decision tree and RL engines.")
+    if area != "campus" and engine == "llm":
+        return _error(400, "area_llm_unsupported", "Outside campus, the decision tree and RL engines are supported.")
     user = user_for(request)
     try:
-        session = sessions.create(date, meal, engine, location, allergies, source, language, distance_scope, price_level,
-                                  user.pk if user else None)
+        session = sessions.create(date, meal, engine, allergies, area, language, price_level, user.pk if user else None)
     except sessions.EngineUnavailable as error:
         return _error(503, "engine_unavailable", str(error))
     state = session.public_state()
@@ -187,10 +172,10 @@ def create_session(request):
 @require_POST
 def prewarm(request):
     try:
-        meal, source, allergies = _catalogue_fields(_body(request))
+        meal, area, allergies = _catalogue_fields(_body(request))
     except ValueError as error:
         return _error(400, "invalid_request", str(error))
-    sessions.prewarm(meal, allergies, source)
+    sessions.prewarm(meal, allergies, area)
     return HttpResponse(status=204)
 
 
@@ -293,8 +278,8 @@ def ban(request, session_id: str):
 # Group rooms (recommend/rooms.py). Every room request but create and join sends the
 # member's token from those replies as `X-Member-Token`.
 #
-#   POST /api/rooms/        {"name"?, "allergies"?, "language"?, "date"?, "meal"?, "source"?,
-#                            "distance_scope"?, "price_level"?, "location"?, "round_seconds"?} -> 201 {"token", "state"}
+#   POST /api/rooms/        {"name"?, "allergies"?, "language"?, "date"?, "meal"?, "area"?,
+#                            "price_level"?, "round_seconds"?}         -> 201 {"token", "state"}
 #   POST /api/rooms/join/   {"code", "name"?, "allergies"?, "language"?} -> 201 {"token", "state"}
 #   GET  /api/rooms/<code>/                                             -> state
 #   POST /api/rooms/<code>/start/                         (host)        -> state
@@ -345,13 +330,7 @@ def create_room(request):
         meal = payload.get("meal")
         if meal is not None and meal not in MEALS:
             raise ValueError("meal must be one of BR, LU, DN.")
-        source = payload.get("source", "cafeteria")
-        if source not in sessions.SOURCES:
-            raise ValueError(f"source must be one of {', '.join(sessions.SOURCES)}.")
-        distance_scope = payload.get("distance_scope")
-        if distance_scope is not None and distance_scope not in ("near", "any"):
-            raise ValueError("distance_scope must be near or any.")
-        location = _location(payload.get("location"))
+        area = _area(payload)
         price_level = _price_level(payload.get("price_level"))
         round_seconds = payload.get("round_seconds", rooms.ROUND_SECONDS)
         if type(round_seconds) is not int or round_seconds not in rooms.ROUND_CHOICES:
@@ -359,7 +338,7 @@ def create_room(request):
     except ValueError as error:
         return _error(400, "invalid_request", str(error))
     room_settings = rooms.RoomSettings(date or settings.RECOMMEND_DEFAULT_DATE or timezone.localdate(),
-                                       meal, source, distance_scope, location, price_level, round_seconds)
+                                       meal, area, price_level, round_seconds)
     return _joined(*rooms.create(name, allergies, language, room_settings))
 
 

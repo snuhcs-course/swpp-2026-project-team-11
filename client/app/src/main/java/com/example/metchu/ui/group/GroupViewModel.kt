@@ -13,7 +13,6 @@ import com.example.metchu.data.model.RoomState
 import com.example.metchu.data.network.ApiError
 import com.example.metchu.data.network.RetrofitInstance
 import com.example.metchu.data.network.RoomApi
-import com.example.metchu.data.network.UserLocation
 import com.example.metchu.data.repository.Membership
 import com.example.metchu.data.repository.RoomRepository
 import com.example.metchu.ui.main.AnsweredQuestion
@@ -68,11 +67,10 @@ class GroupViewModel(private val repository: RoomRepository) : ViewModel() {
         allergies: List<Allergen>,
         language: String,
         meal: String?,
-        location: suspend () -> UserLocation?,
-        distanceScope: String,
+        area: String,
         priceLevel: Int? = null,
         roundSeconds: Int = RoomApi.DEFAULT_ROUND_SECONDS
-    ) = enter { repository.create(account, name, allergies, language, meal, location(), distanceScope, priceLevel, roundSeconds) }
+    ) = enter { repository.create(account, name, allergies, language, meal, area, priceLevel, roundSeconds) }
 
     fun join(account: String?, code: String, name: String?, allergies: List<Allergen>, language: String) =
         enter { repository.join(account, code, name, allergies, language) }
