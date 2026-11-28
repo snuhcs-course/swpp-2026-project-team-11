@@ -4,6 +4,10 @@ Only server-generated step data and validated answer IDs are recorded. The log
 uses a random identifier distinct from the session's API bearer and never stores
 client IPs, device identifiers, or question/reason text. Validated allergy
 selections are stored once at session start.
+
+Group rooms write their own records (`record_room`, marked `"record": "room"`) to the
+same files: a random room identifier instead of the four-digit code, member numbers
+instead of names, and counts instead of each member's answers or allergies.
 """
 from __future__ import annotations
 
@@ -92,14 +96,28 @@ def _step(step):
     return result
 
 
+def _now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def _append(root: Path, now: datetime.datetime, data: dict) -> None:
+    raw = (json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+    with _LOCK:
+        root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        fd = os.open(root / f"interactions-{now.date().isoformat()}.jsonl",
+                     os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(raw)
+
+
 def record(session, event: str, *, before=None, after=None, answer_id=None,
-           accepted=None, outcome="ok") -> None:
+           accepted=None, restaurant=None, outcome="ok") -> None:
     """Best-effort append: a disk failure must never fail the user's request."""
     root = _root()
     if root is None:
         return
     try:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = _now()
         data = {
             "version": 3,
             "timestamp": now.isoformat().replace("+00:00", "Z"),
@@ -122,12 +140,38 @@ def record(session, event: str, *, before=None, after=None, answer_id=None,
             data["answer_id"] = answer_id
         if accepted is not None:
             data["accepted"] = accepted
-        raw = (json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
-        with _LOCK:
-            root.mkdir(parents=True, exist_ok=True, mode=0o700)
-            fd = os.open(root / f"interactions-{now.date().isoformat()}.jsonl",
-                         os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
-            with os.fdopen(fd, "wb") as stream:
-                stream.write(raw)
+        if restaurant is not None:
+            data["restaurant"] = restaurant
+        _append(root, now, data)
+    except Exception:
+        logger.warning("Could not write interaction log", exc_info=True)
+
+
+def record_room(room, event: str, *, outcome="ok", **fields) -> None:
+    """One room event, best-effort like `record`. The caller holds the room's lock."""
+    root = _root()
+    if root is None:
+        return
+    try:
+        now = _now()
+        settings_ = room.settings
+        data = {
+            "record": "room",
+            "version": 1,
+            "timestamp": now.isoformat().replace("+00:00", "Z"),
+            "room": room.interaction_id,
+            "event": event,
+            "outcome": outcome,
+            "meal": settings_.meal,
+            "menu_date": settings_.date.isoformat(),
+            "areas": list(settings_.areas),
+            "price_levels": list(settings_.price_levels),
+            "round_seconds": settings_.round_seconds,
+            "status": room.status,
+            "round": room.engine.round if room.engine is not None else room.rounds,
+            "members": sum(not m.left for m in room.members),
+        }
+        data.update(fields)
+        _append(root, now, data)
     except Exception:
         logger.warning("Could not write interaction log", exc_info=True)

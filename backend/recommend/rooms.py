@@ -29,12 +29,17 @@ up to two restaurants the room has not been shown, with no votes yet, while one 
 eat is left (`more`). The earlier ones stay at their positions with their votes, so members can still agree
 with them and the host can still choose one; each pick's `batch` counts the finds before it (0 for the first result). For that the room keeps the group's result (each member's satisfaction and
 menus at each restaurant, not the engine's tables) until the host decides or everyone has left. Rooms live in this process only, like sessions (recommend/sessions.py).
+
+Each change of state, never a poll, is a room record in the interaction log (recommend/interaction_log.py):
+create, join, start, the end of each round (how many answered, timed out or had left), the result,
+the decision, each leave and the room's end.
 """
 
 from __future__ import annotations
 
 import datetime
 import secrets
+import statistics
 import threading
 import time
 from collections import OrderedDict, deque
@@ -47,6 +52,7 @@ from question_engines.decision_tree.contracts import Answer, answer_options, tra
 from question_engines.group import GroupConfig, GroupEngine, GroupResult
 from question_engines.group.engine import MAX_MEMBERS, place, offer_identity
 
+from . import interaction_log
 from .prices import PRICE_BANDS
 from .sessions import EngineUnavailable, StaleStep, load_candidates, restaurant_menus
 
@@ -109,6 +115,30 @@ class Room:
         self.decided: int | None = None
         self.votes: list[set[int]] = []  # per pick, the members who agree with it
         self.lock = threading.Lock()
+        # For the interaction log (recommend/interaction_log.py): a random ID, not the code.
+        self.interaction_id = secrets.token_hex(16)
+        self.created_at = clock()
+        self.started_at = self.result_at = None
+        self.round_by: dict[int, tuple[str, float]] = {}  # member -> (self|timeout|left, seconds into the round)
+        self.ended = False
+
+    def _log(self, event: str, **fields) -> None:
+        # The rounds a room runs on by itself once everyone has left are nobody's behaviour.
+        if event in ("leave", "end") or self._present():
+            interaction_log.record_room(self, event, **fields)
+
+    def _since(self, then: float | None) -> float | None:
+        return None if then is None else round(clock() - then, 1)
+
+    def _finds(self) -> int:
+        """How many times the host asked for other restaurants."""
+        return self.picks[-1]["batch"] if self.picks else 0
+
+    def _end(self, reason: str) -> None:
+        if not self.ended:
+            self.ended = True
+            self._log("end", reason=reason, decided=self.decided is not None, finds=self._finds(),
+                      total_s=self._since(self.created_at))
 
     def member(self, token: str | None) -> Member | None:
         return next((m for m in self.members if token and secrets.compare_digest(m.token, token)), None)
@@ -135,6 +165,7 @@ class Room:
             raise StaleStep("The questions have already started.")
         present = self._present()
         if len(present) < 2:
+            self._log("start", outcome="too_few_members")
             raise RoomError("too_few_members", "A group needs at least two people.")
         # The engine numbers members 0..n-1; members who left the lobby are dropped for good.
         self.members = [Member(i, m.name, m.allergies, m.language, m.token) for i, m in enumerate(present)]
@@ -156,40 +187,56 @@ class Room:
                     offer_filters.append({offer_identity(c["food_id"], o) for c in candidates for o in c["offers"]})
             self.engine = GroupEngine(candidates, schema, excluded, config=GroupConfig(max_rounds=MAX_ROUNDS, language="en"), offer_filters=offer_filters)
         except ValueError as error:
+            self._log("start", outcome="group_unavailable", candidate_count=len(candidates))
             raise RoomError("group_unavailable", str(error)) from error
         self.status = "asking"
+        self.started_at = clock()
+        self._log("start", allergic_members=sum(bool(m.allergies) for m in self.members),
+                  candidate_count=len(candidates), waited_s=self._since(self.created_at))
         self._new_round()
 
     def _new_round(self) -> None:
         self.round_started = clock()
         self.round_answers = {}
+        self.round_by = {}
         if self.engine.finished:
             self._finish()
             return
-        self._answer_for([m.id for m in self.members if m.left])
+        self._answer_for([m.id for m in self.members if m.left], "left")
 
-    def _answer_for(self, member_ids: list[int]) -> None:
-        """Answers for those silent members until the round they were in ends."""
+    def _answer_for(self, member_ids: list[int], by: str) -> None:
+        """Answers for those silent members until the round they were in ends; `by` says why."""
         round_ = self.engine.round
         for member_id in member_ids:
             if self.status != "asking" or self.engine.round != round_:
                 return
             if member_id in self.engine.questions():
-                self._give(self.members[member_id], TIMEOUT_ANSWER)
+                self._give(self.members[member_id], TIMEOUT_ANSWER, by)
 
-    def _give(self, member: Member, answer_id: str) -> None:
+    def _give(self, member: Member, answer_id: str, by: str) -> None:
         """Records one answer; when it completes the round, moves to the next round or the result."""
         step = self.engine.questions()[member.id]
         before = self.engine.round
         self.engine.answer(member.id, step["question_id"], answer_id)
         self.round_answers[member.id] = answer_id
+        self.round_by[member.id] = (by, clock() - self.round_started)
+        if self.engine.round != before:
+            self._log_round(step["question_id"])
         if self.engine.round != before or self.engine.finished:
             self._new_round()
+
+    def _log_round(self, question_id: str) -> None:
+        """Counts how the round's answers came, never who gave which."""
+        ways = [way for way, _ in self.round_by.values()]
+        own = [seconds for way, seconds in self.round_by.values() if way == "self"]
+        self._log("round", question_id=question_id, answered=ways.count("self"), timeout=ways.count("timeout"),
+                  left=ways.count("left"), answer_s=round(statistics.median(own), 1) if own else None,
+                  round_s=self._since(self.round_started))
 
     def tick(self) -> None:
         """Answers for everyone still silent once the round's time is up."""
         if self.status == "asking" and clock() - self.round_started >= self.settings.round_seconds:
-            self._answer_for(sorted(self.engine.questions()))
+            self._answer_for(sorted(self.engine.questions()), "timeout")
 
     def answer(self, member: Member, question_id: str, answer_id: str) -> None:
         self.tick()
@@ -198,7 +245,7 @@ class Room:
         step = self.engine.questions().get(member.id) if self.status == "asking" else None
         if step is None or step["question_id"] != question_id:
             raise StaleStep("That question is no longer waiting for your answer.")
-        self._give(member, answer_id)
+        self._give(member, answer_id, "self")
 
     def recommend_now(self, member: Member) -> None:
         self._require_host(member)
@@ -206,12 +253,14 @@ class Room:
         if self.status != "asking":
             raise StaleStep("The questions are over.")
         self.engine.stop()
-        self._finish()
+        self._finish("recommend_now")
 
-    def _finish(self) -> None:
+    def _finish(self, how: str = "engine") -> None:
         self.status = "done"
         self.result, self.rounds, self.engine = GroupResult(self.engine), self.engine.round, None
         self._choose()
+        self.result_at = clock()
+        self._log("result", how=how, picks=len(self.picks), asking_s=self._since(self.started_at))
 
     def _choose(self) -> None:
         """Adds up to two restaurants the room has not been shown yet, with no votes, after the earlier ones."""
@@ -266,6 +315,8 @@ class Room:
             raise StaleStep("The host has already decided.")
         self.decided = self._pick(pick)
         self._let_go()
+        self._log("decide", pick=pick, batch=self.picks[pick]["batch"], votes=len(self.votes[pick]),
+                  finds=self._finds(), deciding_s=self._since(self.result_at), total_s=self._since(self.created_at))
 
     def leave(self, member: Member) -> None:
         if member.left:
@@ -275,13 +326,17 @@ class Room:
             for voters in self.votes:
                 voters.discard(member.id)
         present = self._present()
-        if member.id == self.host_id and present:
+        was_host = member.id == self.host_id
+        if was_host and present:
             # Everyone who joined before the host has left, so the next one still here is the first.
             self.host_id = present[0].id
+        self._log("leave", member=member.id, was_host=was_host)
         if self.status == "asking":
-            self._answer_for([member.id])
+            self._answer_for([member.id], "left")
         if self.status == "done" and not present:
             self._let_go()
+        if not present:
+            self._end("all_left")
 
     def public_state(self, member: Member) -> dict:
         self.tick()
@@ -340,14 +395,17 @@ def _register(room_settings: RoomSettings) -> Room:
         room = Room(code, room_settings)
         _rooms[code] = room
         while len(_rooms) > MAX_ROOMS:
-            _rooms.popitem(last=False)
+            # Logged without that room's lock, which a slow start may hold for seconds; the record only reads.
+            _rooms.popitem(last=False)[1]._end("evicted")
     return room
 
 
 def create(name: str, allergies: frozenset[str], language: str, room_settings: RoomSettings) -> tuple[Room, Member]:
     room = _register(room_settings)
     with room.lock:
-        return room, room._add(name, allergies, language)
+        host = room._add(name, allergies, language)
+        room._log("create")
+        return room, host
 
 
 def join(code: str, name: str, allergies: frozenset[str], language: str, client: str) -> tuple[Room, Member]:
@@ -367,7 +425,13 @@ def join(code: str, name: str, allergies: frozenset[str], language: str, client:
                     del _failed_joins[key]
             raise RoomError("room_not_found", "No room is open with this code.")
     with room.lock:
-        return room, room._add(name, allergies, language)
+        try:
+            member = room._add(name, allergies, language)
+        except RoomError as error:
+            room._log("join", outcome=error.code)
+            raise
+        room._log("join", member=member.id)
+        return room, member
 
 
 def get(code: str) -> Room | None:

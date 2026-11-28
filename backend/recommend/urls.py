@@ -14,6 +14,7 @@ urlpatterns = [
     path("sessions/<str:session_id>/ban/", views.ban),
     path("sessions/<str:session_id>/reason/", views.reason),
     path("sessions/<str:session_id>/menu/", views.menu),
+    path("sessions/<str:session_id>/event/", views.session_event),
     path("rooms/", views.create_room),
     path("rooms/join/", views.join_room),
     path("rooms/<str:code>/", views.room_state),

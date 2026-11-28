@@ -94,8 +94,42 @@ class InteractionLogTests(TestCase):
 
     def test_disabled_does_not_create_a_log(self):
         with override_settings(INTERACTION_LOG_DIR=""):
-            self.start()
+            state = self.start()
+            response = post(self.client, f"/api/sessions/{state['session_id']}/event/", {"event": "home"})
+        self.assertEqual(response.status_code, 204)
         self.assertFalse(self.root.exists())
+
+    def test_app_events_are_logged_on_the_step_on_screen_and_change_nothing(self):
+        state = self.start(engine="decision_tree")
+        url = f"/api/sessions/{state['session_id']}/"
+        for body in ({"event": "home"}, {"event": "resume"}, {"event": "directions", "restaurant": "학생회관식당"},
+                     {"event": "bookmark", "restaurant": "학생회관식당"}, {"event": "background"}):
+            self.assertEqual(post(self.client, url + "event/", body).status_code, 204, body)
+        self.assertEqual(self.client.get(url).json(), state)
+        events = self.events()[1:]
+        self.assertEqual([e["event"] for e in events], ["home", "resume", "directions", "bookmark", "background"])
+        self.assertTrue(all(e["before"]["question_id"] == state["step"]["question_id"] and e["after"] is None
+                            for e in events))
+        self.assertEqual([e.get("restaurant") for e in events], [None, None, "학생회관식당", "학생회관식당", None])
+
+    def test_an_unknown_app_event_is_refused_and_not_logged(self):
+        state = self.start(engine="decision_tree")
+        url = f"/api/sessions/{state['session_id']}/event/"
+        for body in ({}, {"event": "quit"}, {"event": "directions", "restaurant": ""},
+                     {"event": "directions", "restaurant": "x" * 101}, {"event": "bookmark", "restaurant": 3}):
+            response = post(self.client, url, body)
+            self.assertEqual(response.status_code, 400, body)
+            self.assertEqual(response.json()["error"]["code"], "invalid_request")
+        self.assertEqual(post(self.client, "/api/sessions/no-such-session/event/", {"event": "home"}).status_code, 404)
+        self.assertEqual([e["event"] for e in self.events()], ["start"])
+
+    def test_opening_a_menu_is_logged_with_its_restaurant(self):
+        state = self.start(engine="decision_tree")
+        response = self.client.get(f"/api/sessions/{state['session_id']}/menu/", {"restaurant": "학생회관식당"})
+        self.assertEqual(response.status_code, 200)
+        event = self.events()[-1]
+        self.assertEqual((event["event"], event["restaurant"]), ("menu", "학생회관식당"))
+        self.assertEqual(event["before"]["question_id"], state["step"]["question_id"])
 
     def test_retention_deletes_only_expired_log_files(self):
         self.root.mkdir()

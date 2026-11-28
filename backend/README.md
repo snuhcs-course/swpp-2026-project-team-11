@@ -166,7 +166,11 @@ The preprocessing prompt and `PREPROCESS_VERSION` are unchanged.
 
 Set `METCHU_INTERACTION_LOG_DIR` to a private directory to collect server-side
 interaction events. It is disabled when unset. The server appends one JSON line
-for each session start, answer, recommendation request, feedback, undo or ban.
+for each session start, answer, recommendation request, feedback, undo or ban, each opened
+menu (`menu`, with its `restaurant`), and each app event sent to `POST /api/sessions/<id>/event/`
+(i5-A10): `home` (back to the start screen), `resume` (back to that session), `directions` or
+`bookmark` (with the `restaurant`), and `background` (the app went to the background). An app
+event records the step it happened on as `before` and changes nothing in the session.
 Events include a random session-specific logging ID, UTC time, engine, meal,
 menu date, the picked areas and price levels (`areas`, `price_levels`, every level for any price),
 candidate counts before the area and price filters (`candidates_before_area`) and after every filter,
@@ -185,11 +189,50 @@ never fails a recommendation request. The current writer is thread-safe within o
 server process. Keep the directory private; these records include sensitive allergy
 selections.
 
-Only server requests and resulting steps are captured: app-only navigation, a
-request that never reaches the server, and a confirmed session end are not tracked.
-The session ID in the log is independent of the public API session token; it is not
-a persistent user identifier. Do not treat missing later events as proof that a user
-accepted, quit or was dissatisfied.
+Only server requests, their resulting steps and the app events above are captured: other
+app-only navigation and a request that never reaches the server are not tracked, and an app
+that predates the event endpoint sends no app events. The session ID in the log is independent
+of the public API session token; it is not a persistent user identifier. Without an app event,
+do not treat missing later events as proof that a user accepted, quit or was dissatisfied.
+
+Group rooms (i5-A10) write their own lines to the same files, marked `"record": "room"`
+(`"version": 1`), each with a random room ID (not the four-digit code), UTC time, meal, menu
+date, areas, price levels, round time, the room's status, finished rounds and members still
+there. A line is written at each change of state, never for a poll: `create`; `join` (the
+member's number, or the refusal `room_full`/`room_started` as `outcome`); `start` (members with
+allergies, candidates, seconds in the lobby, or the refusal `too_few_members`/`group_unavailable`);
+`round` at the end of each round (its question ID, how many answered, timed out or had left, the
+median seconds to answer, the round's seconds); `result` (`how`: `engine` or the host's
+`recommend_now`, picks, seconds of questions); `decide` (the pick, its find batch, its agreeing
+members, finds so far, seconds from the result and from creation); `leave` (the member's number,
+whether they were host); and `end` once (`all_left` or `evicted` from the full room list, whether
+the host decided, finds, seconds since creation). Names, tokens, codes, accounts, allergies and
+each member's answers are not recorded. Rounds a room runs on its own after everyone has left
+are not recorded. Member numbers restart at the start, as the members' IDs do.
+
+`python manage.py interaction_report [--dir DIR] [--since YYYY-MM-DD] [--all]` prints the key
+numbers from these files (recommend/interaction_report.py). A session or room counts once it
+has been quiet for 30 minutes, or a room has ended; younger ones are only counted as open.
+
+- Solo:
+  - for each k, the sessions that showed question k+1 after k answers and how many ended there
+    (the drop at k), and the share that reached k answers;
+  - the questions that most often ended a session (shown in at least 3);
+  - the share that reached a proposal, with the median questions and seconds to the first;
+  - the share completed with directions or a bookmark, among sessions whose app sends app events.
+- Rooms:
+  - the share of started rooms the host decided, and where the others ended (lobby, a round
+    or the result);
+  - the share of timed-out answers in each round among members still there;
+  - the median minutes from start to result and from result to decision.
+
+`--all` adds answer times, "recommend now", sessions that ended on a proposal, how sessions
+ended, the lobby wait, leaves, the host stopping early, finds, agreement and the timed-out share
+per round time. The report prints no allergies, names or restaurant choices.
+
+One line costs about 1 ms to write on a Windows laptop (1,000 writes each: about 1.1 KB for a
+solo line with ten restaurant names, about 370 bytes for a room round); a room writes about ten to
+fifteen lines in all.
 
 ## Daily menu preprocessing (P7)
 
@@ -457,8 +500,8 @@ the restaurant is among that member's best tenth of the places they can eat at, 
   29 MB per allergic member at 586 restaurants × 6,227 menus) until the host decides or everyone
   has left. A pick that fails to build leaves the picks and their votes as they were; after the
   decision every vote is a 409 `stale_step`, and a member who leaves no longer takes votes along.
-  Rooms end with the process and
-  are not in the interaction log. With every area picked, starting a room and each
+  Rooms end with the process; each change of state is a room line in the interaction log
+  (see Interaction logs). With every area picked, starting a room and each
   round take seconds (the engine's tables over thousands of menus).
 
 ## Shared database: Supabase (P8)
